@@ -1,0 +1,31 @@
+{
+ "app": "Physique OS",
+ "version": "1.0.0",
+ "build": "9173e3a664",
+ "builtAt": "2026-09-02T22:29:45.283Z",
+ "sources": [
+  "10-core.js",
+  "20-schema-storage.js",
+  "30-observations.js",
+  "40-models.js",
+  "50-decision.js",
+  "60-data-foundation.js",
+  "62-food.js",
+  "64-exercise.js",
+  "66-data-reference.js",
+  "70-demo.js",
+  "80-ui.js",
+  "82-views-a.js",
+  "83-views-b.js",
+  "85-log-sheet.js",
+  "90-actions.js",
+  "95-selftest.js",
+  "99-boot.js"
+ ],
+ "food": {
+  "databaseVersion": "fdc-2026-04-30",
+  "branded": 455381,
+  "foundation": 354,
+  "totalBytes": 97518627
+ }
+}
