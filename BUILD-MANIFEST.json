@@ -1,0 +1,314 @@
+{
+ "build": "c8996540df",
+ "release": "89c84fd18981",
+ "builtAt": "2026-09-03T21:41:10.112Z",
+ "version": "1.0.0",
+ "schema": 2,
+ "inputs": [
+  {
+   "file": "src/00-head.html",
+   "bytes": 36943,
+   "sha256": "391d9f7c4b8875f45ce370c0fdec4a4100d182544ff0b024f871fd8bea433624"
+  },
+  {
+   "file": "src/01-body.html",
+   "bytes": 10278,
+   "sha256": "0d2cb1ad763a80593195ad28a37e7a453bf342bf44b4293841903b9a7db90c54"
+  },
+  {
+   "file": "src/10-core.js",
+   "bytes": 14428,
+   "sha256": "4ef3df7c74253f484dc2651070fdf73f5d17d7e65dbf98e5b223b4cde06fd483"
+  },
+  {
+   "file": "src/20-schema-storage.js",
+   "bytes": 23647,
+   "sha256": "2dfa4fc644f6d90b8fedd0133da6b7b6885a2f9112f93377e90939cb71f5555e"
+  },
+  {
+   "file": "src/30-observations.js",
+   "bytes": 17415,
+   "sha256": "5f93de4a8f46df1acb1a0b6e87159d96b38358489132e7e633070c3427fb3890"
+  },
+  {
+   "file": "src/40-models.js",
+   "bytes": 56069,
+   "sha256": "cca49fe52e0a22099dfea90ad0fd7eac0f7b8659081a36820301c868176127be"
+  },
+  {
+   "file": "src/45-baselines.js",
+   "bytes": 14127,
+   "sha256": "3d1a7ce8fe4e68c1d1b0748e7e3af96026ecf808014b720ca71c98bd07cd2db8"
+  },
+  {
+   "file": "src/50-decision.js",
+   "bytes": 75076,
+   "sha256": "a4f55673cfd3e2fc997e58b69bf47edf84555e522194f081a07ead7396671b65"
+  },
+  {
+   "file": "src/52-response.js",
+   "bytes": 17958,
+   "sha256": "a4b06999a3e0aecaec13a0fd7ec700eb84743dd2a4e8fa64fb092e1a3c6fef85"
+  },
+  {
+   "file": "src/60-data-foundation.js",
+   "bytes": 83834,
+   "sha256": "23fee4e034639d6cff610f58e76a2990a1acb79c781a1bd71f7dda3329e3510a"
+  },
+  {
+   "file": "src/62-food.js",
+   "bytes": 31993,
+   "sha256": "fdb29d21146843ff3a6249e37fd039eb74e979818b3b9069ea8c684f4695e20c"
+  },
+  {
+   "file": "src/63-food-ext.js",
+   "bytes": 11600,
+   "sha256": "df3a5e34e033b25a4b83d5342c0ebe8113c1099b2779658fe4d2def3f25a1a91"
+  },
+  {
+   "file": "src/64-exercise.js",
+   "bytes": 12368,
+   "sha256": "8c66876515d7d9631519fd7f4941755140c85b283475a242d4b7d4ab83a424a8"
+  },
+  {
+   "file": "src/66-data-reference.js",
+   "bytes": 21517,
+   "sha256": "f52f472fa835f25c2b447e73d3b79049088b3a209ac5394a8a3be200f482d79e"
+  },
+  {
+   "file": "src/70-demo.js",
+   "bytes": 18201,
+   "sha256": "2483ec5c014a287f2248ac3674e9ec01c7c039404a52f2cf2900ad8dd9262529"
+  },
+  {
+   "file": "src/80-ui.js",
+   "bytes": 10256,
+   "sha256": "8ac32fa407c920b695c8fcb85667c9135e2c0d1b23caefc1af07df4fc88b61e2"
+  },
+  {
+   "file": "src/82-views-a.js",
+   "bytes": 52365,
+   "sha256": "d137e1116842ae37beaec664b6d7ddcb465bba3641baccc81ce7cabec6214f45"
+  },
+  {
+   "file": "src/83-views-b.js",
+   "bytes": 51028,
+   "sha256": "849843564581ee4cbe3032245d3367dc4d59a24e290ac75001b11e052fb0d1f1"
+  },
+  {
+   "file": "src/85-log-sheet.js",
+   "bytes": 46726,
+   "sha256": "173a78f8d9acfc1f37886bfcef3c67c8cd1a4afcd4e756b2ee30506887347679"
+  },
+  {
+   "file": "src/90-actions.js",
+   "bytes": 67907,
+   "sha256": "fca70f676ef3c11e264015c8e57fce967cef4ddea80625ad3816da3a48ea5648"
+  },
+  {
+   "file": "src/92-scheduler.js",
+   "bytes": 16003,
+   "sha256": "71f6daf6ce4b5743d2ae710d25343a0644bbc34569f798912447497d9d047626"
+  },
+  {
+   "file": "src/94-navigation.js",
+   "bytes": 37885,
+   "sha256": "f6300d38113a73dde4c7aff0135393d4fd247198e89435cb35f49d5d456eca4f"
+  },
+  {
+   "file": "src/95-selftest.js",
+   "bytes": 51681,
+   "sha256": "1d784b6e8bce297c25d28e5d90c840a899a4343c7a62dbc37843294a8d0a9675"
+  },
+  {
+   "file": "src/99-boot.js",
+   "bytes": 2931,
+   "sha256": "4181106ed5e48ceb9f227d8f2c0bfbd7b1616df14409356a917624f4029ef397"
+  },
+  {
+   "file": "build.mjs",
+   "bytes": 15348,
+   "sha256": "db256f9f8941525f5b365532129315b5f9e572d976f70af407cd9458bdee718e"
+  },
+  {
+   "file": "package.json",
+   "bytes": 1127,
+   "sha256": "2103854c875210fc878d1523357115d3bcb0bab68f8c179c65e3acc5ef2cd19e"
+  },
+  {
+   "file": "scripts/dsld-build.mjs",
+   "bytes": 6685,
+   "sha256": "1a4c050d2546908a521ae16b3367d40605922cbd53401258d5f7eed347828084"
+  },
+  {
+   "file": "scripts/fndds-build.mjs",
+   "bytes": 7651,
+   "sha256": "56e834fddadffc286511f87b4550d0c583c8c0dceff7126f25ea2fd3800a7817"
+  },
+  {
+   "file": "scripts/food-build.mjs",
+   "bytes": 12019,
+   "sha256": "160a879305c6aff7941e0571992360b9869d5acacdfd0a3e39c62fe0fc8a855e"
+  },
+  {
+   "file": "scripts/food-stats.mjs",
+   "bytes": 1755,
+   "sha256": "2607b106241eaf6ac3f2b10f77fb096916c60222172cf24d2482f0686f52e08d"
+  },
+  {
+   "file": "scripts/reference-build.mjs",
+   "bytes": 6520,
+   "sha256": "9389177448ddf826e5fb2118d4ee584a0d66f66e76367079d5614fa403a7fd38"
+  },
+  {
+   "file": "scripts/run-stats.sh",
+   "bytes": 241,
+   "sha256": "d560f820240a527c5925688007ad67a0c41cca189bd5b0e7bf201ba8422e8f0f"
+  },
+  {
+   "file": "scripts/verify-dist.mjs",
+   "bytes": 5512,
+   "sha256": "5851d45bb291cb0d9e4f9d9f33574bdd43eec42a99a895ed23853a499dc50798"
+  },
+  {
+   "file": "data/reference/compendium-2024.json",
+   "bytes": 120147,
+   "sha256": "ebab0b8f9e50a39a66b9cdff5d2afb32f830b9a0b17728b7a0ba4ce3972dbf55"
+  },
+  {
+   "file": "tests/debug1.mjs",
+   "bytes": 2121,
+   "sha256": "6d4cd04270b30aef2dadcf48d268642accd6a8f1b99504f29dd216879fd8760a"
+  },
+  {
+   "file": "tests/dump-empty.mjs",
+   "bytes": 1141,
+   "sha256": "d4271c6fc7140c27e8a38d477bb4c395e4bd1ae25d737008e4fa63147dd01834"
+  },
+  {
+   "file": "tests/dump.mjs",
+   "bytes": 1222,
+   "sha256": "257139ec6a230ebcff3cbed06e77db9ec48dfbc3f3f16e14af9bf379b402c046"
+  },
+  {
+   "file": "tests/engine-check.mjs",
+   "bytes": 13494,
+   "sha256": "d5207b28883b6f6d2e9a2019c92bef387c4118c7ebf3aae61a3d7ed43d1b262f"
+  },
+  {
+   "file": "tests/run.mjs",
+   "bytes": 24416,
+   "sha256": "0248d5b945cd971a2ded5273862f2cc20e3571a09a7a503017b043709c638f36"
+  },
+  {
+   "file": "data/food/manifest.json (database identity)",
+   "bytes": 0,
+   "sha256": "9191a3128ad4c0f8857832b74ffe7bede7e3279b28d70c53d1d462a2ba3a2a1a"
+  }
+ ],
+ "files": [
+  {
+   "file": "ARCHITECTURE.md",
+   "bytes": 10746,
+   "sha256": "06a6b9259dd30fb1edf53f4c7bbcaae02207896a096a43c81e4840d07ace6666"
+  },
+  {
+   "file": "README.md",
+   "bytes": 11081,
+   "sha256": "d7e15ccecba8deed8eb9dab993d831155c3624f8a4b650d486d7cd9da6189685"
+  },
+  {
+   "file": "data/reference/compendium-2024.json",
+   "bytes": 120147,
+   "sha256": "ebab0b8f9e50a39a66b9cdff5d2afb32f830b9a0b17728b7a0ba4ce3972dbf55"
+  },
+  {
+   "file": "docs/data-adapters.md",
+   "bytes": 5237,
+   "sha256": "0ea5847e11a5a8283f09563038a4a9a0d2e6f967261bb8b19a69a90454ccaaf6"
+  },
+  {
+   "file": "docs/interaction-spec.md",
+   "bytes": 7223,
+   "sha256": "05c140b77d5025f384a6996646a663d8529a87cdbc08f3fed146e1ba71248b15"
+  },
+  {
+   "file": "docs/ios-device-test.md",
+   "bytes": 5514,
+   "sha256": "f3c2a266f97938f69dc5e0286f2f0d36412141751ead16fe580b1f4c10097efd"
+  },
+  {
+   "file": "icons/apple-touch-icon.png",
+   "bytes": 1781,
+   "sha256": "e04fb800a755e19d4128563296c7c869b8b7321ffc388d88f2ac43173faf1daf"
+  },
+  {
+   "file": "icons/favicon-16.png",
+   "bytes": 237,
+   "sha256": "ba71f8cbdd3b18ca7666fb64240672eb43f525778ea4894097b9b054de7a73ef"
+  },
+  {
+   "file": "icons/favicon-32.png",
+   "bytes": 358,
+   "sha256": "c9de7a54debb886c84796e5ad17952226cfdf28dc483c51680ccebc79af69ba8"
+  },
+  {
+   "file": "icons/favicon.svg",
+   "bytes": 395,
+   "sha256": "8b29ce157fdfc35aedf10e18ea0407ab8674dd8d561c109269bc2c72f2569983"
+  },
+  {
+   "file": "icons/icon-16.png",
+   "bytes": 237,
+   "sha256": "ba71f8cbdd3b18ca7666fb64240672eb43f525778ea4894097b9b054de7a73ef"
+  },
+  {
+   "file": "icons/icon-192.png",
+   "bytes": 1971,
+   "sha256": "9da5bd15d1d9589a592e870180669f4c1929b064d14b59377d9835bb0fcc1078"
+  },
+  {
+   "file": "icons/icon-32.png",
+   "bytes": 358,
+   "sha256": "c9de7a54debb886c84796e5ad17952226cfdf28dc483c51680ccebc79af69ba8"
+  },
+  {
+   "file": "icons/icon-512.png",
+   "bytes": 5667,
+   "sha256": "bf0b84e167e6a89c7efc2b0f93b980806681582382c96bac2a89617260446960"
+  },
+  {
+   "file": "icons/icon.svg",
+   "bytes": 395,
+   "sha256": "8b29ce157fdfc35aedf10e18ea0407ab8674dd8d561c109269bc2c72f2569983"
+  },
+  {
+   "file": "icons/maskable-512.png",
+   "bytes": 4426,
+   "sha256": "0cc0facc63b9bfa1e67adb6d8956bfe7707fcb58053929ce205b5aeb3bd1840c"
+  },
+  {
+   "file": "index.html",
+   "bytes": 783355,
+   "sha256": "fae9febd7d50fbe66a7e62ea95c9d4ef82ac14fd42b3b9e5ff86b058bc8420b7"
+  },
+  {
+   "file": "manifest.webmanifest",
+   "bytes": 807,
+   "sha256": "d4800695053af785841ae75ac178c1d8be38d14374b5bda3856e9c82f690ca12"
+  },
+  {
+   "file": "sw.js",
+   "bytes": 2095,
+   "sha256": "c87b2bdf72b1ca8f89ee297f547450f3b00336bc3614e4eabeb0670e901bd50d"
+  },
+  {
+   "file": "version.json",
+   "bytes": 830,
+   "sha256": "c2a785dd6b7aebec7da03ee42b3a465143b47a2bccb502810782ecbbbce6ff48"
+  }
+ ],
+ "indexBytes": 783355,
+ "scriptLines": 4769,
+ "note": "SHA256SUMS covers every file listed here plus this manifest; data shards are covered by data/food/SHA256SUMS"
+}
