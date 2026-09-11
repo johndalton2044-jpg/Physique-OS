@@ -1,0 +1,480 @@
+{
+ "build": "af1f31a768",
+ "release": "caf59212021c",
+ "builtAt": "2026-09-11T16:44:43.735Z",
+ "version": "1.0.0",
+ "schema": 2,
+ "inputs": [
+  {
+   "file": "src/00-head.html",
+   "bytes": 44871,
+   "sha256": "bfb043453afdf973f45305e56057b498e0be214e5009a3c01070153ddf09f37b"
+  },
+  {
+   "file": "src/01-body.html",
+   "bytes": 11485,
+   "sha256": "8a4a9b1f5a2c706638fb4ec6aac559fa8b51ffbbc787dcd064102ee26b3c1937"
+  },
+  {
+   "file": "src/10-core.js",
+   "bytes": 15168,
+   "sha256": "9b67e379cecfdb9065e0f11d060dccd05ad15a694872ffae34e57fb86f8836b0"
+  },
+  {
+   "file": "src/20-schema-storage.js",
+   "bytes": 25020,
+   "sha256": "0e034fb922b201a5119a4761afc9d48ceb63817483563b551fe39b5494aa5773"
+  },
+  {
+   "file": "src/22-persistence.js",
+   "bytes": 22553,
+   "sha256": "9889a9e2ef6918cfc4984ca0dac52432c8265e9bb91bad36d9800d8cb4b186b9"
+  },
+  {
+   "file": "src/24-events.js",
+   "bytes": 24779,
+   "sha256": "23d0be1efdebc2d772a5e45354a670e25d8ac22c90db5af77ec4820c1fd1c480"
+  },
+  {
+   "file": "src/26-sync.js",
+   "bytes": 7696,
+   "sha256": "e9487a77bb288f1303a6cc8637831973686bcdf225cfdd379bfa0ec1d2ec6433"
+  },
+  {
+   "file": "src/28-cloud.js",
+   "bytes": 15145,
+   "sha256": "9b8b97294394092c7d3d116ed39701dc5f2e1c7b65a98d0f2cf8c89d2f477ea5"
+  },
+  {
+   "file": "src/30-observations.js",
+   "bytes": 20198,
+   "sha256": "146c1675552de211f1ae1bdf6f4b0b66b60f78f29ad0b6319cd8702b649459fe"
+  },
+  {
+   "file": "src/40-models.js",
+   "bytes": 59220,
+   "sha256": "4665fdbd699ac9880ba9bfe3bcf2117190578c4e4dcc8fa2b70b165b8a46d9cf"
+  },
+  {
+   "file": "src/45-baselines.js",
+   "bytes": 14127,
+   "sha256": "3d1a7ce8fe4e68c1d1b0748e7e3af96026ecf808014b720ca71c98bd07cd2db8"
+  },
+  {
+   "file": "src/50-decision.js",
+   "bytes": 76390,
+   "sha256": "7c9d5ef0f9e1953f49b93bb68d0270a6da521dd5993c4ce192f43f0b5c240d2b"
+  },
+  {
+   "file": "src/52-response.js",
+   "bytes": 17958,
+   "sha256": "a4b06999a3e0aecaec13a0fd7ec700eb84743dd2a4e8fa64fb092e1a3c6fef85"
+  },
+  {
+   "file": "src/54-scenarios.js",
+   "bytes": 15422,
+   "sha256": "88c5559c5d6d6fdeb011963b5e733413e62ae1449ea6912e24ef7c7c638f128b"
+  },
+  {
+   "file": "src/56-knowledge.js",
+   "bytes": 14640,
+   "sha256": "5844733a17cfaf4ae4682aef5fa9ae333632bfb5ee46b9069dbe93bd258a5037"
+  },
+  {
+   "file": "src/58-trace.js",
+   "bytes": 11072,
+   "sha256": "0a5e065aa6fe36c5f5268b4660e012d18ae400527cfe66d98798c027961c458c"
+  },
+  {
+   "file": "src/60-data-foundation.js",
+   "bytes": 83834,
+   "sha256": "23fee4e034639d6cff610f58e76a2990a1acb79c781a1bd71f7dda3329e3510a"
+  },
+  {
+   "file": "src/62-food.js",
+   "bytes": 32857,
+   "sha256": "7f38338241106834d15596f3014802559bdc76113639fd8752a712b261fc1116"
+  },
+  {
+   "file": "src/63-food-ext.js",
+   "bytes": 13411,
+   "sha256": "b531b933e289f3b2888a94170345dcc3996bcdd5e3627b977b58249575efcef2"
+  },
+  {
+   "file": "src/64-exercise.js",
+   "bytes": 12368,
+   "sha256": "8c66876515d7d9631519fd7f4941755140c85b283475a242d4b7d4ab83a424a8"
+  },
+  {
+   "file": "src/65-import.js",
+   "bytes": 20754,
+   "sha256": "ee6f2a1205bce0ae8d525797b47f9958246f516e94ffe6dc84ee89ed7190d3d2"
+  },
+  {
+   "file": "src/66-data-reference.js",
+   "bytes": 21517,
+   "sha256": "f52f472fa835f25c2b447e73d3b79049088b3a209ac5394a8a3be200f482d79e"
+  },
+  {
+   "file": "src/67-program-edit.js",
+   "bytes": 11252,
+   "sha256": "b36003534a049e0020dca0f84f9e0db9d09d7a77b93f1688d13dec6be1ea3ca0"
+  },
+  {
+   "file": "src/68-capture.js",
+   "bytes": 18720,
+   "sha256": "1d9d9a87e513db9cfc23a2f52f298b68115c1ac3f2003c11623775b5acfe47fc"
+  },
+  {
+   "file": "src/70-demo.js",
+   "bytes": 19082,
+   "sha256": "69ffc2faf76cff8c57d6cf25242e6b1f6aa137e05d47685ac5fdeae6bceff172"
+  },
+  {
+   "file": "src/80-ui.js",
+   "bytes": 12585,
+   "sha256": "d5e4dd9b5f6920ab6383fe96b3e7bd4a8823977f19c6b8c3df355d1304181edc"
+  },
+  {
+   "file": "src/82-views-a.js",
+   "bytes": 55253,
+   "sha256": "b9acb2863955d88c57eab3ef76f74695592e9c9c79126caaeeec1d8ad0ac651f"
+  },
+  {
+   "file": "src/83-views-b.js",
+   "bytes": 57388,
+   "sha256": "2c86540a025b03b2fba9206d6337c465d9b5aa6ff14a662e732173e758567002"
+  },
+  {
+   "file": "src/85-log-sheet.js",
+   "bytes": 47298,
+   "sha256": "802caf8be000d6a1905d82134e9443fc34417c2a8a47fd8c3011264b9ebe61a9"
+  },
+  {
+   "file": "src/90-actions.js",
+   "bytes": 131572,
+   "sha256": "241711da6401c951d19e11c1706be6e705aa2f673d8f16a1d55f67d65b2531a9"
+  },
+  {
+   "file": "src/92-scheduler.js",
+   "bytes": 16003,
+   "sha256": "71f6daf6ce4b5743d2ae710d25343a0644bbc34569f798912447497d9d047626"
+  },
+  {
+   "file": "src/94-navigation.js",
+   "bytes": 72215,
+   "sha256": "8a9c0a70675f830e9b4137633735d178643bcb32d4cdca8d8de88eee0a92f438"
+  },
+  {
+   "file": "src/95-selftest.js",
+   "bytes": 90500,
+   "sha256": "002274c5df45e6bb7ba26a0a146ec1db1ed9b0d43676348d98d05d2fd245f1eb"
+  },
+  {
+   "file": "src/96-recall.js",
+   "bytes": 15948,
+   "sha256": "f7e21ddeb6b3304789c4f2aeb7eb38c81f3156c6db17fbd47c709a2686b88847"
+  },
+  {
+   "file": "src/99-boot.js",
+   "bytes": 5646,
+   "sha256": "d69dbe06b4bac3502e290882518fa735c269ed2917ce9c24af77a0b4e315fcc7"
+  },
+  {
+   "file": "build.mjs",
+   "bytes": 23533,
+   "sha256": "1cff4292b29f85645d76b1c5c27c0f71aafea872562728546e3f291b70be787b"
+  },
+  {
+   "file": "package.json",
+   "bytes": 1634,
+   "sha256": "97c0a6c6e5b5e0820313f977433ca98172e4accf2111e3e66050c66ba314845f"
+  },
+  {
+   "file": "scripts/ah102-extract.mjs",
+   "bytes": 10591,
+   "sha256": "0f1aedeac7c8bac476bd9d2ebaf6fe490c4782214fda5c77fb43391ad7aef72d"
+  },
+  {
+   "file": "scripts/ah102-geometry.mjs",
+   "bytes": 10883,
+   "sha256": "df000fe9001576e28a3cfa330724aa381a0fed43f155d6bd13ffd7cf7c5ee250"
+  },
+  {
+   "file": "scripts/dsld-build.mjs",
+   "bytes": 6685,
+   "sha256": "1a4c050d2546908a521ae16b3367d40605922cbd53401258d5f7eed347828084"
+  },
+  {
+   "file": "scripts/fndds-build.mjs",
+   "bytes": 7651,
+   "sha256": "56e834fddadffc286511f87b4550d0c583c8c0dceff7126f25ea2fd3800a7817"
+  },
+  {
+   "file": "scripts/food-build.mjs",
+   "bytes": 12019,
+   "sha256": "160a879305c6aff7941e0571992360b9869d5acacdfd0a3e39c62fe0fc8a855e"
+  },
+  {
+   "file": "scripts/food-stats.mjs",
+   "bytes": 1755,
+   "sha256": "2607b106241eaf6ac3f2b10f77fb096916c60222172cf24d2482f0686f52e08d"
+  },
+  {
+   "file": "scripts/icons.mjs",
+   "bytes": 6246,
+   "sha256": "57342bd75a356c5cd6aff21f55f0e65f2d26155f2418e2e9706c0d721f19dacd"
+  },
+  {
+   "file": "scripts/reference-build.mjs",
+   "bytes": 6520,
+   "sha256": "9389177448ddf826e5fb2118d4ee584a0d66f66e76367079d5614fa403a7fd38"
+  },
+  {
+   "file": "scripts/run-stats.sh",
+   "bytes": 241,
+   "sha256": "d560f820240a527c5925688007ad67a0c41cca189bd5b0e7bf201ba8422e8f0f"
+  },
+  {
+   "file": "scripts/serve.mjs",
+   "bytes": 2277,
+   "sha256": "e40bc6ca642db00b45f0ce821af1f3e228d563365653d62dce945d3266a1bc42"
+  },
+  {
+   "file": "scripts/verify-dist.mjs",
+   "bytes": 5512,
+   "sha256": "5851d45bb291cb0d9e4f9d9f33574bdd43eec42a99a895ed23853a499dc50798"
+  },
+  {
+   "file": "data/reference/compendium-2024.json",
+   "bytes": 120147,
+   "sha256": "ebab0b8f9e50a39a66b9cdff5d2afb32f830b9a0b17728b7a0ba4ce3972dbf55"
+  },
+  {
+   "file": "tests/adversarial.mjs",
+   "bytes": 13434,
+   "sha256": "b38295f5b87684b7ce21a3a0774fc5f2cb165eadca418d75879c5661ee9232ee"
+  },
+  {
+   "file": "tests/audit.mjs",
+   "bytes": 16635,
+   "sha256": "c7bb0563d6eed66b17f9d0852b06aa96446de9882fd851a9af6d5f88d983584e"
+  },
+  {
+   "file": "tests/cloud-e2e.mjs",
+   "bytes": 5571,
+   "sha256": "73b521ac271209f1044a8c018c1580616ca0ba3c3824cbf91d9f80a078375527"
+  },
+  {
+   "file": "tests/debug1.mjs",
+   "bytes": 2121,
+   "sha256": "6d4cd04270b30aef2dadcf48d268642accd6a8f1b99504f29dd216879fd8760a"
+  },
+  {
+   "file": "tests/dump-empty.mjs",
+   "bytes": 1141,
+   "sha256": "d4271c6fc7140c27e8a38d477bb4c395e4bd1ae25d737008e4fa63147dd01834"
+  },
+  {
+   "file": "tests/dump.mjs",
+   "bytes": 1222,
+   "sha256": "257139ec6a230ebcff3cbed06e77db9ec48dfbc3f3f16e14af9bf379b402c046"
+  },
+  {
+   "file": "tests/engine-check.mjs",
+   "bytes": 13494,
+   "sha256": "d5207b28883b6f6d2e9a2019c92bef387c4118c7ebf3aae61a3d7ed43d1b262f"
+  },
+  {
+   "file": "tests/perf.mjs",
+   "bytes": 9323,
+   "sha256": "7fa352ef8aad91251cf42c0ebdbedce4d238b16a6d3ae60fe6bdcde2c0befd3e"
+  },
+  {
+   "file": "tests/run.mjs",
+   "bytes": 66061,
+   "sha256": "2cb115ee214e25f41c84cc38544497ed8aff4385630e816e32b873d60b8e0770"
+  },
+  {
+   "file": "data/food/manifest.json (database identity)",
+   "bytes": 0,
+   "sha256": "9191a3128ad4c0f8857832b74ffe7bede7e3279b28d70c53d1d462a2ba3a2a1a"
+  }
+ ],
+ "files": [
+  {
+   "file": "ARCHITECTURE.md",
+   "bytes": 10746,
+   "sha256": "06a6b9259dd30fb1edf53f4c7bbcaae02207896a096a43c81e4840d07ace6666"
+  },
+  {
+   "file": "README.md",
+   "bytes": 22708,
+   "sha256": "99a6940077f22fedb120600ee6be968c2571b1968f625acc3c460921529c0789"
+  },
+  {
+   "file": "data/reference/SHA256SUMS",
+   "bytes": 78,
+   "sha256": "ecd208cb28bd761f5186641d5a61a5d9568210ae491aeb3337f74ee665836665"
+  },
+  {
+   "file": "data/reference/compendium-2024.json",
+   "bytes": 120147,
+   "sha256": "ebab0b8f9e50a39a66b9cdff5d2afb32f830b9a0b17728b7a0ba4ce3972dbf55"
+  },
+  {
+   "file": "data/reference/yields.json",
+   "bytes": 105631,
+   "sha256": "6d5d16027feed3fda7c2396b5a61c87a9cde9ffdf1731d6a972a4da564f16ef3"
+  },
+  {
+   "file": "docs/architecture-roadmap.md",
+   "bytes": 21785,
+   "sha256": "f05fa9603f97648e2b0a6c9f34cbb18d365e73cedd11ba744b9f1fb1359f955a"
+  },
+  {
+   "file": "docs/data-adapters.md",
+   "bytes": 5237,
+   "sha256": "0ea5847e11a5a8283f09563038a4a9a0d2e6f967261bb8b19a69a90454ccaaf6"
+  },
+  {
+   "file": "docs/deployment.md",
+   "bytes": 5359,
+   "sha256": "cddc3d142d2e5bb50f95d3d853dddcee7a7162ce356f55764f1cf903bbefd1a2"
+  },
+  {
+   "file": "docs/interaction-spec.md",
+   "bytes": 22946,
+   "sha256": "1fe59a788f68593d9e9445bbff1f3d603502a49fa1d88ea0faa9e01fba1f639d"
+  },
+  {
+   "file": "docs/ios-device-test.md",
+   "bytes": 5514,
+   "sha256": "f3c2a266f97938f69dc5e0286f2f0d36412141751ead16fe580b1f4c10097efd"
+  },
+  {
+   "file": "docs/server-operations.md",
+   "bytes": 5143,
+   "sha256": "3d6403048aba0ecd2351657d2207ddffe150ad81a28ae72ef82567009422d184"
+  },
+  {
+   "file": "icons/apple-touch-icon.png",
+   "bytes": 2354,
+   "sha256": "4fdf17748dedf665a25cecaa93efe42adabafc2ee92bdde657b54078f2f2755e"
+  },
+  {
+   "file": "icons/favicon-16.png",
+   "bytes": 272,
+   "sha256": "039a9ae97a3989e323f929dca62aa62dbf4e07ab5141d84749a120a756cb900b"
+  },
+  {
+   "file": "icons/favicon-32.png",
+   "bytes": 452,
+   "sha256": "0c6881cb09efa461212bcbd281652007758925ad338c9832d3ebf59e3036aa4e"
+  },
+  {
+   "file": "icons/favicon.svg",
+   "bytes": 395,
+   "sha256": "8b29ce157fdfc35aedf10e18ea0407ab8674dd8d561c109269bc2c72f2569983"
+  },
+  {
+   "file": "icons/icon-16.png",
+   "bytes": 272,
+   "sha256": "039a9ae97a3989e323f929dca62aa62dbf4e07ab5141d84749a120a756cb900b"
+  },
+  {
+   "file": "icons/icon-192.png",
+   "bytes": 2525,
+   "sha256": "bcf1d38e74108633787bced00421911e61f3a2c483681f9499976fa497d2b3e7"
+  },
+  {
+   "file": "icons/icon-32.png",
+   "bytes": 452,
+   "sha256": "0c6881cb09efa461212bcbd281652007758925ad338c9832d3ebf59e3036aa4e"
+  },
+  {
+   "file": "icons/icon-512.png",
+   "bytes": 7007,
+   "sha256": "a2caeeb557e0610fbca583019ca1cfaed554fd1c0423548467bec262a8a1ff48"
+  },
+  {
+   "file": "icons/icon.svg",
+   "bytes": 395,
+   "sha256": "8b29ce157fdfc35aedf10e18ea0407ab8674dd8d561c109269bc2c72f2569983"
+  },
+  {
+   "file": "icons/maskable-512.png",
+   "bytes": 5096,
+   "sha256": "ceaec3d8debd2feaf8b91c813a3239cf9bd88ca7c3bcc22a78047614cb8fbdf1"
+  },
+  {
+   "file": "index.html",
+   "bytes": 1135944,
+   "sha256": "0305f6ae798750f9fdcd5cea8071234729f3a56c62c9c188996cb42dfcd73271"
+  },
+  {
+   "file": "manifest.webmanifest",
+   "bytes": 807,
+   "sha256": "d4800695053af785841ae75ac178c1d8be38d14374b5bda3856e9c82f690ca12"
+  },
+  {
+   "file": "sw.js",
+   "bytes": 3515,
+   "sha256": "40a0f0ffdede38a8c92dc5a84b457ca91c8b954d6fe39d9283f13ba4e5e526c1"
+  },
+  {
+   "file": "version.json",
+   "bytes": 1042,
+   "sha256": "762740e47a25f0380c75e2b5fd332a2ef405d57523ce7d2cd821068933843056"
+  }
+ ],
+ "indexBytes": 1135944,
+ "scriptLines": 9720,
+ "components": {
+  "client": [
+   "ARCHITECTURE.md",
+   "README.md",
+   "data/reference/SHA256SUMS",
+   "data/reference/compendium-2024.json",
+   "data/reference/yields.json",
+   "docs/architecture-roadmap.md",
+   "docs/data-adapters.md",
+   "docs/deployment.md",
+   "docs/interaction-spec.md",
+   "docs/ios-device-test.md",
+   "docs/server-operations.md",
+   "icons/apple-touch-icon.png",
+   "icons/favicon-16.png",
+   "icons/favicon-32.png",
+   "icons/favicon.svg",
+   "icons/icon-16.png",
+   "icons/icon-192.png",
+   "icons/icon-32.png",
+   "icons/icon-512.png",
+   "icons/icon.svg",
+   "icons/maskable-512.png",
+   "index.html",
+   "manifest.webmanifest",
+   "sw.js",
+   "version.json"
+  ],
+  "food": {
+   "path": "data/food/",
+   "checksums": "data/food/SHA256SUMS",
+   "shards": 1109
+  },
+  "reference": {
+   "path": "data/reference/",
+   "checksums": "data/reference/SHA256SUMS",
+   "tables": [
+    "compendium-2024.json",
+    "yields.json"
+   ]
+  },
+  "server": {
+   "included": false,
+   "where": "server/server.mjs in the repository archive, not in this client distribution"
+  }
+ },
+ "note": "SHA256SUMS lists only hash and path, so sha256sum -c works directly. It covers every client file plus this manifest; data shards carry their own checksum files, named under components."
+}
