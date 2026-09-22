@@ -117,7 +117,7 @@ degrades to a non-cryptographic digest and **says so** rather than implying a gu
 ### Event sourcing (§48, §49, §163) — implemented
 
 Previously deferred as "a rewrite of every mutator". It was, and it is done. Every mutation primitive now
-emits an event describing what happened rather than what the record became: 28 event types across
+emits an event describing what happened rather than what the record became: 41 event types (40 active, 1 deprecated) across
 observations, sessions, food, phases, programs, decisions, interventions, predictions, experiments,
 negatives, snapshots and profile.
 
@@ -284,7 +284,7 @@ That single change took acceptance from 5% to 83%. On the eight pages where the 
 wrong values, seven of eight rows with independently known truth now match exactly (items 363, 423, 448, 430,
 431, 432, 433). Every shipped row is confirmed by its own loss column summing to 100.
 
-**542 verified yield factors now ship** in `dist/data/reference/yields.json`, covering pages 20–72, reachable
+**537 verified yield factors now ship** in `dist/data/reference/yields.json`, covering pages 20–72, reachable
 from Log → Raw to cooked, and used by `applyYield()`. Where two page ranges disagreed on an item, the item was
 dropped rather than a winner picked.
 
@@ -299,6 +299,1677 @@ person to choose between rather than picking one. And on pages carrying two comp
 human reading the header would — item 326 comes out as 72% where the lean-meat column reads 70%. Both are
 real figures from that row; which one is wanted depends on the cut. The item number and page are recorded so
 the handbook can settle it.
+
+### The loop is now domain-general (expansion catalogue A–Z)
+
+A later catalogue proposed twenty-six engines — sleep, recovery, cardio, injury, cost, inventory, schedule,
+meal planning, and so on. Building twenty-six of anything by hand produces twenty-six slightly different
+conventions, and the catalogue's own closing argument says why that is the wrong move:
+
+> The domain currently surrounding that loop is primarily physique. **But the loop itself is domain-general.**
+
+So what was built is the **domain registry**, not another engine beside the loop. A domain declares what it
+observes, what state it computes, what it concludes, what it would advise, and what it cannot answer yet. The
+loop runs it. Adding cardio, cost or inventory now costs a declaration rather than a subsystem, and each one
+inherits — without asking — the epistemic classes, uncertainty discipline, temporal replay, knowledge decay,
+attention queue and value-of-information ranking that already exist.
+
+Two rules are enforced rather than documented:
+
+* **A domain cannot write.** It returns findings and proposals; the existing mutation primitives and the user
+  decide. The contract test fails a domain that declares a mutation hook, and the gate asserts that running
+  the whole loop leaves the record and the event log untouched. This is the catalogue's own rule ("do not
+  allow arbitrary direct mutation", "AI should produce a proposal, then a registered action") applied to
+  every domain including the ones I wrote.
+* **A domain that observes a type which does not exist fails registration**, loudly. That is the failure
+  mode hardest to notice otherwise: a domain that silently never fires.
+
+**Ten domains now run on it** — injury, recovery, sleep, activity, cardio, composition, equipment,
+schedule, cost and supplies — and eight of them fit in a single file, because none re-implements
+uncertainty, replay, knowledge decay, the attention queue or value-of-information ranking. That ratio is the
+whole argument for building the registry before the engines.
+
+Priorities encode judgement rather than taste: injury runs at 10, recovery at 20, optimisation-type domains
+at 40–80. Pain outranks rate.
+
+Two domains prove the contract, chosen because the catalogue calls them out specifically:
+
+**Sleep (E)** stops being an observation and becomes a model: debt against *your own* target or average
+rather than a population figure, consistency as distinct from mean, and a lagged within-person analysis of
+short nights against long nights. On the demo record it finds next-day fatigue running about a point higher
+after short nights across 41 paired days (d≈0.7). It reports that as a **correlation and says why** —
+nobody randomises their own sleep, and a short night and a hard day often share a cause. A window with no
+variation in sleep is refused rather than fitted.
+
+**Injury and load (J)**, which the catalogue calls "a major missing domain", records where and how much, then
+matches it against the movements in your plan through the patterns the exercise ontology already declares,
+counts loading exposure from your own session log, and proposes substitutions that avoid the region. It runs
+at a higher priority than optimisation, because pain outranks rate. It **will not name a condition**, grade a
+severity medically, or estimate a healing time — the gate asserts no clinical condition name appears
+anywhere in its output. The one thing it says about the world beyond the record is that six weeks of pain is
+long enough to be looked at by somebody qualified.
+
+### What the further domains each refuse to do
+
+The pattern that matters is not what they compute, it is what they decline to claim:
+
+* **Recovery** judges against your own middle for each signal, because a 6 out of 10 means nothing until the
+  system knows what your 6 usually is.
+* **Activity** reports volume, consistency and drift, and says plainly that steps cannot distinguish useful
+  activity from restless activity. The finding worth having is the one it can support: activity quietly
+  falling while the deficit runs.
+* **Cardio** states that the record holds no heart rate or pace, so nothing it says describes intensity. Where
+  volume is high and strength is falling it calls the timing *consistent with* interference — and with
+  several other things.
+* **Composition** reports the offset between two measurement methods on overlapping dates, which is the
+  difference between "I gained fat" and "I changed calipers". It will not mix methods.
+* **Cost** reports its own coverage and refuses to extrapolate: a daily figure from a fifth of your food is a
+  guess with a decimal point on it.
+* **Equipment** translates the profile's setting into the ontology's vocabulary, and where it cannot,
+  reports **unknown rather than absent**. This one was a real bug first: comparing the stored setting
+  ("commercial gym") against implement names ("barbell") declared 26 movements impossible in a fully
+  equipped gym. Claiming you lack equipment you never said you lacked is worse than saying nothing.
+* **Schedule** reports planned days and actual days separately rather than averaging them, because adherence
+  measured against a schedule that never fitted describes the schedule.
+* **Supplies** forecasts depletion from the rate you have actually been consuming, and says that this is only
+  as good as the logging behind it.
+
+### Generation (B1, B2, C1, C3, C4, T)
+
+Five generators, all of which **propose and never write**. A generated plan or meal day is a candidate the
+user accepts through the ordinary registered action.
+
+The discipline they share: a generator that always returns something is useless, because it cannot tell you
+when your constraints are impossible. Seven training days on bodyweight alone returns **impossible** with the
+reason, rather than a plan you cannot perform.
+
+* **Program generation** builds candidate weeks from the days you actually train (taken from the session log,
+  not from intention), the equipment you have, and the movements a sore region rules out. Candidates are
+  scored on movement coverage and weekly sets, and the score is shown — a plan you cannot audit is a plan
+  you have to trust.
+* **Adaptive progression** judges each lift against **its own noise floor**. A slope smaller than the
+  week-to-week noise of that lift is not a trend, and progressing into it is how people accumulate fatigue
+  and call it training. Two global brakes — depressed readiness, or a plan being completed under 60% of the
+  time — hold everything, because progressing into a depressed baseline measures the baseline.
+* **Meal planning** builds days against the phase targets from foods already in your list, weighted towards
+  what you actually eat, because familiarity predicts adherence better than macros do.
+* **Grocery generation** aggregates a chosen day across a week, reports how much of it is priced, and states
+  that the quantities assume perfect adherence — an upper bound.
+* **Plan search** explores 74 combinations of calorie, step and cardio changes and returns the **Pareto
+  frontier**: every plan where nothing else is better on both expected outcome and burden. It returns a
+  frontier rather than a winner because weighting outcome against burden is the user's trade, not the
+  system's. Plans outside the rate band are excluded rather than listed with a warning — putting something
+  on a recommended list and then warning about it invites choosing it.
+
+Three real bugs surfaced here, all found by reading the output rather than the code: progression silently
+produced no reasons at all (the rows carry a slope and a noise floor, not a `direction`, so every branch fell
+through); the meal planner returned **352 g of protein against a 195 g target and called it a hit**, because
+each portion was sized to a fixed maximum rather than to the remaining need; and the calorie fill drew from
+the same protein-ranked list, so it either overshot protein or left 1,400 kcal unfilled.
+
+### Knowledge graph, causal grading, experiment library and discovery (A1, A4, W, X)
+
+**The graph (A1)** makes explicit what the record already contained implicitly. Every edge is derived from
+something recorded — an experiment naming a variable, an intervention sharing a date with a decision —
+never because two things look related. The result is walkable in reverse:
+
+```
+what it learned   steps: supported
+  outcome         supported
+  experiment      Add steps, hold calories
+  observation     20 body weight readings during it
+  intervention    steps 7500 → 9500
+  decision        Add steps, hold calories
+  findings        trend, waist, intake coverage, step average
+```
+
+**Causal grading (A4)** answers the catalogue's demand that this must not be "AI says X causes Y". It grades
+what the record can support — contradicted, unknown, confounded, correlated, weakly supported, supported —
+and the **ceiling is "supported", never "proven"**: nothing in a personal record is randomised, so a
+repeated, clean, unconfounded response is the most that can honestly be claimed. A variable never changed on
+its own reads *unknown* rather than being scored from correlation.
+
+**The experiment library (W)** carries the things people forget: a washout, the confounders to avoid, and a
+reversal condition. A template is explicitly *not a protocol* until its duration is computed from this
+person's own measurement noise.
+
+**Discovery (X)** finds the questions worth asking rather than evaluating the ones already started, ranked by
+what each would resolve against what it costs. The highest-value question is usually where the record is
+**confounded** rather than where it is silent — a confound can be designed away.
+
+Four bugs surfaced here, all from reading output: the graph declared an `observation` node kind it never
+populated, because an experiment's `metric` is a human label ("weight trend (lb/week)") and was being passed
+to `obsOf()` where it matched nothing; discovery led with questions that could not be run; a design with no
+effect estimate fabricated a minimum detectable difference of zero and then declared the experiment "not
+worth running", blaming the experiment for a gap in the system's own knowledge; and a non-runnable question
+was listed with no reason because the blocker read a field that insufficient designs do not have.
+
+### The Movement Engine
+
+The specification for this was emphatic about the architecture, and correct:
+
+> I would NOT make these six separate engines... That would fragment the architecture. Instead: one
+> underlying Movement Engine with specialised domains.
+
+So there is no stretching engine, yoga engine or warm-up engine. There is **one ontology in which a movement
+has roles**, and the same physical movement carries different roles depending on why it is being done. A leg
+swing is preparation before a squat session and mobility work on a rest day; the movement is identical and
+the meaning is not. Fourteen roles across four phases — prepare, perform, recover, adapt.
+
+**Dose is not one number.** Thirty minutes of restorative yoga and thirty minutes of hard calisthenics are
+both half an hour and nothing else about them is alike, so every record carries five separate dimensions —
+stimulus, fatigue, mobility, skill, cardiovascular — which are **never summed**. Collapsing them is exactly
+what makes the two look interchangeable.
+
+**Preparation is derived, not prescribed.** It reads the session about to be performed, what is sore, and how
+you have been feeling, and every block states why it is there. On an ordinary day it is three blocks and nine
+minutes; with a sore shoulder and readiness two standard deviations down it becomes thirteen minutes, adds
+activation for the sore region, and the ramp goes from four steps to six at lower jumps. When nothing warrants
+more, it says so — a warm-up that is the same every day is a ritual rather than preparation.
+
+**Observation is not diagnosis.** The engine records that a measurement fell. It will not conclude that a
+structure is deficient, and the gate asserts that no diagnostic vocabulary appears in its output. The
+assess → intervene → reassess loop reports a change **alongside the work recorded between**, and where no
+work was recorded it says the change is not evidence that anything worked.
+
+**Progressions are graphs with a stated limiter**, because the useful question is not "what is next" but
+"what is holding me here" — and strength and practice are reported separately rather than merged.
+
+### A serious bug this uncovered
+
+Testing backdated movement records exposed a flaw in the event architecture itself. A snapshot fold
+**replaces** the document, so an event stamped earlier than a snapshot was discarded by it. Logging
+yesterday's weigh-in produces an event stamped yesterday; a demo load, restore or compaction snapshot taken
+today then wiped it. **Backdated entries were silently vanishing from the projection**, and the app supports
+backdating everywhere.
+
+Snapshots are now barriers: an event emitted after one is folded after it whatever its own timestamp says,
+while replay continues to use the entry's own knowledge date. Timestamp ordering is untouched elsewhere, so
+cross-device merge is unaffected.
+
+Two smaller ones in the same pass: readiness read a `median` field that `personalBaselines` does not expose,
+so every z-score was null — and a null score was still being labelled "about your normal", a confident
+statement assembled from nothing.
+
+### The assistant layer (P, Q, R)
+
+The catalogue draws the boundary and it is the right one: *the deterministic engine computes, the AI
+explains, mutations go through registered actions.* Three things were built and a fourth deliberately was
+not.
+
+**Q — questions answered from the record.** No model is involved. "What is my trend", "what is my
+maintenance", "does steps work", "what should I test next" all return a value with the same epistemic class,
+basis and trace as anything else in the app. An unanswerable question says what it would need; an unmatched
+one offers what *can* be answered rather than improvising. This is most of what people actually want from
+asking their data a question.
+
+**P — a context packet and a contract.** The packet is bounded and honest about what it withholds: no
+identifiers, no free-text notes, no food names unless explicitly requested, with the redactions listed. The
+contract states what a model may do (explain a figure already present, point at an offered action, say it
+does not know) and may not (compute a number, state a figure not in the context, assert causation beyond the
+grade the record supports, give medical advice, write to the record).
+
+**The validator is what makes attaching a model defensible.** Every reply is checked against the packet
+before display: a figure that is not in the context is **rejected rather than corrected**, because a
+plausible wrong number is worse than no answer. A lying adapter was tested — it claimed a maintenance of
+9,999 kcal and that something was "proven" — and was discarded in favour of the deterministic answer.
+
+**R — evidence linking** against the citation registry already shipped, including the part usually left out:
+which general claims have nothing behind them. Claims about your own record need no citation and are not
+asked for one.
+
+**No model is wired in, and nothing pretends one is.** An adapter can be registered; until one is, the app
+answers from the record or says it cannot.
+
+Three bugs from this pass, each the same shape as ones found earlier: the clinical guard used `tendin\b`,
+which does not match "tendinitis" — the exact word it existed to catch; the maintenance answer called a
+different function than the interface, so the same person could get two different figures on the same day;
+and the packet offered 41 "actions" that were palette closures rather than registered actions, so a model
+could have proposed something the app cannot dispatch.
+
+### The reconstruction boundary
+
+An external review found the sharpest remaining temporal defect, and its framing was exactly right: *a
+snapshot should establish a boundary, not manufacture knowledge before it.*
+
+`record.snapshot` is written when a record is **adopted** — restored, imported, demo-loaded, or migrated
+from a version with no event log. It is a baseline rather than a change, so the projection folds it whatever
+the replay date. For observations that is harmless: each carries its own date and `createdAt`. For the
+**profile** it is not, because a profile has no effective date per field. A record adopted in September
+therefore made September's height and age appear to have been known in February — and height feeds BMR feeds
+maintenance feeds the calorie target feeds the decision.
+
+The previous fallback made this worse by design. `profileAsOf()` ended with "if the projection yields nothing,
+return the current profile", and the comment beside it argued that a slightly stale profile beat an empty
+one. That was wrong: an empty profile makes `bmrPrior()` report insufficient, which is true, while a stale
+one produces a confident historical energy figure that is false.
+
+Now:
+
+* `recordBaseline()` reports the date a record entered the event history, and whether it was adopted.
+* Before that date the profile resolves to **unavailable**, so every model downstream reports insufficient
+  rather than a fabricated number.
+* Observations before the baseline stay visible — only state that cannot be reconstructed is withheld.
+* The replay banner says so plainly, naming the date and the reason.
+* A record whose log genuinely covers earlier ground is **not** restricted; the baseline moves back to the
+  first real event.
+
+The demo needed a change rather than an exemption: it now seeds a `profile.changed` event on its first day,
+so it is a record that *grew* rather than one adopted today, and its replay works throughout.
+
+**Auxiliary state joined the same rule.** Photos, skills and inventory were read from current settings, so a
+photo added today appeared in last month's replay and an item removed today vanished from it. All three take
+an as-of date now. One subtlety worth recording: the skills accessor had an early return guarded by
+`on >= todayISO()`, and `todayISO()` is itself as-of aware — inside a replay it equals `on`, so the shortcut
+returned today's states every time.
+
+### Quick Log is transactional
+
+Fields were written straight through `addObservation`, which pushes to the record **and** emits an event. A
+later field failing validation rolled the record back with a splice and left the events behind, so the live
+record and the projection disagreed inside the session, and persisting the log could resurrect an entry the
+user had abandoned. Fields are staged now and nothing is written until every one has passed.
+
+### The yield table satisfies its own check
+
+Five of the 542 shipped factors failed the `yield + loss ≈ 100` test that every row's own `verification`
+field asserts — the original cross-check tolerance was looser than the claim printed beside each row.
+
+They were **dropped rather than repaired**. Repairing means choosing which of the two numbers to believe, and
+only the source images can settle that. The app already refuses to invent a yield of 1.0 for a missing item;
+shipping a row that fails its own stated check is the same error wearing a number. 537 factors ship, the gate
+runs in `npm run check`, and coverage now describes what shipped (33 distinct pages spanning 20–70) rather
+than the span that was read.
+
+Documented counts are audited against the build, because both the roadmap and the external review had the
+event-type count wrong, in different directions.
+
+### The model contract is a typed graph
+
+The last open finding from the external review: contract validation matched **vocabulary**, not wiring. A
+consumer passed if its string merely contained one of a handful of words — "view", "profile", "trend",
+"training" — so a model could name a consumer that does not exist and still be declared contract-clean.
+
+Every declared input and consumer now has to resolve to a concrete node: another model, a declared
+observation type, a real view, a function that genuinely exists, a named profile field, a known record
+collection, or a known session field. 80 nodes, 184 edges, nothing unresolved, no orphan models.
+
+Declarations carry both halves in one string — `today|Today vitals` — so the prose people read cannot drift
+away from the reference the machine checks. A parallel documentation field would have drifted.
+
+Migrating 25 models surfaced 94 references that resolved to nothing, and one instructive self-inflicted bug:
+the bulk rewrite that mapped prose to references also rewrote the **vocabulary lists themselves**, so
+`PROFILE_FIELDS` briefly contained `'profile.age|age'` and every profile reference failed. A validator whose
+own vocabulary has been corrupted reports confident, uniform failure — which looks exactly like a real
+finding.
+
+### Resistance depth (continued-work catalogue §3)
+
+The catalogue names its own rule — *do not build each item as an isolated feature* — and its own ordering,
+which puts Resistance Depth first. So §3.1–§3.12 are one ontology with models layered on it, not twelve
+features.
+
+The honesty problem specific to this domain decides how much of it can be believed, and it is stated in the
+module rather than buried: **almost every quantity here derives from three numbers a person typed** — load,
+reps, and a subjective effort rating. Estimated 1RM is a population formula. "Effective sets" is a modelling
+convention whose evidence base is contested. Fatigue is an accounting scheme, not a biopsy. Each carries the
+class that reflects that, and none is dressed as MEASURED.
+
+* **Biomechanics** (§3.2) come from the movement pattern, overridden per exercise where the exercise really
+  differs, with the implement overriding the curve where it should — a band makes a lengthened-biased
+  pattern shortened-biased. Override keys are validated against the ontology at load, because an override
+  that silently never matches is worse than none: it reads as covered.
+* **The resistance curve** (§3.3) says where a lift is hardest and *where that claim came from*. Curve
+  coverage reports when a muscle is only ever trained shortened — reported as an imbalance, not a
+  prescription, because the evidence for lengthened-biased work is suggestive rather than settled.
+* **The set ontology** (§3.4) is what makes volume mean anything: twenty kinds, each declaring whether it
+  counts toward volume and what it costs. A warm-up single tallied as a working set is how weekly totals
+  become fiction.
+* **Effort** (§3.5) treats RPE and RIR as one axis and widens the interval as reps-in-reserve rise, because
+  people are good at telling 0 from 2 and poor at telling 4 from 6.
+* **Strength** (§3.8) inverts rep maxes from e1RM and **refuses above fifteen reps**, where the formula
+  stops meaning anything. Fixed-path implements are reported as not comparable to free weights.
+* **Effective sets** (§3.9) shows raw counts beside the weighted ones so the weighting can be disagreed
+  with, and reports how many sets had no recorded kind or effort.
+* **Progression** (§3.12) names the scheme it used and why, and a depressed readiness holds everything.
+
+**The ontology needed capture or it would be decoration.** Every set row now carries a set-kind selector, and
+the save path carries kind, ROM and tempo through — the first attempt recorded the kind in the edit buffer
+and dropped it on save, so the control worked and changed nothing.
+
+### Mobility, flexibility and practice depth (catalogue §5–§9)
+
+Built as depth underneath the existing movement engine rather than beside it — the roles, phases and
+five-dimension dose already existed. Two distinctions from the catalogue change what can honestly be claimed:
+
+**Flexibility is not mobility.** Passive range is what a joint permits when something else moves it; active
+range is what you can produce yourself. The gap between them is the useful number, because it says which
+lever applies: a large gap is strength at length, not tightness. They are reported separately and never
+averaged, and an unmeasured joint reads as **unknown rather than fine**.
+
+**A pose is not a stretch.** A yoga sequence carries strength, balance and skill demands as well as range, so
+a sequence answers "what did this actually train" across four demands and carries the same five-dimension
+dose as anything else. A strength-oriented flow reads as strength work, not as stretching.
+
+Eleven joints, seven mobility dimensions, eleven stretch kinds each with a starting dose and a stated effect,
+ten poses with sanskrit aliases, and three sequences. Ballistic stretching is **discouraged rather than
+merely listed**. Anything whose guidance is not plainly "appropriate" before lifting is warned about — the
+first implementation matched a few phrases and let "better after" pass as fine, which is the opposite of what
+it says.
+
+Flexibility response pairs measured range change with recorded exposure, and where no exposure was recorded
+it says the change is not evidence that anything worked.
+
+### Skill graph and session composition (catalogue §4, §12, §14)
+
+**The limiter is the point of a skill graph.** "Next: handstand" is not actionable; "you are strong enough
+for this pattern but have never measured the mobility it needs" is. Eleven families now, each step declaring
+demands across strength, balance, mobility and technique, and each axis reporting the evidence behind it or
+saying there is none. The axis with a real demand and nothing behind it is named — and the engine states
+that naming it is **not the same as proving it is the cause**. Depressed readiness vetoes a skill attempt
+outright rather than joining the ranking, because a skill attempted tired teaches the compensation.
+
+**Composition is about what to leave out.** Ten block types, and the generator decides which belong today:
+assessment only when something is genuinely due, skill only before fatigue, conditioning only when the week's
+cardiovascular exposure is low and readiness allows, practice never on a lifting day because it competes with
+recovery from it. Every excluded block is listed with its reason.
+
+It also **fits its own budget**. The first version reported "65 minutes of a 60-minute session", which is not
+a composition — it is a list with the arithmetic left to the reader. Optional blocks are now dropped in
+reverse priority, each removal recorded with what it cost, and the session and its preparation are never
+dropped.
+
+**Movement quality observes without diagnosing** (§14): it records that range was reduced and refuses to say
+whether a joint, a muscle or a decision caused it.
+
+One bug worth recording: widening the progressions sheet to all eleven families made `progressionStatus()`
+return null for the seven it had never heard of, because it read only its own four. The fix was at the source
+rather than in the caller.
+
+### Conditioning, cardio and interference (catalogue §16–§18)
+
+**Conditioning and cardio are different questions.** Cardio asks how much aerobic work was done; conditioning
+asks what you can repeat and how fast you recover between efforts. Separated because they progress
+differently — work capacity is a property you build, aerobic minutes are a dose you accumulate — and
+because conflating them hides the one that matters for training.
+
+**A session with no heart rate, pace or effort rating cannot be placed in a zone**, and the engine says so
+rather than inferring intensity from duration. It also reports how much of the record has no intensity at
+all: on the demo, eleven of eleven sessions, so any claim about intensity distribution would be invented.
+
+§18 is the one with teeth, and the catalogue's instruction decides it: *use personal evidence rather than
+generic assumptions.* The interference effect is real in the literature and routinely overstated in practice.
+An app announcing "your cardio is killing your gains" from a textbook would be doing the opposite of what
+this system is for. So it compares **your own higher-cardio weeks against your own lower-cardio weeks**,
+names the confounds (a deficit suppresses strength independently of cardio), and reports "no detectable
+difference" as the absence of an effect large enough for your record to see — **not as proof there is none**.
+Where the answer is confounded it says what would settle it.
+
+Timing is checked before anything is recommended, because moving cardio off lifting days is the cheapest
+thing to try and is often the whole answer.
+
+One modelling bug worth recording: the first version averaged estimated one-rep maxima **across different
+lifts**, so a week containing more squats read as a stronger week and the resulting "effect" measured the
+schedule rather than the person. It reported +54 lb; comparing within a single lift gives +12. Averaging a
+squat max and a bench max into one number is not a smaller error than the effect being measured.
+
+### Nutrition intelligence (catalogue §25.2–§25.4, §59, §60)
+
+The food layer was already strong on provenance and basis. What sat above it was missing: substituting one
+food for another while preserving what the meal was FOR, scaling and costing a recipe, and reconciling a
+shopping list against the cupboard.
+
+**Meal role is the thing a substitution must preserve.** Swapping a protein anchor for something of matching
+calories and a quarter of the protein preserves the arithmetic and destroys the meal. So substitutions come
+from the same role, similarity is computed per 100 kcal (the comparison that survives portion size), and the
+suggested portion is the one that preserves the nutrient the food was there for.
+
+**Frequency is reported as frequency.** A log says what somebody ate, which is a function of habit, price,
+convenience and what was in the fridge. Calling that preference and optimising against it would quietly
+narrow a diet to whatever was eaten most in the last two months, so nutritional fit ranks first and
+familiarity only breaks near-ties.
+
+**Recipe optimisation changes one ingredient at a time** and reports every macro, not just the objective —
+an optimisation that reports only what it improved hides what it cost.
+
+Three bugs, each found by reading output:
+
+* A boiled vegetable at 28 kcal per 100 g was classified as an **energy base**, because it is mostly
+  carbohydrate by share. An energy base now has to carry energy.
+* The substitution list printed scores running 0.965, 0.960, 0.969. The comparator was **intransitive** —
+  "within a tolerance, prefer the familiar one" means A ties B and B ties C while A and C do not, which makes
+  the result of a sort undefined. Similarity is bucketed into bands first, so fit decides the band and
+  familiarity orders within it.
+* Foods whose measurement basis cannot be converted are excluded and counted rather than silently converted,
+  which is the same rule the food layer already applied to millilitres and grams.
+
+### Cross-domain integration (catalogue §19, §20, §42)
+
+Every domain until now answered its own question. This answers the one none of them can alone: given sleep,
+soreness, fatigue, stress, motivation, appetite, activity, performance and accumulated load **together**,
+what state is this person in, how confident can that be, and what is limiting it?
+
+**A single recovery number is the wrong output**, and the reason is not aesthetic. Sleep debt, a deficit,
+accumulated load and low motivation all depress the same composite, and none of them responds to the same
+intervention. So the composite exists and is reported **alongside** the limiting factors, each carrying its
+own remedy, rather than instead of them.
+
+**Confidence follows coverage.** A state assembled from two of nine signals is a guess wearing a percentage,
+and it refuses rather than producing one.
+
+Training load counts lifting, movement work and cardio through **one** dose model, which is the payoff for
+having built five dimensions rather than a minutes counter. The acute-to-chronic framing is reported as a
+description of what changed, not as a risk score — its predictive value for injury is contested.
+
+§42 asks whether knowledge still applies. "Increasing steps helped during a 190 lb cut" is not "increasing
+steps helps", so each item is compared across phase, weight zone, calorie level, training volume and sleep
+state. Knowledge that may not transfer is called **unproven here** rather than wrong.
+
+**The bug worth a permanent test:** injecting a week of fatigue at nine and sleep at five made the recovery
+score go *up*. The baseline was being computed from the same days being judged, so a sustained shift was
+absorbed into its own reference — latest equals baseline, deviation zero. The fallback baseline now comes
+from a longer history with the recent week excluded, and where that does not exist the signal is dropped
+rather than compared against itself. A self-test asserts that worsened signals lower the score.
+
+### Optimisation, the state model and adaptive capture (catalogue §32–§34, §38)
+
+The last three, and the three most able to mislead, so each carries a constraint.
+
+**§32 states its own rule**: never collapse the dimensions into one score. Plans are compared across expected
+outcome, burden, time, cost, fatigue and equipment feasibility, and the output stays a frontier — weighting
+outcome against time against money is the user's trade. A dimension with no data is **left out of the
+comparison rather than filled with a default**, because a default would make the frontier look richer than
+the evidence behind it. On the demo, two of seven dimensions are unavailable and are named.
+
+**§34 is the convergence point, and its honest limit is its own fidelity.** A simulation is only as good as
+the response estimates underneath it, and most of those are population priors until a personal experiment
+replaces them. So the state model reports the share resting on the person's own evidence, and that share
+governs how far it should be trusted. Below it, `simulateChange()` refuses outright when nothing personal
+underpins it: projecting the literature onto someone and calling it their forecast is the specific failure
+this whole system exists to avoid.
+
+**§38 gives one answer rather than a list.** Asking for everything every day is how logging becomes a chore
+and then stops, so the single most decision-relevant missing measurement is chosen by value against burden —
+and it admits that it can only ask about what it can see is missing.
+
+Three phrasing bugs, all in the honesty layer rather than the arithmetic: outcomes printed to fifteen
+decimals; a fidelity sentence reading "100% rest on your own evidence; **the rest** are population starting
+points"; and a 100% share computed from a single measured response being treated as equivalent to one
+computed from five. The last is the substantive one — 100% of one is not 100%, and trustworthiness is now
+downgraded when the base is that narrow.
+
+### Gap closure — the thirteen missing sub-features
+
+A coverage probe against the catalogue found 104 of 110 sections implemented (the other six are process and
+documentation), but sampling the sub-features underneath eight of them found 29 of 42 present. Those thirteen
+are now closed. Two deserved more care than the rest, and the care is the implementation rather than a
+disclaimer bolted on:
+
+**§24 — a photo comparison must not tell someone their body changed.** Two photographs differ from lighting,
+posture, time of day, hydration, camera distance and lens long before anything about the person has. So the
+system standardises capture conditions and judges whether two photos are **comparable** — it never renders a
+verdict on the body. Matched conditions read as comparable; a change of lighting is called out as changing
+the picture more than a fortnight of training does; different views are refused outright. Beside the pictures
+it puts what the tape and the scale did over the same interval, so there are numbers rather than an opinion.
+
+**§65 — a streak counter is a guilt mechanic when it is built to be defended.** Breaking a long run makes
+people abandon the record entirely, which is the worst outcome available, since a record that stops is worth
+nothing. Consistency is a proportion, a run is shown because it is interesting and explicitly not as
+something to protect, and the drop-off signal exists to suggest a **smaller target** rather than to say
+anything about somebody's discipline.
+
+**§73 produced a genuine design finding rather than a bug.** The guard written to enforce "background jobs
+do not write" immediately caught one stamping new forecasts — the system committing to predictions the
+person never saw, then later grading itself on them. The rule is now precise: a background run may record the
+outcome of a commitment already shown, and may not make a new one. Stamping happens when a decision is
+actually put in front of someone.
+
+The remaining ten: power, distance and pace on cardio records; recovery and behaviour experiment templates;
+candidate explanations beside detected anomalies; logging-habit coverage with the weakest day named;
+user-authored rules kept as evidence of their own kind and never overwritten by a model output.
+
+### Two mathematical defects found by external audit
+
+Both were real, both reproduced exactly as described, and both sat in the **population fallback** — the path
+that fires precisely when there is no personal evidence to contradict it.
+
+**Counterfactual sign inversion.** Steps encoded expenditure as positive; cardio and training encoded it as
+negative. The conversion `effect = -kcal * 7 / 3500` therefore flipped for two of the four levers, so the
+system told people that **adding cardio or training would make them gain weight**. One sign convention now
+governs all four: positive kcal means additional expenditure or reduced intake, and therefore a more negative
+trend. A test asserts that no energy lever can ever project slower loss when it is increased.
+
+**Monte Carlo goal direction.** The goal-reached condition keyed off the sign of the current trend rather
+than the position of the goal relative to current weight. A goal of 180 while weighing 200 and gaining was
+scored as `x >= 180` — true in essentially every draw — and reported as near-certain success. The condition
+now follows `goal < current → end <= goal`, and a trend moving away from the goal is **stated outright**
+rather than left to be inferred from a small probability.
+
+### Gate status
+
+Browser and iOS capability, and the device checklist, are **certified externally**. The three rows previously
+marked UNVERIFIED for layout, touch-target geometry, VoiceOver, Dynamic Type, safe areas and the standalone
+PWA lifecycle are closed by that certification rather than by anything in this environment — jsdom resolves
+the cascade but does no layout, and no browser binary is obtainable here.
+
+What remains genuinely unverified here is **production-origin cloud sync**: proven against a real server over
+localhost, not over HTTPS behind a reverse proxy.
+
+### Estimator rigour (audit §7, §9, §10)
+
+The three model-rigour findings I had previously deferred. Each was a defensible method applied with more
+confidence than it earned, and **every fix reduces the app's apparent certainty rather than increasing it**.
+
+**§7 — 3,500 kcal/lb was applied as an exact constant.** That is the energy density of *adipose tissue*,
+not of the mixture a person actually loses; lean tissue is mostly water and runs nearer 700. So the
+conversion is now composition-aware: the fat share moves with body-fat level, rate of loss, protein
+adherence and whether resistance training is happening, and the result carries a range. On the demo it
+returns **3,108 kcal/lb (2,688–3,444)** against the naive 3,500 — an 11% difference that propagates directly
+into every maintenance estimate, which is exactly why it should not be quoted as a constant. The bare literal
+is gone from every energy path; only the definition remains.
+
+**§10 — a personal response from one observation was passed downstream at face value.** The correct
+treatment of a single noisy estimate is neither to believe it nor to discard it, but to **shrink it toward
+the prior** in proportion to how much it can carry. On the demo, a single steps observation of −0.366
+lb/week per unit shrinks to −0.189 at 33% personal weight. No estimate is ever allowed past 95% personal,
+because a personal record is not a randomised trial however many observations accumulate.
+
+This is the honest answer to the "response matrix with one entry" problem I raised earlier: the entry still
+counts, it just does not get to speak as though it were five.
+
+**§9 — change detection used a t threshold of 1.2 with no autocorrelation correction.** Consecutive daily
+weights are strongly correlated, so treating them as independent inflates the statistic. The lag-one
+correlation on the demo series is **0.90**, which means a nominal n of 45 is an effective n of **2.4** —
+roughly 80% of the apparent sample is redundant. Applying the standard first-order correction and a
+threshold of two rather than 1.2, the one detected change point falls from t=1.83 to t=0.42 and **correctly
+disappears**. Points that only cleared the old threshold are reported as downgraded rather than dropped
+silently.
+
+### Conformance audit: the architecture outran its own models
+
+A mechanical audit against the project's two stated pipelines found exactly the asymmetry it was built to
+look for. The **cognitive loop was satisfied end to end globally — 14 of 14 stages** — while **no domain
+conformed fully to the plugin pipeline**. The best managed 8 of 11, and every single domain failed at the
+same stage: **decision**.
+
+Domains produced proposals and nothing consumed them. The pipeline said *domain → decision* and that arrow
+did not exist. That is the difference between an architecture and a diagram.
+
+Three kinds of gap came out of it, and they needed different answers:
+
+**The arrow was genuinely missing**, so it was built. `domainDecisionInputs()` ranks proposals by the domain's
+own declared priority — injury at 10 outranks optimisation at 70, because a sore knee is a better reason to
+change course than a trend being slightly off band — and `decisionWithDomains()` shows domain reasoning
+beside the rate decision rather than merged into it. Merging them would hide which one moved.
+
+**Some failures were data absence wearing the costume of an architectural gap.** `cost` has no prices on the
+demo record, so its state is `insufficient` and carries no class, and the first version of the audit scored
+that as a missing uncertainty stage. A state that resolves must carry a class; a state that cannot resolve
+must say what it needs. Both are uncertainty-aware, and confusing an empty record with a shallow estimator is
+the precise error this audit exists to avoid.
+
+**Some stages were inapplicable rather than forgotten.** `activity` derives entirely from step observations
+and owns no mutable state, so inventing an `activity.changed` event to satisfy a checklist would be ceremony
+pretending to be rigour. Domains now DECLARE that they derive, and the auditor only accepts a declaration it
+can verify against the build. Likewise `inventory` declares itself inexperimentable with a reason — how fast
+a tub empties is arithmetic, not a hypothesis about a body — and an undeclared gap and a justified exclusion
+no longer look the same.
+
+All eleven domains now conform 11/11, and `npm run conformance` runs in the check chain.
+
+**Model depth was the other half.** Eleven engines carried a class but no interval and no stated sample size.
+The composites were the worst of them: a readiness score is a weighted mean of z-scores, and eight signals
+agreeing is a different claim from three pulling in opposite directions. Both now carry an interval derived
+from how much their parts disagree, and say which case you are looking at.
+
+One of those fixes immediately told an uncomfortable truth. Movement dose reported 100% intensity coverage
+because it counted only movement records — while the week's dose came almost entirely from lifting sessions
+entering at an *assumed* intensity. Counted honestly across everything contributing, coverage is **0%**.
+
+### Ontology → physiology propagation (Work.md)
+
+Work.md states its own thesis better than a summary would: *"the ontology is ahead of the physiological
+model"*, and *"information exists → information is classified → information is not fully operationalized."*
+
+The exercise ontology already carried pattern, muscles, equipment, skill, ROM, stability, biomechanics,
+resistance curve, set type, RIR/RPE, tempo, load and reps. Downstream, nearly everything collapsed back to
+sets, load, reps and e1RM. The chain the document asks for is built now, once, so the engines above stop
+re-deriving thin versions of it:
+
+```
+exercise mechanics → joint/muscle exposure → mechanical demand → stimulus → fatigue → recovery cost
+```
+
+A set now yields four separable demands — **mechanical** (force-time, scaled by range and tempo),
+**neural** (stability and skill, which is why a heavy free-weight single costs more than a machine set at the
+same relative load), **connective** (end-range and long-muscle-length stress), and **metabolic**. Those land
+on the muscles and joints the ontology declares, with indirect muscles taking half.
+
+**Fatigue stopped being one number.** Four compartments with different half-lives — local 2 days, neural 3,
+systemic 4, connective 7 — because that difference is the entire reason to separate them. A set eight days
+ago still counts against connective and barely against local. A single fatigue figure averages those and
+cannot tell you which one is limiting you.
+
+**Recovery cost is now per exercise as the person performs it** — their range, their tempo, the effort they
+take it to. Ranked as stimulus against cost, with the ratio described as comparative within one programme and
+explicitly meaningless as an absolute. A lift low in the list is not a bad exercise; it is one currently
+taking more out than it puts in.
+
+**Effort uncertainty survives the multiplication.** Work.md notes it stopped at the first one. An RIR of 5
+carries ±2.5 reps, and that now propagates into both the estimated maximum and the stimulus index — and the
+output states which errors it does *not* propagate.
+
+Four things this deliberately does not do: claim to measure stimulus, compartmentalise finer than the record
+can distinguish, convert stimulus into predicted hypertrophy, or hide how much of the input was assumed. On
+the demo it reports **100% effort coverage and 0% tempo coverage** — every time-under-tension figure is a
+three-seconds-a-rep assumption, and it says so.
+
+### Latent states, governance and the remaining domains (Work.md)
+
+**Latent states.** Work.md asks repeatedly for quantities the app derived on demand to be carried as states
+that persist, update on evidence, and decay in silence. A derivation answers "what does the last fortnight
+imply"; a state answers "what do I believe, how confident am I, and when did I last learn anything". The
+estimator is a one-dimensional Kalman update: a noisy observation moves the belief less than a clean one, and
+with no observations the variance GROWS, so **confidence decays with silence** rather than persisting.
+
+Built on it: cardio fitness, conditioning capacity (a separate state, because aerobic fitness and what you
+can repeat are different things), lean mass, water/glycogen, adaptive thermogenesis, NEAT compensation with
+lag and effect size, circadian measurement consistency, performance normalised against the state it was
+produced in, nutrient absorption context, and a **generalised distributed-lag engine** — each domain had been
+writing its own one-day version.
+
+That lag engine immediately caught the app contradicting itself. The Learn panel asserted *"shorter sleep is
+associated with higher hunger, r=−0.30"* while no lag survived correction for autocorrelation. A claim the
+system's own stricter test rejects does not belong on a panel headed "What we think", so it is now gated and
+demoted to what is not known.
+
+**Governance.** Fifty models with no governance is not more intelligent than five — it is harder to tell when
+it is wrong. Added: a canonical data dictionary whose owners are checked to exist, champion/challenger
+registration (an uncontested estimator is reported as uncontested, **not** as validated), ten **domain
+invariants** — two of which encode defects an external audit found — fragility probes, a lineage graph
+checked for cycles, stated decision arbitration, idempotent job execution, referential integrity reported
+rather than repaired, and reliability-weighted sensor fusion.
+
+The invariant suite caught a live bug on its first run: `effectiveN` returned **60.9 from 35 observations**,
+because negative autocorrelation inflates the standard correction. Mathematically real, never right for this
+purpose — claiming more independent information than there are observations. Capped at n.
+
+**Remaining domains.** Recovery resource allocation (what is *spending* recovery, ranked, with whether each
+can actually be changed), motor learning tracked as falling variability rather than rising load, hydration
+context that flags a distorted weigh-in while stating plainly that it cannot assess hydration, and a
+supplement review that separates general efficacy from personal efficacy.
+
+A note on the scan that found these: it flagged twenty-seven sections, several falsely — "fatigue is not yet
+compartmentalized" is built, under the spelling "compartmentalised". That is vocabulary matching rather than
+capability checking, the same failure the model contract had before it was made to resolve references. The
+scan narrows what to look at; it does not decide.
+
+### Input focus (reported bug)
+
+A text field bound to the `input` event triggered a re-render, which replaced the node and dropped focus — so
+the keyboard closed after every character and typing a word meant tapping the field once per letter.
+
+Fixing the offending handlers one at a time would leave the next one to be written broken, so **focus and
+caret are preserved around every re-render**: the element is re-found by id or by the data-act/data-arg pair
+it is addressed by everywhere else, and its selection restored. An audit check now types into every text
+field the app renders and fails if any loses focus.
+
+### Rail alignment and pill overflow (reported bugs)
+
+The two rails had different bottom offsets (78px against 88px), different insets and different z-indexes,
+which put the two sides of the screen at visibly different heights. Now identical.
+
+A pill was being handed a whole sentence — "flat within your own session-to-session noise" — and overflowed
+its container. A pill is a label, so it carries "flat" and the sentence moved to the explanatory line, which
+is where it belonged. Both got CSS guards so neither can recur.
+
+### Two competing energy conversions (ConWork.md)
+
+An external review found TDEE still using a hard-coded **3200 kcal/lb** while the counterfactual and scenario
+paths used the composition-aware `tissueEnergyDensity()`. Two conversions meant the same weight change could
+be read as different amounts of energy in different parts of the app.
+
+**The verification failure is worse than the bug.** This document previously claimed the constant was gone
+from every energy path. It was not: the check grepped for `3500` and never looked for `3200`, so a search
+that felt thorough confirmed only what it happened to look for. That is the same defect shape recorded three
+times already in this file — a check narrower than the property it verifies.
+
+Every energy path now resolves through one accessor, and the uncertainty comes from that model's own interval
+rather than a parallel hard-coded ±500. On the demo: density 3108 kcal/lb, derived SD 378, and the
+counterfactual path implies 3107 — the same source.
+
+The gate that would have caught it now exists: the audit scans every 3000–4000 literal appearing in
+per-pound conversion context, and separately proves the live paths agree numerically, because a text scan
+alone cannot establish that. Its first version flagged its own explanatory comment, so it strips comments
+first — scanning prose is not scanning code.
+
+### Multiple testing, missingness and the inference runtime
+
+**Multiple testing.** The lag engine tested six lags and reported the best, at a threshold chosen for one.
+With six tests the chance of at least one false positive is about **26%**, not 5%. Both Benjamini-Hochberg
+and Bonferroni are now applied, because they answer different questions, and the sleep–hunger claim is gated
+on the corrected engine — having already been demoted once for failing the autocorrelation test, it now also
+has to clear correction for having searched several lags. It clears neither.
+
+**Missingness.** Coverage was reported and called a caveat. Whether data is missing at random decides whether
+an analysis is biased or merely underpowered, and the record can often tell: if readings resume
+systematically different from where they paused, missingness depends on the unobserved value, which is the
+one case more data does not fix. Reported as a signal, never as proof — by definition the evidence is in
+what is missing.
+
+**Inference runtime.** Models were called directly by other functions, so freshness, applicability and
+provenance were each model's own business. One runtime now wraps execution: unknown models are refused, a
+model outside its applicable context declines rather than returning a number, and stale inputs mark a result
+**degraded rather than withheld** — a stale answer with its staleness stated is more useful than silence.
+
+**Per-source bias.** Fusion weighted sources by fixed reliability; a systematic offset needs measuring and
+removing, which is a different operation from trusting a source less. Measured from same-day pairs only, and
+an offset is reported as disagreement rather than as identifying which source is right.
+
+### Bayesian maintenance and a machine-enforced type system (ConWork.md)
+
+**Maintenance is now a posterior.** The previous estimator was a point estimate with a variance assembled
+from three error terms — defensible arithmetic that could not answer the questions people actually ask: how
+likely is it that my maintenance is above 2,700, and what should next week's weight do given everything I
+know.
+
+The prior is the population equation, which is exactly what a prior is for. The likelihood is the energy
+balance relationship. The posterior is conjugate normal, exact here and needing no sampling. On the demo:
+prior 2985 ± 298, likelihood 2825 ± 95, posterior **2840 ± 91** — narrower than either input, which is what
+combining evidence should do.
+
+**Partial pooling is not a switch that gets thrown.** It falls out of the precision arithmetic: 91% of this
+posterior comes from the person's own data because that is what the relative precisions justify. With a
+fortnight it would sit near the population estimate; with no intake logged at all it returns
+**prior-only**, and says that is the correct answer rather than a failure — it is what you should believe
+before evidence arrives.
+
+The posterior predictive carries scale noise as well as model uncertainty, because a prediction using only
+the best estimate of maintenance is narrower than the truth and wrong more often than it admits.
+
+**The type system is machine-checked.** The data dictionary described ten quantities in prose, and a prose
+dictionary catches nothing. Fifteen quantities now carry dimension, unit, temporal semantics, aggregation,
+population and epistemic class. Combining `tdee` with `intake` is refused — same dimension, different
+temporal semantics, an aggregate over a window against one value per day. Converting kcal to pounds is
+refused as incommensurable rather than returning a number.
+
+Two bugs, one caught by the system auditing itself: the prose dictionary said RIR was in "reps" while the
+type said "count". And the unit conversion was **inverted** — 70 kg came out as 31.75 lb, a factor-squared
+error that a unit system exists precisely to prevent, sitting inside the unit system. Both now round-trip
+exactly, with a test asserting it.
+
+### Causal inference (ConWork.md)
+
+The distributed-lag engine with false-discovery control had been standing in for this, and it is a weaker
+instrument: it finds association at a lag honestly, but it cannot separate a confounded association from a
+causal one because it never encodes what could confound it.
+
+**Adjustment requires a graph.** No statistical test identifies confounders from data. Which variables to
+adjust for is a claim about causal structure, so the claim is written down — sixteen nodes, thirty-one
+edges — explicit, arguable and revisable, and declared as a claim rather than something derived.
+
+**The validator caught two real errors in my own graph on its first run.** `calories → hunger → adherence →
+calories` and `motivation → training → fatigue → motivation` are both genuine feedback loops, and a DAG
+cannot hold one. The resolution is that they are **temporal**: hunger today affects tomorrow's adherence,
+not the intake already logged. Five lagged edges now live outside the contemporaneous graph, and the
+validator rejects any that duplicate a simultaneous edge.
+
+**Adjustment sets come from the backdoor criterion**, not from "control for everything available" — which is
+the most common way observational analysis goes wrong. Mediators are excluded because conditioning on them
+removes part of the effect being measured; descendants of the treatment likewise. Conditioning on a collider
+*creates* association where none existed, so the search returns a minimal blocking set rather than a maximal
+one. On the demo: `calories → weight` needs only motivation; `steps → weight` needs motivation, cardio and
+training.
+
+**Propensity analysis reports overlap before it reports an effect.** Where treated and untreated days differ
+materially on the covariates, the groups are not comparable and the adjusted figure is stated as untrustworthy
+rather than footnoted.
+
+**Negative controls test the method, not the hypothesis.** Finding an effect where none can exist is evidence
+about the analysis. The demo's steps-versus-prior-night's-sleep-quality control fires at r=0.31, which
+correctly warns that apparent step effects there should be treated as confounded.
+
+Throughout: none of this beats randomisation. A randomised sequence of self-experiments answers what these
+methods approximate, and every output says so.
+
+### Universal Bayesian engine, exact t, real propensity scores (ConBWork.md)
+
+**The p-value was approximate.** `_pFromT` used a normal-style approximation, which is defensible at n=200
+and wrong at n=20 to 40 — the range this app actually works in. Understating a p-value is precisely how a
+multiple-testing correction changes a conclusion by accident, which is the opposite of its purpose. Replaced
+with an exact Student-t CDF via the regularised incomplete beta function. It now returns **0.0500** for
+t=2.086/df=20, t=2.042/df=30 and t=2.228/df=10 — the published two-sided critical values, to four decimals.
+
+**The Bayesian machinery was written once for maintenance.** It is now a general engine: any quantity that
+can state a prior and a likelihood gets a posterior, partial pooling, a probability-above query and a
+posterior predictive that carries observation noise as well as parameter uncertainty. Maintenance is now a
+*caller* rather than the implementation, and a test asserts the two agree.
+
+**`propensityAnalysis` did not estimate propensity scores.** It thresholded a continuous treatment and
+compared strata — a useful diagnostic wearing the wrong name. It keeps doing exactly that under
+`treatmentAssignmentBalance()`, and a real `propensityScoreModel()` now fits treatment assignment by logistic
+regression on the backdoor adjustment set, then applies stabilised inverse-probability weighting with
+positivity checks, trimming to common support, balance **after** weighting, and an effective sample size from
+the weight variance.
+
+Running it surfaced something more useful than an estimate: the graph says `calories → weight` is only
+identifiable by adjusting for motivation, **and motivation is not tracked**. That is a capability gap rather
+than a shortage of days — no amount of waiting fixes it — and reporting nothing is the correct output, since
+an estimate skipping that covariate would be confounded by exactly the thing the graph identified.
+
+**Capability maturity is now explicit on every engine.** Five grades, and the distribution is the finding:
+ten engines are INFRASTRUCTURE_GRADE (the plumbing is tested, which says nothing about whether the model is
+right), nine are OPERATIONAL_ANALYTICAL, one is STATISTICALLY_VALIDATED, and **zero** are experimentally or
+prospectively validated. The training-demand layer sits at infrastructure grade, correctly. That ceiling is
+stated in the interface rather than left for a user to infer.
+
+**Run identity is reproducible.** It was an execution counter, so two identical analyses got different ids
+and two different ones could not be told apart. It is now a hash over model, version, input snapshot,
+parameters, reference version, dependencies, seed and as-of date.
+
+### Causal universe, model competition and invalidation (ConBWork.md)
+
+**The graph was sixteen nodes against an application reasoning about forty.** That is not merely an
+omission: a variable absent from the graph is silently asserted to confound nothing, which is a strong claim
+made by accident. Expanded to **44 nodes and 76 edges**, still acyclic, with eight lagged edges holding the
+feedback a DAG cannot. Coverage is reported alongside it: 33 of 44 variables are actually obtainable from
+the record, and the other eleven — caffeine, hydration, sodium, meal timing, motivation — are named because
+leaving them out would be the stronger and falser claim.
+
+**The adjustment search was bounded at three**, which made real effects look unidentifiable purely because
+the search stopped early. Raised to five with a combinatorial budget, and when the budget is hit it reports
+**"not found" rather than "does not exist"** — a distinction that matters, since the second is a claim about
+the world and the first is a claim about the search.
+
+**Champion/challenger was registration; now it is competition.** Three estimators for maintenance — the
+intake-balance model, the Bayesian posterior, and the population equation alone as the baseline any personal
+model must beat. Each is replayed AS OF past dates and scored against what actually happened, on error, bias
+and interval coverage. Comparing their outputs on today's data would compare opinions rather than accuracy.
+
+Two findings came straight out of it, and both are uncomfortable in the right way. The registered champion
+**produced no usable prediction at any replay point**, so "keep the current champion" would have rested on
+nothing — it now says so. And the **population baseline had the lowest error**, which means the personal
+estimators are not yet earning their complexity on this record. The Bayesian posterior scored a bias of
+−0.98 against a mean error of 0.98, which is systematic rather than noisy.
+
+**Dependency invalidation did not exist.** A food-database correction now propagates through recipes, intake,
+energy balance, maintenance, forecasts and the decision, in dependency order, and reports which values
+actually changed — including when nothing did, which is worth knowing rather than assuming.
+
+### Universal typing, formal missing-data inference, measurement model (ConBWork.md)
+
+**Fifteen typed quantities against hundreds in traffic.** A type system covering a tenth of the traffic
+catches a tenth of the errors and creates a false sense that the problem is handled. Now 38 declared types,
+and — more usefully — an audit that scans what the engines actually emit rather than trusting the list:
+**26 of 39 cross-model fields typed (67%)**, with the remaining thirteen named individually. Eleven internal
+diagnostics are excluded, because a window length never crosses a model boundary as a measured value and
+counting it made the coverage figure describe something nobody was trying to achieve.
+
+**Missing data stopped at diagnosis.** Knowing an analysis is biased is better than silence and worse than
+correcting it. Three things now exist: inverse-probability weighting (days less likely to be logged count
+for more, with an effective sample size and an instability warning when weights run extreme), multiple
+imputation with Rubin's rules (mean-substitution gives the same point estimate and a falsely narrow interval,
+which is exactly why it is not used), and — the one that matters — **MNAR sensitivity analysis**.
+
+There is no test for MNAR and no correction for it. The only honest treatment is to show how far the answer
+moves across assumptions the data cannot check. On the demo, intake moves 44 kcal across ±2 SD assumptions
+about the unobserved days, which is inside the noise, so the conclusion survives. A robust result there does
+not prove the data are missing at random — it shows the conclusion would hold even if they were not, which
+is a weaker and more useful claim.
+
+**Fusion weighted sources by a reliability constant.** A real measurement model separates the latent true
+value from each source's bias, spread and drift, all estimated from same-day overlap rather than asserted.
+Bias is explicitly relative to a chosen reference — the source with the most readings — and that choice is
+flagged as a decision rather than a measurement, because a biased reference makes every other bias wrong by
+the same amount.
+
+### Analytical materialization (ConBWork.md)
+
+The canonical policy completed: **raw event log → historical projection → analytical materialization →
+dependency invalidation.** Seven views materialise, keyed by a run identity that includes the as-of date —
+so a replay cannot read a present-day cache entry, which would be the worst possible staleness bug in a
+system built around replay.
+
+**Built with a benchmark attached, because a cache that is never measured is a bet that recomputation is
+expensive.** On this record that bet loses: recomputing every view costs **5.6 ms**, and the store saves
+5.6 ms while adding a staleness failure mode recomputation does not have. The layer reports that about
+itself rather than hiding it.
+
+**What justifies it regardless of speed is restatement.** When a correction changes an input, every
+historical output derived from the old value is wrong, and without materialization there is no record of
+what was previously concluded — only silent recomputation. Stale views are therefore **marked, not deleted**,
+because the previous value is what makes restatement possible, and the output says whether the chain reaches
+a decision the person was actually shown.
+
+Two defects surfaced while building it, both by machinery rather than by reading:
+
+* The module was **silently dropped from the build**. The include pattern is `NN-name.js` and the file was
+  named `98b-materialize.js`, so it was written, saved, and never ran. The build now **refuses** when any
+  `.js` file in `src/` would be silently excluded — a whole module vanishing without a warning is a worse
+  failure than a broken build.
+* A self-test asserting the cache is never exported **failed**, because it lived in `DB.settings` and was
+  serialised with everything else. The documentation claimed one thing and the code did another. Per-device
+  working state is now explicitly excluded from export, listed by name so the exclusion is visible.
+
+### A stale cache, a plug-in posterior and an unnamed estimand (WorkConC.md)
+
+**The materialization bug was real and I reproduced it before fixing it.** The cache identity used record
+COUNTS, so correcting a weight from 200 to 190 left every count identical, the identity unchanged, and the
+cache served −1.74 when the truth was −2.10. Counting rows tells you how many there are, not what they say.
+
+Identity is now content-addressed: a hash of the fields that actually enter each calculation, scoped per
+view so a food-log change invalidates adherence and leaves the weight trend alone. Manual invalidation still
+exists and still helps; it is no longer what correctness depends on.
+
+**My first attempt at that fix reintroduced the same bug one level up.** I memoised the content hash on
+`_EVENTS.length` — and an in-place edit emits no event, so the counter never moved, so the stale hash came
+back and the stale value was served again. A content hash memoised on something that is not the content is
+not a content hash. It is computed for real now; the benchmark says the whole cache saves about six
+milliseconds, so correctness plainly outranks the saving.
+
+**`hierarchicalBayes` was empirical Bayes wearing the name of a posterior.** Method-of-moments tau, plugged
+in, intervals conditioned on a point estimate of the very thing that is uncertain. `hierarchicalPosterior()`
+now integrates over tau on an 80-point grid with a half-Cauchy hyperprior, giving a marginal posterior for
+the hyper-mean and **a credible interval for tau itself** (0.013–0.713 on the worked example) rather than a
+single number. It comes out wider than the empirical-Bayes answer, and that extra width is the honest part.
+
+**`iptwEstimate` named the method and left the reader to assume the quantity.** Stabilised IPTW over the
+trimmed sample targets the **ATE**, not the ATT. Both are now named, with what the difference means.
+
+**Median binarisation answers "high versus low", not "what does one more unit do".** `doseResponse()` uses a
+generalised propensity score: the dose is modelled on the covariates and the outcome regressed on the part
+the covariates do not explain, with a curve over the observed range so non-linearity stays visible and an
+explicit refusal to extrapolate past it.
+
+### One registry, and multiple imputation that deserves the name (WorkConC.md)
+
+**Two registries for one concept is how they drift.** `DATA_DICTIONARY` described quantities in prose and
+`TYPES` described them for the machine, and the RIR unit mismatch found earlier was exactly that — caught
+only because an audit happened to compare them. The dictionary now DERIVES from the types, so drift is
+structurally impossible rather than merely detectable, and a drift check stays in place to catch a second
+registry creeping back in.
+
+**Multiple imputation was imputation in name only.** Three faults, all fixed:
+
+* Values were drawn from the **marginal** distribution, so every imputed day was pulled toward the grand
+  mean. A Tuesday in a deficit is not an average day. The model is conditional now — local level plus
+  day-of-week — and draws carry the residual spread after the model rather than the raw spread, which
+  includes the variation the model just explained.
+* **Within-imputation variance reused one marginal spread for every completed dataset**, which is not a
+  within-imputation variance at all. It is now the sampling variance of the estimate in each dataset, with
+  each dataset drawing its own residual scale — the step that makes between-imputation variance mean
+  anything.
+* The interval used **1.96**. It now uses Student-t at Rubin's degrees of freedom, computed from the
+  fraction of missing information via the exact CDF. On the demo, missingness is low, FMI is 0.058, df is
+  large and the critical value correctly converges back to 1.96 — which is the right answer arrived at for
+  the right reason rather than by assumption.
+
+`_tCrit` matches published tables exactly: 2.228 at df=10, 2.042 at df=30.
+
+### Contract-derived dependencies, and a surface for the inference layer
+
+**The derivation graph was hand-enumerated**, which drifts the moment a model changes what it reads and
+nobody updates a table in another file. Every model already declares its inputs in the contract the
+conformance audit checks, and those declarations are the authoritative statement of what depends on what.
+The graph is now built from them: **63 contract-derived nodes, zero unresolved**, merged with a declared
+fallback for the handful of quantities that are plain functions rather than registry entries.
+
+**The larger gap was that almost none of this statistical layer had a surface.** Identification, missingness
+mechanisms, model competition and maturity all existed and none of it could inform anyone who was not
+reading the source — which is a strange definition of an app that exists to tell someone what is knowable.
+
+`What can be known` now answers four questions in one place:
+
+* **Which questions your record could actually answer.** Each candidate effect shows whether it is
+  identifiable at all, and where it is not, precisely what blocks it — on the demo, `calories → weight` is
+  identifiable but blocked because motivation and phase are not recorded. That is a shopping list, not an
+  error message.
+* **What is missing and whether it biases anything**, with the MNAR sensitivity verdict beside it.
+* **Which estimate to believe**, with the backtest error, bias and interval coverage for each competing
+  estimator — including the finding that the population baseline currently wins.
+* **How far any of it has been validated**, with the zero-experimentally-validated ceiling stated rather
+  than left to be inferred.
+
+### Identification beyond the backdoor (WorkConC.md)
+
+The backdoor criterion fails in exactly the case that matters here: an effect confounded by something nobody
+records. Three further strategies, plus the honest answer for when none applies.
+
+**Front door.** If the whole effect passes through an observed mediator, it is identified even when the
+treatment is hopelessly confounded. It must intercept EVERY directed path — on this graph nothing does for
+`calories → weight`, and the engine says so rather than picking a mediator that leaks.
+
+**Instrumental variables**, with the weak-instrument problem treated as the first-order concern it is. A
+first-stage F is reported against the conventional minimum of 10, and a weak instrument is refused with the
+reason stated: it is biased **toward** the confounded estimate, which is the failure mode people forget.
+
+**E-values.** When nothing identifies the effect, the answerable question stops being "what is it" and
+becomes "how strong would unmeasured confounding have to be to explain this away" — computable without
+knowing what the confounder is, which turns "there might be confounding" into a quantity.
+
+**A correction I had to make to my own first version.** It reported `calories → weight` as identified by a
+day-of-week instrument at 0.217 standard deviations — scraping past a 0.2 threshold I had set — while
+day-of-week plainly reaches meals, sleep and stress directly. A marginal instrument with a doubtful exclusion
+restriction is not an identification strategy, it is a number. The bar is now a first-stage F of 10 (that
+instrument scores **0.6**), and the untestable assumption travels with the verdict instead of sitting in a
+caveat nobody reaches. Both effects now correctly report that no strategy is available.
+
+**Governance walks forward** at weekly spacing rather than sampling six points, and promotion follows a
+written rule — twenty replay points minimum, a margin beyond the noise, no systematic bias, calibrated
+intervals. On this record it refuses, listing which conditions failed. A rule written before the result is
+the only version of this that is not preference.
+
+The build guard added last session caught this module's own filename (`79b-identification.js`) before it
+could be silently dropped, which is the second time that guard has paid for itself.
+
+### The presentation layer, with a contract (visual system document)
+
+The document puts one rule above the other fifty-eight:
+
+```
+ANALYTICAL TRUTH → PRESENTATION MODEL → VISUAL SEMANTICS → DESIGN TOKENS → COMPONENT → RENDERER
+never   CSS → analytical meaning
+never   chart → new analytical calculation
+```
+
+The second prohibition is the substantive one. **A chart that computes its own smoothing, rebases its own
+axis or fills its own gaps has quietly become a model** — one with no contract, no epistemic class, no
+uncertainty and no trace. So this is built the way the model contract system is built, because the same
+discipline that stopped models inventing figures should stop views inventing them.
+
+* **Design tokens are data.** CSS reads them; nothing reads CSS to decide meaning. Roles are semantic —
+  "attention", not "amber" — so a theme change cannot change what a colour means.
+* **Every epistemic class has a declared visual**, and every one carries a pattern and a weight as well as a
+  colour, so meaning survives when colour does not. A class with no declared treatment is marked
+  **undeclared** rather than silently styled as normal, which would make an unclassified number look
+  authoritative.
+* **A presentation model is built FROM a canonical result** and computes nothing. It carries the value,
+  class, interval and provenance forward. An unresolved result presents as unresolved — a chart drawing
+  zero there would be asserting a measurement that does not exist.
+* **Five visualization contracts** declare input dimensions, temporal semantics, displayable classes,
+  mandatory elements, sanctioned transforms and — most usefully — what is forbidden. A validator rejects a
+  view that would misrepresent what it was given, and refusing to draw is always compliant.
+* **Contrast is computed, not judged**: 28 pairings across both themes and both surfaces, at 4.5:1 for text
+  and 3:1 for non-text.
+
+**The contract check found a real gap on its first run.** `weightTrend()` resolved without declaring an
+epistemic class, so the presentation layer could not style it honestly and it would have rendered as
+authoritative by default — the quiet version of overclaiming. It declares DERIVED now, and the audit checks
+every presentable model for the same omission.
+
+`npm run audit` now includes the presentation contract, so the rule is enforced rather than aspirational.
+
+### Presentation: fonts, chart types, self-audit (visual spec §7, §18, §55)
+
+A scan of all 67 sections of the visual specification against the source found **64 already implemented** —
+tokens, semantic and epistemic colour, contrast, visualization contracts and semantic validation were built
+earlier and pass. Three had nothing behind them.
+
+**Font registry** (§7). A stack is a fallback CHAIN, and the fallback is what most readers actually see: the
+first entry is often absent. Every stack must end in a generic family and carry a fallback, checked rather
+than assumed. Accessibility faces are first-class — and the dyslexia-oriented face states that the evidence
+for it is mixed, because it is offered on the grounds that some readers report it helps rather than that it
+is established.
+
+**Chart types** (§18). Eleven types, each declaring what it encodes, what it requires, and — the part nobody
+writes down — **how it misleads**. A stacked bar misleads for every series but the bottom one; a bubble
+misleads when radius is scaled instead of area; a forecast fan that does not widen implies the future is as
+certain as the past. Selection reads from the type registry, so the chart follows from what the quantity IS.
+
+**Self-audit engine** (§55). Five named audits — theme, visual, ui, ux, responsive — returning findings
+rather than a score, because a score is comforting and hides which thing is wrong.
+
+Two defects, both caught by the new code on its first run:
+
+* The responsive check flagged `min-width:768px` as a fixed width. Both `min-width` and `max-width` end in
+  "width", so the pattern was broader than the property it meant to verify — the same defect shape recorded
+  several times already in this file, this time in a check I had just written to find defects.
+* A self-test asserting safe-area insets passed in the browser and failed headless, because the audit cannot
+  read a stylesheet there. It now reports **inconclusive** rather than `ok`. A pass earned by having checked
+  nothing is the least useful kind, and it was about to become a green tick.
+
+### Correcting my own verification of the visual specification
+
+I previously reported the visual specification as "64 of 67 sections implemented". That was wrong, and the
+way it was wrong is worth recording: the scan matched loose keywords rather than the identifiers each
+section actually names. Re-run strictly, only **eighteen** sections were complete and fifty had gaps.
+
+A check looser than the property it verifies reports success it has not established — the same defect shape
+this file has recorded several times in the code, this time in my own verification of it.
+
+Closed since: the shape engine and shape languages, elevation including the two the spec names and this app
+refuses (glass costs contrast, neomorphic fails it outright), the spacing scale, five named breakpoints where
+columns deliberately stop growing past desktop, numeric typography, the font loading and accessibility
+policy, seven further chart types, ten further components, the renderer registry, and the image policy —
+which ships no illustration, because illustration in a measurement app decorates a claim it cannot support.
+Strictly re-verified: **zero sections below 70%**, down from nine.
+
+**The colour-blind audit found a real defect on its first run.** Success and danger collapsed under
+protanopia at a contrast ratio of 1.24 — green "this is fine" and red "this is wrong" indistinguishable,
+which is the single worst pair in a health app. They differed in hue and barely in LIGHTNESS. Separated on
+lightness the ratio is now **2.64**, and the categorical chart palette is clean.
+
+Three lesser collisions remain, and are reported as advisories rather than chased: four semantic colours
+mutually separable across all three simulations is not achievable in a usable gamut. Every epistemic class
+already carries a pattern and a weight, so colour is never the only channel.
+
+Two further defects, both caught by the new code:
+
+* `formatNumeric(950,'calories')` printed **"950.00"** kcal. The log calls it `calories` and the type
+  registry calls it `intake`, and nothing linked them, so formatting fell through to a default. Aliases now
+  close the gap, with a coverage audit — which then had to be taught that `note` and `context` are prose
+  and demanding a dimension for them is the same error as demanding a unit for a name.
+* The empty-state component declared one state. It has two, and they need different words: "start logging"
+  is useless advice to someone whose search returned nothing.
+
+### A namespace collision that blanked the app
+
+Declaring `var RENDERERS` in the presentation layer **replaced the view system's registry of the same name**,
+and every screen rendered empty. No error, no warning. The build concatenates modules, so a top-level `var`
+is a global, and a global is a shared namespace whether or not anyone treats it as one. Nothing caught it
+until an interface gate crashed three steps later on a missing element.
+
+The guard now scans every top-level declaration across all modules for a name declared twice, and it found
+**two more collisions that predate this session**:
+
+* `storageEstimate` existed twice. The richer version won concatenation, so the thinner one was dead code
+  that merely looked like a definition. Removed rather than renamed — two functions answering one question
+  is how they drift apart.
+* `photoPairs` existed twice with **different return shapes**: one an array of pose pairs, the other an
+  object. The photos sheet calls `pairs.length` and `pairs.map`, and had been receiving the object, so
+  `.length` was `undefined`, the block was falsy, and **the photo comparison section has silently never
+  rendered**. A whole feature absent from the interface, with every gate green.
+
+That is the most instructive defect in this session. Every check that existed asked whether things worked;
+none asked whether two modules had quietly agreed to disagree about a name.
+
+### Implemented is not the same as reachable (§43)
+
+Asked to verify the visual specification, the useful question turned out not to be whether the code existed
+but whether a user could operate it. **It is a CUSTOMIZATION system, and almost nothing was customisable.**
+Text size, density, contrast, motion and units were reachable; theme, accent, typeface, edge treatment and
+appearance profiles were five registries a user could not touch. A customization system nobody can operate
+is a set of constants.
+
+Four **appearance profiles** now exist as named bundles — standard, reading, dense and accessible — because
+"make this readable" is one decision, not eight switches. Every individual control is exposed beside them,
+and changing one clears the profile name, since a profile with one thing changed is not that profile.
+
+**Every option is contrast-checked before it is offered.** A combination that fails is withheld rather than
+offered with a warning nobody reads, and the withheld ones are named so the omission is visible rather than
+silent.
+
+That gate immediately caught two things in my own work:
+
+* The **reading profile was withheld** — its clay accent on a paper surface gave 2.64 against the 3:1 a
+  non-text indicator needs.
+* On a light theme, **not one of the five accents passed**. They had all been chosen against dark surfaces.
+  A colour picker where nothing is pickable would have shipped if the check had come after the UI instead of
+  before it. Accents now carry a variant per surface lightness; every one passes on every theme, and all
+  four profiles are offerable.
+
+### A real browser gate (correcting a long-standing claim)
+
+This document has said since the first external audit that a real-browser gate was impossible because no
+Chromium could be obtained. **That was stale.** Chromium 141 is installed at `/opt/pw-browsers`, and
+`playwright-core` drives it without downloading anything — the browser was already there and nobody checked.
+
+The claim mattered, because jsdom resolves the cascade and does **no layout**: every box it reports is zero
+by zero. So every geometric assertion in this project — touch targets are 44px, the rails align, nothing
+clips, the page does not scroll sideways — was written in CSS and verified nowhere. Two of the bugs actually
+reported by a human were precisely this class.
+
+`npm run browser` now measures the built app in headless Chromium across **five real viewports × twelve
+tabs**: touch-target geometry, clipped content, horizontal overflow, computed-colour contrast, and rail
+alignment.
+
+Its first run produced 228 findings. Triaging them honestly, most were my own checks being broader than the
+property they verified — `.sr-only` elements are *supposed* to be 1×1 and clipped, and the tab bar is
+*supposed* to scroll horizontally. Excluding those left **67 real defects**, none of which any existing gate
+could see:
+
+* The header info button was **35px wide**, the date steppers **28px**, the range pills **37px** — all with
+  padding that looked adequate in the stylesheet and was not adequate in pixels.
+* `.lk-tag` and `.lk-why` measured **4.19:1**. The token audit passed because it checked the pairs it was
+  given; those classes sit on an *elevated* card surface the tokens were never checked against. The browser
+  measured the pairs that actually occur.
+* A citation line with no spaces to break on ran **3px past a 393px viewport**.
+
+All fixed; the gate now reports **zero findings** and runs in the check chain.
+
+One consequence worth stating: the gates now need `jsdom` and `playwright-core` installed. The **build** still
+needs nothing but Node, which is the portability claim that actually matters, and the audit now enforces that
+distinction rather than treating any dependency as a violation.
+
+### Reconciling v12 — a branch that regressed what it could not see
+
+v12 arrived as a visual-architecture branch and had to be judged against the tree here. It was forked from
+v5 **before** the merge and **before** the browser gate existed, and that shows precisely.
+
+**What v12 added, and kept:** skin application wired into appearance, presentation provenance carried on
+every card, sealed presentation models. Sound work, and v12 is the correct base.
+
+**What v12 lacked:** the real-browser gate and its `playwright-core` dependency, the `76-visual-complete.js`
+module and its uncertainty-style join, the audit's build-versus-gate dependency distinction, seventeen
+self-tests — and the **measured CSS corrections**.
+
+That last one is the instructive part. Run through the browser gate, v12 reproduced **all 67 defects** that
+gate had found and fixed: the 35px info button, the 28px date steppers, the 4.19:1 text on elevated cards.
+v12's own gates were green, because every one of them runs in jsdom, which does no layout. A branch that
+focused on visual architecture regressed every measured visual defect, and nothing it carried could see it.
+
+It also brought one defect of its own: a `data-personalization="active"` attribute set on every load.
+`personalizationModel()` returns `status:'ok'` unconditionally, so the flag read "active" whether or not
+anything had been personalised — and no stylesheet rule read it. It carried no information to nothing.
+Removed, rather than given a CSS rule just to silence the dead-toggle audit, which would have hidden it.
+
+Three unreferenced scratch scripts (`debug1.mjs`, `dump.mjs`, `dump-empty.mjs`) removed.
+
+Merged: 66 modules, every gate green including five viewports by twelve tabs in Chromium. That tree is
+authoritative. The lesson for future branches: **the browser gate must travel with the code**, because a
+branch without it cannot tell that it has undone the fixes it was never shown.
+
+### A layout regression caused by an accessibility fix
+
+A screenshot showed the tab labels running into each other — "Progress", "Diagnose", "Experiments" and
+"Learn" overprinted. Reproduced in Chromium: tab boxes were narrower than their own text, Progress 58px
+holding 65px of text and Experiments 69px holding 85px.
+
+**The cause was the touch-target fix from two passes earlier.** Flex items default to `min-width:auto`, and
+`auto` is precisely the thing that stops a flex item shrinking below its content. The rule
+`button[data-act]{min-width:44px}` replaced `auto` with `44px`, which *permitted* every tab to be squashed to
+44px. A fix for one measured defect caused another.
+
+**The browser gate missed it**, and the reason is worth recording: it checked clipped content and overflow
+past the viewport, but nothing was clipped — the text simply overflowed into its neighbour. That was a
+blind spot, not a failure to run. The gate now detects text spilling into a sibling, and it now measures at
+660px, the width where the bug appeared: wider than a phone, narrower than a tablet, so the tab bar neither
+scrolls far nor has room to spare. Missing sizes are where layout bugs live.
+
+Validated the way a new check should be: with the fix removed the gate reports **60 overlap findings**,
+with it restored, zero.
+
+### P0 foundation (implementation direction, steps 1, 2, 6, 7, 8, 9)
+
+**Step 6 — run identity was a 32-bit checksum.** The direction says in terms: do not use FNV-1a as content
+identity. At 32 bits, two different computations are expected to collide after roughly 77,000 runs. Run
+identity is now **SHA-256** over a key-sorted serialisation, verified against Node's own crypto across eight
+cases including the 55/56/64-byte padding boundaries where hand-written implementations usually break.
+Key order no longer changes the id; any material change does.
+
+**Step 8 — seven version identities that were one.** Application, schema, ontology, model, reference data,
+food database and adapter are now separate, with what each invalidates written down. An application change
+invalidates nothing on its own; collapsing them meant every release invalidated everything, which is the
+same as invalidating nothing precisely.
+
+**Step 2 — three quantity registries.** `TYPES`, `TYPES_EXTENDED` and `TYPE_ALIASES` were the arrangement
+the direction forbids. `QUANTITY_REGISTRY` is now the single object, and `TYPES` is **the same reference**,
+not a copy, so the two names cannot disagree. Every quantity gains the nine fields specified; unknown
+quantities, wrong units and dimensional mismatches are rejected at the boundary; a missing value is
+declared a gap, never a zero.
+
+**Step 7 — provenance generated during execution.** `infer()` now builds the DAG as it runs — observation
+nodes identified by content, the model at its version, the run with its version vector and digest, and the
+output with its class and interval — rather than reconstructing lineage afterwards from UI metadata.
+
+**Step 9 — capability status derived, never assigned.** Eighteen capabilities, each status computed from
+evidence the build can check. Result: ten integrated, six surfaced, two validated, **zero production-ready**,
+because nothing has been experimentally validated — and four capabilities detected as implemented but
+unreachable.
+
+**Step 1 — the baseline is generated, not written.** `docs/implementation/` holds baseline, capability
+matrix, dependency map and an appended log, all regenerated by `npm run baseline` in the check chain, so a
+hand-kept inventory cannot drift from the code.
+
+**Not done in this pass, stated plainly:** steps 3–5 are partial rather than complete (the model registry
+exists but is not yet the single authoritative description; production models are not all migrated through
+`infer()`; the dependency graph is contract-derived but invalidation is not yet keyed to it end to end), and
+steps 10–20 — Presentation, Dashboard and Visualization Studios, the anatomy, movement and program
+renderers, and the remaining model families — are not started. The immediate-actions document lists well
+over two hundred items; this pass built the foundation the direction says must come first.
+
+### Steps 3–5 completed, and step 10 (Presentation Studio)
+
+**Step 3 — the registry described models but could not run one.** All 25 entries in `MODELS` said what
+they computed and none said which function computed it, so the inference gateway could not resolve a model
+by id at all. It took raw function names and bypassed the registry — the arrangement the direction
+forbids. Every entry is now bound to its implementation and all 25 resolve. `modelContract()` produces the
+direction's full description by deriving each field from registries that already exist, so no field can
+disagree with what it describes.
+
+The registry audit then found a second gap: **23 of 25 models had no maturity grade**. The maturity table
+had been built around the newer engines and keyed by their function names, so it never met the original
+model registry — two registries describing overlapping things with disjoint keys. Grades are now derived
+by rule: heuristics, priors and policies are infrastructure; arithmetic with a declared uncertainty is
+operational; only a model scored against later outcomes rises to statistically validated. Result: 16
+operational, 8 infrastructure, 1 statistically validated, none experimentally validated.
+
+**Step 4 — `infer({modelId})` resolves through the registry**, checks applicability before running, and
+returns version, maturity, uncertainty, provenance and a SHA-256 run id. The old call shape still works for
+migration and every such call is counted, so the remaining direct callers can be found rather than guessed.
+
+**Step 5 — the dependency graph is built from the registry** with typed edges (data, model, configuration,
+derived-state). A change to weight walks outward to 16 models, 3 cached views and 6 decisions.
+
+**Step 10 — the Presentation Studio edits a specification, never a style.** Appearance is plain data,
+validated against the same registries the runtime uses and applied through the existing path. It adds what
+the actions list asked for: an arbitrary custom colour (accepted only at 3:1 or better, refused with the
+measured ratio and a hint otherwise), saved profiles that can be duplicated and deleted while built-ins
+stay protected, a token inspector with measured contrast, and import/export.
+
+Import follows the direction's pipeline stage by stage and reports **which** stage rejected an input —
+parse, schema or semantic — rather than a single failure. Names are `appearance*` rather than
+`presentation*`, because `presentationSpec` already exists and means report layout.
+
+One false alarm worth recording: the focus-while-typing check reported two Studio fields as unable to take
+focus. They could. The check collected element references once and then re-rendered after each keystroke,
+which detached the rest, and a detached element cannot take focus. It had never tripped because no sheet
+before had three text fields. The check now collects identities and re-finds each field after every render.
+
+### Step 11: one dashboard system, an editor for it, and three mistakes of my own
+
+**Two dashboard systems had already arrived from two branches.** `WIDGETS` + `DASHBOARD_LAYOUTS` +
+`dashboardCompose()` in one module, `WIDGET_REGISTRY` + `composeDashboard()` + `applyLayoutOperation()` in
+another. No widget id in common, and neither rendered by any view. The direction forbids duplicating a
+subsystem, so `WIDGET_REGISTRY` — the richer schema, and the one the renderer bridge reads — is canonical,
+the other six widgets were migrated into it, and the older compose path now delegates.
+
+A dashboard is data in the shape the direction specifies: sections of widget placements. Fourteen
+operations each return a **new** specification, validated before it is kept, so an invalid edit leaves the
+original untouched. Adding a widget twice, an unsupported size, removing a section that still holds widgets
+and an unknown operation are all refused with the reason. A narrow screen composes every widget at its
+smallest supported size — responsiveness is a property of composition, not a second layout. Editing a
+built-in forks it, so the original is always there to go back to.
+
+Three mistakes made while building it, each caught by a gate rather than by reading:
+
+* **The attention tile showed NaN.** It read `attentionQueue().length`, but the queue returns
+  `{items, counts}`. It now reads the same field the header badge reads, and a test asserts the tile and
+  the queue agree — a dashboard contradicting the header is worse than one showing nothing.
+* **The migration overwrote an existing widget.** `body.weightTrend` was a contract-validated line chart;
+  merging over it replaced its renderer with a metric tile and broke it. The engine gate caught it. A
+  migration now refuses to redefine an existing id, and the new tile has its own.
+* **The dashboard dispatched to renderers directly**, bypassing `renderWidget()` — whose own comment says
+  it is the single widget-to-renderer bridge and that views must not grow parallel dispatch tables. That
+  also skipped its contract validation. Everything now goes through the bridge, and a widget the bridge
+  declines is shown as declined, with the reason.
+
+**The browser gate had never opened a sheet.** It swept twelve tabs, so every control inside a sheet was
+unmeasured. It now opens eight. On its first run it found the Presentation Studio's inputs **19px tall** —
+wrapped in `class="fld"`, a class with no stylesheet rule at all. Five sheets use that class; I first
+claimed all five were broken. Measured with the fix removed, only two were: the Studio and the older label
+scan. The other three are styled by other rules. The note now records what was measured rather than what I
+assumed.
+
+### Step 12: one chart catalogue, the visualization pipeline, and a Studio
+
+**The same duplication again.** Two catalogues of chart types had arrived from two branches:
+`CHART_TYPES` (18 types, each saying what it encodes, what it needs and how it misleads) and
+`VISUALIZATION_REGISTRY` (28 types, each saying its data dimensions and minimum observations). Sixteen in
+common. They are now one object — `CHART_TYPES` is the same reference, as `TYPES` is to
+`QUANTITY_REGISTRY` — and every entry carries both halves. `VISUALIZATION_CONTRACTS` is a different kind
+of thing, contracts for particular uses, and correctly stays separate.
+
+The catalogue now holds **37 types**, including all 32 the actions list names, and every one says what it
+encodes and how it misleads — a stacked area misleads for every series but the bottom one; a sunburst
+exaggerates its outer rings by their radius; a calendar heatmap misleads when missing days are coloured as
+zero.
+
+**Only 9 of the 37 can actually be drawn.** The renderer draws four series kinds — line, band, bars and
+dots — and the renderable types are the ones composable from those. The other 28 are catalogued and
+contracted but have no renderer, and the catalogue says so: a type is renderable if and only if a renderer
+for it exists, which a test asserts. Presenting all 37 as working would have been the easiest thing to
+build and the least honest.
+
+**The pipeline runs the direction's stages in order** — model, presentation, spec, validation, renderer —
+and a failure names the stage that stopped it: an unknown type fails at *spec*, a catalogued type with no
+renderer fails at *renderer* rather than drawing something wrong. Every chart carries the run id of the
+model output it drew, and all chart rendering goes through one bridge.
+
+**The Visualization Studio** builds a chart from any registered model, offering only the types that both
+fit the model and can be drawn, shows each type's failure mode, and saves a working chart as a dashboard
+widget — rendered through the same single widget bridge as every other widget. A chart that cannot render
+cannot be saved.
+
+One gap caught before it shipped: saved chart widgets lived in settings but nothing restored them into
+the widget registry on load, so a saved chart would have vanished on reload. They are restored in
+`applySettings()`. The reload test itself first showed no chart after reloading — that turned out to be
+the harness swapping the record in without clearing the model cache, not the app, and was confirmed as
+such before anything was changed.
+
+### Step 13: one anatomy, and a body map built on it
+
+No body map existed, but three things describing muscles did, and **they did not agree on what the muscles
+were called**. The exercise ontology (`MUSCLE_GROUPS`) and every model that reads it — `exposureOf()`,
+the fatigue compartments — speak of `upperback` and `erectors`. The muscle coverage visual carried its own
+private list instead: `traps`, `rhomboids`, `lowerBack`, `obliques`. Four of those do not exist in the
+ontology, and the models never emit them.
+
+So the coverage visual looked for "traps" and "rhomboids", found nothing, and reported them as **none
+recorded** — while the upper back was the second most-trained region in the record at 22.5 effective sets a
+fortnight. It told the person they were neglecting muscles they train. That private list was mine, from an
+earlier pass.
+
+There is now one anatomy, keyed by the ontology, and the old map is the same object. The coverage visual
+reads the vocabulary the models write. The ontology's own `back` entry turned out to be orphaned — no
+exercise emits it, because every back movement lands on lats, upper back or erectors — so it is kept as an
+aggregate rather than drawn as a region, which would always be empty and would itself read as neglect.
+
+**The body map** draws that anatomy front and back, coloured by the fatigue model and never by its own
+arithmetic, with three states that are deliberately never alike: a muscle carrying load is filled, with
+opacity by its share of the highest load; a muscle with none in the window is a dashed outline, a measured
+zero; and with no training record at all the whole map is hatched — a gap, because nothing was measured.
+Every region carries a title and a text table follows the drawing, so colour and position are never the
+only way to read it. It was inspected as a rendered image, not only measured: every region sits on the
+right part of the body, and the brightest region, the glutes, is the highest-load muscle in the record.
+
+An audit asserts the anatomy matches the ontology exactly and that every muscle training can load has a
+place on the map, so load can never land somewhere invisible.
+
+### Step 13 completed: movement, mobility, program and nutrition renderers
+
+**A correction first.** Last pass reported Step 13 done after building only the body map. Re-reading the
+direction, Step 13 is "anatomy / movement / mobility / program / nutrition renderers" — four were missing.
+Step 8 had also been mis-described earlier as the version vector; it is the materialisation rewrite around
+dependency identity, which is only partly done.
+
+**§27 body renderer.** The body map mixed geometry into the anatomy mapping; the spec requires them apart.
+Shapes now live in `ANATOMY_GEOMETRY`, meanings in `ANATOMY`, and load arrives only as an overlay.
+
+**§28 movement.** Every one of the 16 movement patterns in the exercise library is drawn from joint positions
+in a body coordinate system — origin at the feet, one unit one body height — that knows nothing about pixels.
+A separate transform maps positions onto a viewBox, fitted to the union of the start and end frames so the
+two are drawn at the same scale and a range of motion is never exaggerated by refitting. Segments, joints,
+range-of-motion arcs, force vectors and labels are independent layers. The range is computed from the
+positions, not drawn.
+
+**§29 mobility.** The ten poses draw through the same skeleton and the same joint ontology — no separate yoga
+anatomy — each carrying target regions, joints, positions, constraints, sequence position, duration and
+intensity.
+
+**§30 program.** Program, mesocycle, microcycle, day, read only: the plan from `trainingProgram()`, what was
+done from the session log, nothing rescheduled. The program has no explicit block structure, so the window
+is one mesocycle declared as implicit rather than invented.
+
+Five defects surfaced while building these, all caught before shipping:
+
+* **The drawability audit checked nothing.** It read `EXERCISE_LIBRARY`, which does not exist — the library
+  is `EXERCISES` — found zero patterns, and passed. A coverage check with nothing to cover now fails.
+* **The program reported 12 of 14 sessions missed** in a record that trained 13 times in the window — on
+  Wednesday, Thursday, Saturday and Sunday against a Monday/Tuesday/Thursday/Friday plan. Matching by exact
+  weekday counted every moved session as skipped. Adherence is now judged per week (9 of 14), with how many
+  fell on the planned day reported separately.
+* **Nutrition called ten of fourteen days unlogged** — days whose calorie totals the energy balance model was
+  using. It read only itemised food logs; intake is also recorded as daily totals. A renderer contradicting
+  the model beside it is worse than none. Both sources are used now, each day says which, and a macro that
+  was never recorded is unknown rather than zero.
+* **The welcome toast outlived its premise.** Screenshotting the movement renderer showed "set up a profile,
+  or load the demo" covering every drawing — after the demo had loaded. It could fire in the 200ms after the
+  demo loaded, and nothing dismissed it once shown. It re-checks at display time and loading the demo
+  dismisses it.
+* **A weekday list was redeclared**, caught by the namespace guard. Identical this time, so nothing broke —
+  but a differing copy would have silently changed every weekday name in the app.
+
+Every renderer was inspected as an image, not only measured: the squat pushes knees forward and hips back,
+the bridge lifts the hips, downward dog forms an inverted V with the head between the arms, and the program
+calendar makes a moved session visible as training rather than absence.
+
+### The shipped file stopped working in inline previews
+
+Reported: the index file, opened in the file preview, was no longer interactive, where earlier builds had
+been. Loaded in a sandboxed iframe with scripts allowed and same-origin denied — the usual way a preview
+isolates HTML — the app booted, switched tabs and ran without error, so the sandbox itself was not the
+cause, and the preview's exact behaviour cannot be observed from here.
+
+What changed was size. The file measured **2,225,673 bytes**, and it crossed **2 MiB (2,097,152)** during
+step 11 — every build before that, the ones that worked, was under it. 2 MiB is a common limit for inline
+rendering, and this file is unusually exposed to one: its Content Security Policy pins the single inline
+script by SHA-256 hash. A preview that truncates the file, or alters any byte of the script, leaves a page
+that still displays but whose script the browser refuses to run — which is exactly "not interactive". The
+cause is inferred from the timing and that mechanism rather than observed directly, and the note says so.
+
+Of the file, **267 KB were comments** — 12% of the script, none of the behaviour. The build now ships a
+script without whole-line comments or indentation, and the commented source is unchanged. It ships at
+**1,875,171 bytes, 222 KB under the limit.** Three guards keep the transform from changing what runs: a
+comment is removed only if it occupies whole lines and its body cannot contain a closing marker (so a
+comment, code, and another comment can never be matched as one span with the code inside deleted);
+indentation is only stripped if no string literal spans lines; and the result is compiled with Node's own
+parser before it is written. The first draft of the build note describing that hazard quoted such a line
+— and its closing marker ended the note itself and broke the build, which is the hazard demonstrated.
+
+**A new gate runs the whole self-test suite inside the shipped file.** Until now the suite ran against the
+source; once the build transforms the script, the file a person opens is not byte-for-byte what was
+tested. Its first run: 1,092 of 1,093 — the failure a test that assumed no welcome was showing, true in
+the headless engine and false in the real page, which shows a welcome on boot. Fixed; 1,093 of 1,093. The
+same gate fails the build if the file reaches 2 MiB again.
+
+### Step 14: uncertainty, forecasting, causal, Bayesian and measurement (§10–14)
+
+Read from the direction before building, which paid for itself: each section named a defect the code had.
+
+**§13 — an approximation wearing the name of the full method.** `hierarchicalBayes` did empirical Bayes: it
+estimates the between-unit variance once and conditions on it, so its intervals are too narrow. The
+direction reserves exactly that name for the full method and says never to expose an approximation as a
+full posterior. Renamed `empiricalBayesPool`; every Bayesian result now declares its method and whether its
+posterior is full or approximate, and an audit exercises nine real return paths to enforce it.
+
+**§14 — an invented uncertainty and a second fusion path.** With one scale — the usual case — the reference
+source's variance was defaulted to 1 and the fused estimate reported ±1 lb that nobody measured. A single
+source's noise is measurable as its scatter around its own trend: 0.785 lb here. All seven properties are
+now measured or reported as unmeasurable with the reason; a lone scale is reported as uncalibrated, because a
+systematic error in it would be invisible. Validated by adding a second scale reading 1.5 lb heavy: the
+model recovered +1.48 lb and zero drift. `fuseObservations` still weighted sources by a fixed table — the
+approach an earlier pass had replaced — so the same day could be fused two ways; it now uses the
+measurement model. Raw readings are never overwritten.
+
+**§10 — one taxonomy, and uncertainty built at execution.** Four places named uncertainty kinds and none used
+the direction's names (`reference-data`, `missing-data`, no `userInput` at all). The ten are canonical, old
+spellings are accepted as aliases, every kind has a drawing, and `infer()` now assembles sources,
+distribution, interval, confidence, calibration, propagation and limitations when a model runs.
+
+**A field nothing ever wrote.** The calibration report said the weight forecast had a hit rate of **0** —
+none of 42 outcomes inside its interval. Computed from the ledger it was **76%** (32 of 42). Six places read
+`p.hit`; the scorer writes `p.covered`; `hit` was never set anywhere. The knowledge graph therefore labelled
+every forecast "outside the range", the recall summary said every one "missed", and the activity timeline
+said the same. One missing field, a false statement in four features.
+
+**Validation for being checked, not for being right.** Last step graded the forecast statistically
+validated because it is scored against outcomes. Its ledger shows a mean error of +1.70 lb across 42
+forecasts (t = 4.3), growing with horizon: +0.38 lb at a week, **+5.01 lb at four weeks**, with 50%
+coverage there. A straight line keeps projecting a cut's early rate after the cut slows. Validation now
+requires enough scored forecasts and no significant bias, so it is graded operational, with the reason on
+its contract. The interval also has no nominal level — its half-width is a heuristic — so its track record
+is the only honest statement of what it means, and that is what it now carries.
+
+**§11 — a forecasting family.** Naive, linear and damped-trend candidates, each refit at every origin using
+only readings up to it, scored at 7, 14 and 28 days, with residual bias, lag-1 autocorrelation and 80%
+coverage per candidate per horizon, and a choice made per horizon. Three corrections on the way: my first
+selection said "no significant bias" when every 28-day candidate was biased and the choice had silently
+fallen back to lowest error; bias was tested against the raw count of overlapping origins when their errors
+correlate at about 0.5, which overstated significance — the effective sample is now used, and at 14 days
+the linear and damped verdicts changed; and intervals were widened by a flat 1.25× when coverage was 29%
+against 80%, so they are now sized from the backtest error itself. The damped trend removes the 14-day bias
+the ledger found in the production forecast; at 28 days every candidate is still biased and the forecast
+says so — "the least wrong, indicative only". `_lag1` also collided with a function of the same name in
+another module, which silently replaced mine; the namespace guard caught it.
+
+**§12 — the causal pipeline** runs DAG, estimand, identification, treatment model, estimator, balance,
+effect, uncertainty and sensitivity in order over the existing pieces — not a second framework — and stops
+at the first failing stage. Its first run showed identification choosing a day-of-week instrument and the
+pipeline then running the backdoor estimator anyway; the estimator now follows the chosen strategy, with the
+instrument case estimating the local effect it actually identifies. And identification had approved that
+instrument on strength alone while its own estimator rejects anything with a first-stage F under 10 — this
+one scores 1.3 — so the two used different tests. They use the same one now.
+
+### Step 15: recovery, cardio, nutrition and adherence (§15–18)
+
+**Three versions of one bug.** Nutrition reported 7,681 kcal and 582 g of protein "per day" for someone eating
+about 2,400 and 190: it divided by `daysBetween(logs[0].date, today)+1`, assuming oldest-first order, and the
+logs are newest-first, so the divisor was 1. Searching for the pattern found the cost report doing the same
+thing. Cardio reported 267 minutes and seven sessions a week against about 105 and 2.8: it divided by the
+number of days that HAD cardio rather than the calendar. The right divisor differs by meaning — an unlogged
+food day is unknown intake, an unlogged cardio day is a day without cardio — and each now uses the right one.
+
+**§15 — recovery as a latent state.** Three recovery measures existed, and all averaged z-scored self-reports,
+so the reports were the score. Recovery is now a Kalman-filtered latent state pushed down by training load and
+sleep debt, with each report a noisy reading of it, weighted by its own measured scatter; one extreme report
+moves the estimate without redefining it. My first forecast projected −2.7 and −3.8 standard deviations on
+the next two lifting days when the history never left ±0.3 — it ran on a declared coefficient and the
+template's prescribed sets. The load effect is now estimated from this person's history (−0.08 ± 0.09,
+indistinguishable from zero, so not projected) and planned days use the sets actually done. Its band also
+narrowed from day one to day two because the forecast used signed load while the filter used only load above
+usual; all three now agree, and the band widens.
+
+**§16 — cardio through a normalisation layer.** Every session becomes absolute intensity (METs, from power,
+pace or a labelled reference table) and, where recorded, relative intensity; relative load and MET-minutes are
+never added together, and relative load is not reported when nothing records intensity. A recorded zone first
+came out as intensity 0 — the zone table carries no numbers — so zones now take midpoints from the same
+heart-rate bands used to assign them.
+
+**§17 — nutrient layers.** Database, consumed, absorbed and available are separate, with portion and
+absorption uncertainty; deriving them never touches a stored value. Available energy runs about 6% under the
+label figure, consistent with the Atwater overstatement stated elsewhere.
+
+**§18 — adherence as a probability.** A completion probability from friction features, each day predicted
+only from earlier days and scored against the base rate. The friction features beat the base rate for protein
+only; for calories, steps and sleep the model says they do not help rather than claiming they do. Against the
+adherence view it first disagreed — steps 25% against 62%, sleep 27% against 64% — because it used the full
+step target where the other used 90%, and read `sleepTarget`, which does not exist (the field is
+`sleepTargetH`). Both now read one definition and one daily series, and agree to the percent. One user-facing
+line framing adherence as "a discipline problem" was reworded.
+
+### Step 16: experiments, knowledge graph, digital twin and optimization (§19–22)
+
+**A false finding.** The knowledge graph held "trend −3.9 lb/wk is within −2.5 to −1.5 lb/wk". The decision
+engine's hold-steady fallback asserted "within the band" whenever a band existed, without checking — and
+there is no branch for losing faster than the band while recovery is fine, so that case fell through and was
+recorded as in range. The claim is now tested ("faster than −2.5 to −1.5"), and a hold with the trend outside
+the band is shown for attention rather than as reassurance. The missing branch itself is a decision-logic gap
+beyond this step and is recorded as such.
+
+**§19 — experiments.** Plan and results lived in one record and nothing would notice a hypothesis edited after
+its outcome was known. The plan is now fingerprinted with SHA-256 at registration; plan and results are read
+as separate views; a revision before results is appended to a history; after results the original is left
+untouched and the revision becomes a new, linked experiment. A changed plan with results present is reported
+as untrustworthy. My first revision only emitted an event and reported "revised" while nothing changed — the
+event log here is for replay, and the live change must be applied by the caller.
+
+**§20 — knowledge graph.** It used its own edge vocabulary, none of the eight the direction names, and findings
+carried a label and a date. A canonical view now maps each relation by what it actually connects, adds model
+and source nodes, and gives every finding evidence, provenance, uncertainty, applicability, creation version
+and a review state. "contributed to" becomes associatedWith, never causes; forecast outcomes support or
+contradict their prediction according to whether the actual value fell inside the range.
+
+**§21 — digital twin.** Simulations never touched the record, as required. But the do-nothing scenario had an
+interval of zero width — exactly 231.7 lb in twelve weeks — because only the change's effect carried
+uncertainty, not the trend beneath it. Both now combine, and a projection past the four weeks forecasts are
+checked to is flagged as extrapolation.
+
+**§22 — optimization.** Already a Pareto frontier with no silent weighting. Added: objectives and constraints
+declared separately, an outcome range on every plan, a feasibility account of all 74 plans searched, and
+trade-offs. Comparing outcomes with their ranges, overlapping ranges count as ties — which shrank the demo
+frontier from three plans to one, correctly: the higher-effort plans' faster expected loss is not resolvable
+from the data. The two plans dropped only for that reason are listed as bets on a faster result, not hidden.
 
 ## Not buildable in this architecture
 

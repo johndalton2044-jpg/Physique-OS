@@ -41,7 +41,7 @@ Serving `dist/` over HTTP and booting against it:
 200  /version.json
 ```
 
-…and from the running app: branded food search returns results, and the 542-factor yield table loads.
+…and from the running app: branded food search returns results, and the 537-factor yield table loads.
 
 ## Hosted builds (Vercel, Netlify, Cloudflare Pages)
 

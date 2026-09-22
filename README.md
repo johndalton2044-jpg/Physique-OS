@@ -209,7 +209,7 @@ one anyway.
 
 ## Cooking yields
 
-542 raw-to-cooked yield factors extracted from USDA Agriculture Handbook 102 ship with the app (pages 20–72 of 131). Every one was
+537 raw-to-cooked yield factors extracted from USDA Agriculture Handbook 102 ship with the app (pages 20–72 of 131). Every one was
 confirmed by checking that its yield and loss percentages sum to about 100 — the table's own arithmetic, used
 as a semantic check rather than trusting OCR. Rows that could not be confirmed are absent, and an absent item
 says so rather than defaulting to a factor of 1.0.
@@ -315,8 +315,10 @@ backend or a device.
 * Fat-vs-other change is reported qualitatively (fat-loss-compatible, composition unresolved,
   recomposition-compatible). A numeric split requires two body-fat measurements by the same method at least
   21 days apart.
-* **AH-102 yields ship, partially.** 542 factors from pages 20–72 of 131, each confirmed by checking that its
-  yield and loss percentages sum to about 100. Pages 73–131 were extracted and excluded: the item-number
+* **AH-102 yields ship, partially.** 537 factors drawn from 33 distinct pages spanning 20–70 of 131, each confirmed by checking that its
+  yield and loss percentages sum to about 100 — a check now enforced as a build gate. Five rows passed the
+  original cross-check but failed that arithmetic and were dropped rather than repaired, because deciding
+  which of the two numbers to believe needs the source images. Pages 73–131 were extracted and excluded: the item-number
   column is misread there, and a yield attributed to the wrong food is worse than a missing one. An item that
   is not in the table reports that it could not be verified — explicitly not the same as a yield of 1.0.
   Descriptions come from OCR and are often partial, so search returns candidates rather than picking one.
