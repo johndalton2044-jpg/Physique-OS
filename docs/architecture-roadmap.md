@@ -117,7 +117,7 @@ degrades to a non-cryptographic digest and **says so** rather than implying a gu
 ### Event sourcing (§48, §49, §163) — implemented
 
 Previously deferred as "a rewrite of every mutator". It was, and it is done. Every mutation primitive now
-emits an event describing what happened rather than what the record became: 41 event types (40 active, 1 deprecated) across
+emits an event describing what happened rather than what the record became: 42 event types (41 active, 1 deprecated) across
 observations, sessions, food, phases, programs, decisions, interventions, predictions, experiments,
 negatives, snapshots and profile.
 
@@ -1970,6 +1970,340 @@ declared separately, an outcome range on every plan, a feasibility account of al
 trade-offs. Comparing outcomes with their ranges, overlapping ranges count as ties — which shrank the demo
 frontier from three plans to one, correctly: the higher-effort plans' faster expected loss is not resolvable
 from the data. The two plans dropped only for that reason are listed as bets on a faster result, not hidden.
+
+### Built to be verified elsewhere
+
+The build is now verified outside the environment it was written in, so every assumption about this machine
+was removed. The real-browser gate hard-coded `/opt/google/chrome/chrome`; it now finds Chrome, Chromium or Edge
+on Linux, macOS and Windows, or Playwright's browser cache, and fails with instructions if there is none — never
+passing by absence. Skipping it takes an explicit `PHYSIQUE_SKIP_BROWSER=1`, and the run then says the browser
+checks did not happen. The sync gate wrote to `/tmp`, which Windows does not have. Node 20 or later is now
+declared, and the README says what to install. The 2 MiB size check became a warning: that limit belonged to
+one preview environment, which is no longer where the build is judged.
+
+Rerunning the chain after those changes, the browser gate reported three findings that had been exiting
+successfully — it only failed on P0. They were real: `svgChart` centres bars on their x position and the first
+and last positions sit on the plot's edges, so those bars were drawn half outside the chart and clipped. The
+current week in the program chart showed at half width, which reads as half the training. The x-range is now
+padded half a slot each side for bar series. The gate now fails on P1 too, and it no longer prints
+`[object SVGAnimatedString]` for SVG elements, which had hidden which element was at fault.
+
+### Step 17: copilot orchestration
+
+The copilot's foundation was already sound: a written contract of what an assistant may and may not do,
+validation that rejects any reply containing a figure not in its context, and a deterministic answer beneath.
+Added against the actions list:
+
+* **Context.** Goal, model, provenance and evidence context. Model context matters most: an assistant explaining
+  the forecast now knows it is graded operational, not validated. The goal context first carried null — it read
+  `goalWeight`, and the field is `goalWeightLb` — and a test citing it passed only because null is not a number.
+  It now reads the goal model. The new context also had to be made citable: the figure collector read five fixed
+  sections, so a correct quotation of the goal would have been rejected as invented.
+* **Proposals and validation.** Proposals come from the decision engine and the optimizer's frontier, and are
+  refused if their action is unregistered, if they lack evidence or an outcome range, if they break a
+  constraint, or if they claim not to write while naming an action that does.
+* **Authorization.** A proposal that would change the record is held pending and runs only on the person's
+  confirmation. The assistant cannot confirm — it never receives the functions, and a confirmation not made by
+  the person is refused. Each confirmation is recorded as a `copilot.authorized` event.
+* **Explanation traces.** Any answer can be traced to its model, the run that produced it, the readings behind it
+  and its uncertainty.
+* **The question people ask most.** "Why is my weight not dropping" had no answer. It now goes to the plateau
+  diagnosis — and when the premise is false, as in the demo (−1.7 lb/wk), the answer says so first rather than
+  inventing a reason for something that is not happening.
+
+### Step 18: export/import and advanced rendering
+
+**One registry for every export.** Exports had grown one at a time — backup JSON, a CSV exporter, a calendar
+file, an appearance export, a report exporter — each with its own shape and none with a version check, and
+seven kinds on the actions list had no export at all. There is now one registry: dashboard layouts,
+appearance profiles, saved chart presets, experiments, programs, provenance and data, in JSON, CSV and Markdown
+as each allows. Every JSON export carries its kind, schema version and the app version that made it.
+
+**Every import passes the same stages** and reports which one stopped it: parse, schema, version, semantic,
+then canonical. A file from a newer schema is refused rather than half-read; an older one is migrated, and an
+appearance file saved before envelopes existed is recognised and migrated rather than refused. Nothing is
+imported into interface state: each import is applied only through the function that owns that object. Two
+choices are deliberate. A dashboard imports under its own name and never replaces one already here. An
+experiment imports as a new plan only — importing another record's results as this person's would be a false
+finding, so results always come from the record itself. Every importable kind round-trips intact.
+
+**Charts export as SVG and PNG, and look the same outside the app.** A chart's colours come from CSS custom
+properties that exist only inside the app, so a copied SVG renders with invisible lines. The export writes each
+element's computed style inline; opened on a blank page with no app styles, every element is visible, and the
+PNG is rasterised from that SVG at twice the size.
+
+**Advanced rendering: three of the 28 undrawable chart types,** chosen because they fit data the app holds,
+each built against the failure mode its own catalogue entry declares. A calendar heatmap draws an unlogged day
+as an empty cell, never as a low value, and draws nothing before the record began. A box plot does not draw a
+week with fewer than five readings, and labels the gap. A horizontal bar is sorted by value. Twelve of 37 types
+are now drawable.
+
+Looking at the rendered horizontal bar caught a problem the checks did not. Bars need a zero baseline, which the
+catalogue requires, and on body weight that draws 255.5 and 256.9 lb as identical bars — the chart was
+honest to its rule and useless. Subtracting the trend to fix it would compute a new analytical quantity in the
+presentation layer, which is not allowed. So bar and area charts — area also fills from zero, as its own
+entry says — are refused where a zero baseline would hide the variation, decided from the data, and the refusal
+is enforced at validation so a saved preset or an import cannot route around it.
+
+### Step 19: governance automation (§34)
+
+`npm run governance` reads the same registries the runtime uses, generates `docs/implementation/governance-report`
+(JSON and Markdown) from code on every run, compares it with the previous report for drift, and fails the build
+on hard findings. Every one of the ten §34 detections is implemented, plus the ones the actions list adds.
+
+The detectors were built around the defect families this project actually shipped and then found by hand, so
+that the next instance is caught without anyone looking: a field read that no code ever writes (`p.hit`,
+`sleepTarget`, `goalWeight`), a `typeof` guard on a name declared nowhere (`EXERCISE_LIBRARY`), duplicate systems
+(`cardioState` beside `cardioState2`), and audits that no gate runs. The never-written detector wraps every stored
+record in a recording proxy and exercises the whole application over the demo record. Each detector was then
+checked the way a new check should be: reintroducing `p.hit`, `typeof EXERCISE_LIBRARY` and a model without a
+version each fails the gate, and restoring them passes it.
+
+**Its first run found real defects.** The knowledge graph attributed observations to an experiment up to
+`e.endDate` — a field experiments never have — so the bound was always missing and every reading from the start
+onward was credited to the experiment, including readings long after it ended. It now uses the experiment's real
+end. `visualAudit` called `visualContractAudit()` behind a `typeof` guard, and that function was never written — my
+own, from the presentation work, where the file meant to hold it already existed and the write was refused — so
+that part of the audit had checked nothing since the day it was written. `visualCompleteAudit` existed and nothing
+ran it; it runs in the self-tests now. `cardioState` and `cardioState2` still read cardio separately; the summary
+now takes its sessions from the detailed record, renamed `cardioSessions`.
+
+**It also produced false findings, twice, both mine.** The first name check reported 51 undeclared names, nearly
+all local variables: a check broader than its property. Refining it to count names assigned anywhere then
+widened the set the duplicate-system check used, which jumped from 1 to 48 pairs of local variables — a fix to one
+detector that broke another. The system-level checks now use top-level declarations only. The field detector
+first reported fields absent from this data that code does write (a session correction, a phase ending); it now
+reports only fields nothing writes, and separately lists absent-by-data fields so the demo's coverage is visible.
+
+Tracked, not failing: 22 registries declared and never read, 4 capabilities with no surface, 4 structural
+navigation actions no gate opens, 6 registered models no test names directly, and the two absent-by-data fields.
+
+### Step 20: full verification and release
+
+`npm run release` runs every gate and then the 24-item final verification list, mapping each item to something
+that actually runs and recording its evidence; an item with no check is reported NOT VERIFIED rather than ticked.
+It also runs one concrete check for each of the eleven §33 adversarial cases, follows a new observation through all
+fourteen stages of the §38 chain, and generates `docs/release/`: the release record, a manifest hashing every
+shipped file, the capability maturity report and the §37 definition-of-done matrix.
+
+Two gates were missing and were built for this step. **Visual regression** pins the browser clock — the demo is
+generated relative to today, so nothing was comparable run to run — and records chart output, design tokens,
+typography, layout and chart semantics against a committed baseline. **Model reproducibility** loads the app twice,
+independently, and requires every model to give the same result and the same run identity.
+
+**Building them found real defects.**
+
+* **A race in loading.** The maintenance baseline read 2,662 kcal in most loads and 2,606 in some, from identical
+  data at an identical moment: boot captures today's snapshot on a timer, and whether it fired before or after the
+  record loaded decided whether that snapshot existed. Loading now ends by capturing it, and twelve loads with
+  deliberately varied timing give one answer.
+* **Environment in the picture.** The dashboard's attention count read 6, 7 or 8 between loads, because two
+  platform jobs — the update check and the food-database version fetch — add an item when they fail, and whether
+  they had failed yet depended on timing and network. That would have made the baseline fail on any other machine.
+  The capture fixes job state; the jobs are tested elsewhere.
+* **Impossible dates were valid.** `isValidISO` accepted 2026-13-45, February 30 and February 29 of non-leap years,
+  because `Date` rolls impossible dates over and "it parses" was the test. It now requires a round trip.
+* **Implausible readings still counted.** A 9,999 lb weigh-in was flagged and still moved the weekly trend by 0.54
+  lb. Flagged readings now stay in the record and out of the models.
+* **Run identity did not include the data.** It hashed `request.inputs`, which is empty for a registry call, so a new
+  weigh-in left the id unchanged — and the reproducibility check passed only because nothing in the id could differ.
+  Step 6 claimed any material change produces a new id; that was tested against `runIdentity` directly and never
+  through `infer()`. The record's content hash is now part of it.
+
+**The gates' own first versions were wrong four times**, and each is recorded where it happened: reproducibility
+compared raw JSON including random record ids and key order; the release helper read a migration count as a problem
+count; the impossible-value check passed a flagged value that still moved the model; and a first diagnosis of the
+attention-count variation (order dependence) was ruled out before the real cause was found.
+
+**Result: 24 of 24 verification items, 11 of 11 adversarial cases, 14 of 14 traceability stages.** That is a verified
+release, not a finished one. By §37 no capability is complete: of eighteen, two reach four of five boxes, and none is
+production-ready. No model is statistically or experimentally validated — the weight forecast lost that grade in
+step 14 for a bias its own ledger shows. The release documents state both.
+
+### Step 21: requested fixes and features
+
+**Appearance did not persist — because data did not.** Two defects, both on reopening. Startup loaded the localStorage
+mirror (rewritten only at checkpoints), queued its first saves, then flushed that queue over the newer IndexedDB record
+the moment the database opened — before reading it. A record at revision 66 came back at revision 8: every change since
+the last checkpoint, not only appearance, was destroyed by opening the app. Separately, the startup sync merge gave a
+projection's DEFAULT settings precedence over the person's, so the theme, text size and density reset while accent and
+font (which have no defaults) survived. Startup now reconciles before it writes and applies the winning record's
+settings; settings merge per key. A new persistence gate reopens the app three times against the same storage, and
+fails with either bug reintroduced.
+
+**Charts clipped on the left.** The floating thumb rails covered each chart's first 37 px — its y-axis — at every
+width up to 1024 px. Charts are inset by the rails' measured intrusion, recomputed on every layout change; 3,299 chart
+positions across widths, sizes, densities and scroll positions show none under a rail, and the browser gate now checks
+it. Three errors of mine on the way: an assumed card padding, rails measured mid-animation, and a hidden tab's card
+used as the reference. On a 375 px phone charts are narrower (264 px); a new setting hides the rails and restores 325.
+
+**Progress photos could never be added.** The gallery existed and `addPhoto()` existed, but nothing called it. Photos
+can now be taken with the camera or chosen from the library, are resized on the device (an 11.7 MB camera image became
+806 KB), keep the view and lighting they were taken with — which the first version validated and then dropped — and
+show immediately, persist, and can be deleted.
+
+**Casual · Insightful · Developer.** One setting, wired through the shared building blocks so nothing is missed:
+method notes, classification badges and advanced sections hide in Casual; every command and tab carries a level, so
+menus, palette and tab bar follow it; Developer adds model, version, maturity and run id to every widget and a trace
+line to every card — including, for the 54 cards without one, that they have no presentation contract. Every page
+shows strictly more at each level, and the browser gate checks that. A pinned command stays visible at any level.
+
+**Colour.** The existing custom accent had never been applied — validated, saved, exported, and listed by the token
+inspector as in use, while the page ignored it. It is applied now. New: state colours with a colour-blind-safe and a
+high-contrast preset, and a background tint. Every choice is validated against the theme it is shown on; good and
+negative must stay distinct under all three colour-blindness simulations. My first presets failed that validation
+under tritanopia — hue without lightness separation — and were replaced by values found with the validator itself.
+
+**Validation, honestly.** The capability matrix's "validated" box read a hand-assigned grade table while the release
+documents said every status was derived from evidence; two capabilities were "validated" on a grade someone had typed.
+Now infrastructure is validated only by a live check of its behaviour, and analytical capabilities only by a derived
+grade of statistically validated or better. Five infrastructure capabilities reach four of five boxes; the two that
+were previously reported at four fall to three. Five capabilities had no surface and now have real ones. The forecast
+procedure is validated on hold-out forecasts it never saw: on the demo's 70 days there is too little evidence at every
+horizon, and that is what it says; on a 240-day record it validates at 7 and 14 days, so the validator can say yes.
+The forecast family's predictions are now recorded — all of them, reliable or not, since recording only confident ones
+would flatter the record — so a validated grade can be earned against real outcomes.
+
+### Step 22: the missing decision rule
+
+Losing faster than the band with recovery fine had no rule. It fell through to "hold steady" — which for a while
+recorded the trend as inside the band — and loss faster than planned is exactly when muscle is at risk. There is now
+a branch for it. In the first two weeks of a cut it holds and extends the window, saying why: early loss is mostly
+water and glycogen. After that it eases the deficit by half the gap (about 500 kcal/day per lb/week, in 50 kcal
+steps between 100 and 400) and rechecks in two weeks. Replayed at the demo moments that used to say "hold steady":
+day 12 at −4.4 lb/wk now waits with a recheck date; day 19 at −3.3 lb/wk now raises intake by 200 kcal/day.
+
+The rapid-water fixture expected HOLD and now receives WAIT — the specific answer for early water loss instead of the
+generic fallback. Neither changes intake, and a test now asserts that for the scenario. The visual gate had been
+snapshotting run ids, which hash the record's content, so any change to the demo record failed it for reasons that
+were not visual; they are excluded, after confirming against the previous release that nothing else changed.
+
+### Step 23: which forecast is shown
+
+The displayed forecast was the straight-line `weightForecast()`; the forecast family was built, backtested and
+recorded, but never shown. The two now meet head-to-head on the hold-out origins — the later 40%, which the family's
+procedure never saw when choosing its method — using the forecast actually displayed, not the backtest's simplified
+linear candidate. The family is shown at a horizon only if its error is at least 10% lower and its bias no larger, on
+three or more hold-out forecasts. What is shown is exactly the procedure that was evaluated.
+
+Two corrections to my first version: it promoted the 7-day forecast on 1.28 against 1.30 lb over six forecasts — a
+tie that would have switched the display on noise — and it evaluated one method while showing another (the
+full-sample ensemble). On the demo nothing is switched: a tie at 7 days, the family worse at 14, too little evidence at
+28, and each reason is stated. On a 240-day cut that slows, the family wins at 28 days — half the error (0.93 against
+1.85 lb) with the bias gone — and only there, which is where damping should matter. The forecast card now says which
+forecast is shown at each horizon and why; both forecasts keep being recorded under their own ids.
+
+The release gate then failed on performance, and it was right to. Routing the displayed forecast through the
+head-to-head made current state run a backtest over every origin in the history: 2,043 ms on a five-year record against
+an 1,800 ms budget, with decide and replay over theirs too. The backtest is now bounded to the most recent 240 days —
+a regime from years ago says little about the present one — and memoised per record state: current state is about
+480 ms, decide 690 and replay 810 at five years. Packaging is now conditional on the release passing; before, a failed
+release could still be packaged.
+
+### Step 24: text and colour without codes
+
+**Fonts.** Tools had three overlapping controls. "Web fonts" fetched Fraunces, Inter and JetBrains Mono from Google, so
+it failed offline and turning it off applied only after a reload; the Typeface list named Atkinson Hyperlegible and
+OpenDyslexic but never loaded them, so choosing either silently showed Verdana or Comic Sans; and the base stylesheet
+named the Google faces directly, so headings and figures fell back to whatever the system had. Now one Text card: nine
+faces in plain words, each shown in itself, eight of them bundled in the build (SIL OFL 1.1, fonts/ with licences) and
+verified to render with the network off; plus text size, line spacing, letter spacing and weight, all live. The policy
+no longer allows any font origin but the document itself. Old face ids map to new ones.
+
+**Colour.** Themes are picture previews; accents are swatches plus a rainbow slider. A custom accent is stored as a
+hue and derived for the active theme with its lightness adjusted to stay readable — every hue on every theme stays
+above 3:1 — so it survives a theme change. A background tint too strong to read is capped at the most readable level
+rather than refused. Colour-blind-friendly colours are one toggle. Hex values appear only at the Developer level.
+
+**Widest text.** Offering wider faces exposed layout that could not stretch: at OpenDyslexic, extra-large, widest
+spacing, every page scrolled sideways (the header's actions) and Plan and Diagnose worst (a chip grid on 1fr columns,
+which cannot shrink below their longest word). The header wraps only when it must, every grid column can shrink, and
+the browser gate now sweeps every page at the widest settings. Fixing the header first made it wrap at default size
+too, 22 px taller on an ordinary phone; the name now shrinks first. Hints, which were styled only inside form rows and
+rendered as body text almost everywhere, now have one quiet style. My colour sliders were 14 px tall and failed the
+touch check on every screen; they are 44 px with the rainbow on the track.
+
+### Step 25: detail levels by audit, and a casual-first pass
+
+**Every panel classified.** An inventory of the running app found 99 panels on 12 tabs, and at the Casual level the
+Tools tab alone showed 25 — System health, Storage and integrity, Event log and sync, Interaction matrix, the data
+dependency graph, self-tests. Each panel now has a rule: Casual is logging and following the plan; Insightful adds
+forecasts, diagnosis, experiments, learning and replay; Developer adds sources, provenance, models, ledgers and every
+tool and check. Casual shows 33 panels, Insightful 77, Developer 99. Levels are applied by a mutation observer to
+any panel the moment it appears, whatever code built it — tagging at the end of renderAll missed every panel a tab
+rendered on arrival, so Insightful first showed all 99. A panel with no rule is reported, not defaulted. Two errors
+of mine on the way: hiding every collapsible section in Casual hid casual ones (favourites, recipes, profile), and a
+phase-name rule caught "Recovery and deload" because Recovery is also a phase.
+
+**Casual reads plainly.** A scan of every page Casual shows found 16 technical phrases — classification badges
+(DERIVED, MEASURED, HEURISTIC), "derived from the food log", methodology subtitles, "Backup (JSON)", an About text
+that opened with "offline-first, single-file adaptive body-composition operating system". Each was reworded or moved
+to Insightful or Developer. Casual keeps the quick-log button and undo and drops the position rail and command-palette
+button, which covered content at the screen edges. The browser gate now checks that every panel appears exactly at
+its levels and that Casual pages carry no badges, hex codes, raw ids or file-format names.
+
+### Step 26: movement, mobility, progressions and after the session
+
+**The library.** 33 exercises on 16 patterns and 8 kinds of equipment — no carries, no core patterns beyond a crunch, no
+jumps or throws, no rotator-cuff work, no kettlebells, bands, trap bar, landmine, rings or sled. Now 160 exercises on 28
+patterns across 19 kinds of equipment, each with a level (88 beginner, 49 intermediate, 23 advanced) and plain cues, and
+a searchable library screen with filters, an animation of the movement, what it works, and its easier and harder
+versions. Four muscles were added so the new patterns load something drawable — obliques, inner thighs, rear shoulders,
+traps — and the hip thrust moved from hinge to hip extension. The original 33 keep their ids and names.
+
+**Progressions.** Seventeen ladders, easiest to hardest, each with a plain rule for moving up and down, merged into the
+existing progression registry: existing families keep their step ids, so recorded skill states still resolve, and every
+step now links to its library exercise.
+
+**Mobility.** Ten yoga poses became 43 stretches and drills over thirteen body areas, six named routines, a warm-up built
+from a session's movements and a cool-down built from the muscles it trained (never fewer than three stretches — a chest
+day first produced one).
+
+**After the session.** Saving a session now opens a summary: exercises, sets and hard sets, new records (heaviest weight or
+best reliable estimated max against every earlier session), muscles worked, how hard it felt and how you feel (stored on
+the session, with its duration the standard session-load measure), what to do next time — including "ready for the
+harder version" when every set cleared a ladder's target — and the cool-down.
+
+**What I got wrong, and what it found.** I built the new screens beside an existing movement system my inventory had
+missed — a second Mobility sheet, a second After-the-session sheet, a second warm-up and cool-down — and the older
+definitions silently replaced the new ones, so the new Mobility screen never opened. The existing screens are now the
+canonical ones and are expanded; the new items joined the existing library; the ladders joined the existing registry.
+Looking for how that happened found an older instance: in step 21 my Recovery-state sheet and an older one shared a name,
+and one silently replaced the other. Governance now fails the build on any sheet defined twice unless the later one
+wraps the earlier, and it was checked by reintroducing a silent redefinition.
+
+### Step 27: session load, mobility history, programmes and a welcome setup
+
+**Session load in recovery.** Training stress was hard sets per day. It is now effort × duration (session-RPE) once
+three or more sessions carry a rating, with unrated sessions estimated from the person's own load per hard set (about 50
+units in the test) and the number estimated reported; with fewer rated sessions it stays on hard sets and says why.
+
+**Mobility history.** Completed routines and cool-downs are logged as mobility minutes with the routine's name, appear in
+the log history, and are summarised for the week on the Mobility screen; the new type's consumer is bound to the
+function that reads it, as the data contracts require.
+
+**Programmes from the expanded library.** Templates never asked for core, carries or power, so no generated programme
+could contain them and coverage was capped at 5 of 8 groups. Every day now has core work; lower and full-body days end
+with a carry and, for intermediate and advanced lifters with the equipment, open with a jump or throw; exercises are
+chosen at or below the person's level; doses follow the exercise — metres for carries, seconds for holds (a wrist curl
+was first prescribed in metres). Coverage reaches 7–8 of 8.
+
+**Welcome setup.** A first visit showed a six-second toast. It now opens an eight-step setup — welcome, about you, goal,
+training, detail level, look and feel, how it works, done — skippable at every step, reopenable as Setup guide. Every
+choice goes through the setters the rest of the app uses: the profile write was extracted from the Profile sheet into one
+function both use, experience lives in the profile field it already had, and finishing opens the existing phase sheet
+with its own target recommendations.
+
+**Defects found on the way.** Fourteen new exercises resolved to older ones — the originals carried catch-all aliases
+("plank" on Abdominal movement, "chin-up" on Pull-up) — so a logged plank counted as abdominal work; exact names now win
+and colliding aliases are dropped at load. Two of my additions duplicated originals whose names were already Walking
+lunge and Bulgarian split squat, and the cues I had written for those originals described different exercises. The
+pull-up bar was an alternative rather than a requirement, so a pull-up could be prescribed to someone with no bar — in
+the original library too. Equipment the library gained (kettlebells, bands and others) was unknown to the equipment
+check. The setup reappeared after being completed, because first run read the quick-start copy before the stored record
+loaded. And the persistence gate exposed a latent loss in my step-21 fix: a startup merge rebuilt the record at revision
+0, so which stored copy won the next startup depended on timing; the revision now never goes backwards, and the gate
+asserts it directly.
 
 ## Not buildable in this architecture
 

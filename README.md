@@ -42,6 +42,19 @@ Foundation Foods (354 foods with analytical nutrients and portions) are embedded
 
 ## Building and verifying
 
+**Requirements.** Node 20 or later. The build itself needs nothing else. The gates need two dev dependencies
+and, for the real-browser gate, a Chromium-family browser:
+
+```
+npm install                    # jsdom and playwright-core (dev dependencies only)
+npx playwright install chromium   # only if Chrome, Chromium or Edge is not already installed
+```
+
+The browser gate finds a browser on its own — `CHROME_PATH` if set, then the standard Chrome, Chromium and Edge
+locations on Linux, macOS and Windows, then Playwright's browser cache. If it finds none it fails with these
+instructions rather than passing. `PHYSIQUE_SKIP_BROWSER=1` skips it knowingly, and the run then says that
+layout, touch targets and contrast were not verified in a browser.
+
 ```
 npm run build      # concatenate src/ into dist/index.html, generate icons, write the manifest and checksums, verify
 npm test           # interface gate: boots dist/ in jsdom, exercises every view, sheet and shortcut
@@ -50,7 +63,16 @@ npm run adversarial# import boundary, fuzzing, injection, crypto and audit-chain
 npm run audit      # visibility, population, dead toggles and placeholder leakage across every surface
 npm run perf       # performance budgets at 1 and 5 years of daily use (perf:full adds 10)
 npm run verify     # re-read dist/ and check every hash, asset reference and data checksum
-npm run check      # build → engine → test → adversarial → audit → cloud → verify
+npm run conformance# every domain against the architecture contract
+npm run governance # §34 detections from code metadata and the runtime registries; writes docs/implementation/governance-report.{json,md}
+npm run shipped    # the full in-app self-test suite run inside the shipped file, plus its size
+npm run browser    # real Chromium: touch targets, clipping, overlap, contrast and rails at six viewports
+npm run baseline   # regenerate docs/implementation/ from the running build
+npm run visual     # visual regression (SVG, tokens, typography, layout, chart semantics) and model reproducibility, clock pinned
+npm run release    # every gate, then the 24-item final verification, the §33 adversarial matrix and the §38 trace;
+                   #   writes docs/release/{RELEASE.md, release-manifest.json, capability-maturity.md, definition-of-done.md}
+npm run check      # build → engine → test → adversarial → audit → conformance → governance → shipped → browser → visual → perf
+                   #   → yields gate → cloud sync → baseline → verify
 npm run check:full # the above, plus the full performance budgets
 npm run package    # check, then produce physique-os-dist.tar.gz
 ```
