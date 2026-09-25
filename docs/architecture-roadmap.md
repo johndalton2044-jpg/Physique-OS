@@ -117,7 +117,7 @@ degrades to a non-cryptographic digest and **says so** rather than implying a gu
 ### Event sourcing (§48, §49, §163) — implemented
 
 Previously deferred as "a rewrite of every mutator". It was, and it is done. Every mutation primitive now
-emits an event describing what happened rather than what the record became: 42 event types (41 active, 1 deprecated) across
+emits an event describing what happened rather than what the record became: 44 event types (43 active, 1 deprecated) across
 observations, sessions, food, phases, programs, decisions, interventions, predictions, experiments,
 negatives, snapshots and profile.
 
@@ -2304,6 +2304,174 @@ check. The setup reappeared after being completed, because first run read the qu
 loaded. And the persistence gate exposed a latent loss in my step-21 fix: a startup merge rebuilt the record at revision
 0, so which stored copy won the next startup depended on timing; the revision now never goes backwards, and the gate
 asserts it directly.
+
+## H0 — architecture integrity (complete)
+
+The roadmap was restructured into five horizons with hard gates (H0 integrity, H1 product spine, H2 market-parity
+execution, H3 adaptive integration, H4 intelligence maturation). H0's gate: one canonical owner for each core concept
+and clean boundaries before any new product object is built.
+
+**Ownership.** The goal had four owners — trajectory took the phase's weight first, the protein suggestion only the
+profile's, scenarios and the copilot their own fallbacks. canonicalGoal() is now the only reader: the goal belongs to the
+individual, and a phase's weight and date are a milestone. Governance fails the build on any other read (checked by
+planting one). Eleven entity contracts — Individual, Goal, Constraint, Phase, Plan, Intervention, Execution,
+Observation, Response, Decision, Adaptation — state identity, lifecycle, owner, temporal semantics, provenance,
+correction, events, read model, registry and layer; each claim is checked against the running code, and every store in
+the record must belong to a contract or be listed as supporting (checked by planting an unowned store). Six are
+implemented, Constraint is partial, Plan, Execution and Response are specified for H1 and Adaptation for H3.
+
+**Governance debt closed, none by suppression.** Direct gateway tests for the six models that had none; the six
+navigation paths tested through the control a person uses; 20 dead registries removed (policy write-ups moved to
+docs/architecture/presentation-policies.md), one classified with its reason; the stale header corrected; four
+capabilities registered with result contracts and surfaced; fixture coverage for phase outcomes, superseded sessions
+and effort; the function-name inference call shape removed, with its two options carried forward as narrowing
+overrides; a catalogue generated from the running registries on every run, with drift reported. Governance: 19
+passing, 0 tracked, 0 failing.
+
+**Defects found by the work.** The inference gateway labelled a model's refusal as a successful run, defeating the
+minimum-evidence rule at the layer meant to enforce it. The supplement review matched creatine to an appetite study
+(new RegExp(undefined) matches everything). Motor learning, called bare, asked for sets of "undefined". What is worth
+measuring next never reached its panel (folds had no id); nav.section had no way in; two Tools folds shared an id and one
+open/closed state. Eleven of the twelve patterns added in step 26 had no biomechanics. REF_PROTEIN was cited but never
+attributed; dashboards saved before a widget rename would not load. Running the in-app self-test changed the stored
+record (884 → 912 observations) through the live event log; saving is now suspended during any test or fixture. On a
+phone, typing in the phase targets or the exercise search replaced the field each keystroke and closed the keyboard;
+sheets now update in place and never replace the focused field. Edit phase with no id opened Start a phase.
+
+**Durability.** Intermittent settings loss inside the full check was a real data-loss window: between checkpoints the
+localStorage mirror was skipped (and marked "unchanged", though the record had changed) while IndexedDB writes were
+debounced and committed asynchronously, so for a moment after every save — longer on a slow phone — the latest change
+existed only in memory. Under a 6× throttled CPU a weight logged just before closing was lost. A save now also writes
+the mirror whenever IndexedDB was not durable when it began; the mirror is flushed on pagehide and when hidden; a loss
+that still happens is detected on reopening and reported. The persistence gate now also runs throttled, and the release
+gate list, which had omitted persistence entirely, includes it. Gate results can be recorded per build
+(tests/gate-record.mjs) and the release accepts them only for the identical build.
+
+## H1 — the product spine (first increment)
+
+Goal → Constraints → Plan → Execution → Observation → Response → Explanation → Next action now works end to end.
+
+**Constraints** (implemented): training days, session length, equipment, cooking time, food budget and diet
+restrictions, read as one model with what is missing named; the setup guide gained a session-length choice and a Food
+step. **The plan** (implemented): a versioned object over the canonical goal, the phase's targets, the programme's week
+and the decision lattice — no second engine. Each version records its trigger, evidence, alternatives and reason; an
+edit that changes nothing creates no version; versions are hooked in the core paths (startPhase, updatePhase,
+setProgram, an applied decision, a changed constraint), so every route records them. Records from before H1 adopt a plan
+once and say so. **Variants**: full, reduced, minimum, recovery and travel — the same objective, smaller.
+**Execution** (implemented): intended from the plan, done from what was logged, with explicit skips and versions; a
+missing log is unknown, never a failure. **Response** (partial): read per week, and only when enough of the plan was done
+and recorded; linking it to the adaptation it causes is H3. **Today's actions** was rebuilt on the execution model rather
+than kept beside it: the next action with its reason, each item's status, and the smaller versions one tap away. **The
+Plan tab** shows the plan and, at the Insightful level, why it changed.
+
+**Defects found on the way.** The demo's own interventions fired the plan hook mid-generation, so version 1 captured a
+half-built state and a later edit's explanation listed a change the person never made; hooks are off during generation.
+The daily-intake read used a function that did not exist and silently summed to zero. The new weekly responseFor()
+silently replaced the existing responseFor(variable), and the experiment designer sized nothing; governance now fails on
+any top-level function declared twice. The build's mutation-path audit rejected tests that wrote phase targets directly,
+and a silenced build had hidden that the dist was stale; builds now report their outcome.
+
+**Second increment.** Feasibility: the plan is checked against the person before they are asked to follow it —
+session length against each session's estimated time (8 minutes of warm-up plus about 2.5 per set), sessions against
+the days they can train, and each exercise against their equipment — with a fix for each conflict, shown on the plan.
+Food constraints: diet restrictions (vegetarian, vegan, no dairy, no gluten, no nuts, halal, kosher) filter every meal
+suggestion by category and name, and the app says a match is not a certification; cooking time and budget are not yet
+used to choose meals, and it says so. The plan's signals — it changed, it does not fit, a constraint is missing, a save
+was lost on closing — now arrive in the one attention queue in its what / why / what-you-can-do form. A first plan
+made from setup records that it came from setup.
+
+**H1 gate met.** The spine gate (tests/spine.mjs, in the full check and the release) starts from an empty app and,
+through the controls, sets a goal and constraints, starts a phase with suggested targets, receives plan version 1 made
+from setup, follows Today's next action to weigh in, logs a session, reads the plan and why it exists, and sees the next
+action move on. Writing it found that a person starting their first phase got no calorie suggestion (the rate band was
+read only from an active phase), so setup produced a plan with no calorie target; and that its own first check passed
+on the sheet's heading while the field was empty — it now checks values.
+
+**Third increment.** One notification source: saving failing, an update being ready and being offline were separate
+banners on Today (and a due experiment appeared twice); they are attention items now, and Today presents the most urgent
+one from the queue. Cooking time filters meal suggestions by what each food needs, judged from name and category; the
+food budget favours cheaper staples by scaling each strategy's own ranking, using rough cost tiers the app calls
+estimates, not prices. The programme generator fits each day to the session length, trimming the least important work
+first and stating every trim; the plan's fit conflicts offer to build a programme that fits.
+
+## H2 — market-parity execution (in progress)
+
+Gate: a person can plan, carry out, log, review, edit and replay ordinary training, nutrition, activity and recovery
+without leaving the app.
+
+**Workout mode.** Today's planned session with targets and a suggested load per exercise (from this person's history,
+through the progression engine where it has a recommendation), sets entered and ticked off without the keyboard
+dropping, a rest timer between sets (2.5 minutes for main lifts, 1.5 for accessories, 1 for core), a swap to another
+exercise of the same movement that fits the equipment, a draft that survives closing the app, and a finish that saves
+through the ordinary session path so the summary follows. The chosen version of the day reshapes it: reduced, minimum
+(one set of each main lift), travel (bodyweight movements). A template's "variation" becomes the variation this person
+actually logs. Today's next action starts it, and resumes it when a workout is under way.
+
+**Barcode scanning.** The bundled branded database already mapped barcodes to foods and typed codes already worked;
+the camera now reads them where the browser has a barcode detector, and where it has none the scanner says so and takes
+the typed number. A code not found carries into the custom-food sheet.
+
+**Defects found on the way.** The workout module first loaded before the action registry, so its first registration
+threw and nothing after it loaded; it loads after. The scanner registered food.custom, silently replacing the existing
+custom-food action everywhere; governance now fails on any action registered twice, which also found two old
+duplicates — an identical nav.tab, and two different obs.retract actions, the winner passing a dialog option the
+dialog does not read, so its button never said Retract.
+
+**Programme versions.** What the programme was on any date, what changed and when, and what was done under each
+version, from the same sources the replay already uses (switches in settings.programHistory, edits as
+program.customized events). Replay itself was already correct for both; the view was missing. Shown on the Train tab
+at the Insightful level.
+
+**The exercise catalogue, completed.** Every one of the 159 exercises now resolves plane and axis, joints, load mode,
+stability, range of motion, setup, general cautions and its easier and harder versions — derived from the pattern's
+mechanics, the equipment and the ladders, so one correction reaches every exercise it applies to — and an audit fails
+if any field is missing. Shown in the exercise library as "How it loads you" and "Take care if you have", stated as
+general cautions, not medical advice. The first version flagged forearm planks for the wrists; it no longer does.
+
+**Food entity resolution.** Every food has a canonical identity — the barcode for branded items, the database id for
+reference foods, a custom food's own id unless the person says it is the same as another — and recent foods, frequent
+foods and meal-suggestion familiarity count per identity. Likely duplicates (the same barcode, or a close name with
+matching nutrition — a shared name alone is not enough) are suggested on the Food tab with "Same food" and
+"Different"; neither changes anything already logged. The first test of it used egg-white nutrition for a "whole egg"
+and the detector rightly refused the match; plurals are now folded ("egg" and "eggs").
+
+**Logging speed.** Recent and frequent foods can be logged again at their last portion in one tap, with undo.
+
+**H2 gate met.** The parity gate (tests/parity.mjs, in the full check and the release) plans, carries out, logs,
+reviews, edits and replays through the controls, with the common logs held to a tap budget: a weigh-in in 2 taps plus
+the number, a frequent food again in 2. A helper in it first dropped its argument, so every before-and-after check
+compared with undefined; the spine gate had the same helper but never passed an argument.
+
+**Still open from H2's scope:** richer programme, session and nutrition views, which the roadmap now builds as each
+capability is surfaced rather than as a phase of their own.
+
+## H3 — adaptive integration (in progress)
+
+Gate: what a person actually does, and how their body responds, can cause a traceable, justified plan change.
+
+**Moved sessions.** Execution matched a scheduled session only to a session on that date, so a session done on
+Wednesday instead of Tuesday read as not recorded, and the demo's four weeks read almost entirely that way with 28
+sessions on other weekdays. Within each week a scheduled session with nothing that day now takes a session from another
+day — a same-named one first — and none is counted twice; it reads "done on Wed instead".
+
+**Adherence analysis.** Four weeks per domain, diagnosed without blame: fits, does not fit the week (a specific day
+missed most weeks), too demanding (under 70% of the planned volume), not enough recorded, or a recent change. On the
+demo: the Friday session missed in 3 of 3 weeks, sessions at 49% of the planned sets, 8 moved.
+
+**Adaptations.** Proposals follow from the diagnosis — fewer training days, a step target set just above what is
+achieved — each with its evidence, the alternatives weighed, the expected effect, the trade-off and a confidence, on
+the Plan tab and in the attention queue. Nothing changes until the person applies it; "Not now" is remembered for two
+weeks. An applied proposal becomes a plan version recorded as an adaptation ("Adapted to what you actually do"), and a
+week later reports what happened since. The Adaptation contract is implemented.
+
+**Recovery shapes today.** When recovery reads below the person's baseline, Today suggests the reduced session, one tap
+away.
+
+**Gate.** tests/adapt.mjs (in the full check and the release) passes: the pattern is diagnosed, proposed with its
+evidence, applied through the control, recorded, explained, and read a week later; low recovery shapes today's session.
+
+**Next in H3:** one or two real data sources proven end to end — imported, reconciled with what was logged, and seen to
+influence the models and the plan.
 
 ## Not buildable in this architecture
 
