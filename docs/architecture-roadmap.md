@@ -2570,9 +2570,38 @@ them rendered found two collisions the numbers did not: "today" clipped to "to" 
 label overlapping its line. The catalogue reports each type as available or planned (15 and 22), and governance fails
 any surface that draws a type without a renderer (checked by planting one).
 
-**Continuing in H4:** calibration by context, the experiment and knowledge surfaces made consumer-friendly (MK W13, W14),
-causal and Bayesian validation on accumulating real data, the copilot's evidence-linked answers, and the chart types
-still without a renderer — each built as the capability it serves is surfaced.
+**Every chart type (fifth increment).** The remaining 22 renderers were built, so all 37 catalogued types can be drawn,
+each enforcing the requirement its catalogue entry states: a sankey whose flows are not conserved, a violin or
+ridgeline with too few values, a funnel whose stages grow, a candlestick whose high does not contain its close, a
+donut, treemap or sunburst whose parts do not make their whole, a polar chart that is not a genuine cycle, a radar axis
+without a stated maximum, and more — each refused with its reason rather than drawn. A chart catalogue (Developer
+level, from the palette) draws each type from the person's own record. Looking at it rendered found what the numbers
+did not: step counts with decimals, unnamed and clipped bubbles, a waterfall whose zero baseline hid every weekly change
+(now started near the data, and said so), a donut total wider than its hole, colliding network labels, small multiples
+on one axis across a 500 lb and a 55 lb lift (now % change from each lift's first session), low-contrast treemap labels,
+indistinguishable sunburst segments, and clipped axis labels. Building them also found: a helper named like one in the
+conditioning module, which would have silently replaced it (caught by the duplicate-function check); the catalogue's
+action registered before the action registry exists — the same trap as the workout module, now a governance check; e1rm
+returning an object, not a number; the knowledge graph keyed by key, not id; and a pipeline that returned "ok" around a
+refused chart, which now fails at a requirements stage.
+
+**Validation on accumulating data (sixth increment).** Calibration by context now reaches the forecast: when the
+record spans more than one situation, the forecast is judged in the current one ("leans high in this situation", "not
+yet proven in this situation"). Prior sensitivity is stated exactly: the maintenance estimate blends prior and data at
+n / (n + 14), so 1 − w of any prior error carries in — 35% on the demo's 26 days — and a weaker or stronger prior
+moves it within 2,640–2,690 kcal; the first version left out the estimate's own outcome calibration and gave a range
+that did not contain the number shown. Associations carry a placebo check, trend-adjusted: a one-week "future cardio"
+placebo alone let a pure trend pass, so the outcome's trend is removed before comparing. On the demo, "hunger runs 0.8
+points lower on cardio days" falls to −0.35 once the trend is removed, fails, and now says it may not be the cardio.
+
+**H4 complete.** Everything planned for it is built and gated: personalisation labels, knowledge that only ages
+downward and says what would change it, model health overall and in the current situation, one answer to "improving",
+an assistant that answers the question asked and knows its limits, prior sensitivity, trend-adjusted placebo checks,
+and all 37 chart types. The intelligence gate (tests/intelligence.mjs) checks it in the running app.
+
+**What remains is not code.** The models are validated on synthetic and demo records; "production-ready" for a model
+means a prospective track record on real people, which only accumulates with use. The capability register still shows
+0 of 22 production-ready for that reason, and says so.
 
 ## Not buildable in this architecture
 
