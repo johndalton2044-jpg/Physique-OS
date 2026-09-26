@@ -2640,3 +2640,41 @@ npm run check:full  the above, plus the 1/5/10-year performance budgets
 
 Counts are deliberately not written here. Each gate reports its own, because a number in prose goes stale the
 moment a test is added.
+
+## Usage review and external sources (after H4)
+
+**Defects from use on a device.** Three self-test checks failed on a second run in the same page: a test left a chart in
+the widget registry while the record was restored, and the compaction check assumed an empty archive. Behind that was a
+real bug — a widget in the registry but not in settings was lost on reload; saving now persists either way. The
+self-test restores the widget registry, and the shipped gate runs the suite twice. The target pills broke letter by
+letter in a four-column table on a phone; pills no longer wrap and targets are stacked rows. "Calorie numbers carry low
+confidence" never cleared because the uncertainty chain added the weight trend's error to the calorie error — treating a
+second measurement of the energy gap as more noise — and converted the trend's per-week error to per-day with a factor
+of seven too many. The gap is now judged by whichever estimate establishes it more precisely (the two are not pooled:
+the personal maintenance estimate is fitted from the same weigh-ins), and on the demo the scale establishes it at about
+−773 ± 141 kcal/day, where the old interval ran from −1,297 to +747. The alert still fires when neither can.
+
+**Tools, alerts.** Every Tools section is collapsible and collapsed by default; a passing self-test is one line;
+finished sections can be hidden and are counted under Display. Alerts snooze — a day for act-now items, three for
+reviews, seven for system notices — and after three snoozes in a row must stay visible for a day; records clear when the
+cause resolves.
+
+**External sources (integration spec).** One registry (open-meteo, meteosource, open-food-facts, plus the existing file
+sources and wearable adapters indexed from their tables) with validation and an audit; the spec's error vocabulary; and
+provider calls only through this app's own server (/v1/ext/...), because the app's connect-src is 'self', the
+Meteosource key must not reach the client, and Open Food Facts asks for a User-Agent a browser cannot set. The server
+validates input, refuses a request without a location, rounds coordinates to about 1 km, never logs them, caches only
+as a read optimisation, and has a fixture mode for tests. Weather: canonical environmental variables (temperature,
+feels-like, humidity, precipitation and its probability, cloud cover, ET₀, vapour pressure deficit, wind speed,
+direction and gusts, UV, day or night, sunrise, sunset, daylight, daily minima, maxima and sums, and air quality) from
+Open-Meteo (current, hourly, daily; 7 past and 14 forecast days; ERA5 history; air quality) and Meteosource's /point
+forecast (which states what it cannot supply). Every value is labelled current, forecast, recent past (model analysis)
+or historical (reanalysis). Weather is re-fetchable context in a supporting store, not the event log; a workout copies
+the weather it was done in into its session. The place is typed and looked up — the deployment blocks geolocation and
+the location is never inferred. Open Food Facts v3 is a secondary barcode source behind the bundled database, resolved
+by barcode into the existing food identity, with missing nutrients and energy-from-kJ recorded; no second food database.
+All three are fixture-tested and integration-tested through the real server (tests/external.mjs); none is called
+production-ready, which needs live synchronisation, provider terms and a security review.
+
+**Still to do from this review:** the latest progress photo on Today, prebuilt experiments, an audit of the movement and
+mobility drawings, and schedules for rotating shifts.

@@ -825,10 +825,18 @@ details.variant-more>summary{min-height:44px;display:flex;align-items:center;col
 .wx-now{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}.wx-temp{font-family:var(--display);font-size:calc(34px*var(--ts,1));font-weight:700}
 .wx-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}.wx-day{display:grid;gap:1px;min-width:44px;text-align:center;padding:6px 4px;border-radius:6px;background:var(--surface-2);font-size:calc(12px*var(--ts,1))}
 tr.wx-today td{font-weight:700}
+.sched-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:6px 0}
+.sh{display:inline-block;font-size:calc(10px*var(--ts,1));font-weight:700;border-radius:4px;padding:0 4px;border:1px solid var(--border)}.sh-N{background:var(--text);color:var(--bg,#111)}.sh-D{border-color:var(--accent)}.sh-O{opacity:.6}
+.sched-pattern{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.pat-day{min-width:44px;min-height:44px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-weight:700}
+.pat-day.sh-N{background:var(--text);color:var(--bg,#111)}.pat-day.sh-D{border-color:var(--accent)}.pat-day.sh-O{opacity:.6}.sched-rule{padding:6px 0;border-top:1px solid var(--border)}.lib-row.on{border-color:var(--accent)}
+.today-photo{display:flex;align-items:center;gap:10px;min-height:44px;border:0;background:none;color:var(--text-2);padding:4px 0;margin-bottom:6px;font-size:calc(12.5px*var(--ts,1))}
+.today-photo img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);background:var(--surface-2)}
+.mv-panels{display:flex;align-items:center;gap:4px}.mv-panel{flex:1;min-width:0;text-align:center}.mv-panel svg{width:100%;height:auto;max-height:180px}
+.mv-cap{font-size:calc(11px*var(--ts,1));color:var(--text-2);text-transform:lowercase}.mv-arrow{color:var(--text-2);font-size:18px}.sk-floor{stroke:var(--border);stroke-width:1}.mv-note{margin-top:2px}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QE0zqJGK7j2IT8Gy20ddM+eAsGrrxKWHzRuUb+yrKyk='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="715fba2432 2026-09-26T13:50:41.041Z">
-<meta name="physique-release" content="2b9ff6de5d55">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wv5lnEkH00btC+pDCR8+W24WtagX/upJn5RANPzrIvo='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="63021a8fbd 2026-09-26T14:11:47.859Z">
+<meta name="physique-release" content="e0b641281c5b">
 </head>
 <body>
 
@@ -1032,9 +1040,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='715fba2432';        // hash of src/ — identifies the application code
-var RELEASE_ID='2b9ff6de5d55';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-26T13:50:41.041Z';
+var BUILD_ID='63021a8fbd';        // hash of src/ — identifies the application code
+var RELEASE_ID='e0b641281c5b';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-09-26T14:11:47.859Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -7602,7 +7610,8 @@ var m={equipment:eq&&eq.have?eq.have.slice():[],trainingDays:days,sessionMinutes
 diet:p.dietPreference||null,restrictions:Array.isArray(p.dietRestrictions)?p.dietRestrictions.slice():[],
 cookingTime:p.cookingTime||null,foodBudget:p.foodBudget||null,activity:p.activityBaseline||null,sleepTargetH:p.sleepTargetH||null};
 m.missing=[];
-if(!days.length)m.missing.push('training days');if(!m.sessionMinutes)m.missing.push('session length');
+m.schedule=typeof scheduleModel==='function'?scheduleModel().mode:'weekly';
+if(!days.length&&m.schedule==='weekly')m.missing.push('training days');if(!m.sessionMinutes)m.missing.push('session length');
 if(!m.cookingTime)m.missing.push('cooking time');if(!m.foodBudget)m.missing.push('food budget');
 m.status='ok';return m;
 }
@@ -7858,10 +7867,12 @@ var days=[];if(ps&&ps.status==='ok'){var mc=ps.mesocycles[0].microcycles;days=(m
 var have=C.equipment.length?C.equipment:null;
 var seenEx={};
 days.forEach(function(d){var p=d.planned;if(!p||p.kind==='rest')return;
-if(C.trainingDays.length&&C.trainingDays.indexOf(d.dow)<0)
+var _SM=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
+if(_SM.mode==='weekly'&&C.trainingDays.length&&C.trainingDays.indexOf(d.dow)<0)
 conflicts.push({kind:'day',what:p.label+' is on '+d.dow+', which is not one of your training days',fix:'Move it in the programme editor, or add '+d.dow+' to your training days.'});
-if(p.kind==='lift'&&C.sessionMinutes){var est=_sessionMinutesEstimate(p);
-if(est>C.sessionMinutes*1.1)conflicts.push({kind:'time',what:p.label+' takes about '+est+' minutes; you have '+C.sessionMinutes,fix:'Use the reduced version on busy days, or trim the accessories.'});}
+var _lim=_SM.mode==='rotation'?(_SM.minutes.full||C.sessionMinutes):C.sessionMinutes;
+if(p.kind==='lift'&&_lim){var est=_sessionMinutesEstimate(p);C.sessionMinutes=_lim;
+if(est>_lim*1.1)conflicts.push({kind:'time',what:p.label+' takes about '+est+' minutes; you have '+C.sessionMinutes,fix:'Use the reduced version on busy days, or trim the accessories.'});}
 if(have)(p.exercises||[]).forEach(function(x){if(seenEx[x.name])return;seenEx[x.name]=1;var e=resolveExercise(x.name);
 if(e&&!equipPossible(e.equipment,have))conflicts.push({kind:'equipment',what:x.name+' needs '+e.equipment.join(' and ')+', which you have not listed',fix:'Swap it for a version that fits your equipment (Train \u2192 exercise library).'});});
 });
@@ -7915,7 +7926,9 @@ function adherenceAnalysis(weeks){
 weeks=weeks||4;var end=addDays(todayISO(),-1),start=addDays(end,-(weeks*7-1));
 var tr={scheduled:0,done:0,partial:0,skipped:0,unknown:0,setsPlanned:0,setsDone:0,missByDow:{},schedByDow:{},moved:0},
 nu={days:0,logged:0,within:0,over:0},stp={days:0,logged:0,met:0},recent={sched:0,done:0},prior={sched:0,done:0};
-for(var d=start;d<=end;d=addDays(d,1)){var E=executionFor(d);if(E.status!=='ok')continue;var dw=dowShort(d),isRecent=d>addDays(end,-7);
+var _SM2=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
+for(var d=start;d<=end;d=addDays(d,1)){var E=executionFor(d);if(E.status!=='ok')continue;
+var dw=_SM2.mode==='rotation'?(function(){var sh=shiftOn(d,_SM2);return sh?SHIFT_LABELS[sh]:dowShort(d);})():dowShort(d),isRecent=d>addDays(end,-7);
 E.rows.forEach(function(r){
 if(r.item==='training'){tr.scheduled++;tr.schedByDow[dw]=(tr.schedByDow[dw]||0)+1;
 (isRecent?recent:prior).sched++;
@@ -7947,7 +7960,15 @@ var A=adherenceAnalysis(4),plan=currentPlan();if(!plan)return {status:'none',pro
 var out=[],dismissed=(DB.settings.dismissedAdaptations||{});
 var push=function(p){var d=dismissed[p.id];if(d&&daysBetween(d,todayISO())<14)return;out.push(p);};
 var T=A.training,cur=trainingProgram().key,curDays=_daysOf(cur).length;
-if(T&&(T.diagnosis==='does not fit the week'||T.diagnosis==='too demanding')){
+var _SM3=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
+if(_SM3.mode==='rotation'&&T&&T.diagnosis==='does not fit the week'&&T.missedDay&&/shift/i.test(T.missedDay)){
+var shk=Object.keys(SHIFT_LABELS).filter(function(k){return SHIFT_LABELS[k]===T.missedDay;})[0];
+if(shk&&_SM3.rules[shk]!=='none')push({id:'shift-rule:'+shk,domain:'training',title:'Stop scheduling sessions on '+T.missedDay.toLowerCase()+' days',
+change:{kind:'shiftRule',shift:shk,from:_SM3.rules[shk],to:'none'},why:T.why,evidence:['Sessions on '+T.missedDay.toLowerCase()+' days were missed in '+T.counts.missByDow[T.missedDay]+' of '+T.counts.schedByDow[T.missedDay]],
+alternatives:[{label:'Make them short sessions instead',why:'keeps the habit, but these were missed even so'},{label:'Keep scheduling them',why:'the pattern has held for four weeks'}],
+expected:'Sessions land on the days you actually have; the programme places them on your days off instead.',tradeoff:'Fewer sessions in a stretch of shifts.',confidence:'medium'});
+}
+if(_SM3.mode==='weekly'&&T&&(T.diagnosis==='does not fit the week'||T.diagnosis==='too demanding')){
 var fewer=Object.keys(PROGRAMS).filter(function(k){var n=_daysOf(k).length;return n>0&&n<curDays;}).sort(function(a,b){return _daysOf(b).length-_daysOf(a).length;})[0];
 var ev=['Scheduled '+T.counts.scheduled+' sessions in 4 weeks; done '+(T.counts.done+T.counts.partial)+(T.moved?' ('+T.moved+' on a different day)':''),
 T.volumeShare!=null?'Sets done: '+Math.round(T.volumeShare*100)+'% of those planned':null,
@@ -7974,6 +7995,7 @@ function applyAdaptation(id){
 var P=adaptationProposals().proposals.filter(function(p){return p.id===id;})[0];if(!P)return {status:'refused',note:'That suggestion no longer applies.'};
 _PLAN_HOOKS_OFF++;
 try{if(P.change.kind==='program')setProgram(P.change.to,{source:'adaptation'});
+else if(P.change.kind==='shiftRule'){var rr={};rr[P.change.shift]=P.change.to;DB.settings.schedule=Object.assign({},DB.settings.schedule||{},{rules:Object.assign({},(DB.settings.schedule||{}).rules||{},rr)});_memoInvalidate();save('settings');}
 else if(P.change.kind==='target'){var ph=activePhase();var patch={};patch[P.change.field]=P.change.to;updatePhase(ph.id,patch,{noUndo:false,intervention:false,label:'apply intervention'});}}
 finally{_PLAN_HOOKS_OFF=Math.max(0,_PLAN_HOOKS_OFF-1);}
 var v=createPlanVersion({kind:'adaptation',reason:P.title+'. '+P.why,evidence:P.evidence,
@@ -7996,6 +8018,69 @@ if(!r||r.status!=='ok'||!/less recovered/.test(String(r.band||'')))return null;
 var I=intendedFor(todayISO());if(!(I.items||[]).some(function(x){return x.item==='training';}))return null;
 return {suggest:'reduced',why:'Recovery reads '+r.band+' today, from '+((r.stressorState&&r.stressorState.loadBasis)||'recent training load')+' and what you logged.',cls:r.cls};
 }
+/* ===== SOURCE: 58-schedule.js ===== */
+var SHIFT_LABELS={D:'Day shift',N:'Night shift',O:'Day off',E:'Evening shift'};
+var ROTATION_PRESETS={
+'pitman-dn':{label:'2-2-3, days then nights (28-day cycle)',pattern:'DDOODDDOODDOOONNOONNNOONNOOO',note:'two weeks of 2-2-3 on days, then two on nights'},
+'pitman-d':{label:'2-2-3, days only (14-day cycle)',pattern:'DDOODDDOODDOOO'},
+'pitman-n':{label:'2-2-3, nights only (14-day cycle)',pattern:'NNOONNNOONNOOO'},
+'dupont':{label:'DuPont (28-day cycle)',pattern:'NNNNOOODDDONNNOOODDDDOOOOOOO',note:'4 nights, 3 off, 3 days, 1 off, 3 nights, 3 off, 4 days, 7 off'},
+'4on4off-dn':{label:'4 on, 4 off, days then nights (16-day cycle)',pattern:'DDDDOOOONNNNOOOO'},
+'4on4off-d':{label:'4 on, 4 off, days only (8-day cycle)',pattern:'DDDDOOOO'},
+'custom':{label:'My own pattern',pattern:null}
+};
+var SHIFT_RULE_OPTIONS=[['none','No training'],['short','A short session'],['full','A full session']];
+function scheduleModel(){
+var s=DB.settings.schedule||{},p=prof()||{};
+var mode=s.mode==='rotation'||s.mode==='irregular'?s.mode:'weekly';
+var rules=Object.assign({D:'short',N:'none',O:'full',E:'short'},s.rules||{});
+var mins=Object.assign({short:Math.min(30,p.sessionMinutes||30),full:p.sessionMinutes||60},s.minutes||{});
+return {mode:mode,pattern:s.pattern||null,preset:s.preset||null,anchor:s.anchor||null,rules:rules,minutes:mins,protectAfterNights:s.protectAfterNights!==false,
+available:s.available||{},weekdays:(DB.settings.trainingDays||[]).slice()};
+}
+function shiftOn(date,M){M=M||scheduleModel();if(M.mode!=='rotation'||!M.pattern||!isValidISO(M.anchor))return null;
+var L=M.pattern.length,i=((daysBetween(M.anchor,date)%L)+L)%L;return M.pattern.charAt(i);}
+function availabilityOn(date,M){
+M=M||scheduleModel();var dn=_DOW[new Date(date+'T12:00:00Z').getUTCDay()];
+if(M.mode==='weekly'){var ok=!M.weekdays.length||M.weekdays.indexOf(dn)>=0;return {level:ok?'full':'none',minutes:ok?M.minutes.full:0,why:ok?'a training day':'not one of your training days'};}
+if(M.mode==='irregular'){var a=M.available[date];if(a==null)return {level:'none',minutes:0,why:'not marked available',unknown:date>todayISO()};
+return {level:a>=45?'full':(a>0?'short':'none'),minutes:a,why:'you marked '+a+' minutes'};}
+var sh=shiftOn(date,M);if(!sh)return {level:'none',minutes:0,why:'the rotation has no start date'};
+if(sh==='O'&&M.protectAfterNights&&shiftOn(addDays(date,-1),M)==='N')return {level:'none',minutes:0,shift:sh,why:'the first day off after nights, kept for sleep'};
+var lv=M.rules[sh]||'none';return {level:lv,minutes:lv==='none'?0:M.minutes[lv],shift:sh,why:SHIFT_LABELS[sh]+(lv==='none'?': no training':(lv==='short'?': a short session':': a full session'))};
+}
+function _liftSequence(prog){var order=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],seq=[];
+order.forEach(function(d){var p=prog.week&&prog.week[d];if(p&&p.kind==='lift')seq.push(p);});return seq;}
+function scheduledPlan(date,prog){
+var M=scheduleModel();if(M.mode==='weekly')return (prog.week||{})[_DOW[new Date(date+'T12:00:00Z').getUTCDay()]]||null;
+var seq=_liftSequence(prog);if(!seq.length)return null;
+var anchor=M.mode==='rotation'&&isValidISO(M.anchor)?M.anchor:(Object.keys(M.available).sort()[0]||addDays(todayISO(),-28));
+if(date<anchor)return null;
+var key='sched:'+JSON.stringify([M.mode,M.pattern,M.anchor,M.rules,M.minutes,M.protectAfterNights,Object.keys(M.available).length,prog.id||prog.label,seq.length]);
+var map=memo(key,function(){var out={},k=0,run=0,recent=[],end=addDays(todayISO(),60),perWeek=seq.length;
+for(var d=anchor;d<=end;d=addDays(d,1)){var av=availabilityOn(d,M);recent=recent.filter(function(x){return daysBetween(x,d)<7;});
+if(av.level==='full'&&recent.length<perWeek&&run<3){out[d]={label:seq[k%seq.length].label,kind:'lift',template:seq[k%seq.length].template,shift:av.shift||null,minutes:av.minutes};k++;run++;recent.push(d);}
+else{if(av.level==='short')out[d]={label:'Short session: cardio or mobility',kind:'cardio',shift:av.shift||null,minutes:av.minutes};run=0;}}
+return out;});
+return map[date]||null;
+}
+function scheduleAhead(n,prog){prog=prog||trainingProgram();var out=[];for(var i=0;i<(n||14);i++){var d=addDays(todayISO(),i),av=availabilityOn(d),pl=scheduledPlan(d,prog);
+out.push({date:d,shift:av.shift||null,level:av.level,why:av.why,planned:pl?pl.label:null,kind:pl?pl.kind:null});}return out;}
+function setSchedule(o){
+var s=Object.assign({},DB.settings.schedule||{});
+if(o.mode)s.mode=o.mode;if(o.preset){s.preset=o.preset;if(ROTATION_PRESETS[o.preset]&&ROTATION_PRESETS[o.preset].pattern)s.pattern=ROTATION_PRESETS[o.preset].pattern;}
+if(o.pattern!=null)s.pattern=String(o.pattern).toUpperCase().replace(/[^DNOE]/g,'').slice(0,42)||null;
+if(o.anchor&&isValidISO(o.anchor))s.anchor=o.anchor;if(o.rules)s.rules=Object.assign({},s.rules||{},o.rules);
+if(o.minutes)s.minutes=Object.assign({},s.minutes||{},o.minutes);if(o.protectAfterNights!=null)s.protectAfterNights=!!o.protectAfterNights;
+if(o.available)s.available=Object.assign({},s.available||{},o.available);
+DB.settings.schedule=s;_memoInvalidate();save('settings');
+if(typeof notePlanChange==='function')notePlanChange('constraint change',{reason:'Your schedule changed.'});
+return {status:'ok',schedule:s};
+}
+function scheduleAudit(){var M=scheduleModel(),issues=[];
+if(M.mode==='rotation'){if(!M.pattern)issues.push('a rotation needs a pattern');if(!isValidISO(M.anchor))issues.push('a rotation needs the date its cycle started');
+if(M.pattern&&!/^[DNOE]+$/.test(M.pattern))issues.push('the pattern may only use D, N, O and E');}
+return {ok:!issues.length,issues:issues,mode:M.mode};}
 /* ===== SOURCE: 58-trace.js ===== */
 var TRACES={
 weight_trend:{
@@ -8302,46 +8387,46 @@ grades:CAUSAL_GRADES,cls:'EMPIRICAL',
 note:'Graded from what your own record can support, not from what the literature says in general.'};
 }
 var EXPERIMENT_TEMPLATES=[
-{id:'calorie-step',label:'Change calories',variable:'calories',delta:-250,metric:'weight',
+{id:'calorie-step',todo:'eat about 250 kcal a day less than you do now',label:'Change calories',variable:'calories',delta:-250,metric:'weight',
 question:'Does a smaller intake actually move my trend, or does activity compensate?',
 confounders:['activity drifting in the same week','a change in sodium or carbohydrate shifting water'],
 washoutDays:3,reversal:'trend moves past the band, or strength falls two sessions running'},
-{id:'step-intervention',label:'Change daily steps',variable:'steps',delta:2500,metric:'weight',
+{id:'step-intervention',todo:'walk about 2,500 more steps a day',label:'Change daily steps',variable:'steps',delta:2500,metric:'weight',
 question:'Do more steps change my rate, or do I eat them back?',
 confounders:['intake rising with activity','training volume changing at the same time'],
 washoutDays:2,reversal:'appetite or fatigue rises and stays risen'},
-{id:'protein',label:'Change protein',variable:'protein',delta:30,metric:'hunger',
+{id:'protein',todo:'eat about 30 g more protein a day, at the same calories',label:'Change protein',variable:'protein',delta:30,metric:'hunger',
 question:'Does more protein change how hungry I am at the same calories?',
 confounders:['calories changing at the same time','fibre changing with the protein source'],
 washoutDays:2,reversal:'no change in hunger after the designed duration'},
-{id:'training-volume',label:'Change training volume',variable:'training',delta:1,metric:'weight',
+{id:'training-volume',todo:'add one lifting session a week',label:'Change training volume',variable:'training',delta:1,metric:'weight',
 question:'Does an extra session change my rate or just my fatigue?',
 confounders:['recovery falling','intake rising on training days'],
 washoutDays:5,reversal:'recovery drops below your own baseline for a week'},
-{id:'cardio',label:'Add or remove cardio',variable:'cardio',delta:1,metric:'weight',
+{id:'cardio',todo:'add one cardio session a week',label:'Add or remove cardio',variable:'cardio',delta:1,metric:'weight',
 question:'Is cardio worth its recovery cost for me?',
 confounders:['lifting volume changing','steps changing alongside'],
 washoutDays:4,reversal:'strength falls while cardio is in place'},
-{id:'composition-protein',label:'Change protein while holding calories',variable:'protein',delta:40,metric:'bodyfat',
+{id:'composition-protein',todo:'eat about 40 g more protein a day and keep calories the same',label:'Change protein while holding calories',variable:'protein',delta:40,metric:'bodyfat',
 question:'Does more protein at the same calories change what I lose rather than how fast?',
 confounders:['training volume changing at the same time',
 'measurement method drifting — compare like with like or the result is the method'],
 washoutDays:0,reversal:'no difference in measured composition after the designed duration',
 kind:'composition',
 note:'Composition moves slowly and is measured badly, so this needs a longer run than a weight experiment and a single consistent method.'},
-{id:'recovery-intervention',label:'Add a recovery practice',variable:'sleep',delta:0,metric:'fatigue',
+{id:'recovery-intervention',todo:'add one recovery practice on set days — 10 minutes of mobility, or going to bed 45 minutes earlier',label:'Add a recovery practice',variable:'sleep',delta:0,metric:'fatigue',
 question:'Does a deliberate recovery practice change how I feel the next day?',
 confounders:['you choose to do it on days you already feel worse, which reverses the apparent effect',
 'training load changing in the same period'],
 washoutDays:1,reversal:'no difference in next-day fatigue after the designed duration',
 kind:'recovery'},
-{id:'behaviour-experiment',label:'Change when you log',variable:'steps',delta:0,metric:'adherence',
+{id:'behaviour-experiment',todo:'log at the same time every day',label:'Change when you log',variable:'steps',delta:0,metric:'adherence',
 question:'Does logging at a fixed time of day improve how much I actually log?',
 confounders:['motivation is usually high in the first week of any change',
 'a lighter schedule that week makes anything look easier'],
 washoutDays:0,reversal:'coverage returns to where it was',
 kind:'behaviour'},
-{id:'sleep',label:'Change sleep',variable:'sleep',delta:1,metric:'fatigue',
+{id:'sleep',todo:'sleep about an hour more a night',label:'Change sleep',variable:'sleep',delta:1,metric:'fatigue',
 question:'Does an extra hour show up anywhere I can measure?',
 confounders:['weekday and weekend differing','stress changing independently'],
 washoutDays:2,reversal:'no difference after the designed duration'}
@@ -12307,8 +12392,14 @@ if(opts.exercise){
 try{var e=exposureOf({exercise:opts.exercise,load:100,reps:8,rir:2});Object.keys(e.joints||{}).forEach(function(j){loaded[j]=e.joints[j];});}catch(x){}
 }
 var a0=jointAngle(m.start,m.primary),a1=jointAngle(m.end,m.primary);
-return {status:'ok',pattern:pattern,primary:m.primary,load:m.load,rom:m.rom,
-frames:[{name:'start',positions:m.start,ghost:true},{name:'end',positions:m.end}],
+var FF=(typeof FRONT_FRAMES!=='undefined')&&FRONT_FRAMES[pattern],plane=(typeof PATTERN_MECHANICS!=='undefined'&&PATTERN_MECHANICS[pattern]||{}).plane;
+var view=FF&&(plane!=='sagittal'||FF.hold)?'front':'side';   /* any sideways or turning movement that has a front figure */
+var frames=view==='front'?[{name:FF.hold?'hold':'start',positions:FF.start},{name:FF.hold?'hold':'end',positions:FF.end}]:[{name:'start',positions:m.start},{name:'end',positions:m.end}];
+var ex=opts.exercise?(typeof resolveExercise==='function'?resolveExercise(opts.exercise):null):null,orient=typeof exerciseOrientation==='function'?exerciseOrientation(ex?ex.name:opts.exercise):null;
+if(orient&&view==='side')frames=orientFrames(frames,orient);   /* in a front view the posture is named, not drawn */
+if(FF&&FF.hold)frames=frames.slice(0,1);
+return {status:'ok',pattern:pattern,primary:m.primary,load:m.load,rom:m.rom,view:view,orientation:orient?orient.label:null,caption:FF?FF.caption:null,
+frames:frames,
 startAngle:a0,endAngle:a1,rangeDeg:(a0!=null&&a1!=null)?round(Math.abs(a1-a0),1):null,
 loadedJoints:loaded,exercise:opts.exercise||null,cls:'HEURISTIC',
 note:m.note||('A schematic of the '+pattern+' pattern: joint positions in body units, not a measurement of anyone\u2019s technique.'),
@@ -12316,8 +12407,10 @@ caveat:'Positions are representative. They show what the pattern does, not the r
 }
 function renderMovement(model){
 if(!model||model.status!=='ok')return '<div class="hint">'+esc((model&&model.note)||'no movement')+'</div>';
-return renderSkeleton({frames:model.frames,primary:model.primary,rom:model.rom,load:model.load,
-loadedJoints:model.loadedJoints,label:model.pattern,aria:model.pattern+' from start to end, primary joint '+model.primary});
+var front=model.view==='front';
+return renderFramePanels(model.frames,{segments:front?FRONT_SEGMENTS:SKELETON_SEGMENTS,joints:front?FRONT_JOINTS:SKELETON_JOINTS,
+loadedJoints:front?null:model.loadedJoints,label:model.exercise||model.pattern,view:model.view,orientation:model.orientation,caption:model.caption,
+primary:front?null:model.primary,rom:front?null:model.rom,load:front||model.orientation?null:model.load});
 }
 var POSE_POSITIONS={
 'downward-dog':{toe:[-0.30,0],ankle:[-0.28,0.03],knee:[-0.20,0.22],hip:[-0.10,0.44],lumbar:[-0.02,0.40],thoracic:[0.08,0.32],
@@ -12344,6 +12437,8 @@ knee:[0.20,0.03],ankle:[0.42,0.03],toe:[0.46,0.08],elbow:[-0.18,0.02],wrist:[-0.
 function poseModel(poseId,opts){
 opts=opts||{};
 var p=POSES[poseId],pos=POSE_POSITIONS[poseId];
+var _fp=(typeof FRONT_POSES!=='undefined')&&FRONT_POSES[poseId],_fx=(typeof POSE_FIXES!=='undefined')&&POSE_FIXES[poseId];
+if(_fx)pos=_fx.positions;
 if(!p)return {status:'unknown-pose',poseId:poseId};
 if(!pos)return {status:'no-geometry',poseId:poseId,note:'The pose is in the ontology but has no positions to draw.'};
 var targetRegions=[];
@@ -12356,13 +12451,14 @@ sequencePosition:opts.sequencePosition!=null?opts.sequencePosition:null,
 duration:opts.duration||(p.hold||null),
 intensity:p.demands?p.demands.range:null,
 regressions:p.regressions||[],progressions:p.progressions||[],
-frames:[{name:poseId,positions:pos}],loadedJoints:hot,cls:'HEURISTIC',
+frames:[{name:p.label,positions:_fp?_fp.positions:pos}],view:_fp?'front':'side',caption:_fp?_fp.caption:(_fx?_fx.caption:null),loadedJoints:hot,cls:'HEURISTIC',
 note:'Drawn through the same skeleton and the same joint ontology as every strength movement \u2014 no separate yoga anatomy.'};
 }
 function renderPose(model){
 if(!model||model.status!=='ok')return '<div class="hint">'+esc((model&&model.note)||'no pose')+'</div>';
-return renderSkeleton({frames:model.frames,loadedJoints:model.loadedJoints,label:model.label,
-aria:model.label+', working '+model.joints.join(', ')});
+var front=model.view==='front';
+return renderFramePanels(model.frames,{segments:front?FRONT_SEGMENTS:SKELETON_SEGMENTS,joints:front?FRONT_JOINTS:SKELETON_JOINTS,
+loadedJoints:front?null:model.loadedJoints,label:model.label,view:model.view,caption:model.caption,width:160});
 }
 function movementAudit(){
 var issues=[];
@@ -12399,7 +12495,7 @@ for(var w=0;w<weeks;w++){
 var days=[];
 for(var d=0;d<7;d++){
 var date=addDays(start,w*7+d),dn=_DOW[new Date(date+'T12:00:00Z').getUTCDay()];
-var plan=prog.week[dn]||null;
+var plan=typeof scheduledPlan==='function'?scheduledPlan(date,prog):(prog.week[dn]||null);   /* weekly, rotating or irregular */
 var exs=plan&&plan.template&&prog.templates?(prog.templates[plan.template]||[]).map(function(t){
 return {name:t[0],sets:t[1],reps:t[2]};}):[];
 var sp=exs.reduce(function(a,e){return a+(+e.sets||0);},0);
@@ -12531,6 +12627,89 @@ end:_with(_shift(_pose({elbow:[0.02,0.96],wrist:[0.03,1.10]}),0,0.16),{toe:[0.12
 MOVEMENT_PATTERNS.throw={primary:'shoulder',load:'wrist',rom:'angle',
 start:_pose({elbow:[0,1.02],wrist:[0.02,1.16],toe:[0.08,0.0],ankle:[0,0.07]}),
 end:_pose({hip:[-0.06,0.50],lumbar:[-0.01,0.56],thoracic:[0.10,0.64],shoulder:[0.18,0.68],cervical:[0.23,0.70],head:[0.27,0.72],elbow:[0.22,0.42],wrist:[0.24,0.22]})};
+/* ===== SOURCE: 76-visual-views.js ===== */
+var FRONT_JOINTS=['head','neck','shL','shR','elL','elR','wrL','wrR','pelvis','hipL','hipR','knL','knR','anL','anR'];
+var FRONT_SEGMENTS=[['head','neck'],['neck','shL'],['neck','shR'],['shL','elL'],['elL','wrL'],['shR','elR'],['elR','wrR'],['neck','pelvis'],
+['pelvis','hipL'],['pelvis','hipR'],['hipL','knL'],['knL','anL'],['hipR','knR'],['knR','anR']];
+var FRONT_BASE={head:[0,0.93],neck:[0,0.86],shL:[-0.12,0.8],shR:[0.12,0.8],elL:[-0.14,0.64],elR:[0.14,0.64],wrL:[-0.15,0.5],wrR:[0.15,0.5],
+pelvis:[0,0.54],hipL:[-0.07,0.52],hipR:[0.07,0.52],knL:[-0.075,0.28],knR:[0.075,0.28],anL:[-0.08,0.04],anR:[0.08,0.04]};
+function _fb(over){var o={};Object.keys(FRONT_BASE).forEach(function(k){o[k]=(over&&over[k])||FRONT_BASE[k].slice();});return o;}
+function _rot(pos,centre,deg){var r=deg*Math.PI/180,c=Math.cos(r),s=Math.sin(r),o={};Object.keys(pos).forEach(function(k){var x=pos[k][0]-centre[0],y=pos[k][1]-centre[1];o[k]=[round(centre[0]+x*c-y*s,3),round(centre[1]+x*s+y*c,3)];});return o;}
+var _sidePlank=(function(){var p=_rot(_fb(),[0,0.04],-70);var sh=p.shL;p.elL=[sh[0],0.04];p.wrL=[sh[0]+0.16,0.04];p.elR=[p.shR[0]+0.02,p.shR[1]+0.12];p.wrR=[p.shR[0]+0.04,p.shR[1]+0.26];return p;})();
+var FRONT_FRAMES={
+'abduction':{start:_fb(),end:_fb({elL:[-0.28,0.8],wrL:[-0.44,0.8],elR:[0.28,0.8],wrR:[0.44,0.8]}),caption:'arms rise out to the sides'},
+'hip adduction':{start:_fb({knL:[-0.15,0.29],anL:[-0.24,0.05],knR:[0.15,0.29],anR:[0.24,0.05]}),end:_fb(),caption:'legs draw together against resistance'},
+'scapular elevation':{start:_fb(),end:_fb({shL:[-0.12,0.87],shR:[0.12,0.87],elL:[-0.14,0.71],elR:[0.14,0.71],wrL:[-0.15,0.57],wrR:[0.15,0.57]}),caption:'shoulders rise towards the ears (the rise is drawn larger than life so it can be seen)'},
+'external rotation':{start:_fb({elL:[-0.14,0.64],wrL:[-0.03,0.66],elR:[0.14,0.64],wrR:[0.03,0.66]}),end:_fb({elL:[-0.14,0.64],wrL:[-0.32,0.66],elR:[0.14,0.64],wrR:[0.32,0.66]}),caption:'elbows stay at the sides; forearms swing outwards'},
+'anti-lateral flexion':{start:_sidePlank,end:_sidePlank,hold:true,caption:'a side plank: the body stays straight, hips up'},
+'vertical push':{start:_fb({elL:[-0.24,0.74],wrL:[-0.2,0.88],elR:[0.24,0.74],wrR:[0.2,0.88]}),end:_fb({elL:[-0.2,1.0],wrL:[-0.16,1.16],elR:[0.2,1.0],wrR:[0.16,1.16]}),caption:'hands press from the shoulders to overhead'},
+'vertical pull':{start:_fb({elL:[-0.24,1.0],wrL:[-0.3,1.16],elR:[0.24,1.0],wrR:[0.3,1.16]}),end:_fb({elL:[-0.24,0.7],wrL:[-0.2,0.86],elR:[0.24,0.7],wrR:[0.2,0.86]}),caption:'hands pull from overhead down to the shoulders'}
+};
+var FRONT_POSES={
+'tree':{positions:_fb({knL:[-0.24,0.36],anL:[-0.02,0.36],elL:[-0.09,0.99],wrL:[-0.01,1.08],elR:[0.09,0.99],wrR:[0.01,1.08]}),caption:'standing on one leg; the other foot on the inner thigh, knee out'},
+'warrior-2':{positions:(function(){var p=_fb();Object.keys(p).forEach(function(k){if(!/^an|^kn/.test(k))p[k]=[p[k][0],p[k][1]-0.1];});
+p.anL=[-0.36,0.04];p.knL=[-0.33,0.24];p.anR=[0.36,0.04];p.knR=[0.22,0.22];p.elL=[-0.3,0.7];p.wrL=[-0.46,0.7];p.elR=[0.3,0.7];p.wrR=[0.46,0.7];return p;})(),
+caption:'a wide stance, front knee bent over the ankle, arms level'}
+};
+var POSE_FIXES={
+'crow':{positions:{toe:[0.07,0.2],ankle:[0.12,0.16],knee:[0.3,0.22],hip:[0.1,0.4],lumbar:[0.18,0.38],thoracic:[0.3,0.34],shoulder:[0.42,0.3],cervical:[0.48,0.33],head:[0.55,0.32],elbow:[0.33,0.18],wrist:[0.35,0]},
+caption:'hands on the floor, knees resting on the upper arms, feet lifted'},
+'pigeon':{positions:{toe:[-0.62,0],ankle:[-0.56,0.02],knee:[-0.28,0.03],hip:[0,0.18],lumbar:[0,0.28],thoracic:[0,0.42],shoulder:[0.01,0.5],cervical:[0.01,0.57],head:[0.02,0.64],elbow:[0.06,0.26],wrist:[0.1,0.02]},
+caption:'the back leg extended behind; the front leg is folded underneath, out of sight from this side'}
+};
+var ORIENTATION_RULES=[
+{id:'incline',test:/incline/i,rotate:45,label:'on an incline bench'},
+{id:'decline',test:/decline/i,rotate:100,label:'on a decline bench'},
+{id:'supine',test:/bench press|floor press|chest fly|pullover|skull ?crusher|lying triceps|glute bridge|hip thrust|dead ?bug|bench$/i,rotate:90,label:'lying on your back'},
+{id:'prone',test:/push-?up|plank(?!.*side)|mountain climber|bear crawl/i,rotate:-90,label:'face down'},
+{id:'seated',test:/seated|pulldown|leg extension|machine row|cable row|seated calf|leg press/i,seated:true,label:'seated'},
+{id:'hanging',test:/pull-?up|chin-?up|hanging/i,label:'hanging from a bar'}
+];
+function exerciseOrientation(name){var n=String(name||'');for(var i=0;i<ORIENTATION_RULES.length;i++)if(ORIENTATION_RULES[i].test.test(n))return ORIENTATION_RULES[i];return null;}
+function _seat(pos){var p={};Object.keys(pos).forEach(function(k){p[k]=pos[k].slice();});var h=p.hip;p.knee=[h[0]+0.24,h[1]];p.ankle=[h[0]+0.26,h[1]-0.24];p.toe=[h[0]+0.33,h[1]-0.24];return p;}
+function orientFrames(frames,orient){if(!orient||(!orient.rotate&&!orient.seated))return frames;
+return frames.map(function(f){var pos=f.positions;if(orient.seated)pos=_seat(pos);if(orient.rotate)pos=_rot(pos,pos.hip,orient.rotate);return Object.assign({},f,{positions:pos});});}
+function renderFramePanels(frames,o){
+o=o||{};var segs=o.segments||SKELETON_SEGMENTS,joints=o.joints||SKELETON_JOINTS,W=o.width||130,H=o.height||150,hot=o.loadedJoints||{};
+var T=coordinateTransform(frames.map(function(f){return f.positions;}),W,H,14);
+var minY=Infinity;frames.forEach(function(f){Object.keys(f.positions).forEach(function(k){minY=Math.min(minY,f.positions[k][1]);});});
+var panel=function(f,i){var sg='',jt='',rom='',force='',last=i===frames.length-1&&frames.length>1;
+segs.forEach(function(g){var a=f.positions[g[0]],b=f.positions[g[1]];if(!a||!b)return;var p=T.map(a),q=T.map(b);
+sg+='<line class="sk-seg" x1="'+p[0].toFixed(1)+'" y1="'+p[1].toFixed(1)+'" x2="'+q[0].toFixed(1)+'" y2="'+q[1].toFixed(1)+'"/>';});
+var hd=T.map(f.positions.head);sg+='<circle class="sk-head" cx="'+hd[0].toFixed(1)+'" cy="'+hd[1].toFixed(1)+'" r="'+(0.045*T.scale).toFixed(1)+'"/>';
+var fy=(T.map([0,minY])[1]+2).toFixed(1);sg+='<line class="sk-floor" x1="4" x2="'+(W-4)+'" y1="'+fy+'" y2="'+fy+'"/>';
+joints.forEach(function(j){var q=f.positions[j];if(!q||j==='head')return;var p=T.map(q),on=hot[j]||hot[String(j).replace(/[LR]$/,'')];
+jt+='<circle class="sk-joint'+(on?' sk-hot':'')+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(on?3.8:2.4)+'"><title>'+esc(j)+(on?' \u2014 loaded':'')+'</title></circle>';});
+if(last&&o.primary&&o.rom==='angle'&&typeof JOINT_ANGLE_ARMS!=='undefined'&&JOINT_ANGLE_ARMS[o.primary]&&f.positions[o.primary]){
+var arms=JOINT_ANGLE_ARMS[o.primary],f0=frames[0].positions,c=T.map(f.positions[o.primary]),r=Math.max(12,0.08*T.scale);
+var ang=function(pos){var a=pos[arms[1]],cc=pos[o.primary];return Math.atan2(-(a[1]-cc[1]),a[0]-cc[0]);};
+if(f0[arms[1]]&&f0[o.primary]){var t0=ang(f0),t1=ang(f.positions),sw=((t1-t0+2*Math.PI)%(2*Math.PI))<Math.PI?1:0;
+rom='<path class="sk-rom" d="M '+(c[0]+r*Math.cos(t0)).toFixed(1)+' '+(c[1]+r*Math.sin(t0)).toFixed(1)+' A '+r.toFixed(1)+' '+r.toFixed(1)+' 0 0 '+sw+' '+(c[0]+r*Math.cos(t1)).toFixed(1)+' '+(c[1]+r*Math.sin(t1)).toFixed(1)+'"/>';}}
+if(last&&o.load&&f.positions[o.load]){var lp=T.map(f.positions[o.load]),len=Math.max(18,0.1*T.scale);
+force='<line class="sk-force" x1="'+lp[0].toFixed(1)+'" y1="'+lp[1].toFixed(1)+'" x2="'+lp[0].toFixed(1)+'" y2="'+(lp[1]+len).toFixed(1)+'"/><path class="sk-force-head" d="M '+(lp[0]-4).toFixed(1)+' '+(lp[1]+len-6).toFixed(1)+' L '+lp[0].toFixed(1)+' '+(lp[1]+len).toFixed(1)+' L '+(lp[0]+4).toFixed(1)+' '+(lp[1]+len-6).toFixed(1)+'"/>';}
+return '<div class="mv-panel"><div class="mv-cap">'+esc(f.name||(i===0?'start':'end'))+'</div><svg class="skeleton" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc((o.label||'movement')+', '+(f.name||''))+'">'+
+'<g class="sk-l-segments">'+sg+'</g><g class="sk-l-rom">'+rom+'</g><g class="sk-l-force">'+force+'</g><g class="sk-l-joints">'+jt+'</g><g class="sk-l-labels"></g></svg></div>';};
+var out='<div class="mv-panels">'+frames.map(panel).join(frames.length>1?'<div class="mv-arrow" aria-hidden="true">\u2192</div>':'')+'</div>';
+if(o.caption||o.view==='front'||o.orientation)out+='<div class="hint mv-note">'+esc([o.view==='front'?'Seen from the front':null,o.orientation?o.orientation:null,o.caption||null].filter(Boolean).join(' \u00b7 '))+'</div>';
+return out;
+}
+function movementVisualAudit(){
+var issues=[],checked=0;
+Object.keys(MOVEMENT_PATTERNS).forEach(function(k){var m=movementModel(k);checked++;if(m.status!=='ok'){issues.push(k+': no figure');return;}
+var plane=(PATTERN_MECHANICS[k]||{}).plane;if(plane==='frontal'&&m.view!=='front')issues.push(k+': a frontal-plane movement drawn side-on');
+var f0=m.frames[0].positions,f1=m.frames[m.frames.length-1].positions,move=0;Object.keys(f1).forEach(function(j){if(f0[j]){var dx=f1[j][0]-f0[j][0],dy=f1[j][1]-f0[j][1];move=Math.max(move,Math.sqrt(dx*dx+dy*dy));}});
+var hold=(FRONT_FRAMES[k]&&FRONT_FRAMES[k].hold)||/^anti-|grip|carry/.test(k);
+if(!hold&&move<0.06)issues.push(k+': start and end barely differ ('+round(move,3)+' body units)');
+if(m.view!=='front'&&!hold&&(m.primary==='shoulder'||m.primary==='elbow')){var w=f1.wrist,sh=f1.shoulder,hp=f1.hip;if(w&&sh&&hp){var cross=Math.abs((hp[0]-sh[0])*(sh[1]-w[1])-(sh[0]-w[0])*(hp[1]-sh[1]))/Math.max(0.001,Math.hypot(hp[0]-sh[0],hp[1]-sh[1]));
+if(cross<0.03&&move<0.12)issues.push(k+': the moving arm sits on the torso line');}}});
+[['Bench press',1],['Push-up',-1]].forEach(function(t){var e=resolveExercise(t[0]);if(!e)return;var m=movementModel(e.pattern,{exercise:e.name});if(m.view!=='side')return;
+var f0=m.frames[0].positions,f1=m.frames[m.frames.length-1].positions,dy=f1.wrist[1]-f0.wrist[1];
+if(dy*t[1]<=0)issues.push(t[0]+': the push goes the wrong way ('+(dy>0?'up':'down')+')');});
+Object.keys(POSES).forEach(function(k){var m=poseModel(k);checked++;if(m.status!=='ok')issues.push('pose '+k+': no figure');});
+var unresolved=EXERCISES.filter(function(e){return !MOVEMENT_PATTERNS[e.pattern];}).map(function(e){return e.id;});
+if(unresolved.length)issues.push(unresolved.length+' exercises have no figure: '+unresolved.slice(0,4).join(', '));
+return {ok:!issues.length,issues:issues,checked:checked,exercises:EXERCISES.length};
+}
 /* ===== SOURCE: 77-lifecycle.js ===== */
 var EQUIPMENT_CONDITIONS={
 new:{label:'New',usable:true},good:{label:'Good',usable:true},
@@ -13439,7 +13618,9 @@ tiles.push(uiMetric({personal:(function(){var L=personalizationLabel(S.tdee,{bec
 var pr=S.nutrition;tiles.push(uiMetric({trace:'adherence',label:'Protein today',value:pr.protein!=null?fmtNum(pr.protein,0):null,unit:'g'+(pr.proteinTarget?' / '+fmtNum(pr.proteinTarget,0):''),cls:'MEASURED',source:pr.fromFoodLog?'food log':'logged',date:pr.protein!=null?today:null,need:'log protein or food',badge:pr.protein!=null&&pr.proteinTarget?uiPill(pr.protein>=pr.proteinTarget*0.9?'on target':'below',pr.protein>=pr.proteinTarget*0.9?'good':'attention'):''}));
 tiles.push(uiMetric({label:'Steps \u00b7 7-day avg',value:S.steps.mean7!=null?fmtNum(S.steps.mean7,0):null,unit:'',cls:'MEASURED',source:S.steps.n7+' of 7 days'+(S.steps.target?' \u00b7 target '+fmtNum(S.steps.target,0):''),date:S.steps.last?S.steps.last.date:null,type:'steps',need:'log steps'}));
 setHTML('vitalsZone','<div class="vitals">'+tiles.join('')+'</span></div>');
-setHTML('actionsZone',renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})());   /* weather only once a place is set */
+var _ph=(DB.settings.showPhotoOnToday&&(DB.settings.photos||[]).length)?(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+setHTML('actionsZone',(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})());   /* weather only once a place is set */
+if(_ph&&typeof hydratePhotoThumbs==='function')setTimeout(hydratePhotoThumbs,0);
 setHTML('forecastZone',renderForecastCard(S));
 var voi=valueOfInformation();
 setHTML('dataQualityZone',uiFold('today-data','Data quality',S.trust.overall.level+' \u00b7 '+(voi.top?('next: '+voi.top.what):'nothing urgent'),renderTrust(S.trust)+(voi.items.length?'<div class="divider"></div><div class="card-title" style="font-size:14px">Most valuable next observation</div>'+voi.items.slice(0,3).map(function(v){return uiRow(v.what,uiPill(v.value+' value',v.value==='high'?'attention':'neutral'),{sub:v.why});}).join(''):''),{tone:S.trust.overall.level==='low'||S.trust.overall.level==='insufficient'?'attention':''}));
@@ -13606,7 +13787,12 @@ if(typeof ensurePlan==='function')ensurePlan();
 var _pl=currentPlan();
 if(_pl){var c=_pl.content,t=c.targets||{},X=explainPlanChange(_pl.id),CM=constraintModel();
 var DOWS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-var weekHtml='<div class="plan-week">'+DOWS.map(function(d){var v=c.training.week[d];return '<div class="pw-day'+(v?'':' rest')+'"><b>'+d+'</b><span>'+esc(v||'rest')+'</span></div>';}).join('')+'</div>';
+var _SMv=scheduleModel();
+var weekHtml=_SMv.mode==='weekly'?('<div class="plan-week">'+DOWS.map(function(d){var v=c.training.week[d];return '<div class="pw-day'+(v?'':' rest')+'"><b>'+d+'</b><span>'+esc(v||'rest')+'</span></div>';}).join('')+'</div>'):
+('<div class="card-title" style="margin-top:8px">Next 14 days</div><div class="sched-strip">'+scheduleAhead(14).map(function(x){
+return '<div class="pw-day'+(x.planned?'':' rest')+'" title="'+attrEsc(x.why)+'"><b>'+esc(dowShort(x.date))+' '+esc(x.date.slice(8))+'</b>'+(x.shift?'<span class="sh sh-'+x.shift+'">'+esc(x.shift)+'</span>':'')+'<span>'+esc(x.planned||'rest')+'</span></div>';}).join('')+'</div>'+
+(_SMv.mode==='rotation'?'<div class="hint">D day shift \u00b7 N night shift \u00b7 O day off'+(_SMv.protectAfterNights?' \u00b7 the first day off after nights is kept for sleep':'')+'</div>':''))+
+'<div class="btn-row">'+uiBtn('Schedule','nav.schedule',null,'btn-sm btn-ghost')+'</div>';
 out+=uiCard({title:'The plan',sub:'version '+_pl.version+' \u00b7 since '+shortDate(_pl.effectiveFrom),body:
 uiRow('Goal',esc(c.goal.label||'not set')+(c.goal.activeTargetLb?(' \u00b7 '+fmtWeight(c.goal.activeTargetLb)):''),{sub:c.goal.activeTargetSource?esc(c.goal.activeTargetSource):''})+
 uiRow('Each day',(t.kcal?fmtNum(t.kcal,0)+' kcal':'')+(t.protein?' \u00b7 '+t.protein+' g protein':'')+(t.steps?' \u00b7 '+fmtNum(t.steps,0)+' steps':''))+
@@ -14119,7 +14305,7 @@ out+=uiCard({fold:'tools-appearance',title:'Appearance',
 sub:'every option is contrast-checked before it is offered \u2014 a combination that fails is withheld rather than warned about',
 body:body});
 })();
-out+=uiCard({fold:'tools-display',title:'Display',sub:(Object.keys(DB.settings.hiddenFolds||{}).length?(Object.keys(DB.settings.hiddenFolds).length+' hidden section'+(Object.keys(DB.settings.hiddenFolds).length===1?'':'s')+' \u00b7 '):'')+'text size, density, contrast and motion apply immediately and persist',body:(function(){var h=Object.keys(DB.settings.hiddenFolds||{}).length;return h?uiRow('Hidden sections',String(h),{sub:'finished sections you hid'})+'<div class="btn-row">'+uiBtn('Show all','fold.showAll',null,'btn-sm btn-secondary')+'</div>':'';})()+uiRow('Detail','',{sub:opt([['casual','Casual'],['insightful','Insightful'],['developer','Developer']],detailLevel(),'settings.detail')+'<div class="hint">'+esc(DETAIL_LEVELS[detailLevel()].desc)+'</div>'})+uiRow('Units','',{sub:opt([['imperial','lb / in'],['metric','kg / cm']],s.units,'settings.units')})+uiRow('Text size','',{sub:opt([['XS','XS'],['S','S'],['M','M'],['L','L'],['XL','XL']],s.textScale,'settings.textScale')})+uiRow('Density','',{sub:opt([['compact','Compact'],['cozy','Cozy'],['comfortable','Comfortable']],s.density,'settings.density')})+uiRow('Contrast','',{sub:opt([['normal','Normal'],['high','High']],s.contrast,'settings.contrast')})+uiRow('Motion','',{sub:opt([['auto','System'],['reduced','Reduced']],s.motion,'settings.motion')})+uiRow('Thumb rails','',{sub:opt([['on','Show'],['off','Hide \u2014 charts use the full width']],s.rails||'on','settings.rails')})+'<div data-level="developer">'+uiRow('Show model marks','',{sub:opt([['on','Show'],['off','Hide']],s.showModels===false?'off':'on','settings.showModels')})+'</div>'});
+out+=uiCard({fold:'tools-display',title:'Display',sub:(Object.keys(DB.settings.hiddenFolds||{}).length?(Object.keys(DB.settings.hiddenFolds).length+' hidden section'+(Object.keys(DB.settings.hiddenFolds).length===1?'':'s')+' \u00b7 '):'')+'text size, density, contrast and motion apply immediately and persist',body:((DB.settings.photos||[]).length?uiRow('Latest photo on Today',DB.settings.showPhotoOnToday?'on':'off',{sub:'a small icon of your newest progress photo'})+'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday?'Hide it':'Show it','photo.todayToggle',null,'btn-sm btn-secondary')+'</div>':'')+(function(){var h=Object.keys(DB.settings.hiddenFolds||{}).length;return h?uiRow('Hidden sections',String(h),{sub:'finished sections you hid'})+'<div class="btn-row">'+uiBtn('Show all','fold.showAll',null,'btn-sm btn-secondary')+'</div>':'';})()+uiRow('Detail','',{sub:opt([['casual','Casual'],['insightful','Insightful'],['developer','Developer']],detailLevel(),'settings.detail')+'<div class="hint">'+esc(DETAIL_LEVELS[detailLevel()].desc)+'</div>'})+uiRow('Units','',{sub:opt([['imperial','lb / in'],['metric','kg / cm']],s.units,'settings.units')})+uiRow('Text size','',{sub:opt([['XS','XS'],['S','S'],['M','M'],['L','L'],['XL','XL']],s.textScale,'settings.textScale')})+uiRow('Density','',{sub:opt([['compact','Compact'],['cozy','Cozy'],['comfortable','Comfortable']],s.density,'settings.density')})+uiRow('Contrast','',{sub:opt([['normal','Normal'],['high','High']],s.contrast,'settings.contrast')})+uiRow('Motion','',{sub:opt([['auto','System'],['reduced','Reduced']],s.motion,'settings.motion')})+uiRow('Thumb rails','',{sub:opt([['on','Show'],['off','Hide \u2014 charts use the full width']],s.rails||'on','settings.rails')})+'<div data-level="developer">'+uiRow('Show model marks','',{sub:opt([['on','Show'],['off','Hide']],s.showModels===false?'off':'on','settings.showModels')})+'</div>'});
 out+=uiCard({id:'textCard',title:'Text',sub:'the typeface and how text is spaced \u2014 changes apply immediately',body:(function(){
 var cur=canonicalFont(s.font||'system');
 var faces='<div class="face-list">'+Object.keys(FONT_REGISTRY).map(function(k){var f=FONT_REGISTRY[k];
@@ -18534,7 +18720,16 @@ registerAction('train.sub',function(arg,ev,el){var q=el.value;var out=document.g
 registerAction('decision.apply',function(){var dec=decide();if(!dec.intervention){toast('Today\u2019s decision has no intervention to apply; it is a hold.');return;}var iv=dec.intervention;return confirmDialog({title:'Apply: '+dec.verb,msg:'<b>'+esc(iv.variable)+'</b> '+(iv.from!=null?esc(String(iv.from))+' \u2192 ':'')+(iv.to!=null?esc(String(iv.to)):'')+'.<br><br>This updates the phase target, records the decision, and creates an experiment with the prediction <i>'+esc(iv.expected)+'</i> to be checked in '+iv.recheckDays+' days. Undo is available.',okLabel:'Apply'}).then(function(ok){if(!ok)return;var exp=applyDecisionIntervention(dec);_memoInvalidate();renderAll();toast('Applied \u00b7 experiment recheck '+shortDate(exp.recheckDate),{undo:true});});});
 registerAction('decision.user',function(){openSheet('edit',{form:'userDecision',title:'Record my decision',desc:'',buf:{verb:'',note:'',recheckDays:14}});});
 registerAction('decision.userSave',function(){var b=_SHEET.buf;if(!b.verb){toast('Say what you decided',{tone:'negative'});return;}recordUserDecision(b);closeSheet();_memoInvalidate();renderAll();toast('Decision recorded');});
-registerAction('exp.new',function(){openExperiment();});
+registerAction('exp.new',function(){openSheet('edit',{form:'expPicker',title:'Start an experiment',desc:'',buf:{}});});
+registerAction('exp.custom',function(){openExperiment();});
+SHEETS.expPicker=function(){
+var rows=EXPERIMENT_TEMPLATES.map(function(t0){var t=experimentTemplate(t0.id)||t0,d=t.design;
+var dur=d&&d.status==='ok'?(d.weeksNeeded+' weeks for you'+(d.feasible?'':' \u2014 your own noise may hide the effect')):'how long depends on data you have not logged yet';
+return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(t.label)+'</div><div class="li-meta">'+uiPill(t.kind||t.metric)+'</div></div>'+
+'<div class="li-body"><div>'+esc(t.question)+'</div><div class="hint">You would '+esc(t.todo||('change '+t.variable))+'. Measured on '+esc(t.metric)+' \u00b7 '+esc(dur)+'.</div>'+
+'<div class="btn-row">'+uiBtn('See this experiment','exp.fromTemplate',t.id,'btn-sm btn-primary')+'</div></div></div>';}).join('');
+return {body:'<div class="hint">Each of these is one change, sized to your own day-to-day noise so it runs long enough to answer its question.</div>'+rows+
+'<div class="btn-row" style="margin-top:10px">'+uiBtn('Design my own','exp.custom',null,'btn-sm btn-ghost')+'</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('exp.save',function(){saveExperiment();});
 registerAction('exp.evaluate',function(id){var e=DB.experiments.filter(function(x){return x.id===id;})[0];if(!e)return;var early=e.recheckDate>todayISO();return confirmDialog({title:early?'Evaluate early?':'Evaluate experiment',msg:(early?'The recheck date is '+shortDate(e.recheckDate)+'. Evaluating now uses fewer days and lowers confidence.<br><br>':'')+'The outcome is scored against the stamped prediction. An unsupported result is written to negative knowledge. The experiment is archived. Undo is available.',okLabel:'Evaluate'}).then(function(ok){if(!ok)return;var r=evaluateExperiment(id,{asOf:todayISO()});_memoInvalidate();renderAll();toast('Result: '+r.conclusion,{undo:true});});});
 registerAction('exp.abandon',function(id){return confirmDialog({title:'Abandon experiment?',msg:'It is marked abandoned, not deleted; the intervention stays in the log. Undo is available.',okLabel:'Abandon',danger:true}).then(function(ok){if(!ok)return;var e=DB.experiments.filter(function(x){return x.id===id;})[0];pushUndo('abandon experiment');e.status='abandoned';e.abandonedAt=nowISO();e.completedAt=nowISO();var iv=DB.interventions.filter(function(i){return i.id===e.interventionId;})[0];if(iv)iv.status='abandoned';save('experiment:abandon');_memoInvalidate();renderAll();toast('Abandoned',{undo:true});});});
@@ -20435,7 +20630,7 @@ uiBtn(x.feasible?'Design it':'Why not?','exp.fromTemplate',x.id,'btn-sm btn-ghos
 foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 SHEETS.expTemplate=function(b){
 var t=b.t;var d=t.design;
-var body=uiRow('Question',esc(t.question),{})+
+var body=uiRow('Question',esc(t.question),{})+(t.todo?uiRow('You would',esc(t.todo),{}):'')+
 uiRow('Change',esc(t.variable)+' '+fmtSigned(t.delta,0),{sub:'measured on '+esc(t.metric)})+
 uiRow('Washout',t.washoutDays+' days',{sub:'so carry-over is not counted as effect'})+
 uiRow('Reverse if',esc(t.reversal),{});
@@ -20728,7 +20923,8 @@ var s2=IMPORT_SOURCES[k];return uiRow(esc(s2.label),esc(String(s2.format||'').to
 foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openPhotos(){setTimeout(hydratePhotoThumbs,0);openSheet('edit',{form:'photos',title:'Progress photos',desc:'Photos are stored in the browser database, never in the record document, so exports stay small and a photo is never shared by exporting a backup.',buf:{}});}
 var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',note:''};
-SHEETS.photos=function(){var m=photoMeta();
+SHEETS.photos=function(){
+var _todaySwitch=(DB.settings.photos||[]).length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
 var pairs=photoPosePairs();
 var chips=function(reg,cur,act){return '<div class="btn-row" style="margin-top:4px">'+Object.keys(reg).map(function(k){
 return uiBtn(reg[k].label,act,k,'btn-sm '+(cur===k?'btn-primary':'btn-secondary'));}).join('')+'</div>';};
@@ -20750,7 +20946,7 @@ uiEmpty('No photos yet','Add one above. A photo every two to four weeks, same vi
 var comps=pairs.length?('<div class="card-title" style="margin-top:10px">Comparisons</div>'+pairs.map(function(p){return uiRow(esc(p.label),p.days+' days apart',
 {sub:(p.weightChange!=null?(fmtSigned(p.weightChange,1)+' lb between them'):'')});}).join('')+
 '<div class="prov">Same view, furthest apart in time \u2014 an honest comparison rather than a flattering one.</div>'):'';
-return {body:add+gallery+comps,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+return {body:_todaySwitch+add+gallery+comps,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function hydratePhotoThumbs(){
 if(typeof document==='undefined')return;
 [].slice.call(document.querySelectorAll('img[data-photo]')).forEach(function(img){
@@ -20926,7 +21122,9 @@ if(st==='goal')body='<h2 class="wz-h">Your goal</h2>'+_wzChips([['fat_loss','Los
 if(st==='training')body='<h2 class="wz-h">Your training</h2><div class="card-title">Experience</div>'+
 _wzChips([['novice','New to lifting'],['novice-intermediate','Some experience'],['intermediate','1\u20133 years'],['advanced','3 years or more']],b.trainingExperience,'trainingExperience')+
 '<div class="card-title">What you have</div>'+_wzChips(WZ_EQUIP,b.equipment,'equipment',true)+
-'<div class="card-title">Days you can train</div>'+_wzChips(WZ_DAYS.map(function(d){return [d,d];}),b.days,'days',true)+
+'<div class="card-title">My week</div>'+_wzChips([['weekly','Same days each week'],['rotation','Rotating shifts'],['irregular','It changes']],b.scheduleMode||'weekly','scheduleMode')+
+(b.scheduleMode&&b.scheduleMode!=='weekly'?'<div class="hint">'+(b.scheduleMode==='rotation'?'After setup, Plan \u2192 Schedule takes your rotation (2-2-3, DuPont, 4-on-4-off or your own) and what each shift leaves time for.':'After setup, Plan \u2192 Schedule takes the days you are free each fortnight.')+'</div>':
+'<div class="card-title">Days you can train</div>'+_wzChips(WZ_DAYS.map(function(d){return [d,d];}),b.days,'days',true))+
 '<div class="card-title">How long a session can be</div>'+_wzChips(CONSTRAINT_OPTIONS.sessionMinutes.map(function(x){return [String(x[0]),x[1]];}),String(b.sessionMinutes||''),'sessionMinutes')+
 '<div class="hint">Programmes are built from this: only exercises you can do with what you have, at your level.</div>';
 if(st==='food')body='<h2 class="wz-h">Food</h2><div class="hint">So meal suggestions fit how you actually eat.</div>'+
@@ -20966,7 +21164,8 @@ if(st==='training'){var eq=b.equipment.slice();if(eq.indexOf('barbell')>=0){eq.p
 if(eq.indexOf('bodyweight')<0)eq.push('bodyweight');
 applyProfileFields({trainingExperience:b.trainingExperience,equipment:eq.filter(function(x,i){return eq.indexOf(x)===i;})});
 DB.settings.trainingDays=WZ_DAYS.filter(function(d){return b.days.indexOf(d)>=0;});save('settings');
-applyProfileFields({sessionMinutes:b.sessionMinutes});notePlanChange('constraint change',{reason:'Your training days, equipment or session length changed.'});}
+applyProfileFields({sessionMinutes:b.sessionMinutes});if(b.scheduleMode&&b.scheduleMode!=='weekly')setSchedule({mode:b.scheduleMode,preset:b.scheduleMode==='rotation'?'pitman-dn':undefined,anchor:todayISO()});
+notePlanChange('constraint change',{reason:'Your training days, equipment or session length changed.'});}
 if(st==='food'){applyProfileFields({cookingTime:b.cookingTime,foodBudget:b.foodBudget,dietRestrictions:b.dietRestrictions});
 notePlanChange('constraint change',{reason:'Your cooking time, food budget or diet restrictions changed.'});}
 }
@@ -21085,6 +21284,8 @@ return {status:'ok',days:d};}
 registerAction('attention.snooze',function(id){var r=snoozeAttention(id);if(r.status==='refused'){toast(r.note);return;}if(r.status!=='ok')return;var d=r.days;
 renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='attention'){_SHEET.buf.q=attentionQueue();renderSheet();}
 toast('Snoozed for '+(d===1?'a day':d+' days')+' \u2014 it comes back if it still applies');});
+registerAction('photo.todayToggle',function(){DB.settings.showPhotoOnToday=!DB.settings.showPhotoOnToday;save('settings');renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='photos')renderSheet();
+toast(DB.settings.showPhotoOnToday?'Your latest photo shows on Today':'Today no longer shows a photo');});
 /* ===== SOURCE: 90-workout.js ===== */
 var WORKOUT_DRAFT_KEY='physiqueOS_workout_draft';
 var _WORKOUT=null,_REST=null;
@@ -21287,6 +21488,45 @@ out+='<div class="card-title" style="margin-top:12px">Where this comes from</div
 '<div class="hint">'+esc((EXTERNAL_SOURCES['open-meteo']||{}).terms||'')+'</div>';
 return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 };
+function openSchedule(){openSheet('edit',{form:'schedule',title:'Your schedule',desc:'',buf:{}});}
+SHEETS.schedule=function(){
+var M=scheduleModel(),chip=function(label,act,arg,on){return uiBtn(label,act,arg,'btn-sm '+(on?'btn-primary':'btn-ghost'));};
+var out='<div class="card-title">My week</div><div class="btn-row wrap">'+chip('Same days each week','sched.mode','weekly',M.mode==='weekly')+chip('Rotating shifts','sched.mode','rotation',M.mode==='rotation')+chip('It changes','sched.mode','irregular',M.mode==='irregular')+'</div>';
+if(M.mode==='weekly'){out+='<div class="card-title" style="margin-top:10px">Days you can train</div><div class="btn-row wrap">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(d){return chip(d,'sched.weekday',d,M.weekdays.indexOf(d)>=0);}).join('')+'</div>';}
+if(M.mode==='rotation'){
+out+='<div class="card-title" style="margin-top:10px">Rotation</div>'+Object.keys(ROTATION_PRESETS).map(function(k){var r=ROTATION_PRESETS[k];
+return '<button class="lib-row'+(M.preset===k?' on':'')+'" data-act="sched.preset" data-arg="'+k+'"><span class="lib-name">'+esc(r.label)+'</span><span class="lib-meta">'+esc(r.note||(r.pattern?r.pattern.length+'-day cycle':'tap each day below'))+'</span></button>';}).join('');
+var pat=M.pattern||'';
+out+='<div class="card-title" style="margin-top:10px">The cycle'+(pat?' ('+pat.length+' days)':'')+'</div><div class="hint">Tap a day to change it: D day shift, N night shift, O off, E evening shift.</div><div class="sched-pattern">'+
+pat.split('').map(function(c,i){return '<button class="pat-day sh-'+c+'" data-act="sched.cycleDay" data-arg="'+i+'" aria-label="day '+(i+1)+': '+attrEsc(SHIFT_LABELS[c])+'">'+c+'</button>';}).join('')+'</div>'+
+'<div class="btn-row">'+uiBtn('Add a day','sched.addDay',null,'btn-sm btn-ghost')+(pat.length>1?uiBtn('Remove the last day','sched.removeDay',null,'btn-sm btn-ghost'):'')+'</div>'+
+'<label class="fld"><span>The first day of the cycle was</span><input id="schedAnchor" type="date" value="'+attrEsc(M.anchor||'')+'" data-act="sched.anchor" data-ev="change"></label>'+
+'<div class="card-title" style="margin-top:10px">What each shift leaves time for</div>'+['D','N','E','O'].map(function(k){return '<div class="sched-rule"><span>'+esc(SHIFT_LABELS[k])+'</span><div class="btn-row wrap">'+
+SHIFT_RULE_OPTIONS.map(function(o){return chip(o[1],'sched.rule',k+'|'+o[0],M.rules[k]===o[0]);}).join('')+'</div></div>';}).join('')+
+'<div class="btn-row wrap">'+[20,30,45].map(function(m){return chip('Short: '+m+' min','sched.minutes','short|'+m,M.minutes.short===m);}).join('')+[45,60,75,90].map(function(m){return chip('Full: '+m+' min','sched.minutes','full|'+m,M.minutes.full===m);}).join('')+'</div>'+
+'<div class="btn-row">'+chip(M.protectAfterNights?'The first day off after nights is kept for sleep':'Sessions can fall the day after nights','sched.protect',null,M.protectAfterNights)+'</div>';}
+if(M.mode==='irregular'){out+='<div class="card-title" style="margin-top:10px">The next 14 days</div><div class="hint">Tap how much time you have each day.</div>'+
+Array.apply(null,{length:14}).map(function(_,i){var d=addDays(todayISO(),i),v=M.available[d]||0;return '<div class="sched-rule"><span>'+esc(dowShort(d)+' '+shortDate(d))+'</span><div class="btn-row wrap">'+
+[0,30,45,60,90].map(function(m){return chip(m?m+' min':'none','sched.avail',d+'|'+m,v===m);}).join('')+'</div></div>';}).join('');}
+var A=scheduleAudit();
+out+='<div class="card-title" style="margin-top:12px">Your next 14 days</div>'+(A.ok?'<div class="sched-strip">'+scheduleAhead(14).map(function(x){return '<div class="pw-day'+(x.planned?'':' rest')+'" title="'+attrEsc(x.why)+'"><b>'+esc(dowShort(x.date))+' '+esc(x.date.slice(8))+'</b>'+(x.shift?'<span class="sh sh-'+x.shift+'">'+esc(x.shift)+'</span>':'')+'<span>'+esc(x.planned||'rest')+'</span></div>';}).join('')+'</div>':
+'<div class="hint">'+esc(A.issues.join('; '))+'.</div>');
+return {body:out,foot:'<button class="btn btn-primary" data-act="edit.close">Done</button>'};
+};
+var _sched=function(o){setSchedule(o);renderSheet();renderAll();};
+registerAction('nav.schedule',function(){openSchedule();});
+registerAction('sched.mode',function(m){var o={mode:m};if(m==='rotation'&&!(DB.settings.schedule||{}).pattern){o.preset='pitman-dn';o.anchor=todayISO();}_sched(o);});
+registerAction('sched.weekday',function(d){var t=(DB.settings.trainingDays||[]).slice(),i=t.indexOf(d);if(i>=0)t.splice(i,1);else t.push(d);
+DB.settings.trainingDays=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].filter(function(x){return t.indexOf(x)>=0;});_sched({});});
+registerAction('sched.preset',function(k){var o={preset:k};if(k==='custom'&&!(DB.settings.schedule||{}).pattern)o.pattern='DDOO';if(!(DB.settings.schedule||{}).anchor)o.anchor=todayISO();_sched(o);});
+registerAction('sched.cycleDay',function(i){var p=(scheduleModel().pattern||'').split(''),seq=['D','N','O','E'];i=+i;if(p[i]==null)return;p[i]=seq[(seq.indexOf(p[i])+1)%seq.length];_sched({pattern:p.join(''),preset:'custom'});});
+registerAction('sched.addDay',function(){_sched({pattern:(scheduleModel().pattern||'')+'O',preset:'custom'});});
+registerAction('sched.removeDay',function(){var p=scheduleModel().pattern||'';_sched({pattern:p.slice(0,-1),preset:'custom'});});
+registerAction('sched.anchor',function(a,ev,el){if(el&&isValidISO(el.value))_sched({anchor:el.value});});
+registerAction('sched.rule',function(arg){var q=String(arg).split('|'),r={};r[q[0]]=q[1];_sched({rules:r});});
+registerAction('sched.minutes',function(arg){var q=String(arg).split('|'),m={};m[q[0]]=+q[1];_sched({minutes:m});});
+registerAction('sched.protect',function(){_sched({protectAfterNights:!scheduleModel().protectAfterNights});});
+registerAction('sched.avail',function(arg){var q=String(arg).split('|'),a={};a[q[0]]=+q[1];_sched({available:a});});
 /* ===== SOURCE: 91-inference.js ===== */
 function _pFromT(t,n){
 if(t==null||!isFinite(t))return null;
@@ -22738,7 +22978,7 @@ var KEYMAP=[
 {keys:'Tab / Shift+Tab',label:'Move through controls; inside a sheet focus stays in the sheet',group:'navigation'},
 {keys:'Enter / Space',label:'Activate the focused control',group:'navigation'}
 ];
-var REQUIRES_SUBJECT=/^(welcome\.|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
 'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -22802,6 +23042,8 @@ k:['deload','easier week','rest week','back off','fatigue']},
 'nav.motorLearning':{d:'Whether your lifts are becoming more consistent',k:['skill','technique','consistency','motor learning','variability']},
 'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
 'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
+'exp.custom':{d:'An experiment you design yourself, when none of the ready-made ones fits',k:['experiment','design','custom','own']},
+'nav.schedule':{d:'Weekly days, rotating shifts (2-2-3, DuPont, 4-on-4-off, your own) or an irregular week',k:['schedule','shifts','rotation','nights','2-2-3','availability','days']},
 'weather.open':{d:'Current weather, 14-day forecast, the past week, history and air quality for your place',k:['weather','forecast','temperature','rain','uv','air quality','humidity','sunrise','wind']},
 'nav.charts':{d:'Every chart type the app can draw, each from your own record',k:['charts','graphs','visualisation','catalogue','gallery']},
 'workout.start':{d:'Today\u2019s planned session with targets, a rest timer and set-by-set logging',k:['workout','train','session','gym','sets','rest timer','lift']},
@@ -23031,6 +23273,8 @@ var NAV_COMMANDS=[
 {id:'nav.exports',label:'Export and import',group:'system',surfaces:['ui','palette']},
 {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
+{id:'exp.custom',label:'Design my own experiment',group:'decisions',surfaces:['ui','palette']},
+{id:'nav.schedule',label:'Your schedule',group:'navigation',surfaces:['ui','palette']},
 {id:'weather.open',label:'Weather',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.charts',label:'Chart catalogue',group:'discovery',surfaces:['ui','palette']},
 {id:'workout.start',label:'Start today\u2019s workout',group:'logging',surfaces:['ui','palette']},
@@ -26716,6 +26960,26 @@ var T=renderChartSpec('timeline',{title:'t',events:[{date:'2026-07-01',lane:'Pla
 ok('the timeline keeps each lane and titles each event',/>Plan</.test(T)&&/>Phase</.test(T)&&(T.match(/<title>/g)||[]).length===2);
 var C=chartCatalogueSummary();ok('the catalogue says which chart types are only planned',C.available+C.planned.length===C.total&&chartTypeStatus('__noSuchType')==='planned'&&chartTypeStatus('heatmap')==='available');
 })();
+withFixture('successful_cut',function(){
+var keep=DB.settings.schedule;
+ok('a weekly schedule places sessions exactly as before',(function(){DB.settings.schedule={mode:'weekly'};_memoInvalidate();var p=trainingProgram(),d=todayISO();
+return JSON.stringify(scheduledPlan(d,p))===JSON.stringify((p.week||{})[_DOW[new Date(d+'T12:00:00Z').getUTCDay()]]||null);})());
+DB.settings.schedule={mode:'rotation',pattern:ROTATION_PRESETS['pitman-dn'].pattern,anchor:addDays(todayISO(),-10),protectAfterNights:true};_memoInvalidate();
+var A=scheduleAhead(56),lifts=A.filter(function(x){return x.kind==='lift';});
+ok('a rotation places sessions only where a shift leaves time',lifts.length>0&&lifts.every(function(x){return x.shift!=='N';}));
+ok('the first day off after nights is kept for sleep',A.every(function(x,i){return !(x.kind==='lift'&&x.shift==='O'&&i>0&&A[i-1].shift==='N');}));
+ok('never more lifting sessions in seven days than the programme asks for, nor more than three in a row',(function(){var per=_liftSequence(trainingProgram()).length,run=0,mr=0,m7=0;
+A.forEach(function(x,i){if(x.kind==='lift'){run++;mr=Math.max(mr,run);}else run=0;m7=Math.max(m7,A.slice(i,i+7).filter(function(y){return y.kind==='lift';}).length);});return mr<=3&&m7<=per;})());
+ok('past days keep their session when the schedule is read again',(function(){var d=addDays(todayISO(),-3),a=JSON.stringify(scheduledPlan(d,trainingProgram()));_memoInvalidate();return a===JSON.stringify(scheduledPlan(d,trainingProgram()));})());
+ok('a rotation needs its pattern and start date',(function(){DB.settings.schedule={mode:'rotation'};return !scheduleAudit().ok;})());
+DB.settings.schedule={mode:'irregular',available:{}};DB.settings.schedule.available[addDays(todayISO(),1)]=60;DB.settings.schedule.available[addDays(todayISO(),2)]=20;_memoInvalidate();
+ok('an irregular schedule uses the days marked free, sized by the time given',availabilityOn(addDays(todayISO(),1)).level==='full'&&availabilityOn(addDays(todayISO(),2)).level==='short'&&availabilityOn(addDays(todayISO(),3)).level==='none');
+DB.settings.schedule=keep;_memoInvalidate();
+});
+(function(){var A=movementVisualAudit();ok('every movement and pose drawing passes the visual audit: its view matches its plane, it visibly moves, and pushes go the right way',A.ok,A.issues.join('; '));
+ok('a bench press is drawn lying down and a push-up face down',exerciseOrientation('Bench press').id==='supine'&&exerciseOrientation('Push-up').id==='prone'&&exerciseOrientation('Lat pulldown').id==='seated');
+ok('a lateral raise is drawn from the front',movementModel('abduction').view==='front');})();
+ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMPLATES.every(function(t){return !!t.todo;}));
 withFixture('successful_cut',function(){
 var keep=DB.settings.attentionSnooze;DB.settings.attentionSnooze={};
 var q=attentionQueue().items.filter(function(i){return i.severity==='review';})[0];
