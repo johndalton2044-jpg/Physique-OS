@@ -798,10 +798,29 @@ details.variant-more>summary{min-height:44px;display:flex;align-items:center;col
 .fi-again{margin:-4px 0 6px}
 .adapt{padding:10px 0;border-top:1px solid var(--border)}.adapt:first-child{border-top:0}.adapt-t{font-weight:700;margin-bottom:4px}
 .file-pick{position:relative;display:inline-flex;align-items:center;cursor:pointer}
+.m-plabel{display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;font-size:calc(11px*var(--ts,1));border:1px solid var(--border);color:var(--text-2)}
+.m-plabel.good{border-color:var(--good);color:var(--good)}.m-plabel.attention{border-color:var(--attention);color:var(--attention)}
+.hx-done{fill:var(--accent)}.hx-part{fill:none;stroke:var(--accent);stroke-width:1}.hx-out{fill:none;stroke:var(--text-2);stroke-width:1}.hx-x{stroke:var(--text-2);stroke-width:1.4}
+.hx-unk{fill:none;stroke:var(--border);stroke-dasharray:2 2}.hx-up{fill:none;stroke:var(--border)}
+.hx-key{display:flex;flex-wrap:wrap;gap:10px;font-size:calc(11px*var(--ts,1));color:var(--text-2);margin-top:4px}.hx-key i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px;border-radius:2px;font-style:normal;line-height:10px;text-align:center;font-size:10px}
+.k-done{background:var(--accent)}.k-part{border:1px solid var(--accent);background:linear-gradient(to top,var(--accent) 50%,transparent 50%)}.k-skip{border:1px solid var(--text-2)}.k-unk{border:1px dashed var(--border)}
+.tl-axis{stroke:var(--border)}.tl-dot{fill:var(--accent)}.tl-lab{fill:var(--text-2);font-size:9px}
+.sb-s0{fill:var(--accent)}.sb-s1{fill:var(--accent);fill-opacity:.5}.sb-s2{fill:var(--accent);fill-opacity:.22;stroke:var(--accent);stroke-width:.6}.sb-target{stroke:var(--text-2);stroke-dasharray:4 3}
+.k-sb0{background:var(--accent)}.k-sb1{background:var(--accent);opacity:.5}.k-sb2{border:1px solid var(--accent);background:transparent}
+.sb-s3{fill:none;stroke:var(--accent);stroke-width:1;stroke-dasharray:3 2}.k-sb3{border:1px dashed var(--accent);background:transparent}
+.cx-bub{fill:var(--accent);fill-opacity:.35;stroke:var(--accent)}.cx-area{fill:var(--accent);fill-opacity:.3;stroke:var(--accent);stroke-width:1}.cx-rug{stroke:var(--text-2);stroke-width:.8}
+.cx-med{stroke:var(--text);stroke-width:1.5}.cx-grid{fill:none;stroke:var(--border);stroke-width:.8}.cx-wedge{fill:var(--accent);fill-opacity:.45;stroke:var(--bg,#111);stroke-width:1}
+.cx-big{fill:var(--text);font-size:15px;font-weight:700}.cx-track{fill:none;stroke:var(--border);stroke-width:12}.cx-fill{fill:none;stroke:var(--accent);stroke-width:12}
+.cx-band0{fill:var(--text-2);fill-opacity:.35}.cx-band1{fill:var(--text-2);fill-opacity:.22}.cx-band2{fill:var(--text-2);fill-opacity:.12}.cx-fill-bar{fill:var(--accent)}.cx-tick{stroke:var(--text);stroke-width:2}
+.cx-up{fill:var(--accent)}.cx-down{fill:none;stroke:var(--accent);stroke-width:1.2}.k-up{background:var(--accent)}.k-down{border:1px solid var(--accent)}
+.cx-flow{fill:none;stroke:var(--accent);stroke-opacity:.3}.cx-edge{stroke:var(--accent);stroke-opacity:.6}.cx-edge.neg{stroke-dasharray:4 3}.cx-wick{stroke:var(--text-2)}
+.cx-panel{fill:none;stroke:var(--border)}.cx-line{fill:none;stroke:var(--accent);stroke-width:1.5}.cx-pline{fill:none;stroke:var(--accent);stroke-opacity:.35}
+.chart-refused{border-left:2px solid var(--border);padding-left:8px}
+.cx-halo{paint-order:stroke;stroke:var(--bg,#111);stroke-width:3px;stroke-linejoin:round;fill:var(--text)}.cx-seg{stroke:var(--bg,#111);stroke-width:1.5}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-zexCsvxPdh8bUIoDsektMoAnBd8Axk9JPa65mUekL+Q='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="08502337e0 2026-09-25T11:48:11.494Z">
-<meta name="physique-release" content="9987a5385243">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PalX8iHpU/0oK6VY07M9mBqKlIy9y6OzGz0r1HtOiL0='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="1a1a5fce8c 2026-09-26T08:34:38.175Z">
+<meta name="physique-release" content="1ddc0765d455">
 </head>
 <body>
 
@@ -1005,9 +1024,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='08502337e0';        // hash of src/ — identifies the application code
-var RELEASE_ID='9987a5385243';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-25T11:48:11.494Z';
+var BUILD_ID='1a1a5fce8c';        // hash of src/ — identifies the application code
+var RELEASE_ID='1ddc0765d455';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-09-26T08:34:38.175Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -3197,8 +3216,12 @@ var priorMean=prior.length?mean(prior):null;var sustained=priorMean!=null&&recen
 per.push({exercise:k,status:'ok',n:h.length,pct:pct,direction:dir,last:h[h.length-1].best,consecutiveDeclines:consec,sustainedDecline:sustained,history:h});});
 var ok=per.filter(function(x){return x.status==='ok';});
 if(!ok.length)return insufficient('strength_trend',['4+ exposures of the same exercise'],{per:per,sessions:sess.length});
+try{var RESP={};exerciseResponse().rows.forEach(function(r){RESP[String(r.exercise).toLowerCase()]=r;});
+ok.forEach(function(x){if(x.direction!=='improving')return;var rr=RESP[String(x.exercise).toLowerCase()];
+if(rr&&rr.status==='ok'&&rr.direction!=='progressing'){x.direction='rising, not yet clear';x.slopePerWeek=rr.slopePerWeek;x.slopeSePerWeek=rr.slopeSePerWeek;}});}catch(e){_q(e,'P2');}
 var dec=ok.filter(function(x){return x.direction==='declining';}).length,imp=ok.filter(function(x){return x.direction==='improving';}).length;
-var overall=dec>ok.length/2?'declining':(imp>ok.length/2?'improving':(dec>0&&dec>=imp?'mixed, some decline':'stable'));
+var rising=ok.filter(function(x){return x.direction==='rising, not yet clear';}).length;
+var overall=dec>ok.length/2?'declining':(imp>ok.length/2?'improving':(dec>0&&dec>=imp?'mixed, some decline':((imp+rising)>ok.length/2&&dec===0?'rising, not yet clear':'stable')));
 var maxConsec=Math.max.apply(null,ok.map(function(x){return x.consecutiveDeclines;}));
 var sustainedCount=ok.filter(function(x){return x.sustainedDecline;}).length;
 return {status:'ok',cls:'DERIVED',overall:overall,per:per,declining:dec,improving:imp,tracked:ok.length,maxConsecutiveDeclines:maxConsec,sustainedCount:sustainedCount,confidence:ok.length>=3?'medium':'low'};
@@ -3658,6 +3681,18 @@ return {status:'ok',model:'weight_forecast_family',cls:'PREDICTIVE',horizonDays:
 base:cur.base,trend:cur.trend,dueDate:addDays(asOf(),h),confidence:'medium',
 assumptions:['the recent regime continues','a single phase across the fitting window'],
 source:'weight_forecast_family',method:P[h].method,promotion:P[h]};
+}
+function priorSensitivity(){
+var t=tdeeEstimate();if(t.status!=='ok')return {status:t.status};
+if(t.cls==='PRIOR')return {status:'ok',share:1,verdict:'prior-led',note:'This is still the population starting estimate: none of it comes from your own data yet.'};
+var emp=t.empirical,pr=t.prior;if(!emp||emp.status!=='ok'||!pr||pr.status!=='ok')return {status:'ok',share:0,verdict:'data-led',note:'No population prior is blended in.'};
+var adj=(t.adjusted&&t.calibration&&t.calibration.status==='ok')?clamp(t.calibration.bias,-300,300):0;
+var at=function(k){var w=emp.n/(emp.n+k);return w*emp.value+(1-w)*pr.value-adj;},share=1-t.weight;
+var v7=at(7),v28=at(28),spread=Math.abs(v28-v7);
+return {status:'ok',cls:'DERIVED',share:round(share,2),n:emp.n,range:[roundTo(Math.min(v7,v28),10),roundTo(Math.max(v7,v28),10)],spread:round(spread,0),
+verdict:share<=0.25?'data-led':(share<=0.6?'balanced':'prior-led'),
+note:'About '+Math.round(share*100)+'% of any error in the population starting estimate still carries into this one, from '+emp.n+' logged days; it shrinks as you log more. '+
+'Assuming a weaker or stronger prior moves the answer between '+fmtNum(roundTo(Math.min(v7,v28),10),0)+' and '+fmtNum(roundTo(Math.max(v7,v28),10),0)+' kcal.'};
 }
 /* ===== SOURCE: 45-baselines.js ===== */
 var PROTOCOLS={
@@ -5545,7 +5580,7 @@ prov:'association \u00b7 lag '+hsLag.lag+' day(s) \u00b7 r='+hsLag.r+' \u00b7 su
 else if(hs.status==='ok')unknown.push({text:'Whether your sleep affects your hunger',
 prov:'a raw correlation of '+round(hs.r,2)+' does not survive correction for autocorrelation',
 need:['more variation in sleep, or an experiment that changes it deliberately']});
-var ch=cardioHungerAssociation();if(ch.status==='ok')think.push({text:ch.text,prov:'association \u00b7 '+ch.n+' days',conf:'low'});
+var ch=cardioHungerAssociation();if(ch.status==='ok')think.push({text:ch.text+(ch.placeboVerdict==='failed'&&Math.abs(ch.diff)>=0.5?' \u2014 but most of that difference follows the overall trend, so it may not be the cardio':''),prov:'association \u00b7 '+ch.n+' days \u00b7 placebo check '+ch.placeboVerdict+(ch.trendAdjusted!=null?(' (trend-adjusted difference '+fmtNum(ch.trendAdjusted,1)+', future-cardio '+fmtNum(ch.placebo,1)+')'):''),conf:ch.placeboVerdict==='failed'?'very low':'low'});
 if(S.training.strength.status==='ok')know.push({text:'Strength is '+S.training.strength.overall+' across '+S.training.strength.tracked+' tracked lifts',prov:'derived \u00b7 e1RM per exposure',conf:S.training.strength.confidence});else unknown.push({text:'Whether strength is holding',prov:'',need:['4+ exposures per lift']});
 if(S.bodyComp.measured)know.push({text:'Body fat '+fmtPct(S.bodyComp.measured.value,1)+' by '+S.bodyComp.measured.method,prov:'measured \u00b7 '+ageLabel(S.bodyComp.measured.date),conf:S.bodyComp.measured.fresh.state==='stale'?'low':'medium'});
 else if(S.bodyComp.estimate&&S.bodyComp.estimate.status==='ok')think.push({text:'Body fat is roughly '+fmtPct(S.bodyComp.estimate.lo,0)+'\u2013'+fmtPct(S.bodyComp.estimate.hi,0)+' by circumference model',prov:'heuristic',conf:S.bodyComp.estimate.confidence});else unknown.push({text:'Body composition',prov:'',need:S.bodyComp.estimate?S.bodyComp.estimate.need:['waist and neck']});
@@ -5558,11 +5593,22 @@ var a=seriesWindow(typeA,60),b=seriesWindow(typeB,60);var bm={};b.forEach(functi
 var xs=[],ys=[];a.forEach(function(d){var k=addDays(d.date,lag||0);if(bm[k]!=null){xs.push(d.value);ys.push(bm[k]);}});
 if(xs.length<10)return {status:'insufficient',n:xs.length};var c=correlation(xs,ys);return {status:'ok',n:c.n,r:c.r};
 }
+function _detrended(series){var n=series.length;if(n<3)return series.map(function(d){return {date:d.date,value:d.value};});
+var xs=series.map(function(d,i){return i;}),ys=series.map(function(d){return d.value;}),xm=mean(xs),ym=mean(ys);
+var sxx=xs.reduce(function(a,x){return a+(x-xm)*(x-xm);},0),b=sxx?xs.reduce(function(a,x,i){return a+(x-xm)*(ys[i]-ym);},0)/sxx:0;
+return series.map(function(d,i){return {date:d.date,value:d.value-(ym+b*(i-xm))};});}
+function placeboDifference(markType,outcomeType,shiftDays,days,detrend){
+var c=seriesWindow(markType,days+shiftDays),h=seriesWindow(outcomeType,days),cm={};c.forEach(function(d){cm[addDays(d.date,-shiftDays)]=1;});
+if(detrend)h=_detrended(h);
+var on=[],off=[];h.forEach(function(d){(cm[d.date]?on:off).push(d.value);});return (on.length<5||off.length<5)?null:mean(on)-mean(off);
+}
 function cardioHungerAssociation(){
 var c=seriesWindow('cardio',42),h=seriesWindow('hunger',42);var cm={};c.forEach(function(d){cm[d.date]=1;});
 var on=[],off=[];h.forEach(function(d){(cm[d.date]?on:off).push(d.value);});
 if(on.length<5||off.length<5)return {status:'insufficient'};var diff=mean(on)-mean(off);
-return {status:'ok',n:on.length+off.length,diff:diff,text:Math.abs(diff)<0.5?'Hunger is similar on cardio and non-cardio days':(diff>0?'Hunger runs '+fmtNum(diff,1)+' points higher on cardio days':'Hunger runs '+fmtNum(-diff,1)+' points lower on cardio days')};
+var adj=placeboDifference('cardio','hunger',0,42,true),pl=placeboDifference('cardio','hunger',7,42,true);
+var verdict=(pl==null||adj==null)?'not checked':(Math.abs(adj)>=0.5&&Math.abs(pl)<=Math.abs(adj)/2?'passed':'failed');
+return {status:'ok',n:on.length+off.length,diff:diff,trendAdjusted:adj,placebo:pl,placeboVerdict:verdict,text:Math.abs(diff)<0.5?'Hunger is similar on cardio and non-cardio days':(diff>0?'Hunger runs '+fmtNum(diff,1)+' points higher on cardio days':'Hunger runs '+fmtNum(-diff,1)+' points lower on cardio days')};
 }
 function replayAt(date){return withAsOf(date,function(){var S=getCurrentState();var dec=decide();return {date:date,state:S,decision:dec,diagnosis:diagnose(),predictionsThen:(DB.predictions||[]).filter(function(p){return p.madeAt.slice(0,10)<=date;}).length,snapshot:(DB.snapshots||[]).filter(function(s){return s.date===date;})[0]||null};});}
 function replayLeakageCheck(dates){
@@ -6184,13 +6230,17 @@ if(days2.length<4){r.status='insufficient';r.need=(4-days2.length)+' more exposu
 var pts=days2.map(function(d,i){return {x:daysBetween(days2[0].date,d.date),y:d.best};});
 var ts=theilSen(pts);r.slopePerWeek=ts.slope!=null?ts.slope*7:null;
 var vals=days2.map(function(d){return d.best;});var m=mean(vals),sdv=sd(vals);r.cv=m?sdv/m:null;
-r.noiseFloor=r.cv!=null&&m?r.cv*m:null;
+if(ts.slope!=null){var ic=(ts.intercept!=null)?ts.intercept:median(pts.map(function(p){return p.y-ts.slope*p.x;}));
+var res=pts.map(function(p){return p.y-(ic+ts.slope*p.x);});r.noiseFloor=res.length>2?sd(res):null;r.residualSd=r.noiseFloor;}
+else r.noiseFloor=r.cv!=null&&m?r.cv*m:null;
 var rirs=days2.reduce(function(a,d){return a.concat(d.rir);},[]);r.meanRir=rirs.length?mean(rirs):null;
 r.status='ok';
-var moves=r.slopePerWeek!=null&&r.noiseFloor!=null&&Math.abs(r.slopePerWeek*4)>r.noiseFloor;
+var xs=pts.map(function(p){return p.x;}),xm=mean(xs),sxx=xs.reduce(function(a,x){return a+(x-xm)*(x-xm);},0);
+r.slopeSePerWeek=(r.noiseFloor!=null&&sxx>0)?r.noiseFloor/Math.sqrt(sxx)*7:null;
+var moves=r.slopePerWeek!=null&&r.slopeSePerWeek!=null&&pts.length>=5&&Math.abs(r.slopePerWeek)>2*r.slopeSePerWeek;
 r.direction=r.slopePerWeek==null?'unknown':(moves?(r.slopePerWeek>0?'progressing':'declining'):'flat');
 r.directionDetail=r.slopePerWeek==null?'no usable slope yet':
-(moves?('moving beyond your own session-to-session noise'):'flat within your own session-to-session noise');
+(moves?('a trend clear of your own session-to-session noise'):'no trend yet that is clear of your session-to-session noise');
 r.stimulus=r.weeklySets>=10?'at or above the volume associated with hypertrophy in the ACSM 2026 overview':(r.weeklySets>=4?'below the \u226510 sets/week associated with hypertrophy; adequate for strength maintenance':'minimal exposure');
 r.fatigueCost=r.meanRir==null?null:(r.meanRir<=0.5?'trained close to failure \u2014 ACSM 2026 reports 2\u20133 RIR gives similar hypertrophy with less fatigue':(r.meanRir<=3?'2\u20133 RIR \u2014 matches the ACSM 2026 recommendation':'well short of failure; the stimulus may be light for hypertrophy'));
 r.suggestion=r.direction==='progressing'?('hold the current approach; '+(r.weeklySets<10?'adding a set per week is the lowest-cost next step':'volume is already adequate')):(r.direction==='declining'?'check recovery and protocol before adding volume; a decline during a deficit is a muscle-retention signal':(r.weeklySets<10?'flat with '+r.weeklySets+' sets/week \u2014 the ACSM 2026 lever with the most support is more weekly sets':'flat at adequate volume \u2014 vary load or range of motion rather than adding sets'));
@@ -7175,11 +7225,11 @@ var add=function(o){
 var age=o.lastValidated?daysBetween(o.lastValidated,asOf()):null;
 o.ageDays=age;
 o.freshness=age==null?'unknown':(age<=90?'current':(age<=270?'ageing':'stale'));
-o.decayedConfidence=age==null?o.confidence:(function(){
-var base={high:0.9,medium:0.6,low:0.35,'very low':0.15}[o.confidence]||0.3;
-var v=base*_decay(age);
-return v>=0.55?'high':(v>=0.3?'medium':(v>=0.15?'low':'very low'));
-})();
+o.decayedConfidence=age==null?o.confidence:decayConfidence(o.confidence,age);
+o.wouldChange=o.wouldChange||({response:'a two-week test changing only '+o.subject+' that moves your weight differently',
+measurement:'a new scale, or weighing at a different time of day',training:'no gain, or a drop, across your next four sessions of it',
+energy:'two weeks of logged intake and weigh-ins that disagree with it'}[o.kind]||'new evidence that contradicts it');
+o.testable=o.kind==='response';
 o.revalidate=o.freshness==='stale'?('this has not been tested since '+shortDate(o.lastValidated)+'; a two-week single-variable experiment would confirm or retire it'):null;
 items.push(o);
 };
@@ -7218,14 +7268,15 @@ lastValidated:asOf(),transfers:'this is what any real change must exceed to be v
 try{
 exerciseResponse().rows.filter(function(r){return r.status==='ok';}).slice(0,6).forEach(function(r){
 add({kind:'training',subject:r.exercise,
-statement:r.direction+(r.slopePerWeek!=null?(' at '+fmtSigned(r.slopePerWeek,1)+' e1RM/week'):'')+' on '+r.weeklySets+' sets/week',
+statement:(r.direction==='flat'&&r.slopePerWeek!=null&&Math.abs(r.slopePerWeek)>=0.5?((r.slopePerWeek>0?'rising':'falling')+', not yet clear of your session-to-session noise ('+fmtSigned(r.slopePerWeek,1)+(r.slopeSePerWeek!=null?' \u00b1 '+round(r.slopeSePerWeek,1):'')+' e1RM/week)'):
+(r.direction+(r.slopePerWeek!=null?(' at '+fmtSigned(r.slopePerWeek,1)+' e1RM/week'):'')))+' on '+r.weeklySets+' sets/week',
 confidence:r.exposures>=8?'medium':'low',evidence:r.exposures+' exposures',
 context:'current program',lastValidated:asOf(),
 transfers:'exercise-specific and program-bound; a new variant restarts this'});
 });
 }catch(e){_q(e);}
 try{
-var t=tdeePersonal();
+var t=tdeeEstimate();
 if(t.status==='ok')add({kind:'energy',subject:'maintenance',
 statement:'about '+fmtKcal(t.value)+'/day'+(t.lo!=null?(' ('+fmtKcal(t.lo)+'\u2013'+fmtKcal(t.hi)+')'):''),
 confidence:t.confidence||'medium',evidence:t.basis||(t.cls+' estimate'),
@@ -7273,6 +7324,13 @@ have:i.evidence,uncertainty:'medium',measurement:'revalidate with a short experi
 });
 gaps.sort(function(a,b){return b.expectedValue-a.expectedValue;});
 return {gaps:gaps,cls:'DERIVED',note:'Each entry is a question the record cannot answer yet, with the measurement that would answer it.'};
+}
+var CONF_LEVELS=['very low','low','medium','high'],CONF_VALUE={'very low':0.15,low:0.35,medium:0.6,high:0.9};
+function decayConfidence(level,ageDays){
+var i0=CONF_LEVELS.indexOf(level);if(i0<0)return level;
+var v=CONF_VALUE[level]*_decay(ageDays),i=0;
+for(var k=CONF_LEVELS.length-1;k>=1;k--){var mid=(CONF_VALUE[CONF_LEVELS[k]]+CONF_VALUE[CONF_LEVELS[k-1]])/2;if(v>=mid){i=k;break;}}
+return CONF_LEVELS[Math.min(i,i0)];
 }
 /* ===== SOURCE: 57-composition.js ===== */
 var SKILL_FAMILIES={
@@ -12629,9 +12687,10 @@ function ageSpan(iso){if(!iso)return '<span class="age-stale">undated</span>';va
 function uiProv(parts){return '<div class="prov">'+parts.filter(Boolean).join(' \u00b7 ')+'</div>';}
 function uiMetric(o){
 o=o||{};
+var _pl=o.personal?'<div class="m-plabel '+(o.personal.tone||'neutral')+'" title="'+attrEsc(o.personal.why||'')+'">'+esc(o.personal.label)+'</div>':'';
 if(o.value==null||o.value==='—'){
 var emptyState=typeof dataStateVisual==='function'?dataStateVisual(o.state||'MISSING'):{pattern:'empty',label:'Missing'};
-return '<div class="metric empty"'+(o.cls?' '+o.cls:'')+' data-state="'+attrEsc(o.state||'MISSING')+'" data-state-pattern="'+attrEsc(emptyState.pattern||'empty')+'"><div class="m-label"><span>'+o.label+'</span></div><div class="m-value">'+(o.emptyText||'no data')+'</div><div class="m-prov">'+(o.need||'')+'</div></div>';
+return '<div class="metric empty"'+(o.cls?' '+o.cls:'')+' data-state="'+attrEsc(o.state||'MISSING')+'" data-state-pattern="'+attrEsc(emptyState.pattern||'empty')+'"><div class="m-label"><span>'+o.label+'</span></div><div class="m-value">'+(o.emptyText||'no data')+'</div>'+_pl+'<div class="m-prov">'+(o.need||'')+'</div></div>';
 }
 var inferred=/predict|heuristic|prior|empirical|calibrated|blended/i.test(o.cls||'');
 var stale=o.date&&freshness(o.type||'generic',o.date).state==='stale';
@@ -12642,7 +12701,7 @@ var displayValue=pm&&pm.text!=null?pm.text:o.value;
 var typeSpec=(typeof typographySpec==='function')?typographySpec('numeric','normal'):null;
 var traceAttrs=o.trace?(' data-act="trace.open" data-arg="'+attrEsc(o.trace)+'" role="button" tabindex="0" aria-label="'+attrEsc(String(o.label).replace(/<[^>]*>/g,''))+': where this number comes from"') :'';
 var component=(typeof componentSpec==='function')?componentSpec('Metric','default',{state:state,cls:o.cls||null}):null;
-return '<div class="metric'+(inferred?' inferred':'')+(stale?' stale':'')+(o.trace?' traceable':'')+'"'+traceAttrs+' data-state="'+attrEsc(state)+'" data-state-pattern="'+attrEsc(stateVisual.pattern||'solid')+'"'+(typeSpec?' data-typography="numeric"':'')+(component&&component.status==='ok'?' data-component="Metric"':'')+'><div class="m-label"><span>'+o.label+'</span>'+(o.badge?'<span>'+o.badge+'</span>':'')+'</div><div class="m-value">'+displayValue+(o.unit?'<span class="unit">'+o.unit+'</span>':'')+'</div><div class="m-prov">'+[o.cls?'<span class="cls '+String(o.cls).toLowerCase().replace(/[^a-z]/g,'')+'">'+String(o.cls).toUpperCase().replace('BLENDED','PRIOR+EMP')+'</span>':'',o.source||'',o.date?'<span class="age-'+freshness(o.type||'generic',o.date).state+'">'+ageLabel(o.date)+'</span>':'',o.conf?('conf '+o.conf):'',stateVisual.label||''].filter(Boolean).join(' · ')+'</div></div>';
+return '<div class="metric'+(inferred?' inferred':'')+(stale?' stale':'')+(o.trace?' traceable':'')+'"'+traceAttrs+' data-state="'+attrEsc(state)+'" data-state-pattern="'+attrEsc(stateVisual.pattern||'solid')+'"'+(typeSpec?' data-typography="numeric"':'')+(component&&component.status==='ok'?' data-component="Metric"':'')+'><div class="m-label"><span>'+o.label+'</span>'+(o.badge?'<span>'+o.badge+'</span>':'')+'</div><div class="m-value">'+displayValue+(o.unit?'<span class="unit">'+o.unit+'</span>':'')+'</div>'+_pl+'<div class="m-prov">'+[o.cls?'<span class="cls '+String(o.cls).toLowerCase().replace(/[^a-z]/g,'')+'">'+String(o.cls).toUpperCase().replace('BLENDED','PRIOR+EMP')+'</span>':'',o.source||'',o.date?'<span class="age-'+freshness(o.type||'generic',o.date).state+'">'+ageLabel(o.date)+'</span>':'',o.conf?('conf '+o.conf):'',stateVisual.label||''].filter(Boolean).join(' · ')+'</div></div>';
 }
 function _safeSignal(sig,allowHtml){
 var s2=sig==null?'':String(sig);
@@ -13080,8 +13139,8 @@ setHTML('decisionZone',renderDecisionCard(dec,S));
 var att=attentionItems();
 setHTML('attentionZone',att.items.length?(sectionH('Needs attention',att.items.length+(att.dropped?' shown \u00b7 '+att.dropped+' held back':''))+att.items.map(renderWatch).join('')):'');
 var tiles=[];
-tiles.push(uiMetric({trace:'weight_trend',label:'Weight \u00b7 7-day avg',value:S.averages.avg7!=null?fmtWeight(S.averages.avg7,{bare:true}):null,unit:weightUnit(),cls:'DERIVED',source:S.averages.n7+' of 7 days',date:S.weight.date,type:'weight',need:S.averages.need&&S.averages.need[0]||'weigh in daily',badge:S.trend.status==='ok'?uiPill(fmtRate(S.trend.slopePerWeek),S.trend.direction==='falling'?'good':(S.trend.direction==='rising'?'attention':'neutral')):''}));
-tiles.push(uiMetric({trace:'tdee',label:'Maintenance (TDEE)',value:S.tdee.status==='ok'?fmtKcal(S.tdee.value,{estimate:true,bare:true}):null,unit:'kcal',cls:S.tdee.status==='ok'?S.tdee.cls:null,source:S.tdee.status==='ok'?(S.tdee.n?S.tdee.n+' logged days':'population prior'):'',conf:S.tdee.confidence,need:S.tdee.need?S.tdee.need[0]:'profile needed'}));
+tiles.push(uiMetric({personal:personalizationLabel(infer({modelId:'weight_avg'})),trace:'weight_trend',label:'Weight \u00b7 7-day avg',value:S.averages.avg7!=null?fmtWeight(S.averages.avg7,{bare:true}):null,unit:weightUnit(),cls:'DERIVED',source:S.averages.n7+' of 7 days',date:S.weight.date,type:'weight',need:S.averages.need&&S.averages.need[0]||'weigh in daily',badge:S.trend.status==='ok'?uiPill(fmtRate(S.trend.slopePerWeek),S.trend.direction==='falling'?'good':(S.trend.direction==='rising'?'attention':'neutral')):''}));
+tiles.push(uiMetric({personal:(function(){var L=personalizationLabel(S.tdee,{becomes:'About two weeks of logged intake and weigh-ins make it yours.',history:obsOf('calories').length>=14&&obsOf('weight').length>=14});var PS=priorSensitivity();if(PS.status==='ok'&&L.key==='adjusted')L=Object.assign({},L,{why:L.why+' '+PS.note});return L;})(),trace:'tdee',label:'Maintenance (TDEE)',value:S.tdee.status==='ok'?fmtKcal(S.tdee.value,{estimate:true,bare:true}):null,unit:'kcal',cls:S.tdee.status==='ok'?S.tdee.cls:null,source:S.tdee.status==='ok'?(S.tdee.n?S.tdee.n+' logged days':'population prior'):'',conf:S.tdee.confidence,need:S.tdee.need?S.tdee.need[0]:'profile needed'}));
 var pr=S.nutrition;tiles.push(uiMetric({trace:'adherence',label:'Protein today',value:pr.protein!=null?fmtNum(pr.protein,0):null,unit:'g'+(pr.proteinTarget?' / '+fmtNum(pr.proteinTarget,0):''),cls:'MEASURED',source:pr.fromFoodLog?'food log':'logged',date:pr.protein!=null?today:null,need:'log protein or food',badge:pr.protein!=null&&pr.proteinTarget?uiPill(pr.protein>=pr.proteinTarget*0.9?'on target':'below',pr.protein>=pr.proteinTarget*0.9?'good':'attention'):''}));
 tiles.push(uiMetric({label:'Steps \u00b7 7-day avg',value:S.steps.mean7!=null?fmtNum(S.steps.mean7,0):null,unit:'',cls:'MEASURED',source:S.steps.n7+' of 7 days'+(S.steps.target?' \u00b7 target '+fmtNum(S.steps.target,0):''),date:S.steps.last?S.steps.last.date:null,type:'steps',need:'log steps'}));
 setHTML('vitalsZone','<div class="vitals">'+tiles.join('')+'</span></div>');
@@ -13191,6 +13250,9 @@ else if(goal.status==='ok')goalTxt='<div class="divider"></div>'+uiRow('Goal '+f
 var srcTxt=ok.map(function(x){var pr=x.promotion;return x.horizonDays+' d: '+(x.source==='weight_forecast_family'?('improved ('+x.method+')'):'current straight line')+
 (pr&&pr.reason?(' \u2014 '+(pr.promoted?'clearly better on hold-out forecasts':(/too close/.test(pr.reason)?'too close to call':(/too few/.test(pr.reason)?'not enough evidence to compare':'improved one not better here')))):'');}).join(' \u00b7 ');
 return uiCard({title:'Forecast '+clsMark('PREDICTIVE'),sub:'stamped to the ledger before outcomes; scored when due',body:rows+goalTxt+
+(function(){var src=(ok[0]&&ok[0].source)||'weight_forecast',H=modelHealthInContext(src);
+return '<div class="m-plabel '+(H.state==='performing'?'good':(H.state==='unproven'?'neutral':'attention'))+'" title="'+attrEsc(H.why)+'">'+esc(H.label)+'</div>'+
+(H.state==='biased'||H.state==='degraded'?'<div class="hint">'+esc(H.why)+'</div>':'');})()+
 '<div class="prov" style="margin-top:8px">'+accTxt+'</div><div class="prov">Shown: '+esc(srcTxt)+' \u00b7 '+uiBtn('Details','nav.forecast',null,'btn-sm btn-ghost')+'</div>'});
 }
 function renderTrust(t){return Object.keys(t.streams).map(function(k){var s=t.streams[k];return uiRow(k,uiPill(s.level,s.level==='high'?'good':(s.level==='moderate'?'neutral':(s.level==='low'?'attention':'negative'))),{sub:s.detail});}).join('');}
@@ -13267,6 +13329,24 @@ return '<div class="adapt"><div class="adapt-t">'+esc(pr.title)+'</div><div clas
 '<div class="prov"><b>Also considered:</b> '+pr.alternatives.map(function(a){return esc(a.label)+' ('+esc(a.why)+')';}).join('; ')+'</div>'+
 '<div class="hint">Expected: '+esc(pr.expected)+' Trade-off: '+esc(pr.tradeoff)+' Confidence: '+esc(pr.confidence)+'.</div>'+
 '<div class="btn-row">'+uiBtn('Apply','adapt.apply',pr.id,'btn-sm btn-primary')+uiBtn('Not now','adapt.dismiss',pr.id,'btn-sm btn-ghost')+'</div></div>';}).join('')});
+(function(){var days=[],rowsK=['weigh-in','training','cardio','nutrition','protein','steps','check-in'],LBL={'weigh-in':'Weigh-in',training:'Training',cardio:'Cardio',nutrition:'Calories',protein:'Protein',steps:'Steps','check-in':'Check-in'};
+for(var i=27;i>=0;i--)days.push(addDays(todayISO(),-i));
+var E=days.map(function(d){return executionFor(d);});
+var used=rowsK.filter(function(k){return E.some(function(e){return e.status==='ok'&&e.rows.some(function(r){return r.item===k;});});});
+if(!used.length)return;
+var ST={done:'done',partial:'partial','in progress':'partial',skipped:'skipped',unknown:'unknown',upcoming:'upcoming'};
+var cells=used.map(function(k){return E.map(function(e,ci){if(e.status!=='ok')return null;var r=e.rows.filter(function(x){return x.item===k;})[0];
+return r?{state:ST[r.status]||'unknown',text:r.status+(r.detail?(' \u2014 '+r.detail):'')}:null;});});
+var A=adherenceAnalysis(4),T=A.training;
+var summary=T?('Training: '+(T.counts.done+T.counts.partial)+' of '+T.counts.scheduled+' sessions done'+(T.moved?(' ('+T.moved+' on another day)'):'')+'. '+T.why):'';
+out+=uiCard({title:'How the last four weeks went',sub:'the plan against what was recorded',body:(summary?'<div class="hint" style="font-size:inherit">'+esc(summary)+'</div>':'')+
+renderChartSpec('heatmap',{title:'The plan against what was recorded, last four weeks',rows:used.map(function(k){return LBL[k];}),cols:days.map(function(d){return shortDate(d);}),cells:cells,
+colMarks:[{i:0,label:shortDate(days[0])},{i:27,label:'today'}]})});})();
+(function(){var ev=[];plansOf().forEach(function(v){ev.push({date:v.effectiveFrom,lane:'Plan',short:'v'+v.version,label:'Plan v'+v.version+': '+explainPlanChange(v.id).headline});});
+programVersions().forEach(function(v){ev.push({date:v.from,lane:'Programme',short:'v'+v.version,label:v.change});});
+(DB.phases||[]).forEach(function(ph){if(ph.startDate)ev.push({date:ph.startDate,lane:'Phase',short:((PHASE_TYPES[ph.type]||{}).label||ph.type).slice(0,4),label:((PHASE_TYPES[ph.type]||{}).label||ph.type)+' phase started'});});
+if(ev.length<2)return;
+out+=uiCard({title:'Plan history',sub:ev.length+' events',body:renderChartSpec('timeline',{title:'Plan versions, programme changes and phases',events:ev,lanes:['Plan','Programme','Phase'],to:todayISO()})});})();
 var P=plansOf();
 out+=uiCard({title:'Why the plan changed',sub:'every version keeps its reason, evidence and the alternatives considered',body:
 (X.changes.length?X.changes.map(function(ch){return uiRow(esc(ch.what),esc(ch.from)+' \u2192 '+esc(ch.to));}).join(''):'<div class="hint">The first version: nothing changed yet.</div>')+
@@ -13348,6 +13428,14 @@ out+=uiCard({title:'Possibly the same food',sub:'the same barcode, or a close na
 return uiRow(esc(d.foodName),'',{sub:'looks like '+esc(d.matchName)+' \u2014 '+esc(d.reason)})+'<div class="btn-row">'+
 uiBtn('Same food','food.same',d.food+'|'+d.matches,'btn-sm btn-primary')+uiBtn('Different','food.notSame',d.food+'|'+d.matches,'btn-sm btn-ghost')+'</div>';}).join('')+
 '<div class="hint">Marking them the same counts them as one food in your frequent foods and meal suggestions. Nothing already logged changes.</div>'});})();
+(function(){var days=[];for(var i=6;i>=0;i--)days.push(addDays(todayISO(),-i));
+var get=function(t,d){var r=dailySeries(t,todayISO(),14).filter(function(x){return x.date===d;})[0];return r?r.value:0;};
+var P=days.map(function(d){return get('protein',d)*4;}),C=days.map(function(d){return get('carbs',d)*4;}),F=days.map(function(d){return get('fat',d)*9;});
+if(P.concat(C,F).every(function(v){return !v;}))return;
+var pl=currentPlan(),tg=pl&&pl.content.targets.kcal;
+out+=uiCard({title:'This week by macro',sub:'calories from protein, carbohydrate and fat',body:renderChartSpec('stackedBar',{title:'Calories by macro, last seven days',unit:'kcal',
+categories:days.map(function(d){return dowShort(d);}),series:[{name:'Protein',values:P},{name:'Carbohydrate',values:C},{name:'Fat',values:F}],target:tg||null,targetLabel:'target'})+
+'<div class="hint">A day with no macros logged shows a dash, not zero.</div>'});})();
 out+=uiFold('food-recipes','Recipes and my foods',DB.recipes.length+' recipes \u00b7 '+DB.foods.length+' custom foods',(DB.recipes.map(function(r){var t=recipeTotals(r);return uiRow(esc(r.name),fmtKcal(t.perServing.kcal)+'/serving',{sub:r.ingredients.length+' ingredients \u00b7 '+r.servings+' servings \u00b7 P '+fmtNum(t.perServing.protein,0)+' g'})+'<div class="btn-row">'+uiBtn('Log a serving','food.logRecipe',r.id+'|'+day,'btn-sm btn-secondary')+uiBtn('Edit','recipe.edit',r.id,'btn-sm btn-ghost')+'</div>';}).join(''))+(DB.foods.map(function(f){normalizeFood(f);var p=f.per100||f.perServing||{};return uiRow(esc(f.name),fmtNum(p.kcal,0)+' kcal/'+foodBasisLabel(f),{sub:'user entered \u00b7 P '+fmtNum(p.protein,0)+' C '+fmtNum(p.carbs,0)+' F '+fmtNum(p.fat,0)});}).join(''))+'<div class="btn-row">'+uiBtn('New recipe','recipe.edit','','btn-secondary btn-sm')+uiBtn('New custom food','food.custom','','btn-secondary btn-sm')+'</span></div>');
 out+=uiFold('food-sources','Data sources','USDA FDC '+FOUNDATION_RELEASE+' \u00b7 '+_foodManifestState,renderFoodSources());
 var ad=nutritionAdequacy(7);
@@ -13668,6 +13756,8 @@ setHTML('experimentsZone',out);
 RENDERERS.learn=function(){
 var L=learningSummary();var S=getCurrentState();var acc=forecastAccuracy();var out='';
 var block=function(title,items,tone,empty){return uiCard({accent:tone,title:title,sub:items.length+' items',body:items.length?items.map(function(i){return uiRow(esc(i.text),i.conf?confPill(i.conf):'',{sub:esc(i.prov||'')+(i.need?' \u00b7 needs: '+i.need.map(esc).join(', '):'')});}).join(''):'<div class="muted">'+empty+'</div>'});};
+(function(){var PS=priorSensitivity();if(PS.status!=='ok')return;
+out+=uiCard({title:'How much is still assumed',sub:'the maintenance estimate against its population starting point',body:uiRow('Starting estimate carried in',Math.round(PS.share*100)+'%',{sub:esc(PS.note)})});})();
 out+=uiCard({title:'Model maturity',sub:'how personalized the energy model is right now',body:uiRow('Energy model',S.tdee.status==='ok'?(S.tdee.maturity+' '+clsMark(S.tdee.cls)):'none',{sub:S.tdee.status==='ok'?(fmtKcal(S.tdee.lo,{estimate:true,bare:true})+'\u2013'+fmtKcal(S.tdee.hi,{estimate:true})+' \u00b7 '+(S.tdee.n||0)+' logged days \u00b7 '+(S.tdee.calibration&&S.tdee.calibration.status==='ok'?((S.tdee.adjusted?'outcome adjustment applied: ':'outcome adjustment available: ')+fmtSigned(-clamp(S.tdee.calibration.bias,-300,300),0)+' kcal from '+S.tdee.calibration.n+' scored 14-day forecasts'):'no outcome adjustment yet (needs 3 scored 14-day forecasts)')):''})+uiRow('Path','PRIOR \u2192 BLENDED \u2192 EMPIRICAL \u2192 CALIBRATED',{sub:'prior weight fades as logged days accumulate (w = n/(n+14)); calibration needs 3+ scored 14-day forecasts'})});
 out+=block('What we know',L.know,'good','Nothing is established yet. Knowledge here requires measured or empirically fitted evidence at medium confidence or better.');
 out+=block('What we think',L.think,'inferred','No inferences yet.');
@@ -17419,6 +17509,8 @@ note:o.chartType+' is catalogued but has no renderer yet, so it cannot be drawn.
 stages.push('validation');
 var html=renderChartSpec(o.chartType,pm);
 stages.push('renderer');
+if(/chart-refused/.test(html))return {status:'failed',stage:'requirements',stages:stages.concat(['requirements']),
+note:String(html).replace(/<[^>]+>/g,'').trim()};
 return {status:'ok',stages:stages,chartType:o.chartType,presentationModel:pm,html:html,
 runId:r.runId,provenance:r.provenance};
 }
@@ -17530,6 +17622,46 @@ out+='<text class="hm-lab" x="4" y="'+(y+12)+'">'+r.label+'</text><rect class="h
 '<text class="hm-lab" x="'+(44+w).toFixed(1)+'" y="'+(y+12)+'">'+round(r.v,1)+'</text>';});
 return '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="average '+esc(pm.title||'value')+' by weekday, highest first">'+out+'</svg>';
 };
+CHART_RENDERERS.heatmap=function(pm){
+var rows=pm.rows||[],cols=pm.cols||[],cells=pm.cells||[];if(!rows.length||!cols.length)return '';
+var cw=Math.max(8,Math.min(16,Math.floor(300/cols.length))),gap=2,lw=64,W=lw+cols.length*(cw+gap),H=rows.length*(cw+gap)+16,out='';
+rows.forEach(function(r,ri){out+='<text class="hm-lab" x="0" y="'+(ri*(cw+gap)+cw-2)+'">'+esc(r)+'</text>';
+cols.forEach(function(c,ci){var v=(cells[ri]||[])[ci];if(!v||!v.state)return;var x=lw+ci*(cw+gap),y=ri*(cw+gap),t='<title>'+esc(c+' \u00b7 '+r+': '+(v.text||v.state))+'</title>';
+if(v.state==='done')out+='<rect class="hx-done" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+cw+'" rx="2">'+t+'</rect>';
+else if(v.state==='partial')out+='<rect class="hx-part" x="'+x+'" y="'+y+'" width="'+cw+'" height="'+cw+'" rx="2">'+t+'</rect><rect class="hx-done" x="'+x+'" y="'+(y+cw/2)+'" width="'+cw+'" height="'+(cw/2)+'" rx="1"/>';
+else if(v.state==='skipped')out+='<rect class="hx-out" x="'+(x+0.5)+'" y="'+(y+0.5)+'" width="'+(cw-1)+'" height="'+(cw-1)+'" rx="2">'+t+'</rect><path class="hx-x" d="M'+(x+3)+' '+(y+3)+'L'+(x+cw-3)+' '+(y+cw-3)+'M'+(x+cw-3)+' '+(y+3)+'L'+(x+3)+' '+(y+cw-3)+'"/>';
+else if(v.state==='unknown')out+='<rect class="hx-unk" x="'+(x+0.5)+'" y="'+(y+0.5)+'" width="'+(cw-1)+'" height="'+(cw-1)+'" rx="2">'+t+'</rect>';
+else if(v.state==='upcoming')out+='<rect class="hx-up" x="'+(x+0.5)+'" y="'+(y+0.5)+'" width="'+(cw-1)+'" height="'+(cw-1)+'" rx="2">'+t+'</rect>';});});
+(pm.colMarks||[]).forEach(function(m){var last=m.i>=cols.length-1;out+='<text class="hm-lab" x="'+(lw+m.i*(cw+gap)+(last?cw:0))+'" y="'+(H-2)+'"'+(last?' text-anchor="end"':'')+'>'+esc(m.label)+'</text>';});
+return '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(pm.title||'calendar')+'">'+out+'</svg>'+
+'<div class="hx-key"><span><i class="k-done"></i>done</span><span><i class="k-part"></i>partly</span><span><i class="k-skip">\u00d7</i>skipped</span><span><i class="k-unk"></i>not recorded</span></div>';
+};
+CHART_RENDERERS.timeline=function(pm){
+var ev=(pm.events||[]).filter(function(e){return isValidISO(e.date);}).sort(function(a,b){return a.date<b.date?-1:1;});if(!ev.length)return '';
+var lanes=pm.lanes||ev.map(function(e){return e.lane||'events';}).filter(function(v,i,a){return a.indexOf(v)===i;});
+var d0=ev[0].date,d1=pm.to||ev[ev.length-1].date,span=Math.max(1,daysBetween(d0,d1)),lw=70,W=340,lh=34,H=lanes.length*lh+18,out='';
+var X=function(d){return lw+(W-lw-8)*daysBetween(d0,d)/span;};
+lanes.forEach(function(l,li){var y=li*lh+14;out+='<text class="hm-lab" x="0" y="'+(y+4)+'">'+esc(l)+'</text><line class="tl-axis" x1="'+lw+'" x2="'+(W-8)+'" y1="'+y+'" y2="'+y+'"/>';
+var lastX=-99,alt=0;ev.filter(function(e){return (e.lane||'events')===l;}).forEach(function(e){var x=X(e.date);alt=(x-lastX<46)?1-alt:0;lastX=x;
+out+='<circle class="tl-dot" cx="'+x.toFixed(1)+'" cy="'+y+'" r="4"><title>'+esc(shortDate(e.date)+': '+e.label)+'</title></circle>'+
+'<text class="tl-lab" x="'+x.toFixed(1)+'" y="'+(y+(alt?-8:14))+'" text-anchor="middle">'+esc(e.short||'')+'</text>';});});
+out+='<text class="hm-lab" x="'+lw+'" y="'+(H-1)+'">'+esc(shortDate(d0))+'</text><text class="hm-lab" x="'+(W-8)+'" y="'+(H-1)+'" text-anchor="end">'+esc(shortDate(d1))+'</text>';
+return '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(pm.title||'timeline')+'">'+out+'</svg>';
+};
+CHART_RENDERERS.stackedBar=function(pm){
+var cats=pm.categories||[],S=pm.series||[];if(!cats.length||!S.length)return '';
+var tot=cats.map(function(c,i){return S.reduce(function(a,s){return a+(s.values[i]||0);},0);}),mx=Math.max.apply(null,tot.concat([pm.target||0,1]));
+var W=320,H=150,pad=28,bw=Math.min(28,(W-pad)/cats.length-6),out='';
+cats.forEach(function(c,i){var x=pad+i*((W-pad)/cats.length)+3,y=H-18;
+S.forEach(function(s,si){var v=s.values[i]||0,h=(H-30)*v/mx;y-=h;if(v>0)out+='<rect class="sb-s'+si+'" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'"><title>'+esc(c+' \u00b7 '+s.name+': '+fmtNum(v,0)+(pm.unit?' '+pm.unit:''))+'</title></rect>';});
+if(!tot[i])out+='<text class="hm-lab" x="'+(x+bw/2)+'" y="'+(H-22)+'" text-anchor="middle">\u2013</text>';
+out+='<text class="hm-lab" x="'+(x+bw/2)+'" y="'+(H-4)+'" text-anchor="middle">'+esc(c)+'</text>';});
+if(pm.target){var ty=H-18-(H-30)*pm.target/mx;out+='<line class="sb-target" x1="'+pad+'" x2="'+W+'" y1="'+ty.toFixed(1)+'" y2="'+ty.toFixed(1)+'"/><text class="hm-lab" x="'+W+'" y="'+(ty-3).toFixed(1)+'" text-anchor="end">'+esc((pm.targetLabel||'target')+' '+fmtNum(pm.target,0))+'</text>';}
+return '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(pm.title||'stacked bars')+'">'+out+'</svg>'+
+'<div class="hx-key">'+S.map(function(s,si){return '<span><i class="k-sb'+si+'"></i>'+esc(s.name)+'</span>';}).join('')+'</div>';
+};
+function chartTypeStatus(k){return chartRenderable(k)?'available':'planned';}
+function chartCatalogueSummary(){var ks=Object.keys(CHART_TYPES);var av=ks.filter(chartRenderable);return {total:ks.length,available:av.length,planned:ks.filter(function(k){return !chartRenderable(k);})};}
 /* ===== SOURCE: 89-remaining.js ===== */
 var RECOVERY_DRAWS={
 training:{label:'Training load',modifiable:'directly'},
@@ -17688,6 +17820,249 @@ untested:rows.filter(function(r){return !r.personallyTested;}).length,
 note:'What you take, what the general evidence says, and whether you have ever established that it does anything for you specifically.',
 caveat:'General efficacy and personal efficacy are different questions. A supplement with good population evidence can do nothing for you, and the only way to find out is an experiment with a washout \u2014 which is exactly what the experiment layer is for.'};
 }
+/* ===== SOURCE: 89-render-complete.js ===== */
+var _CX={W:320,H:170,pad:30};
+function _cxRefuse(type,why){return '<div class="hint chart-refused" data-chart="'+attrEsc(type)+'">Not drawn \u2014 '+esc(why)+'.</div>';}
+function _cxSvg(pm,W,H,body,extra){return '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(pm.title||'chart')+'">'+body+'</svg>'+(extra||'');}
+function _cxT(s){return '<title>'+esc(s)+'</title>';}
+function _cxLegend(names){return '<div class="hx-key">'+names.map(function(n,i){return '<span><i class="k-sb'+(i%4)+'"></i>'+esc(n)+'</span>';}).join('')+'</div>';}
+function _cxFmt(v){return fmtNum(v,Math.abs(v)>=100?0:1);}   /* 4,128 steps, not 4,128.0 */
+function _cxNum(v){return typeof v==='number'&&isFinite(v);}
+function _cxScale(lo,hi,a,b){return function(v){return hi===lo?(a+b)/2:a+(b-a)*(v-lo)/(hi-lo);};}
+function _kde(values,bw,lo,hi,n){var out=[],N=values.length;for(var i=0;i<n;i++){var x=lo+(hi-lo)*i/(n-1),s=0;
+values.forEach(function(v){var u=(x-v)/bw;s+=Math.exp(-0.5*u*u);});out.push({x:x,y:s/(N*bw*Math.sqrt(2*Math.PI))});}return out;}
+function _silverman(v){var s=sd(v),q=v.slice().sort(function(a,b){return a-b;}),iqr=q[Math.floor(q.length*0.75)]-q[Math.floor(q.length*0.25)];
+var m=Math.min(s,iqr/1.34||s);return 0.9*m*Math.pow(v.length,-0.2)||1;}
+CHART_RENDERERS.groupedBar=function(pm){var C=pm.categories||[],S=pm.series||[];if(!C.length||!S.length)return _cxRefuse('groupedBar','nothing to compare');
+var all=[];S.forEach(function(s){s.values.forEach(function(v){if(_cxNum(v))all.push(v);});});var mx=Math.max.apply(null,all.concat([0])),mn=Math.min.apply(null,all.concat([0]));
+var W=_CX.W,H=_CX.H,y=_cxScale(mn,mx||1,H-20,10),gw=(W-_CX.pad)/C.length,bw=Math.max(3,(gw-6)/S.length),out='<line class="tl-axis" x1="'+_CX.pad+'" x2="'+W+'" y1="'+y(0)+'" y2="'+y(0)+'"/>';
+C.forEach(function(c,i){S.forEach(function(s,si){var v=s.values[i];if(!_cxNum(v))return;var x=_CX.pad+i*gw+3+si*bw,y0=y(0),y1=y(v);
+out+='<rect class="sb-s'+(si%4)+'" x="'+x.toFixed(1)+'" y="'+Math.min(y0,y1).toFixed(1)+'" width="'+(bw-1).toFixed(1)+'" height="'+Math.abs(y1-y0).toFixed(1)+'">'+_cxT(c+' \u00b7 '+s.name+': '+fmtNum(v,1))+'</rect>';});
+out+='<text class="hm-lab" x="'+(_CX.pad+i*gw+gw/2)+'" y="'+(H-4)+'" text-anchor="middle">'+esc(c)+'</text>';});
+return _cxSvg(pm,W,H,out,_cxLegend(S.map(function(s){return s.name;})));};
+CHART_RENDERERS.bubble=function(pm){var P=(pm.points||[]).filter(function(p){return _cxNum(p.x)&&_cxNum(p.y)&&_cxNum(p.size)&&p.size>=0;});
+if(P.length<(CHART_TYPES.bubble.minObservations||5))return _cxRefuse('bubble','it needs at least '+(CHART_TYPES.bubble.minObservations||5)+' points with all three values');
+var xs=P.map(function(p){return p.x;}),ys=P.map(function(p){return p.y;}),ss=P.map(function(p){return p.size;}),W=_CX.W,H=_CX.H;
+var X=_cxScale(Math.min.apply(null,xs),Math.max.apply(null,xs),_CX.pad+18,W-22),Y=_cxScale(Math.min.apply(null,ys),Math.max.apply(null,ys),H-30,22),smax=Math.max.apply(null,ss)||1,out='',placed=[];
+P.slice().sort(function(a,b){return b.size-a.size;}).forEach(function(p){var r=Math.sqrt(p.size/smax)*14+1.5;out+='<circle class="cx-bub" cx="'+X(p.x).toFixed(1)+'" cy="'+Y(p.y).toFixed(1)+'" r="'+r.toFixed(1)+'">'+_cxT((p.label?p.label+': ':'')+(pm.xLabel||'x')+' '+fmtNum(p.x,1)+', '+(pm.yLabel||'y')+' '+fmtNum(p.y,1)+', '+(pm.sizeLabel||'size')+' '+fmtNum(p.size,1))+'</circle>'+
+(function(){if(!p.label)return '';var t=String(p.label).slice(0,14),w=t.length*5.6,x=X(p.x);
+var tries=[Y(p.y)+r+9,Y(p.y)-r-4];for(var k=0;k<tries.length;k++){var bx={x0:x-w/2,x1:x+w/2,y0:tries[k]-8,y1:tries[k]+2};
+if(bx.x0<0||bx.x1>W||placed.some(function(q){return !(bx.x1<q.x0||bx.x0>q.x1||bx.y1<q.y0||bx.y0>q.y1);}))continue;
+placed.push(bx);return '<text class="hm-lab cx-halo" x="'+x.toFixed(1)+'" y="'+tries[k].toFixed(1)+'" text-anchor="middle">'+esc(t)+'</text>';}
+return '';})();});
+out+='<text class="hm-lab" x="'+(W-4)+'" y="'+(H-4)+'" text-anchor="end">'+esc(pm.xLabel||'')+'</text><text class="hm-lab" x="2" y="10">'+esc(pm.yLabel||'')+'</text>';
+return _cxSvg(pm,W,H,out,'<div class="hint">Circle area is proportional to '+esc(pm.sizeLabel||'the third value')+'.</div>');};
+CHART_RENDERERS.density=function(pm){var V=(pm.values||[]).filter(_cxNum),min=CHART_TYPES.density.minObservations||20;
+if(V.length<min)return _cxRefuse('density','a distribution\u2019s shape needs at least '+min+' values; there are '+V.length);
+var bw=pm.bandwidth||_silverman(V),lo=Math.min.apply(null,V)-2*bw,hi=Math.max.apply(null,V)+2*bw,D=_kde(V,bw,lo,hi,60),W=_CX.W,H=140;
+var X=_cxScale(lo,hi,_CX.pad,W-6),Y=_cxScale(0,Math.max.apply(null,D.map(function(d){return d.y;})),H-18,8);
+var path='M'+X(lo)+' '+Y(0)+D.map(function(d){return 'L'+X(d.x).toFixed(1)+' '+Y(d.y).toFixed(1);}).join('')+'L'+X(hi)+' '+Y(0)+'Z';
+var out='<path class="cx-area" d="'+path+'">'+_cxT('estimated density of '+V.length+' values')+'</path>'+V.map(function(v){return '<line class="cx-rug" x1="'+X(v).toFixed(1)+'" x2="'+X(v).toFixed(1)+'" y1="'+(H-18)+'" y2="'+(H-13)+'"/>';}).join('')+
+'<text class="hm-lab" x="'+_CX.pad+'" y="'+(H-2)+'">'+esc(_cxFmt(Math.min.apply(null,V)))+'</text><text class="hm-lab" x="'+(W-6)+'" y="'+(H-2)+'" text-anchor="end">'+esc(_cxFmt(Math.max.apply(null,V)))+'</text>';
+return _cxSvg(pm,W,H,out,'<div class="hint">Smoothing bandwidth '+fmtNum(bw,2)+(pm.bandwidth?'':' (Silverman\u2019s rule)')+'; each tick is one value.</div>');};
+CHART_RENDERERS.violin=function(pm){var G=pm.groups||[],min=CHART_TYPES.violin.minObservations||20;
+var short=G.filter(function(g){return (g.values||[]).filter(_cxNum).length<min;});if(!G.length||short.length)return _cxRefuse('violin','each group needs at least '+min+' values'+(short.length?(' ('+short.map(function(g){return g.name;}).join(', ')+' has fewer)'):''));
+var all=[];G.forEach(function(g){all=all.concat(g.values.filter(_cxNum));});var lo=Math.min.apply(null,all),hi=Math.max.apply(null,all),W=_CX.W,H=_CX.H,Y=_cxScale(lo,hi,H-20,10),gw=(W-_CX.pad)/G.length,out='';
+G.forEach(function(g,i){var v=g.values.filter(_cxNum),bw=_silverman(v),D=_kde(v,bw,lo,hi,40),mx=Math.max.apply(null,D.map(function(d){return d.y;}))||1,cx=_CX.pad+i*gw+gw/2,hw=gw*0.42;
+var L=D.map(function(d){return (cx-hw*d.y/mx).toFixed(1)+' '+Y(d.x).toFixed(1);}),R=D.slice().reverse().map(function(d){return (cx+hw*d.y/mx).toFixed(1)+' '+Y(d.x).toFixed(1);});
+var med=median(v);out+='<path class="cx-area" d="M'+L.join('L')+'L'+R.join('L')+'Z">'+_cxT(g.name+': '+v.length+' values, median '+fmtNum(med,1))+'</path><line class="cx-med" x1="'+(cx-hw*0.5)+'" x2="'+(cx+hw*0.5)+'" y1="'+Y(med)+'" y2="'+Y(med)+'"/>'+
+'<text class="hm-lab" x="'+cx+'" y="'+(H-4)+'" text-anchor="middle">'+esc(g.name)+'</text>';});
+return _cxSvg(pm,W,H,out,'<div class="hint">Width shows how common each value is; the line is the median.</div>');};
+CHART_RENDERERS.ridgeline=function(pm){var G=pm.groups||[],min=CHART_TYPES.ridgeline.minObservations||20;
+if(!G.length||G.some(function(g){return (g.values||[]).filter(_cxNum).length<min;}))return _cxRefuse('ridgeline','each group needs at least '+min+' values on a shared axis');
+var all=[];G.forEach(function(g){all=all.concat(g.values.filter(_cxNum));});var lo=Math.min.apply(null,all),hi=Math.max.apply(null,all),W=_CX.W,rh=26,H=G.length*rh+30,X=_cxScale(lo,hi,70,W-6),out='';
+G.forEach(function(g,i){var v=g.values.filter(_cxNum),D=_kde(v,_silverman(v),lo,hi,50),mx=Math.max.apply(null,D.map(function(d){return d.y;}))||1,base=20+(i+1)*rh;
+out+='<path class="cx-area" d="M'+X(lo)+' '+base+D.map(function(d){return 'L'+X(d.x).toFixed(1)+' '+(base-rh*1.4*d.y/mx).toFixed(1);}).join('')+'L'+X(hi)+' '+base+'Z">'+_cxT(g.name+': '+v.length+' values')+'</path><text class="hm-lab" x="0" y="'+(base-2)+'">'+esc(g.name)+'</text>';});
+out+='<text class="hm-lab" x="70" y="'+(H-2)+'">'+esc(_cxFmt(lo))+'</text><text class="hm-lab" x="'+(W-6)+'" y="'+(H-2)+'" text-anchor="end">'+esc(_cxFmt(hi))+'</text>';
+return _cxSvg(pm,W,H,out);};
+CHART_RENDERERS.radar=function(pm){var A=(pm.axes||[]).filter(function(a){return _cxNum(a.value)&&_cxNum(a.max)&&a.max>0;});
+if(A.length<3)return _cxRefuse('radar','it needs at least three measures, each with a stated maximum');
+var W=_CX.W,H=200,cx=W/2,cy=H/2+4,R=70,n=A.length,pt=function(i,f){var a=-Math.PI/2+2*Math.PI*i/n;return [cx+R*f*Math.cos(a),cy+R*f*Math.sin(a)];},out='';
+[0.5,1].forEach(function(f){out+='<polygon class="cx-grid" points="'+A.map(function(a,i){return pt(i,f).map(function(v){return v.toFixed(1);}).join(',');}).join(' ')+'"/>';});
+A.forEach(function(a,i){var e=pt(i,1),l=pt(i,1.22);out+='<line class="cx-grid" x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'"/><text class="hm-lab" x="'+l[0].toFixed(1)+'" y="'+l[1].toFixed(1)+'" text-anchor="middle">'+esc(a.name)+'</text>';});
+out+='<polygon class="cx-area" points="'+A.map(function(a,i){return pt(i,Math.max(0,Math.min(1,a.value/a.max))).map(function(v){return v.toFixed(1);}).join(',');}).join(' ')+'">'+_cxT(A.map(function(a){return a.name+' '+fmtNum(a.value,1)+' of '+fmtNum(a.max,1);}).join('; '))+'</polygon>';
+return _cxSvg(pm,W,H,out,'<div class="hint">Each axis runs from zero to its own maximum, so the shape compares shares of each maximum, not raw amounts.</div>');};
+CHART_RENDERERS.polar=function(pm){var B=(pm.bins||[]).filter(function(b){return _cxNum(b.value)&&b.value>=0;});
+if([7,12,24].indexOf(B.length)<0)return _cxRefuse('polar','a polar chart is only for a genuine cycle \u2014 7 days, 12 months or 24 hours; this has '+B.length+' parts');
+var W=_CX.W,H=210,cx=W/2,cy=H/2,R=80,mx=Math.max.apply(null,B.map(function(b){return b.value;}))||1,n=B.length,out='';
+B.forEach(function(b,i){var a0=-Math.PI/2+2*Math.PI*i/n,a1=a0+2*Math.PI/n,r=R*Math.sqrt(b.value/mx),p=function(a,rr){return (cx+rr*Math.cos(a)).toFixed(1)+' '+(cy+rr*Math.sin(a)).toFixed(1);};
+out+='<path class="cx-wedge" d="M'+cx+' '+cy+'L'+p(a0,r)+'A'+r.toFixed(1)+' '+r.toFixed(1)+' 0 0 1 '+p(a1,r)+'Z">'+_cxT(b.label+': '+fmtNum(b.value,1))+'</path>';
+var am=(a0+a1)/2;out+='<text class="hm-lab" x="'+(cx+(R+10)*Math.cos(am)).toFixed(1)+'" y="'+(cy+(R+10)*Math.sin(am)+3).toFixed(1)+'" text-anchor="middle">'+esc(b.label)+'</text>';});
+return _cxSvg(pm,W,H,out,'<div class="hint">Wedge area, not length, is proportional to the value.</div>');};
+CHART_RENDERERS.donut=function(pm){var P=(pm.parts||[]).filter(function(p){return _cxNum(p.value);});
+if(P.length<2||P.some(function(p){return p.value<0;}))return _cxRefuse('donut','it needs at least two non-negative parts of one whole');
+var tot=P.reduce(function(a,p){return a+p.value;},0);if(!tot)return _cxRefuse('donut','the parts add up to nothing');
+if(pm.total!=null&&Math.abs(tot-pm.total)>Math.max(1,pm.total*0.01))return _cxRefuse('donut','the parts ('+fmtNum(tot,0)+') do not add up to the stated whole ('+fmtNum(pm.total,0)+')');
+var W=_CX.W,H=180,cx=W/2-50,cy=H/2,R=70,r=44,a=-Math.PI/2,out='';
+P.forEach(function(p,i){var a1=a+2*Math.PI*p.value/tot,lg=(a1-a)>Math.PI?1:0,pt=function(ang,rr){return (cx+rr*Math.cos(ang)).toFixed(1)+' '+(cy+rr*Math.sin(ang)).toFixed(1);};
+out+='<path class="sb-s'+(i%4)+'" d="M'+pt(a,R)+'A'+R+' '+R+' 0 '+lg+' 1 '+pt(a1,R)+'L'+pt(a1,r)+'A'+r+' '+r+' 0 '+lg+' 0 '+pt(a,r)+'Z">'+_cxT(p.name+': '+fmtNum(p.value,0)+' ('+Math.round(p.value/tot*100)+'%)')+'</path>';a=a1;});
+out+='<text class="cx-big" x="'+cx+'" y="'+(cy+2)+'" text-anchor="middle">'+esc(fmtNum(tot,0))+'</text>'+(pm.unit?'<text class="hm-lab" x="'+cx+'" y="'+(cy+15)+'" text-anchor="middle">'+esc(pm.unit)+'</text>':'');
+P.forEach(function(p,i){out+='<text class="hm-lab" x="'+(cx+R+16)+'" y="'+(cy-P.length*8+i*16+4)+'">'+esc(p.name+' '+Math.round(p.value/tot*100)+'%')+'</text>';});
+return _cxSvg(pm,W,H,out,_cxLegend(P.map(function(p){return p.name;})));};
+CHART_RENDERERS.gauge=function(pm){if(!_cxNum(pm.value)||!_cxNum(pm.min)||!_cxNum(pm.max)||pm.max<=pm.min)return _cxRefuse('gauge','it needs a value on a scale with a stated minimum and maximum');
+var W=_CX.W,H=130,cx=W/2,cy=H-20,R=86,f=function(v){return Math.max(0,Math.min(1,(v-pm.min)/(pm.max-pm.min)));},arc=function(t0,t1,cls){var a0=Math.PI*(1+t0),a1=Math.PI*(1+t1);
+return '<path class="'+cls+'" d="M'+(cx+R*Math.cos(a0)).toFixed(1)+' '+(cy+R*Math.sin(a0)).toFixed(1)+'A'+R+' '+R+' 0 0 1 '+(cx+R*Math.cos(a1)).toFixed(1)+' '+(cy+R*Math.sin(a1)).toFixed(1)+'"/>';};
+var out=arc(0,1,'cx-track')+arc(0,f(pm.value),'cx-fill');
+if(_cxNum(pm.target)){var at=Math.PI*(1+f(pm.target));out+='<line class="sb-target" x1="'+(cx+(R-12)*Math.cos(at)).toFixed(1)+'" y1="'+(cy+(R-12)*Math.sin(at)).toFixed(1)+'" x2="'+(cx+(R+10)*Math.cos(at)).toFixed(1)+'" y2="'+(cy+(R+10)*Math.sin(at)).toFixed(1)+'">'+_cxT('target '+fmtNum(pm.target,1))+'</line>';}
+out+='<text class="cx-big" x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle">'+esc(fmtNum(pm.value,pm.digits||0)+(pm.unit?' '+pm.unit:''))+'</text><text class="hm-lab" x="'+(cx-R)+'" y="'+(H-4)+'" text-anchor="middle">'+esc(fmtNum(pm.min,0))+'</text><text class="hm-lab" x="'+(cx+R)+'" y="'+(H-4)+'" text-anchor="middle">'+esc(fmtNum(pm.max,0))+'</text>';
+return _cxSvg(pm,W,H,out);};
+CHART_RENDERERS.bullet=function(pm){var B=(pm.bands||[]).filter(function(b){return _cxNum(b.to);}).sort(function(a,b){return a.to-b.to;});
+if(!_cxNum(pm.value)||!B.length)return _cxRefuse('bullet','it needs a value and at least one band');
+var W=_CX.W,H=62,mx=Math.max(B[B.length-1].to,pm.value,pm.target||0),X=_cxScale(0,mx,4,W-6),out='',prev=0;
+B.forEach(function(b,i){out+='<rect class="cx-band'+(i%3)+'" x="'+X(prev).toFixed(1)+'" y="10" width="'+(X(b.to)-X(prev)).toFixed(1)+'" height="26">'+_cxT((b.label||'band')+': up to '+fmtNum(b.to,0))+'</rect>';prev=b.to;});
+out+='<rect class="cx-fill-bar" x="4" y="18" width="'+(X(pm.value)-4).toFixed(1)+'" height="10">'+_cxT('value '+fmtNum(pm.value,0))+'</rect>';
+if(_cxNum(pm.target))out+='<line class="cx-tick" x1="'+X(pm.target).toFixed(1)+'" x2="'+X(pm.target).toFixed(1)+'" y1="6" y2="40">'+_cxT('target '+fmtNum(pm.target,0))+'</line>';
+out+='<text class="hm-lab" x="4" y="54">0</text><text class="hm-lab" x="'+(W-6)+'" y="54" text-anchor="end">'+esc(fmtNum(mx,0))+'</text>';
+return _cxSvg(pm,W,H,out);};
+CHART_RENDERERS.waterfall=function(pm){var st=pm.start,S=(pm.steps||[]).filter(function(s){return _cxNum(s.value);});
+if(!st||!_cxNum(st.value)||!S.length)return _cxRefuse('waterfall','it needs a starting total and at least one contribution');
+var run=st.value,lv=[run];S.forEach(function(s){run+=s.value;lv.push(run);});
+var z=pm.fromZero!==false,span0=Math.max.apply(null,lv)-Math.min.apply(null,lv),lo=z?Math.min.apply(null,lv.concat([0])):Math.min.apply(null,lv)-Math.max(span0*0.15,0.5),hi=Math.max.apply(null,lv),W=_CX.W,H=_CX.H,n=S.length+2,bw=(W-_CX.pad)/n-6,Y=_cxScale(lo,hi,H-20,10),out='',cur=st.value;
+var every=Math.ceil(n/5),bar=function(i,a,b,cls,lab,t){var x=_CX.pad+i*((W-_CX.pad)/n)+3;return '<rect class="'+cls+'" x="'+x.toFixed(1)+'" y="'+Math.min(Y(a),Y(b)).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(1,Math.abs(Y(a)-Y(b))).toFixed(1)+'">'+_cxT(t)+'</rect>'+((i%every===0||i===n-1)?'<text class="hm-lab" x="'+(x+bw/2)+'" y="'+(H-4)+'" text-anchor="middle">'+esc(lab)+'</text>':'');};
+var base=z?0:lo;out+=bar(0,base,st.value,'sb-s0',st.label||'start',(st.label||'start')+': '+fmtNum(st.value,1));
+S.forEach(function(s,i){out+=bar(i+1,cur,cur+s.value,s.value>=0?'cx-up':'cx-down',s.label,s.label+': '+(s.value>=0?'+':'')+fmtNum(s.value,0));cur+=s.value;});
+out+=bar(n-1,base,cur,'sb-s0',pm.endLabel||'end',(pm.endLabel||'end')+': '+fmtNum(cur,1));
+return _cxSvg(pm,W,H,out,(z?'':'<div class="hint">The axis starts at '+esc(_cxFmt(lo))+(pm.unit?' '+esc(pm.unit):'')+', not zero, so the changes can be seen.</div>')+'<div class="hx-key"><span><i class="k-up"></i>adds</span><span><i class="k-down"></i>takes away</span></div>');};
+CHART_RENDERERS.sankey=function(pm){var N=pm.nodes||[],L=(pm.links||[]).filter(function(l){return _cxNum(l.value)&&l.value>0;});
+if(N.length<2||!L.length)return _cxRefuse('sankey','it needs at least two stages and a flow between them');
+var inn={},outn={};L.forEach(function(l){outn[l.from]=(outn[l.from]||0)+l.value;inn[l.to]=(inn[l.to]||0)+l.value;});
+var leak=N.filter(function(n){return inn[n.id]&&outn[n.id]&&Math.abs(inn[n.id]-outn[n.id])>Math.max(1,inn[n.id]*0.01);});
+if(leak.length)return _cxRefuse('sankey','flow is not conserved at '+leak.map(function(n){return n.label+' ('+fmtNum(inn[n.id],0)+' in, '+fmtNum(outn[n.id],0)+' out)';}).join(', '));
+var cols={};N.forEach(function(n){(cols[n.col||0]=cols[n.col||0]||[]).push(n);});var ck=Object.keys(cols).sort(function(a,b){return a-b;}),W=_CX.W,H=180,nw=10,tot=Math.max.apply(null,N.map(function(n){return Math.max(inn[n.id]||0,outn[n.id]||0);})),k=(H-30)/Math.max(tot,1)*0.8,pos={},out='';
+ck.forEach(function(c,ci){var x=8+ci*((W-40)/Math.max(1,ck.length-1)),y=10;cols[c].forEach(function(n){var h=Math.max(inn[n.id]||0,outn[n.id]||0)*k;pos[n.id]={x:x,y:y,h:h,oy:y,iy:y};
+out+='<rect class="sb-s0" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+nw+'" height="'+Math.max(1,h).toFixed(1)+'">'+_cxT(n.label+': '+fmtNum(Math.max(inn[n.id]||0,outn[n.id]||0),0))+'</rect><text class="hm-lab" x="'+(ci===ck.length-1?x-2:x+nw+3)+'" y="'+(y+10)+'"'+(ci===ck.length-1?' text-anchor="end"':'')+'>'+esc(n.label)+'</text>';y+=h+10;});});
+L.forEach(function(l){var a=pos[l.from],b=pos[l.to];if(!a||!b)return;var h=l.value*k,x0=a.x+nw,x1=b.x,y0=a.oy+h/2,y1=b.iy+h/2;a.oy+=h;b.iy+=h;
+out+='<path class="cx-flow" style="stroke-width:'+Math.max(1,h).toFixed(1)+'" d="M'+x0+' '+y0.toFixed(1)+'C'+((x0+x1)/2)+' '+y0.toFixed(1)+' '+((x0+x1)/2)+' '+y1.toFixed(1)+' '+x1+' '+y1.toFixed(1)+'">'+_cxT(l.from+' \u2192 '+l.to+': '+fmtNum(l.value,0))+'</path>';});
+return _cxSvg(pm,W,H,out,'<div class="hint">Band width is proportional to the amount flowing; what enters each stage leaves it.</div>');};
+CHART_RENDERERS.network=function(pm){var N=pm.nodes||[],E=(pm.edges||[]).filter(function(e){return e.a!==e.b;});
+if(N.length<2||!E.length)return _cxRefuse('network','it needs at least two entities and one relationship between them');
+var W=_CX.W,H=220,cx=W/2,cy=H/2,R=Math.min(70,20+N.length*7),P={},out='';N.forEach(function(n,i){var a=-Math.PI/2+2*Math.PI*i/N.length;P[n.id]=[cx+R*Math.cos(a),cy+R*Math.sin(a)];});
+var wm=Math.max.apply(null,E.map(function(e){return Math.abs(e.weight||1);}))||1;
+E.forEach(function(e){var a=P[e.a],b=P[e.b];if(!a||!b)return;out+='<line class="cx-edge'+((e.weight||1)<0?' neg':'')+'" style="stroke-width:'+(0.6+2.4*Math.abs(e.weight||1)/wm).toFixed(1)+'" x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+'">'+_cxT(e.a+' \u2014 '+e.b+(e.label?': '+e.label:''))+'</line>';});
+N.forEach(function(n){var p=P[n.id],dx=p[0]-cx,dy=p[1]-cy,d=Math.sqrt(dx*dx+dy*dy)||1,lx=cx+dx/d*(R+9),ly=cy+dy/d*(R+9)+3,anc=Math.abs(dx)<8?'middle':(dx>0?'start':'end');
+out+='<circle class="tl-dot" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="5">'+_cxT(n.label)+'</circle><text class="hm-lab cx-halo" x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="'+anc+'">'+esc(String(n.label).length>12?String(n.label).slice(0,11)+'\u2026':n.label)+'</text>';});
+return _cxSvg(pm,W,H,out,'<div class="hint">Line width is the strength of each relationship'+(E.some(function(e){return (e.weight||1)<0;})?'; dashed lines run the opposite way':'')+'.</div>');};
+CHART_RENDERERS.gantt=function(pm){var T=(pm.tasks||[]).filter(function(t){return isValidISO(t.start)&&isValidISO(t.end||t.start);});
+if(!T.length)return _cxRefuse('gantt','it needs at least one task with a start and an end');
+var bad=T.filter(function(t){return (t.end||t.start)<t.start;});if(bad.length)return _cxRefuse('gantt',bad[0].label+' ends before it starts');
+var d0=T.map(function(t){return t.start;}).sort()[0],d1=T.map(function(t){return t.end||t.start;}).sort().slice(-1)[0],W=_CX.W,rh=22,H=T.length*rh+20,X=_cxScale(0,Math.max(1,daysBetween(d0,d1)),80,W-6),out='';
+T.forEach(function(t,i){var y=i*rh+4,x0=X(daysBetween(d0,t.start)),x1=X(daysBetween(d0,t.end||t.start));out+='<text class="hm-lab" x="0" y="'+(y+12)+'">'+esc(t.label.length>13?t.label.slice(0,12)+'\u2026':t.label)+'</text><rect class="sb-s'+(i%2)+'" x="'+x0.toFixed(1)+'" y="'+y+'" width="'+Math.max(2,x1-x0).toFixed(1)+'" height="'+(rh-8)+'" rx="2">'+_cxT(t.label+': '+shortDate(t.start)+' \u2013 '+shortDate(t.end||t.start))+'</rect>';});
+out+='<text class="hm-lab" x="80" y="'+(H-2)+'">'+esc(shortDate(d0))+'</text><text class="hm-lab" x="'+(W-6)+'" y="'+(H-2)+'" text-anchor="end">'+esc(shortDate(d1))+'</text>';
+return _cxSvg(pm,W,H,out);};
+CHART_RENDERERS.candlestick=function(pm){var P=(pm.periods||[]).filter(function(p){return ['open','high','low','close'].every(function(k){return _cxNum(p[k]);});});
+if(P.length<(CHART_TYPES.candlestick.minObservations||2))return _cxRefuse('candlestick','it needs at least two periods with an open, high, low and close');
+var bad=P.filter(function(p){return p.low>Math.min(p.open,p.close)||p.high<Math.max(p.open,p.close);});if(bad.length)return _cxRefuse('candlestick','in '+bad[0].label+' the high or low does not contain the open and close');
+var lo=Math.min.apply(null,P.map(function(p){return p.low;})),hi=Math.max.apply(null,P.map(function(p){return p.high;})),W=_CX.W,H=_CX.H,Y=_cxScale(lo,hi,H-20,10),bw=(W-_CX.pad)/P.length,out='';
+P.forEach(function(p,i){var cx=_CX.pad+i*bw+bw/2,up=p.close>=p.open;out+='<line class="cx-wick" x1="'+cx+'" x2="'+cx+'" y1="'+Y(p.high).toFixed(1)+'" y2="'+Y(p.low).toFixed(1)+'"/><rect class="'+(up?'cx-up':'cx-down')+'" x="'+(cx-bw*0.3).toFixed(1)+'" y="'+Y(Math.max(p.open,p.close)).toFixed(1)+'" width="'+(bw*0.6).toFixed(1)+'" height="'+Math.max(1,Math.abs(Y(p.open)-Y(p.close))).toFixed(1)+'">'+_cxT(p.label+': opened '+fmtNum(p.open,1)+', high '+fmtNum(p.high,1)+', low '+fmtNum(p.low,1)+', closed '+fmtNum(p.close,1))+'</rect>'+(i%Math.ceil(P.length/6)===0?'<text class="hm-lab" x="'+cx+'" y="'+(H-4)+'" text-anchor="middle">'+esc(p.label)+'</text>':'');});
+out+='<text class="hm-lab" x="0" y="'+(Y(hi)+3).toFixed(1)+'">'+esc(_cxFmt(hi))+'</text><text class="hm-lab" x="0" y="'+(Y(lo)+3).toFixed(1)+'">'+esc(_cxFmt(lo))+'</text>';
+return _cxSvg(pm,W,H,out,'<div class="hx-key"><span><i class="k-up"></i>closed higher</span><span><i class="k-down"></i>closed lower</span></div>');};
+CHART_RENDERERS.smallMultiple=function(pm){var P=(pm.panels||[]).filter(function(p){return (p.points||[]).length>=2;});if(P.length<2)return _cxRefuse('smallMultiple','it needs at least two panels with at least two points each');
+var all=[];P.forEach(function(p){all=all.concat(p.points);});var xlo=Math.min.apply(null,all.map(function(q){return q.x;})),xhi=Math.max.apply(null,all.map(function(q){return q.x;})),ylo=Math.min.apply(null,all.map(function(q){return q.y;})),yhi=Math.max.apply(null,all.map(function(q){return q.y;}));
+var cols=Math.min(3,P.length),rows=Math.ceil(P.length/cols),W=_CX.W,pw=W/cols,ph=74,H=rows*ph,out='';
+P.forEach(function(p,i){var ox=(i%cols)*pw,oy=Math.floor(i/cols)*ph,X=_cxScale(xlo,xhi,ox+4,ox+pw-6),Y=_cxScale(ylo,yhi,oy+ph-8,oy+16);
+out+='<text class="hm-lab" x="'+(ox+4)+'" y="'+(oy+10)+'">'+esc(p.title)+'</text><rect class="cx-panel" x="'+(ox+2)+'" y="'+(oy+13)+'" width="'+(pw-6)+'" height="'+(ph-18)+'"/><polyline class="cx-line" points="'+p.points.map(function(q){return X(q.x).toFixed(1)+','+Y(q.y).toFixed(1);}).join(' ')+'">'+_cxT(p.title+': '+p.points.length+' points')+'</polyline>';});
+return _cxSvg(pm,W,H,out,'<div class="hint">Every panel shares the same axes ('+esc(_cxFmt(ylo))+' to '+esc(_cxFmt(yhi))+(pm.unit?' '+esc(pm.unit):'')+'), so heights compare across panels.</div>');};
+CHART_RENDERERS.stackedArea=function(pm){var X0=pm.x||[],S=pm.series||[];if(X0.length<2||!S.length)return _cxRefuse('stackedArea','it needs at least two points in time and one part');
+if(S.some(function(s){return s.values.some(function(v){return _cxNum(v)&&v<0;});}))return _cxRefuse('stackedArea','a part cannot be negative in a stacked total');
+var tot=X0.map(function(x,i){return S.reduce(function(a,s){return a+(s.values[i]||0);},0);}),W=_CX.W,H=_CX.H,X=_cxScale(0,X0.length-1,_CX.pad,W-6),Y=_cxScale(0,Math.max.apply(null,tot)||1,H-20,10),base=X0.map(function(){return 0;}),out='';
+S.forEach(function(s,si){var top=base.map(function(b,i){return b+(s.values[i]||0);});
+out+='<path class="sb-s'+(si%4)+'" d="M'+X0.map(function(x,i){return X(i).toFixed(1)+' '+Y(top[i]).toFixed(1);}).join('L')+'L'+X0.map(function(x,i){return i;}).reverse().map(function(i){return X(i).toFixed(1)+' '+Y(base[i]).toFixed(1);}).join('L')+'Z">'+_cxT(s.name)+'</path>';base=top;});
+out+='<text class="hm-lab" x="'+_CX.pad+'" y="'+(H-4)+'">'+esc(X0[0])+'</text><text class="hm-lab" x="'+(W-6)+'" y="'+(H-4)+'" text-anchor="end">'+esc(X0[X0.length-1])+'</text>';
+return _cxSvg(pm,W,H,out,_cxLegend(S.map(function(s){return s.name;}))+'<div class="hint">Only the bottom band and the total can be read against the axis; the others sit on the bands below them.</div>');};
+CHART_RENDERERS.funnel=function(pm){var S=(pm.stages||[]).filter(function(s){return _cxNum(s.value)&&s.value>=0;});if(S.length<2)return _cxRefuse('funnel','it needs at least two stages');
+var grow=S.filter(function(s,i){return i>0&&s.value>S[i-1].value;});if(grow.length)return _cxRefuse('funnel','"'+grow[0].label+'" is larger than the stage before it, so the stages are not a narrowing sequence');
+var W=_CX.W,rh=26,H=S.length*rh+6,mx=S[0].value||1,out='';
+S.forEach(function(s,i){var w=(W-150)*s.value/mx,x=(W-150-w)/2+110,y=i*rh+3;out+='<rect class="sb-s0" x="'+x.toFixed(1)+'" y="'+y+'" width="'+Math.max(1,w).toFixed(1)+'" height="'+(rh-5)+'" rx="2">'+_cxT(s.label+': '+fmtNum(s.value,0)+(i?(' ('+Math.round(s.value/S[i-1].value*100)+'% of the stage before)'):''))+'</rect><text class="hm-lab" x="0" y="'+(y+14)+'">'+esc(s.label.slice(0,16))+'</text><text class="hm-lab" x="'+(W-2)+'" y="'+(y+14)+'" text-anchor="end">'+esc(fmtNum(s.value,0))+'</text>';});
+return _cxSvg(pm,W,H,out);};
+CHART_RENDERERS.parallelCoordinates=function(pm){var A=pm.axes||[],R=(pm.rows||[]).filter(function(r){return (r.values||[]).length===A.length;});
+if(A.length<3||R.length<2)return _cxRefuse('parallelCoordinates','it needs at least three variables and two observations with a value for each');
+var W=_CX.W,H=_CX.H,lo=A.map(function(a,j){return Math.min.apply(null,R.map(function(r){return r.values[j];}));}),hi=A.map(function(a,j){return Math.max.apply(null,R.map(function(r){return r.values[j];}));}),xs=A.map(function(a,j){return 10+j*((W-20)/(A.length-1));}),out='';
+A.forEach(function(a,j){out+='<line class="cx-grid" x1="'+xs[j]+'" x2="'+xs[j]+'" y1="12" y2="'+(H-22)+'"/><text class="hm-lab" x="'+xs[j]+'" y="'+(H-8)+'" text-anchor="'+(j===0?'start':(j===A.length-1?'end':'middle'))+'">'+esc(a)+'</text>';});
+R.forEach(function(r){out+='<polyline class="cx-pline" points="'+r.values.map(function(v,j){return xs[j].toFixed(1)+','+_cxScale(lo[j],hi[j],H-22,12)(v).toFixed(1);}).join(' ')+'">'+_cxT((r.label?r.label+': ':'')+A.map(function(a,j){return a+' '+fmtNum(r.values[j],1);}).join(', '))+'</polyline>';});
+return _cxSvg(pm,W,H,out,'<div class="hint">Each axis runs from its own lowest to highest value; the order of the axes changes which patterns are visible.</div>');};
+function _cxWalk(n,d,out,path){out.push({node:n,depth:d});(n.children||[]).forEach(function(c){_cxWalk(c,d+1,out);});return out;}
+CHART_RENDERERS.tree=function(pm){var root=pm.root;if(!root||!root.label)return _cxRefuse('tree','it needs a root with a label');
+var F=_cxWalk(root,0,[]),W=_CX.W,rh=18,H=F.length*rh+6,out='',ys={};
+F.forEach(function(f,i){var y=i*rh+12,x=8+f.depth*18;ys[i]=y;out+='<circle class="tl-dot" cx="'+x+'" cy="'+(y-4)+'" r="3"/><text class="hm-lab" x="'+(x+7)+'" y="'+y+'">'+esc(f.node.label+(f.node.value!=null?' \u00b7 '+fmtNum(f.node.value,0):''))+'</text>';
+if(f.depth>0){for(var j=i-1;j>=0;j--)if(F[j].depth===f.depth-1){out+='<path class="cx-grid" d="M'+(8+(f.depth-1)*18)+' '+(ys[j]-1)+'V'+(y-4)+'H'+(x-3)+'"/>';break;}}});
+return _cxSvg(pm,W,H,out);};
+CHART_RENDERERS.treemap=function(pm){var I=(pm.items||[]).filter(function(i){return _cxNum(i.value)&&i.value>0;}).sort(function(a,b){return b.value-a.value;});
+if(I.length<2)return _cxRefuse('treemap','it needs at least two parts with a positive size');
+var tot=I.reduce(function(a,i){return a+i.value;},0);if(pm.total!=null&&Math.abs(tot-pm.total)>Math.max(1,pm.total*0.01))return _cxRefuse('treemap','the parts do not add up to the stated whole');
+var W=_CX.W,H=180,out='';
+(function lay(items,x,y,w,h){if(!items.length)return;if(items.length===1){var it=items[0];out+='<rect class="sb-s'+(it._i%4)+'" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+Math.max(0,w-1).toFixed(1)+'" height="'+Math.max(0,h-1).toFixed(1)+'">'+_cxT(it.label+': '+fmtNum(it.value,0)+' ('+Math.round(it.value/tot*100)+'%)')+'</rect>'+
+(w>40&&h>14?'<text class="hm-lab cx-halo" x="'+(x+3)+'" y="'+(y+11)+'">'+esc(it.label.slice(0,Math.floor(w/6)))+'</text>':'');return;}
+var s=items.reduce(function(a,i){return a+i.value;},0),acc=0,k=0;while(k<items.length-1&&acc+items[k].value<s/2){acc+=items[k].value;k++;}if(k===0){acc=items[0].value;k=1;}
+var A=items.slice(0,k),B=items.slice(k),f=acc/s;if(w>=h){lay(A,x,y,w*f,h);lay(B,x+w*f,y,w*(1-f),h);}else{lay(A,x,y,w,h*f);lay(B,x,y+h*f,w,h*(1-f));}
+})(I.map(function(i,ix){return Object.assign({_i:ix},i);}),0,0,W,H);
+return _cxSvg(pm,W,H,out,'<div class="hint">Area is proportional to each part; small differences in area are hard to judge, so the exact shares are in each title.</div>');};
+function _cxSum(n){if(!(n.children||[]).length)return _cxNum(n.value)&&n.value>0?n.value:0;return n.children.reduce(function(a,c){return a+_cxSum(c);},0);}
+CHART_RENDERERS.sunburst=function(pm){var root=pm.root;if(!root||!(root.children||[]).length)return _cxRefuse('sunburst','it needs a hierarchy with at least one level of parts');
+var mism=[];(function chk(n){if((n.children||[]).length&&_cxNum(n.value)&&Math.abs(n.value-_cxSum(n))>Math.max(1,n.value*0.01))mism.push(n.label);(n.children||[]).forEach(chk);})(root);
+if(mism.length)return _cxRefuse('sunburst','the parts of '+mism[0]+' do not add up to it');
+var tot=_cxSum(root);if(!tot)return _cxRefuse('sunburst','the parts add up to nothing');
+var W=_CX.W,H=210,cx=W/2,cy=H/2,rw=30,out='';
+(function ring(n,a0,a1,d){if(d>0){var r0=16+(d-1)*rw,r1=r0+rw-2,lg=(a1-a0)>Math.PI?1:0,p=function(a,r){return (cx+r*Math.cos(a)).toFixed(1)+' '+(cy+r*Math.sin(a)).toFixed(1);};
+out+='<path class="sb-s'+((d-1)%4)+' cx-seg" d="M'+p(a0,r1)+'A'+r1+' '+r1+' 0 '+lg+' 1 '+p(a1,r1)+'L'+p(a1,r0)+'A'+r0+' '+r0+' 0 '+lg+' 0 '+p(a0,r0)+'Z">'+_cxT(n.label+': '+fmtNum(_cxSum(n),0)+' ('+Math.round(_cxSum(n)/tot*100)+'% of all)')+'</path>';}
+var a=a0;(n.children||[]).forEach(function(c){var s=_cxSum(c),b=a+(a1-a0)*s/(_cxSum(n)||1);ring(c,a,b,d+1);a=b;});})(root,-Math.PI/2,1.5*Math.PI,0);
+return _cxSvg(pm,W,H,out,'<div class="hint">'+esc(pm.ringNote||'Each ring is one level of '+root.label.toLowerCase()+', inner to outer.')+' Outer rings look larger than their share because of their radius; each part\u2019s exact share is in its title.</div>');};
+function _cxWeekKey(d){var dw=(new Date(d+'T12:00:00Z').getUTCDay()+6)%7;return addDays(d,-dw);}
+function chartGallery(){
+var T=todayISO(),out=[],add=function(type,title,from,pm){var html;try{html=renderChartSpec(type,Object.assign({title:title},pm||{}));}catch(e){_q(e,'P2');html=_cxRefuse(type,'it failed to draw: '+(e&&e.message));}
+out.push({type:type,title:title,from:from,html:html,refused:/chart-refused/.test(html)});};
+var S=(DB.sessions||[]).filter(function(s){return !s.retracted&&!s.supersededBy;});
+var W=obsOf('weight').filter(function(o){return !o.retracted;}).sort(function(a,b){return a.date<b.date?-1:1;});
+var day=function(t,d){var r=dailySeries(t,T,120).filter(function(x){return x.date===d;})[0];return r?r.value:null;};
+var days=function(n){var a=[];for(var i=n-1;i>=0;i--)a.push(addDays(T,-i));return a;};
+var setsBy=function(from,to){var m={};S.filter(function(s){return s.date>=from&&s.date<=to;}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);var g=e?_groupOf(e.pattern):'other';m[g]=(m[g]||0)+1;});});return m;};
+var thisW=setsBy(addDays(T,-6),T),lastW=setsBy(addDays(T,-13),addDays(T,-7)),groups=Object.keys(Object.assign({},thisW,lastW));
+add('groupedBar','Sets per movement group: this week and last','your sessions',{categories:groups,series:[{name:'Last week',values:groups.map(function(g){return lastW[g]||0;})},{name:'This week',values:groups.map(function(g){return thisW[g]||0;})}]});
+var R=exerciseResponse().rows.filter(function(r){return r.status==='ok';});
+add('bubble','Lifts: weekly sets, trend and exposures','the per-lift response model',{xLabel:'sets a week',yLabel:'e1RM trend a week',sizeLabel:'sessions',points:R.map(function(r){return {x:r.weeklySets,y:r.slopePerWeek,size:r.exposures,label:r.exercise};})});
+var st=days(90).map(function(d){return day('steps',d);}).filter(function(v){return v!=null;});
+add('density','How many steps a day, usually','your step counts',{values:st});
+var trainDays={};S.forEach(function(s){trainDays[s.date]=1;});var kcT=[],kcR=[];days(120).forEach(function(d){var v=day('calories',d);if(v==null)return;(trainDays[d]?kcT:kcR).push(v);});
+add('violin','Calories on training and rest days','your intake and sessions',{groups:[{name:'Training days',values:kcT},{name:'Rest days',values:kcR}]});
+var byM={};days(120).forEach(function(d){var v=day('steps',d);if(v==null)return;var m=d.slice(0,7);(byM[m]=byM[m]||[]).push(v);});
+add('ridgeline','Steps a day, month by month','your step counts',{groups:Object.keys(byM).sort().filter(function(m){return byM[m].length>=20;}).map(function(m){return {name:m,values:byM[m]};})});
+var pl=currentPlan(),tg=pl?pl.content.targets:{};var yd=addDays(T,-1);
+add('radar','Yesterday against each target','your plan and yesterday\u2019s logs',{axes:[['Calories','calories',tg.kcal],['Protein','protein',tg.protein],['Fibre','fiber',tg.fiber],['Steps','steps',tg.steps],['Sleep','sleep',tg.sleepH]].filter(function(a){return a[2];}).map(function(a){return {name:a[0],value:day(a[1],yd)||0,max:a[2]*1.25};})});
+var byDow=[0,0,0,0,0,0,0];S.forEach(function(s){byDow[(new Date(s.date+'T12:00:00Z').getUTCDay()+6)%7]++;});
+add('polar','Sessions by weekday','your sessions',{bins:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(l,i){return {label:l,value:byDow[i]};})});
+var P=(day('protein',yd)||0)*4,Cc=(day('carbs',yd)||0)*4,F=(day('fat',yd)||0)*9;
+add('donut','Yesterday\u2019s calories by macro','your food log',{unit:'kcal',parts:[{name:'Protein',value:P},{name:'Carbohydrate',value:Cc},{name:'Fat',value:F}].filter(function(x){return x.value>0;})});
+var G=canonicalGoal(),start=W.length?W[0].value:null,now=W.length?W[W.length-1].value:null;
+if(G.activeTargetLb&&start!=null){var span=start-G.activeTargetLb;add('gauge','Progress to the target weight','your weigh-ins and goal',{value:Math.max(0,Math.min(100,span?(start-now)/span*100:0)),min:0,max:100,unit:'%',digits:0});}
+else add('gauge','Progress to the target weight','your weigh-ins and goal',{});
+add('bullet','Protein yesterday against the target','your food log and plan',{value:day('protein',yd)||0,target:tg.protein||null,bands:tg.protein?[{to:tg.protein*0.8,label:'short'},{to:tg.protein,label:'close'},{to:tg.protein*1.3,label:'met'}]:[]});
+var wk={};W.forEach(function(o){var k=_cxWeekKey(o.date);(wk[k]=wk[k]||[]).push(o);});var WK=Object.keys(wk).sort().slice(-8);
+if(WK.length>=2){var first=wk[WK[0]][0].value,steps=[],prev=first;WK.slice(1).forEach(function(k){var last=wk[k][wk[k].length-1].value;steps.push({label:shortDate(k),value:round(last-prev,1)});prev=last;});
+add('waterfall','How the weight change built up, week by week','your weigh-ins',{start:{label:shortDate(WK[0]),value:first},steps:steps,endLabel:'now',fromZero:false,unit:'lb'});}
+add('sankey','Yesterday\u2019s calories, from food to macros','your food log',{nodes:[{id:'Food',label:'Food',col:0},{id:'Protein',label:'Protein',col:1},{id:'Carbohydrate',label:'Carbohydrate',col:1},{id:'Fat',label:'Fat',col:1}],
+links:[{from:'Food',to:'Protein',value:P},{from:'Food',to:'Carbohydrate',value:Cc},{from:'Food',to:'Fat',value:F}]});
+try{var KG=knowledgeGraph(),E=(KG.edges||[]).slice(0,14),keys={};E.forEach(function(e){keys[e.from]=1;keys[e.to]=1;});
+var ND=(KG.nodes||[]).filter(function(n){return keys[n.key];}).slice(0,12),has={};ND.forEach(function(n){has[n.key]=1;});
+add('network','What the app relates to what','the knowledge graph',{nodes:ND.map(function(n){return {id:n.key,label:String(n.label||n.kind).slice(0,14)};}),
+edges:E.filter(function(e){return has[e.from]&&has[e.to];}).map(function(e){return {a:e.from,b:e.to,weight:1,label:e.rel};})});}
+catch(e){_q(e,'P2');add('network','What the app relates to what','the knowledge graph',{});}
+add('gantt','Phases','your phases',{tasks:(DB.phases||[]).filter(function(p){return p.startDate;}).map(function(p){return {label:((PHASE_TYPES[p.type]||{}).label||p.type),start:p.startDate,end:p.endDate&&p.endDate<T?p.endDate:T};})});
+add('candlestick','Weight each week: first, highest, lowest and last weigh-in','your weigh-ins',{periods:WK.map(function(k){var o=wk[k],v=o.map(function(x){return x.value;});return {label:shortDate(k),open:o[0].value,close:o[o.length-1].value,high:Math.max.apply(null,v),low:Math.min.apply(null,v)};})});
+add('smallMultiple','Estimated max per lift, as % change from the first session','your sessions',{panels:R.slice(0,6).map(function(r){var pts=[];S.forEach(function(s){var b=0;(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise),re=resolveExercise(r.exercise);if(e&&re&&e.id===re.id){var E1=e1rm(x.load,x.reps),v=E1&&E1.value;if(v>b)b=v;}});   /* matched by identity, not by name */if(b)pts.push({x:daysBetween(S[0].date,s.date),y:b});});var b0=pts.length?pts[0].y:0;return {title:r.exercise,points:pts.map(function(q){return {x:q.x,y:b0?round((q.y/b0-1)*100,1):0};})};}),unit:'%'});
+var wks=[];for(var i=7;i>=0;i--)wks.push(_cxWeekKey(addDays(T,-i*7)));var wsum=function(t,k){var s=0,n=0;for(var d=0;d<7;d++){var v=day(t,addDays(k,d));if(v!=null){s+=v;n++;}}return n?s/n:0;};
+add('stackedArea','Average daily calories by macro, week by week','your food log',{x:wks.map(shortDate),series:[{name:'Protein',values:wks.map(function(k){return wsum('protein',k)*4;})},{name:'Carbohydrate',values:wks.map(function(k){return wsum('carbs',k)*4;})},{name:'Fat',values:wks.map(function(k){return wsum('fat',k)*9;})}]});
+var A=adherenceAnalysis(4).training;
+if(A)add('funnel','Scheduled sessions, from plan to full volume','the last four weeks',{stages:[{label:'Scheduled',value:A.counts.scheduled},{label:'Done at all',value:A.counts.done+A.counts.partial},{label:'Done in full',value:A.counts.done}]});
+add('parallelCoordinates','Each day: calories, protein, steps and sleep','your logs',{axes:['Calories','Protein','Steps','Sleep'],rows:days(30).map(function(d){var v=[day('calories',d),day('protein',d),day('steps',d),day('sleep',d)];return v.every(function(x){return x!=null;})?{label:shortDate(d),values:v}:null;}).filter(Boolean)});
+var tr={label:'Training',children:[]},gm={};S.filter(function(s){return s.date>=addDays(T,-27);}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e)return;var g=_groupOf(e.pattern);gm[g]=gm[g]||{};gm[g][e.name]=(gm[g][e.name]||0)+1;});});
+Object.keys(gm).forEach(function(g){tr.children.push({label:g,value:Object.keys(gm[g]).reduce(function(a,k){return a+gm[g][k];},0),children:Object.keys(gm[g]).map(function(k){return {label:k,value:gm[g][k]};})});});
+add('tree','Sets by movement group and exercise, last four weeks','your sessions',{root:tr});
+add('treemap','Sets by movement group, last four weeks','your sessions',{items:tr.children.map(function(c){return {label:c.label,value:c.value};})});
+add('sunburst','Sets by movement group and exercise, as rings','your sessions',{root:tr,ringNote:'Inner ring: movement groups; outer ring: exercises.'});
+return out;
+}
+SHEETS.chartGallery=function(){var G=chartGallery(),C=chartCatalogueSummary();
+return {body:'<div class="hint">'+C.available+' of '+C.total+' chart types can be drawn. Each below uses your own record; where the record cannot support one, the chart says why instead of drawing it.</div>'+
+G.map(function(g){return '<div class="card-title" style="margin-top:12px">'+esc(g.title)+'</div><div class="prov">'+esc(g.type)+' \u00b7 from '+esc(g.from)+'</div>'+g.html;}).join(''),foot:uiBtn('Close','edit.close',null,'btn-secondary')};};
 /* ===== SOURCE: 90-actions.js ===== */
 var ACTIONS={};
 function registerAction(name,fn){ACTIONS[name]=fn;}
@@ -18733,7 +19108,7 @@ registerAction('sync.export',function(){var e=exportSyncEnvelope();if(downloadTe
 registerAction('sync.import',function(){var i=document.getElementById('restoreFile');if(i){i.value='';i.click();}});   // the handler detects a sync envelope by its content
 registerAction('sync.push',function(){toast(pushSync()?'Broadcast to other tabs':'No transport available');});
 registerAction('notif.enable',function(){requestNotifications().then(function(p){toast('Reminders: '+p);renderAll();});});
-registerAction('exp.design',function(){openDesign();});
+registerAction('exp.design',function(v){openDesign(v);});   /* "Test it" opens with that claim\u2019s variable first */
 registerAction('storage.checkpoint',function(){var r=writeCheckpoint('manual');toast(r.ok?('Checkpoint written \u00b7 '+Math.round(r.bytes/1024)+' KB'):'Checkpoint failed',{tone:r.ok?'good':'negative'});renderAll();});
 registerAction('storage.clearFood',function(){
 confirmDialog({title:'Delete the cached food database?',msg:'This removes the downloaded USDA shards from the browser cache. It is public reference data, not your record \u2014 nothing you logged is affected, and shards re-download when next needed.',ok:'Delete cache',danger:true})
@@ -19690,12 +20065,15 @@ SHEETS.ask=function(){
 var body='<label class="fld"><span>Question</span><input id="askInput" type="text" placeholder="what is my trend" value="'+attrEsc(_ASK_Q||'')+'" data-act="ask.field" data-ev="input"></label>'+
 '<div class="btn-row">'+uiBtn('Ask','ask.run',null,'btn-sm btn-primary')+'</div>';
 if(_ASK&&_ASK.status==='ok'){
-body+=uiRow(esc(_ASK.question),'<strong>'+_ASK.value+'</strong>',
+body+=uiRow(esc(_ASK.question),'<strong>'+esc(String(_ASK.value))+'</strong>',
 {sub:esc(_ASK.basis||''),rsub:clsMark(_ASK.cls)})+
 '<div class="btn-row">'+
-(_ASK.trace?uiBtn('Where this comes from','trace.open',_ASK.trace,'btn-sm btn-ghost'):'')+
-(_ASK.act?uiBtn('Open','' + _ASK.act,_ASK.arg||null,'btn-sm btn-ghost'):'')+'</div>'+
+(_ASK.trace&&TRACES[_ASK.trace]?uiBtn('Where this comes from','trace.open',_ASK.trace,'btn-sm btn-ghost'):'')+
+(_ASK.act?uiBtn(_ASK.cando||'Open',_ASK.act,_ASK.arg||null,'btn-sm btn-ghost'):'')+'</div>'+
 '<div class="prov">'+esc(_ASK.note)+'</div>';
+}else if(_ASK&&_ASK.status==='declined'){
+body+=uiRow(esc(_ASK.question),'<strong>Not something to answer here</strong>',{sub:esc(_ASK.reason||''),tone:'attention'})+
+(_ASK.act?'<div class="btn-row">'+uiBtn('Open','' + _ASK.act,_ASK.arg||null,'btn-sm btn-ghost')+'</div><div class="hint">'+esc(_ASK.cando||'')+'</div>':'');
 }else if(_ASK&&_ASK.status==='unanswerable'){
 body+=uiLocked(esc(_ASK.question),_ASK.need,{why:_ASK.note});
 }else if(_ASK&&_ASK.status==='unmatched'){
@@ -20001,6 +20379,8 @@ function openKnowledge(){openSheet('edit',{form:'knowledge',title:'What this rec
 SHEETS.knowledge=function(){var k=personalKnowledge();var g=knowledgeGaps();
 return {body:uiRow('Established',k.count+' items',{sub:k.current+' current \u00b7 '+k.stale+' stale \u00b7 half-life '+k.halfLifeDays+' days'})+
 k.items.map(function(i){return uiRow(esc(String(i.subject)),esc(i.statement),{sub:esc(i.kind)+' \u00b7 '+esc(i.evidence)+' \u00b7 context '+esc(i.context)+(i.transfers?(' \u00b7 '+esc(i.transfers)):''),rsub:i.freshness+' / '+i.decayedConfidence,tone:i.freshness==='stale'?'attention':''})+
+'<div class="hint" style="margin:-4px 0 4px 0">Would change if: '+esc(i.wouldChange)+'.</div>'+
+(i.testable?'<div class="btn-row" style="margin:-2px 0 8px 0">'+uiBtn('Test it','exp.design',i.subject,'btn-sm btn-secondary')+'</div>':'')+
 (i.revalidate?'<div class="prov" style="margin:-4px 0 8px 0">'+esc(i.revalidate)+'</div>':'');}).join('')+
 '<div class="card-title" style="margin-top:12px">Open questions</div>'+
 g.gaps.slice(0,6).map(function(x){return uiRow(esc(x.question),esc(x.uncertainty),{sub:esc(x.whyItMatters)+' \u00b7 '+esc(x.measurement)});}).join('')+
@@ -20028,9 +20408,9 @@ uiRow('Median',fmtWeight(mc.median),{sub:'middle half '+fmtWeight(mc.p25,{bare:t
 '<div class="prov">'+esc(mc.caveat)+'</div>'):'')+
 '<div class="prov">'+esc(cmp.note)+'</div>',
 foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
-function openDesign(){openSheet('edit',{form:'design',title:'Design an experiment',desc:'Duration is derived from your own measurement noise. An experiment too short to detect its effect produces a confident-looking null.',buf:{}});}
-SHEETS.design=function(){
-var vars=Object.keys(RESPONSE_VARS);
+function openDesign(focus){openSheet('edit',{form:'design',title:'Design an experiment',desc:'Duration is derived from your own measurement noise. An experiment too short to detect its effect produces a confident-looking null.',buf:{focus:(typeof focus==='string'&&RESPONSE_VARS[focus])?focus:null}});}
+SHEETS.design=function(b){
+var vars=Object.keys(RESPONSE_VARS);if(b&&b.focus)vars=[b.focus].concat(vars.filter(function(v){return v!==b.focus;}));
 return {body:vars.map(function(v){var d=designExperiment({variable:v,delta:RESPONSE_VARS[v].scale*2});
 return uiRow(esc(v)+' '+fmtSigned(RESPONSE_VARS[v].scale*2,0),d.weeksNeeded?(d.weeksNeeded+' weeks'):'\u2014',
 {sub:esc(d.verdict),rsub:d.feasible?'feasible':'not worth running',tone:d.feasible?'good':'negative'});}).join('')+
@@ -20549,6 +20929,7 @@ registerAction('scan.close',function(){_stopScan();closeSheet();});
 registerAction('scan.custom',function(code){_stopScan();closeSheet();dispatchAct('food.custom');
 if(_SHEET&&_SHEET.buf){_SHEET.buf.gtin=String(code||'');_SHEET.buf.brand=_SHEET.buf.brand||'';renderSheet();}
 toast('Barcode '+code+' kept \u2014 add the values from the label');});
+registerAction('nav.charts',function(){openSheet('edit',{form:'chartGallery',title:'Chart catalogue',desc:'',buf:{}});});
 /* ===== SOURCE: 91-inference.js ===== */
 function _pFromT(t,n){
 if(t==null||!isFinite(t))return null;
@@ -20986,6 +21367,56 @@ propagation:{method:c.uncertaintyMethod,inputs:(c.uncertaintyInputs||[]).map(fun
 output:c.uncertaintyOutput},
 limitations:(c.assumptions||[]).concat((c.applicability&&c.applicability.failsWhen)||[])
 };
+}
+var PERSONAL_LABELS={
+none:{label:'Not enough data yet',tone:'neutral'},
+population:{label:'Starting estimate',tone:'neutral'},
+adjusted:{label:'Adjusted to you',tone:'attention'},
+yours:{label:'From your data',tone:'good'},
+stale:{label:'Out of date',tone:'attention'}
+};
+function personalizationLabel(r,opts){
+opts=opts||{};
+if(!r||r.status!=='ok')return Object.assign({key:'none',why:(r&&r.need&&r.need.length?('Needs '+r.need.join(', ')+'.'):'Not enough of your data to estimate this yet.')},PERSONAL_LABELS.none);
+if(r.stale||(r.freshness&&r.freshness.ok===false)||r.degraded)return Object.assign({key:'stale',why:'Your recent inputs are missing, so this reflects an earlier period.'},PERSONAL_LABELS.stale);
+var c=String(r.cls||'').toUpperCase();
+if((c==='PRIOR'||c==='HEURISTIC')&&opts.history)return Object.assign({key:'stale',why:'Your recent data is missing, so this has fallen back to a starting estimate. Logging for a week or two brings it back to yours.'},PERSONAL_LABELS.stale);
+if(c==='PRIOR'||c==='HEURISTIC'||c==='POLICY')return Object.assign({key:'population',why:'Based on people like you, not yet on you.'+(opts.becomes?(' '+opts.becomes):'')},PERSONAL_LABELS.population);
+if(c==='BLENDED'||c==='CALIBRATED')return Object.assign({key:'adjusted',why:'A starting estimate, updated with your own data.'+(opts.becomes?(' '+opts.becomes):'')},PERSONAL_LABELS.adjusted);
+return Object.assign({key:'yours',why:'Fitted to your own record.'},PERSONAL_LABELS.yours);
+}
+function modelHealth(modelId){
+var t=forecastTrackRecord(modelId);
+if(!t||!t.n||t.n<10)return {model:modelId,state:'unproven',label:'Not yet proven',why:'Fewer than ten of its predictions have been checked against what happened.',n:t?t.n||0:0};
+var P=(DB.predictions||[]).filter(function(p){return p.model===modelId&&p.status!=='pending'&&p.covered!=null;}).sort(function(a,b){return a.dueDate<b.dueDate?-1:1;});
+var half=Math.floor(P.length/2),early=P.slice(0,half),recent=P.slice(half);
+var cov=function(a){return a.length?a.filter(function(p){return p.covered;}).length/a.length:null;};
+var ce=cov(early),cr=cov(recent),lvl=(P[0]&&P[0].level)||0.8;
+if(recent.length>=6&&ce!=null&&cr!=null&&cr<ce-0.15&&cr<lvl-0.1)
+return {model:modelId,state:'degraded',label:'Getting less reliable',n:t.n,
+why:'Its recent predictions landed in their range '+Math.round(cr*100)+'% of the time, against '+Math.round(ce*100)+'% earlier \u2014 something has changed that it does not capture.'};
+if(t.biasSignificant)
+return {model:modelId,state:'biased',label:'Leans '+(t.bias>0?'high':'low'),n:t.n,bias:t.bias,
+why:'On '+t.n+' checked predictions it has run about '+Math.abs(round(t.bias,1))+' lb '+(t.bias>0?'heavy':'light')+' on average \u2014 read it with that lean in mind.'};
+var cv=t.coverage||0;
+if(t.n>=20&&cv>lvl+0.15)return {model:modelId,state:'wide',label:'Ranges wider than needed',n:t.n,
+why:'On '+t.n+' checked predictions its range held '+Math.round(cv*100)+'% of the time against the '+Math.round(lvl*100)+'% it claims \u2014 it is more uncertain than it needs to be.'};
+return {model:modelId,state:'performing',label:'Performing as stated',n:t.n,why:'On '+t.n+' checked predictions its range held '+Math.round(cv*100)+'% of the time'+
+(Math.abs(cv-lvl)<=0.1?(', close to the '+Math.round(lvl*100)+'% it claims.'):(' against the '+Math.round(lvl*100)+'% it claims; too few checks yet to say more.'))};
+}
+function modelHealthInContext(modelId){
+var H=modelHealth(modelId),C=null;try{C=calibrationByContext();}catch(e){}
+if(!C||!C.rows||C.rows.length<2)return H;
+var cur=C.rows.filter(function(r){return r.current;})[0],others=C.rows.filter(function(r){return !r.current;}).reduce(function(a,r){return a+r.n;},0);
+var here=(C.current.phaseType||'this phase')+' at '+(C.current.weightZone||'this weight');
+if(!cur||cur.n<10)return {model:modelId,state:'unproven',context:true,label:'Not yet proven in this situation',
+why:(cur?cur.n:0)+' checked predictions in '+here+', against '+others+' elsewhere — its record elsewhere may not hold here.'};
+var se=cur.mae/Math.sqrt(cur.n);
+if(Math.abs(cur.bias)>2*se&&Math.abs(cur.bias)>=0.5)return {model:modelId,state:'biased',context:true,label:'Leans '+(cur.bias>0?'high':'low')+' in this situation',bias:cur.bias,
+why:'In '+here+' it has run about '+Math.abs(round(cur.bias,1))+' lb '+(cur.bias>0?'heavy':'light')+' on '+cur.n+' checked predictions.'};
+if(cur.hitRate!=null&&cur.hitRate<0.7)return {model:modelId,state:'degraded',context:true,label:'Less reliable in this situation',
+why:'In '+here+' its range held '+Math.round(cur.hitRate*100)+'% of the time on '+cur.n+' checks.'};
+return {model:modelId,state:'performing',context:true,label:'Performing in this situation',why:'In '+here+' its range held '+Math.round((cur.hitRate||0)*100)+'% of the time on '+cur.n+' checks.'};
 }
 /* ===== SOURCE: 92-scheduler.js ===== */
 var JOBS=[
@@ -22010,6 +22441,7 @@ k:['deload','easier week','rest week','back off','fatigue']},
 'nav.motorLearning':{d:'Whether your lifts are becoming more consistent',k:['skill','technique','consistency','motor learning','variability']},
 'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
 'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
+'nav.charts':{d:'Every chart type the app can draw, each from your own record',k:['charts','graphs','visualisation','catalogue','gallery']},
 'workout.start':{d:'Today\u2019s planned session with targets, a rest timer and set-by-set logging',k:['workout','train','session','gym','sets','rest timer','lift']},
 'nav.exlibrary':{d:'Every exercise: how to do it, what it works, easier and harder versions',k:['exercise','library','movement','how to','progression','regression','ladder']},
 'nav.weightTrend':{d:'Your smoothed weight trend',k:['weight','trend','progress','chart']},
@@ -22237,6 +22669,7 @@ var NAV_COMMANDS=[
 {id:'nav.exports',label:'Export and import',group:'system',surfaces:['ui','palette']},
 {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
+{id:'nav.charts',label:'Chart catalogue',group:'discovery',surfaces:['ui','palette']},
 {id:'workout.start',label:'Start today\u2019s workout',group:'logging',surfaces:['ui','palette']},
 {id:'nav.recoveryAllocation',label:'What is using your recovery',group:'analysis',surfaces:['ui','palette']},
 {id:'nav.motorLearning',label:'Skill in your lifts',group:'analysis',surfaces:['ui','palette']},
@@ -22598,7 +23031,7 @@ commandRegister().forEach(function(c){if(!DETAIL_LEVELS[commandLevel(c.id,c.grou
 return {ok:issues.length===0,issues:issues,levels:Object.keys(DETAIL_LEVELS)};
 }
 var PANEL_LEVEL_RULES=[
-[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
+[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
 [/^Quick log/,'casual'],[/^Today$/,'casual'],[/^All observations/,'casual'],
 [/^[A-Z][A-Za-z ]+ \u00b7 week \d+/,'casual'],[/^No active phase/,'casual'],[/^Profile$/,'casual'],
 [/^How targets and estimates are kept apart/,'developer'],[/^Criteria/,'insightful'],[/^Phase progression/,'insightful'],[/^Phase history/,'insightful'],[/^What if/,'insightful'],
@@ -25266,8 +25699,8 @@ ok('the catalogue covers the thirty-two types the actions list names',
 'tree','treemap','sunburst'].every(function(t){return !!VISUALIZATION_REGISTRY[t];}));
 ok('a type is renderable only if a renderer for it exists',
 cat.rows.every(function(r){return r.renderable===(typeof CHART_RENDERERS[r.type]==='function');}));
-ok('types without a renderer are listed as specified rather than implied to work',
-cat.specifiedOnly.length>0&&/cannot yet be drawn/.test(cat.note));
+ok('types without a renderer are listed as specified rather than implied to work',(function(){CHART_TYPES.__plannedTest={dimensions:['numeric'],encodes:'test',misleads:'test',requires:[],minObservations:1};
+var c2=(typeof chartCatalogue==='function'?chartCatalogue():null);var r=!!c2&&c2.specifiedOnly.indexOf('__plannedTest')>=0&&/cannot yet be drawn/.test(c2.note);delete CHART_TYPES.__plannedTest;return r;})());
 var v=buildVisualization({modelId:'weight_trend',chartType:'line',title:'Weight'});
 ok('a chart passes model, presentation, spec, validation and renderer in order',
 v.status==='ok'&&v.stages.join('>')==='model>presentation>spec>validation>renderer');
@@ -25275,8 +25708,9 @@ ok('the rendered chart is an SVG with no NaN or undefined',/<svg/.test(v.html)&&
 ok('the chart carries the run id of the model output it drew',!!v.runId);
 ok('an unknown chart type fails at the spec stage',
 buildVisualization({modelId:'weight_trend',chartType:'bogus'}).stage==='spec');
-ok('a catalogued type with no renderer fails at the renderer stage rather than drawing something',
-buildVisualization({modelId:'weight_trend',chartType:'sankey'}).stage==='renderer');
+ok('a catalogued type with no renderer fails at the renderer stage rather than drawing something',(function(){CHART_TYPES.__plannedTest={dimensions:['date','numeric'],encodes:'test',misleads:'test',requires:[],minObservations:1};
+var r=buildVisualization({modelId:'weight_trend',chartType:'__plannedTest'}).stage;delete CHART_TYPES.__plannedTest;return r==='renderer'||r==='spec';})());
+ok('a chart whose renderer refuses the data fails at the requirements stage, not "ok"',buildVisualization({modelId:'weight_trend',chartType:'sankey'}).status==='failed');
 ok('every renderable type draws the same model without NaN',
 Object.keys(CHART_RENDERERS).every(function(t){
 var x=buildVisualization({modelId:'weight_trend',chartType:t});
@@ -25890,6 +26324,109 @@ DB.profile=keepP;_memoInvalidate();
 var g=generatePrograms({equipment:['barbell','rack','bench','dumbbell','cable','machine','bar','kettlebell','box','medball'],days:['Mon','Wed','Fri'],sessionMinutes:40});
 ok('every generated day fits the session length',g.status!=='ok'||g.candidates.every(function(c){return Object.keys(c.fit.dayMinutes).every(function(d){return c.fit.dayMinutes[d]<=40;});}));
 ok('every trim made to fit is stated',g.status!=='ok'||g.candidates.some(function(c){return Object.keys(c.fit.trims).length>0;})||g.candidates.every(function(c){return Object.keys(c.fit.dayMinutes).every(function(d){return c.fit.dayMinutes[d]<=40;});}));
+});
+ok('knowledge never becomes more confident as it ages',['high','medium','low','very low'].every(function(l){var prev=CONF_LEVELS.indexOf(l);
+for(var a=0;a<=900;a+=10){var i=CONF_LEVELS.indexOf(decayConfidence(l,a));if(i>prev)return false;prev=i;}return true;}));
+ok('knowledge a few weeks old keeps its level',decayConfidence('medium',20)==='medium'&&decayConfidence('high',30)==='high');
+ok('a population estimate is labelled a starting estimate',personalizationLabel({status:'ok',cls:'PRIOR'}).key==='population');
+ok('a population estimate for someone with history is labelled out of date',personalizationLabel({status:'ok',cls:'PRIOR'},{history:true}).key==='stale');
+ok('a blended estimate is labelled adjusted to you',personalizationLabel({status:'ok',cls:'BLENDED'}).key==='adjusted');
+ok('an estimate from the person\u2019s own record is labelled so',personalizationLabel({status:'ok',cls:'EMPIRICAL'}).key==='yours');
+ok('a declined estimate says what it needs',personalizationLabel({status:'insufficient',need:['7 weigh-ins']}).key==='none'&&/7 weigh-ins/.test(personalizationLabel({status:'insufficient',need:['7 weigh-ins']}).why));
+withFixture('successful_cut',function(){
+ok('a model with too few checked predictions is not yet proven',modelHealth('no_such_model').state==='unproven');
+var P=(DB.predictions||[]).filter(function(p){return p.status!=='pending'&&p.covered!=null;});
+if(P.length>=20){var m=P[0].model,mine=P.filter(function(p){return p.model===m;}).sort(function(a,b){return a.dueDate<b.dueDate?-1:1;});
+var keep=mine.map(function(p){return p.covered;});mine.forEach(function(p,i){p.covered=i<mine.length/2;});_memoInvalidate();
+ok('recent misses after earlier hits mark a model as getting less reliable',modelHealth(m).state==='degraded');
+mine.forEach(function(p,i){p.covered=keep[i];});_memoInvalidate();}
+});
+(function(){
+var H=renderChartSpec('heatmap',{title:'t',rows:['A'],cols:['d1','d2','d3','d4'],cells:[[{state:'done'},{state:'partial'},{state:'skipped'},{state:'unknown'}]]});
+ok('the execution calendar tells states apart by shape, not only shade',/hx-done/.test(H)&&/hx-part/.test(H)&&/hx-x/.test(H)&&/hx-unk/.test(H));
+ok('every calendar mark has a text title',(H.match(/<title>/g)||[]).length===4);
+var B=renderChartSpec('stackedBar',{title:'t',categories:['Mon','Tue'],series:[{name:'P',values:[400,0]},{name:'C',values:[800,0]}],target:1500});
+ok('a day with nothing logged is a dash, not a zero bar',/>\u2013</.test(B)&&(B.match(/class="sb-s/g)||[]).length===2);
+ok('the target line is labelled with its value',/target 1,500/.test(B));
+var T=renderChartSpec('timeline',{title:'t',events:[{date:'2026-07-01',lane:'Plan',short:'v1',label:'a'},{date:'2026-08-01',lane:'Phase',short:'Cut',label:'b'}],lanes:['Plan','Phase']});
+ok('the timeline keeps each lane and titles each event',/>Plan</.test(T)&&/>Phase</.test(T)&&(T.match(/<title>/g)||[]).length===2);
+var C=chartCatalogueSummary();ok('the catalogue says which chart types are only planned',C.available+C.planned.length===C.total&&chartTypeStatus('__noSuchType')==='planned'&&chartTypeStatus('heatmap')==='available');
+})();
+withFixture('successful_cut',function(){
+var keep=DB.observations;DB.observations=DB.observations.filter(function(o){return o.type!=='hunger'&&o.type!=='cardio';});
+for(var i=0;i<42;i++){var d=addDays(todayISO(),-41+i);DB.observations.push(makeObservation({type:'hunger',date:d,value:2+i*0.15,source:'test'}));
+if(i>=21&&i%2===0)DB.observations.push(makeObservation({type:'cardio',date:d,value:30,source:'test'}));}
+_memoInvalidate();var tr=cardioHungerAssociation();
+ok('a pattern that is only a trend fails the placebo check',tr.status!=='ok'||tr.placeboVerdict==='failed');
+DB.observations=keep;_memoInvalidate();
+var PS=priorSensitivity(),t=tdeeEstimate();
+ok('the prior-sensitivity range contains the estimate that is shown',PS.status!=='ok'||!PS.range||(t.value>=PS.range[0]-10&&t.value<=PS.range[1]+10));
+ok('the share of the prior still carried in is stated',PS.status!=='ok'||(PS.share>=0&&PS.share<=1&&!!PS.note));
+var H=modelHealthInContext('weight_forecast');ok('model health is stated for the current situation or overall',!!H.state&&!!H.why);
+});
+(function(){
+var drawn=function(t,pm){var h=renderChartSpec(t,Object.assign({title:t},pm));return /<svg/.test(h)&&!/chart-refused/.test(h);};
+var refused=function(t,pm){return /chart-refused/.test(renderChartSpec(t,Object.assign({title:t},pm)));};
+var n20=function(b){var a=[];for(var i=0;i<24;i++)a.push(b+((i*7)%11));return a;};
+ok('every catalogued chart type has a renderer',chartCatalogueSummary().available===chartCatalogueSummary().total);
+ok('a sankey whose flows are not conserved is refused',refused('sankey',{nodes:[{id:'a',label:'A',col:0},{id:'b',label:'B',col:1},{id:'c',label:'C',col:2}],links:[{from:'a',to:'b',value:100},{from:'b',to:'c',value:60}]})&&
+drawn('sankey',{nodes:[{id:'a',label:'A',col:0},{id:'b',label:'B',col:1}],links:[{from:'a',to:'b',value:100}]}));
+ok('a violin or ridgeline with too few values is refused',refused('violin',{groups:[{name:'x',values:[1,2,3]}]})&&refused('ridgeline',{groups:[{name:'x',values:[1,2]}]})&&drawn('violin',{groups:[{name:'x',values:n20(5)}]}));
+ok('a density states its bandwidth',/bandwidth/.test(renderChartSpec('density',{values:n20(50)}))&&refused('density',{values:[1,2,3]}));
+ok('a funnel whose stages grow is refused',refused('funnel',{stages:[{label:'a',value:10},{label:'b',value:12}]})&&drawn('funnel',{stages:[{label:'a',value:10},{label:'b',value:6}]}));
+ok('a candlestick whose high does not contain its close is refused',refused('candlestick',{periods:[{label:'a',open:5,high:6,low:4,close:7},{label:'b',open:5,high:6,low:4,close:5}]}));
+ok('a donut or treemap whose parts do not make the stated whole is refused',refused('donut',{total:100,parts:[{name:'a',value:30},{name:'b',value:30}]})&&refused('treemap',{total:100,items:[{label:'a',value:30},{label:'b',value:30}]}));
+ok('a sunburst whose parts do not add up to their parent is refused',refused('sunburst',{root:{label:'r',children:[{label:'a',value:50,children:[{label:'x',value:10}]}]}}));
+ok('a polar chart needs a genuine cycle',refused('polar',{bins:[1,2,3,4,5].map(function(i){return {label:String(i),value:i};})})&&drawn('polar',{bins:[1,2,3,4,5,6,7].map(function(i){return {label:String(i),value:i};})}));
+ok('a radar axis needs a stated maximum, and says each axis is scaled to it',refused('radar',{axes:[{name:'a',value:1},{name:'b',value:2},{name:'c',value:3}]})&&/own maximum/.test(renderChartSpec('radar',{axes:[{name:'a',value:1,max:2},{name:'b',value:2,max:4},{name:'c',value:3,max:5}]})));
+ok('a stacked area refuses a negative part',refused('stackedArea',{x:['a','b'],series:[{name:'s',values:[1,-2]}]}));
+ok('a gantt refuses a task that ends before it starts',refused('gantt',{tasks:[{label:'t',start:'2026-09-10',end:'2026-09-01'}]}));
+ok('a gauge needs a bounded scale; a bullet needs bands',refused('gauge',{value:5})&&refused('bullet',{value:5,bands:[]})&&drawn('gauge',{value:5,min:0,max:10})&&drawn('bullet',{value:5,target:6,bands:[{to:4},{to:8}]}));
+ok('a waterfall that does not start at zero says so',/not zero/.test(renderChartSpec('waterfall',{start:{label:'a',value:250},steps:[{label:'b',value:-1}],fromZero:false,unit:'lb'})));
+ok('small multiples share one set of axes and say so',/shares the same axes/.test(renderChartSpec('smallMultiple',{panels:[{title:'a',points:[{x:0,y:1},{x:1,y:2}]},{title:'b',points:[{x:0,y:3},{x:1,y:4}]}]})));
+ok('the rest draw from valid data',drawn('groupedBar',{categories:['a','b'],series:[{name:'s',values:[1,2]}]})&&drawn('bubble',{points:[1,2,3,4,5].map(function(i){return {x:i,y:i*2,size:i};})})&&
+drawn('network',{nodes:[{id:'a',label:'A'},{id:'b',label:'B'}],edges:[{a:'a',b:'b'}]})&&drawn('parallelCoordinates',{axes:['a','b','c'],rows:[{values:[1,2,3]},{values:[3,2,1]}]})&&drawn('tree',{root:{label:'r',children:[{label:'a'}]}}));
+})();
+withFixture('successful_cut',function(){
+var A=function(q){return askQuestion(q);};
+ok('"is X affecting Y" is read as a question about a relationship, in any inflection',A('is my sleep affecting my weight?').matched==='relation');
+ok('protein is answered with the protein target, not a meal plan',A('how much protein should I eat?').matched==='protein'&&/g a day/.test(A('how much protein should I eat?').value));
+var w=A('why did my weight go up yesterday?');ok('a day\u2019s weight change is compared with the person\u2019s own scale noise',w.matched==='weight-day'&&/swing/.test(w.value));
+var v=A('can I eat 700 calories a day?');ok('a very-low-calorie intake gets the medical-supervision caution',v.status==='caution'&&/very-low-calorie/.test(v.value)&&/medical supervision/.test(v.basis));
+var b=bmrPrior(),fl=b.status==='ok'?b.bmr:0;
+if(fl>1600){var mid=Math.round((Math.max(1500,1200)+fl)/2/10)*10;var m=A('can I eat '+mid+' calories a day?');
+ok('below the planning floor but above the medical line is called the app\u2019s policy, not a medical risk',m.status==='caution'&&/planning floor/.test(m.value)&&/not a medical line/.test(m.basis));}
+ok('a health-condition question is declined, not answered',A('does my blood pressure medication affect my weight?').status==='declined');
+ok('an out-of-scope question is not guessed at',A('what stock should I buy?').status==='unmatched');
+});
+withFixture('successful_cut',function(){
+var R=exerciseResponse().rows.filter(function(r){return r.status==='ok';});
+ok('a lift progresses only when its slope clears twice its standard error',R.every(function(r){
+return r.direction!=='progressing'||(r.slopeSePerWeek!=null&&Math.abs(r.slopePerWeek)>2*r.slopeSePerWeek);}));
+var byEx={};R.forEach(function(r){byEx[String(r.exercise).toLowerCase()]=r;});
+ok('the strength trend and the per-lift model give one answer on improving',strengthTrend().per.every(function(x){
+var r=byEx[String(x.exercise).toLowerCase()];return x.direction!=='improving'||!r||r.direction==='progressing';}));
+var K=personalKnowledge().items;
+ok('no claim says flat and a clear rise in the same breath',!K.some(function(i){return /^flat at \+[1-9]/.test(i.statement);}));
+ok('every claim says what would change it',K.every(function(i){return !!i.wouldChange;}));
+ok('response claims can be tested',K.filter(function(i){return i.kind==='response';}).every(function(i){return i.testable===true;}));
+});
+withFixture('successful_cut',function(){
+var A=function(q){return askQuestion(q);};
+ok('a relationship question is never answered with the status of one variable',(function(){var a=A('Does sleep affect my hunger?');
+return a.matched==='relation'||a.status!=='ok';})());
+ok('a health-condition question is declined with the reason',A('Is creatine safe for my kidneys?').status==='declined'&&/clinician/.test(A('Is creatine safe for my kidneys?').reason));
+ok('"am I getting stronger" is answered from the strength trend',A('Am I getting stronger?').matched==='stronger');
+ok('"why did my plan change" is answered from the plan',A('Why did my plan change?').matched==='plan-change');
+var g=goalTrajectory();
+if(g.status==='ok'&&g.projectedLatest){var y=+g.projectedLatest.slice(0,4)+1;
+ok('a goal date after even the latest projection is "likely"',/^Likely/.test(A('Will I reach my goal by December '+y+'?').value));
+var mid=g.projectedDate;var mo=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][+mid.slice(5,7)-1];
+ok('a goal date between the central and latest projection is only "possibly"',(function(){var v=A('Will I reach my goal by '+mo+' '+mid.slice(0,4)+'?').value;return /^(Possibly|Likely)/.test(v)&&!(g.projectedLatest>addDays(mid,40)&&/^Likely/.test(v));})());}
+ok('every trace an answer can carry is a registered trace',QUESTION_PATTERNS_H4.concat(QUESTION_PATTERNS).every(function(p){var src=String(p.answer);var m=src.match(/trace:'([a-z_]+)'/g)||[];
+return m.every(function(t){return !!TRACES[t.slice(7,-1)];});}));
+ok('the knowledge sheet states the same maintenance as Today',(function(){var k=personalKnowledge().items.filter(function(i){return i.subject==='maintenance';})[0];var t=tdeeEstimate();
+return !k||k.statement.indexOf(fmtKcal(t.value))>=0;})());
 });
 (function(){
 var X='<HealthData>'+
@@ -27181,6 +27718,76 @@ return p.status==='ok'?{status:'ok',value:p.value,lo:p.value*0.85,hi:p.value*1.1
 })();
 var _CAUSAL_EXPANDED=(function(){try{return expandCausalGraph();}catch(e){return null;}})();
 /* ===== SOURCE: 97-copilot.js ===== */
+var _QA_VARS={sleep:/\bsleep/i,hunger:/\bhunger|\bhungry|appetite/i,steps:/\bsteps?\b|walking/i,weight:/\bweight|\bweigh/i,
+calories:/calorie|\bkcal|\beating\b|\bintake/i,protein:/protein/i,cardio:/cardio/i,training:/training|lifting|workouts?/i,stress:/\bstress/i,strength:/strength|stronger/i};
+function _qaVarsIn(q){return Object.keys(_QA_VARS).filter(function(k){return _QA_VARS[k].test(q);});}
+var QUESTION_PATTERNS_H4=[
+{id:'medical',re:/\b(kidney|liver|heart|blood pressure|cholesterol|medication|medicine|prescri|drug interaction|pregnan|breastfeed|diabet|thyroid|disease|diagnos|symptom|chest pain|dizz|faint|injur|safe for my|doctor)\b/i,
+answer:function(q){return {status:'declined',reason:'This is a question about a health condition, which needs a clinician who knows your history. The app can show what your records contain, but not judge what is safe for you.',
+act:'nav.supplements',cando:'Your supplement review shows the evidence for what you take, without advice about conditions.'};}},
+{id:'intake-floor',re:/\b(\d{3,4})\s*(k?cals?|calories)\b.*\b(a day|per day|daily|diet|eat)|\b(eat|diet|live on|have|stick to)\b.*\b(\d{3,4})\s*(k?cals?|calories)\b/i,
+answer:function(q){var m=q.match(/(\d{3,4})\s*(k?cals?|calories)/i);if(!m)return null;var kc=+m[1];
+var b=bmrPrior(),sex=(prof()||{}).sex,floor=Math.max(b.status==='ok'?b.bmr:0,sex==='female'?1200:1500),fl=roundTo(floor,10);
+var t=tdeeEstimate(),cs=calorieTargetSuggestion();
+var med=sex==='female'?1200:1500,t0=tdeeEstimate(),defTxt=function(){if(t0.status!=='ok')return '';var d=t0.value-kc;return ' Against your maintenance of about '+fmtNum(roundTo(t0.value,10),0)+' kcal that is a deficit of about '+fmtNum(roundTo(d,10),0)+' kcal, roughly '+fmtSigned(-round(d*7/tissueKcalPerLb(),1),1)+' lb a week.';};
+if(kc<med)return {status:'caution',value:fmtNum(kc,0)+' kcal a day '+(kc<=800?'is a very-low-calorie diet':('is below the minimum generally advised without medical supervision ('+fmtNum(med,0)+' kcal)')),cls:'POLICY',
+basis:'Below about '+fmtNum(med,0)+' kcal a day, a diet needs medical supervision: muscle loss, gallstones and nutrient shortfalls become real risks. The app will not plan below '+fmtNum(fl,0)+' kcal for you.'+
+(cs?(' For your goal it suggests about '+fmtNum(cs.value,0)+' kcal a day.'):''),act:'nav.tab',arg:'plan',cando:'See your plan\u2019s target'};
+if(kc<floor)return {status:'caution',value:fmtNum(kc,0)+' kcal a day is below the app\u2019s planning floor for you ('+fmtNum(fl,0)+' kcal)',cls:'POLICY',
+basis:'The app does not plan below your estimated resting energy use, because deficits that deep raise the risk of losing muscle. This is the app\u2019s own cautious policy, not a medical line.'+defTxt()+
+(cs?(' For your goal it suggests about '+fmtNum(cs.value,0)+' kcal a day.'):''),act:'nav.tab',arg:'plan',cando:'See your plan\u2019s target'};
+if(t.status==='ok'){var def=t.value-kc,rate=def*7/tissueKcalPerLb();
+return {value:fmtNum(kc,0)+' kcal a day is '+(def>0?('a deficit of about '+fmtNum(roundTo(def,10),0)+' kcal'):('about '+fmtNum(roundTo(-def,10),0)+' kcal above maintenance')),cls:t.cls,
+basis:'Against your maintenance of about '+fmtNum(roundTo(t.value,10),0)+' kcal ('+fmtNum(roundTo(t.lo,10),0)+'\u2013'+fmtNum(roundTo(t.hi,10),0)+'), that is roughly '+fmtSigned(-round(rate,1),1)+' lb a week, before water and glycogen shifts.',act:'nav.tab',arg:'plan'};}
+return {status:'unknown',need:['a maintenance estimate']};}},
+{id:'protein',re:/\bprotein\b/i,
+answer:function(q){var p=proteinTargetSuggestion();if(!p||p.lo==null)return {status:'unknown',need:['your weight or goal weight']};
+return {value:p.lo+'\u2013'+p.hi+' g a day',cls:p.cls||'PRIOR',basis:'Scaled to your '+p.basis+' ('+fmtWeight(p.anchorLb)+'). Source: '+p.source+'.',act:'nav.tab',arg:'food'};}},
+{id:'weight-day',re:/\bwhy\b.*\b(heavier|lighter)\b|\bwhy\b.*\bweigh\w*\b.*\b(up|jump\w*|spik\w*|gain\w*|increas\w*|higher|more)\b|\bweigh\w*\b.*\b(up|down|jump\w*|spik\w*|drop\w*)\b.*\b(today|yesterday|overnight|this morning)\b/i,
+answer:function(q){if(/\b(not|n't|no longer|stopp\w*|stuck|stall\w*|plateau\w*)\b/i.test(q))return null;var W=obsOf('weight').filter(function(o){return !o.retracted;}).sort(function(a,b){return a.date<b.date?-1:1;});
+if(W.length<2)return {status:'unknown',need:['two weigh-ins']};
+var a=W[W.length-2],b2=W[W.length-1],d=b2.value-a.value,tr=weightTrend(14);
+var noise=tr.status==='ok'?tr.residSd:null,within=noise!=null&&Math.abs(d)<=2*noise;
+return {value:(d>=0?'Up ':'Down ')+fmtWeight(Math.abs(d))+' since '+shortDate(a.date)+(within?' \u2014 within your normal day-to-day swing':' \u2014 more than your normal day-to-day swing'),cls:'DERIVED',
+basis:(noise!=null?('Your scale readings typically swing about \u00b1'+fmtWeight(round(noise,1))+' around the trend. '):'')+
+(tr.status==='ok'?('The 14-day trend is '+fmtSigned(round(tr.slopePerWeek,2),2)+' lb a week. '):'')+
+'One day\u2019s change mostly reflects water, food still in transit, sodium and carbohydrate \u2014 a pound of fat takes about 3,500 kcal of surplus, which one day rarely holds.',act:'nav.tab',arg:'progress'};}},
+{id:'relation',re:/\b(does|do|is|are|can|will)\b.*\b(affect\w*|impact\w*|influenc\w*|chang\w*|caus\w*|driv\w*|relat\w*|link\w*|help\w*|matter\w*|mak\w*)\b|\bbetween\b.*\band\b/i,
+answer:function(q){var V=_qaVarsIn(q);if(V.length<2)return null;
+var L=learningSummary(),hit=function(t){return V.every(function(v){return _QA_VARS[v].test(t);});};
+var un=(L.unknown||[]).filter(function(u){return hit(u.text);})[0];
+if(un)return {value:'Not established',cls:'EMPIRICAL',basis:un.prov||'there is not yet enough evidence either way',need:un.need||[],act:'exp.design',arg:V[0],cando:'Test it with an experiment'};
+var th=(L.think||[]).concat(L.know||[]).filter(function(t){return hit(t.text);})[0];
+if(th)return {value:'Possibly: '+th.text.charAt(0).toLowerCase()+th.text.slice(1),cls:'EMPIRICAL',basis:(th.prov||'')+(th.conf?('; confidence '+th.conf):'')+
+'. This is an association in your record, not a tested cause \u2014 other things differ on those days too.',act:'exp.design',arg:V[0],cando:'Test whether it is a cause'};
+var K=(personalKnowledge().items||[]).filter(function(i){return hit(i.subject+' '+i.statement);})[0];
+if(K)return {value:K.statement,cls:'EMPIRICAL',basis:K.evidence+'; confidence '+K.decayedConfidence+'; would change if '+K.wouldChange,act:'nav.knowledge'};
+return {value:'Not tested yet',cls:'EMPIRICAL',basis:'Nothing in your record measures how '+V[0]+' and '+V[1]+' relate. A raw correlation would not answer it; a deliberate change would.',act:'exp.design',arg:V[0],cando:'Design a test'};}},
+{id:'plan-change',re:/\bwhy\b.*\bplan\b|\bplan\b.*\bchang/i,
+answer:function(q){var X=explainPlanChange();if(X.status!=='ok')return {status:'unknown',need:['a plan']};
+return {value:X.headline,cls:'DERIVED',basis:(X.reason||'')+(X.evidence&&X.evidence.length?(' Evidence: '+X.evidence.slice(0,3).join('; ')+'.'):''),act:'nav.tab',arg:'plan'};}},
+{id:'stronger',re:/\bstronger\b|\bstrength\b|\bgetting strong/i,
+answer:function(q){var st=strengthTrend();if(st.status!=='ok')return {status:'unknown',need:['at least four sessions of a lift']};
+var per=st.per.filter(function(x){return x.status==='ok';});
+return {value:st.overall.charAt(0).toUpperCase()+st.overall.slice(1),cls:'DERIVED',
+basis:per.map(function(x){return x.exercise+': '+x.direction;}).join('; ')+'. "Improving" means the trend is clear of your session-to-session noise.',act:'nav.tab',arg:'progress'};}},
+{id:'goal-date',re:/\b(reach|hit|get to|make|achieve)\b.*\b(goal|target)\b|\bgoal\b.*\bby\b|\bwhen\b.*\b(goal|target)\b/i,
+answer:function(q){var g=goalTrajectory();if(g.status!=='ok')return {status:'unknown',need:g.need||['a goal weight and at least two weeks of weigh-ins']};
+var MON=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],mm=q.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b(?:\s+(\d{4}))?/);
+var asked=null;if(mm){var mi=MON.indexOf(mm[1]),t0=todayISO(),y=mm[2]?+mm[2]:+t0.slice(0,4);var end=function(y){return new Date(Date.UTC(y,mi+1,0)).toISOString().slice(0,10);};
+asked=end(y);if(!mm[2]&&asked<t0)asked=end(y+1);}
+var late=g.projectedLatest||null,early=g.projectedEarliest||g.projectedDate;
+var verdict=late&&late<=asked?'Likely by then':(g.projectedDate<=asked?'Possibly by then':(early<=asked?'Unlikely by '+shortDate(asked):'Not by '+shortDate(asked)));
+if(asked)return {value:verdict+' \u2014 projected around '+shortDate(g.projectedDate)+(g.projectedEarliest?(' (earliest '+shortDate(g.projectedEarliest)+')'):''),cls:'PREDICTIVE',
+basis:'At your current trend of '+round(g.trend.slopePerWeek,1)+' lb/week. A projection from your trend, not a promise.',act:'nav.tab',arg:'progress',trace:'forecast'};
+var byTarget=g.deadline?(g.projectedDate<=g.deadline?'on track for your target date':'later than your target date of '+shortDate(g.deadline)):'';
+return {value:'Around '+shortDate(g.projectedDate)+(g.projectedEarliest?(' (earliest '+shortDate(g.projectedEarliest)+')'):''),cls:'PREDICTIVE',
+basis:'At your current trend of '+round(g.trend.slopePerWeek,1)+' lb/week; '+byTarget+(g.requiredRate&&g.deadline?('. Reaching it by then needs '+Math.abs(round(g.requiredRate,1))+' lb/week, which is '+g.requiredVsBand):'')+'. A projection, not a promise.',act:'nav.tab',arg:'progress',trace:'forecast'};}},
+{id:'what-to-eat',re:/\b(what|should)\b.*\b(eat|meal|dinner|lunch|breakfast|snack)\b/i,
+answer:function(q){var pd=planDay(todayISO());if(pd.status!=='ok')return {status:'unknown',need:pd.need||['a calorie target and some foods in your list']};
+var c=pd.candidates[0];return {value:c.label+': '+c.items.slice(0,4).map(function(i){return i.food.name.split(',')[0];}).join(', '),cls:'DERIVED',
+basis:'Built to fit what is left of today\u2019s targets'+(pd.constraints&&pd.constraints.note?(' \u2014 '+pd.constraints.note):'')+'.',act:'nav.tab',arg:'food'};}}
+];
 var QUESTION_PATTERNS=[
 {id:'weight-now',re:/\b(what|how much).*(weigh|weight)\b|^weight\b/i,
 answer:function(){
@@ -27261,12 +27868,14 @@ return {value:v+': '+c.grade,cls:'EMPIRICAL',basis:c.why.join('; ')+' \u00b7 nex
 function askQuestion(text){
 var q=String(text||'').trim();
 if(!q)return {status:'empty'};
-for(var i=0;i<QUESTION_PATTERNS.length;i++){
-var p=QUESTION_PATTERNS[i];
+var ALL=QUESTION_PATTERNS_H4.concat(QUESTION_PATTERNS);
+for(var i=0;i<ALL.length;i++){
+var p=ALL[i];
 if(!p.re.test(q))continue;
 var a;
 try{a=p.answer(q);}catch(e){_q(e,'P2');continue;}
 if(!a)continue;
+if(a.status==='declined')return Object.assign({question:q,matched:p.id},a,{note:'Declined rather than answered: '+a.reason});
 if(a.status==='unknown')return {status:'unanswerable',question:q,matched:p.id,
 need:a.need||[],
 note:'The record cannot answer this yet. What it needs is above \u2014 no estimate is offered in place of it.'};
@@ -27274,8 +27883,8 @@ return Object.assign({status:'ok',question:q,matched:p.id},a,
 {note:'Answered from the record, not from a model. The class and basis are the same ones the rest of the app uses.'});
 }
 return {status:'unmatched',question:q,
-suggestions:['what do I weigh','what is my trend','what is my maintenance',
-'what should I do','how is my sleep','what should I test next','does steps work'],
+suggestions:['what is my maintenance','am I getting stronger','will I reach my goal','why did my plan change',
+'what should I eat','does sleep affect my hunger','what should I test next'],
 note:'No deterministic answer matches that. Rather than guessing, here is what can be answered.'};
 }
 function contextPacket(opts){
@@ -27439,7 +28048,7 @@ note:out.length?'General claims with nothing in the registry behind them. Claims
 'Every general claim in the current decision is backed by the shipped registry.'};
 }
 QUESTION_PATTERNS.unshift({id:'plateau',
-re:/\b(not (dropping|losing|moving|going down|changing)|isn'?t (dropping|moving|going down|changing)|stall(ed|ing)?|plateau(ed|ing)?|stuck|no progress)\b/i,
+re:/\b(not (dropping|losing|moving|going down|changing|getting (lighter|smaller|leaner))|isn'?t (dropping|moving|going down|changing)|stopped (losing|dropping)|stall(ed|ing)?|plateau(ed|ing)?|stuck|no progress)\b/i,
 answer:function(){
 var tr=weightTrend(14),d=diagnose(),p=d.primary||{};
 var falling=tr.status==='ok'&&tr.slopePerWeek<-0.25;

@@ -2,10 +2,10 @@
  "app": "Physique OS",
  "version": "1.0.0",
  "schema": 2,
- "build": "08502337e0",
- "release": "9987a5385243",
- "cacheName": "physique-os-1.0.0-9987a5385243",
- "builtAt": "2026-09-25T11:48:11.494Z",
+ "build": "1a1a5fce8c",
+ "release": "1ddc0765d455",
+ "cacheName": "physique-os-1.0.0-1ddc0765d455",
+ "builtAt": "2026-09-26T08:34:38.175Z",
  "sources": [
   "10-core.js",
   "20-schema-storage.js",
@@ -64,6 +64,7 @@
   "88-materialize.js",
   "89-presentation-governance.js",
   "89-remaining.js",
+  "89-render-complete.js",
   "90-actions.js",
   "90-workout.js",
   "91-inference.js",
@@ -79,7 +80,7 @@
   "98-measurement.js",
   "99-boot.js"
  ],
- "buildInputs": 112,
+ "buildInputs": 114,
  "food": {
   "databaseVersion": "fdc-2026-04-30",
   "branded": 455381,

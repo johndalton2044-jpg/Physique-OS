@@ -1,0 +1,19 @@
+First initialize the local folder if necessary:
+
+git init
+
+Then:
+
+git branch -M main
+
+Add everything:
+
+git add .
+
+Commit it:
+
+git commit -m "Replace project with updated Physique OS"
+
+Then:
+
+git push -u origin main --force
