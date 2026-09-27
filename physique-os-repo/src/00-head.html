@@ -819,5 +819,15 @@ tr.wx-today td{font-weight:700}
 .mv-panels{display:flex;align-items:center;gap:4px}.mv-panel{flex:1;min-width:0;text-align:center}.mv-panel svg{width:100%;height:auto;max-height:180px}
 .mv-cap{font-size:calc(11px*var(--ts,1));color:var(--text-2);text-transform:lowercase}.mv-arrow{color:var(--text-2);font-size:18px}.sk-floor{stroke:var(--border);stroke-width:1}.mv-note{margin-top:2px}
 .voice-state{padding:10px 12px;border-radius:var(--radius-sm,8px);background:var(--surface-2);margin:8px 0}.voice-state.live{border:1px solid var(--accent)}
+.ic{flex:none;vertical-align:-4px}.wx-ic{color:var(--accent)}.wx-now{display:flex;align-items:center;gap:14px}.wx-cond{font-weight:600}
+.wx-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0}.wx-fact{display:grid;justify-items:center;gap:2px;padding:6px 2px;border-radius:8px;background:var(--surface-2);text-align:center;font-size:calc(12px*var(--ts,1))}
+.wx-fact .ic{color:var(--accent)}.wx-day .ic{margin:2px auto}
+/* The left rail ends level with the centre of the + button (it floated about 60 px higher than the right-hand stack); the
+   old lone back arrow is replaced by a previous/next pair for flipping panels. */
+.rail-left{bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
+.rail-left{align-items:flex-start!important}.rail-pair{display:flex;gap:6px}.fab-voice{color:var(--accent)}
+.mic-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);vertical-align:middle}
+.mic-btn.on{border-color:var(--accent);color:var(--accent)}.field-with-mic{display:flex;gap:6px;align-items:flex-end}.field-with-mic .fld{flex:1;min-width:0}
+.feat{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)}.feat:first-child{border-top:0}.feat .ic{color:var(--accent);margin-top:2px}.feat-body{flex:1;min-width:0}
 </style>
 </head>

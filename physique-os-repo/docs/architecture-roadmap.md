@@ -2752,3 +2752,35 @@ absent); forecasting 6/8; sensor fusion 7/8; optimisation 3/4. The remaining sec
 registries, dependency graph, provenance, materialisation, causal and Bayesian engines, knowledge graph, twin, renderers)
 but a field-level conformance audit of each needs its entry point called with its real signature, and has not yet been
 done.
+
+## After deployment (Render + Vercel): sync, rails, voice, weather visuals, discoverability
+
+**Sync on a free host.** Render's free plan wipes files on restart and sleeps when idle, so the server kept losing its
+vaults and events while the app kept its pull position and its list of events already sent — it neither re-sent nor
+re-pulled. Uploads of up to 2,000 events also met a 2 MB limit, and pulls ignored "more". Now the server writes a data
+epoch into its folder and reports it (and whether its storage is likely persistent); the app compares it every sync,
+re-registers a vault the server no longer has, treats a changed epoch or a server behind what was pulled as lost data,
+re-sends everything and says so; uploads go in batches of 400; pulls follow "more"; a slow first answer shows as the
+server waking. tests/cloud-e2e.mjs now wipes the server's folder mid-test and checks the recovery.
+
+**Rails.** The left rail ended at the same height as the right rail, but the right column continues with the + button,
+so the left stack floated about 60 px higher; it now ends level with + and flush with its edge. The lone back arrow is a
+previous/next pair that flips panels. A microphone sits above +. The design rules were refined to count only the
+controls that always float (undo, top and bottom appear when useful), and the rail-height rule now compares the left
+rail with + rather than with the right rail's edge — the old rule had encoded the reported misalignment as correct.
+
+**Voice across the app.** Beyond the voice sheet: a dictation button on the food search, the place search and the
+assistant's question box.
+
+**Icons and weather visuals.** One line-icon set in the movement figures' style (strokes, round ends, the theme's
+colours). Conditions come from Open-Meteo's weather_code (WMO), Meteosource's condition names map onto the same codes,
+and without a code a condition is derived from cloud cover and rain and labelled so. The Today card shows the condition
+with its icon (night icons at night), rain now, cloud cover, wind and UV, the next hours and 14 days with icons and
+chance of rain; the weather sheet's tables carry the icons too.
+
+**Discoverability.** Setup gains a place step for weather. Today shows "Set up more" — the features not set up yet,
+each with what it does and one tap to start — and "Everything this app can do" lists every feature and its state.
+The latest progress photo now shows on Today once one exists (it was off by default).
+
+**Still open:** the engine-conformance items found in the implementation-direction audit (materialize() run metadata,
+dependency-edge fields, model-contract fields, quantity conversion/display fields, infer() request fields).

@@ -13,13 +13,14 @@
      indicator belongs; back and top live on the position rail. Six floating buttons over a column of text is
      not a rail, it is an obstruction. -->
 <div class="rail-right" id="railRight" role="toolbar" aria-label="Actions">
-<button class="fab-mini" id="undoFab" data-act="undo.last" aria-label="Undo" title="Undo (⌘Z)" hidden>↶</button>
+<button class="fab-mini" data-transient="1" id="undoFab" data-act="undo.last" aria-label="Undo" title="Undo (⌘Z)" hidden>↶</button>
 <button class="fab-mini" id="cmdkFab" data-act="cmdk.open" aria-label="Command palette" title="Command palette (⌘K)">⌘</button>
+<button class="fab-mini fab-voice" id="voiceFab" data-act="nav.voice" aria-label="Log by voice" title="Log by voice"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></button>
 </div>
 <div class="rail-left" id="railLeft" role="toolbar" aria-label="Position">
-<button class="fab-mini" id="backFab" data-act="nav.back" aria-label="Back" title="Back ([)" hidden>‹</button>
-<button class="fab-mini" id="upFab" data-act="nav.top" aria-label="Jump to top" title="Top (Home)" hidden>⤒</button>
-<button class="fab-mini" id="downFab" data-act="nav.bottom" aria-label="Jump to bottom" title="Bottom (End)" hidden>⤓</button>
+<div class="rail-pair"><button class="fab-mini" id="prevFab" data-act="nav.prevTab" aria-label="Previous panel" title="Previous panel ([)">‹</button><button class="fab-mini" id="nextFab" data-act="nav.nextTab" aria-label="Next panel" title="Next panel (])">›</button></div>
+<button class="fab-mini" data-transient="1" id="upFab" data-act="nav.top" aria-label="Jump to top" title="Top (Home)" hidden>⤒</button>
+<button class="fab-mini" data-transient="1" id="downFab" data-act="nav.bottom" aria-label="Jump to bottom" title="Bottom (End)" hidden>⤓</button>
 <button class="fab-mini" id="homeFab" data-act="nav.home" aria-label="Today" title="Today (H)">⌂</button>
 </div>
 

@@ -41,6 +41,14 @@ const CHALLENGE_TTL_MS=2*60*1000;
 const RATE_WINDOW_MS=60*1000, RATE_MAX=120;
 
 fs.mkdirSync(DATA,{recursive:true});
+/* THE DATA EPOCH. A random id written when the data folder is new. On a host whose disk does not persist (Render's free
+   plan wipes files on every restart, and a sleeping instance restarts when woken) the epoch changes, and the app sees
+   that the server lost its data and re-sends everything, instead of believing it is in sync. */
+const EPOCH_FILE=path.join(DATA,'epoch.json');
+let DATA_EPOCH;try{DATA_EPOCH=JSON.parse(fs.readFileSync(EPOCH_FILE,'utf8')).epoch;}catch(e){DATA_EPOCH=null;}
+if(!DATA_EPOCH){DATA_EPOCH=crypto.randomBytes(9).toString('base64url');fs.writeFileSync(EPOCH_FILE,JSON.stringify({epoch:DATA_EPOCH,createdAt:new Date().toISOString()}));}
+const STARTED_AT=new Date().toISOString();
+const STORAGE_NOTE=process.env.PHYSIQUE_PERSISTENT_DATA==='1'?'declared persistent':(process.env.RENDER?'probably NOT persistent: Render free instances lose their files on every restart; attach a persistent disk and set PHYSIQUE_PERSISTENT_DATA=1':'unknown');
 fs.mkdirSync(path.join(DATA,'vaults'),{recursive:true});
 
 const log=(level,msg,extra)=>{
@@ -219,11 +227,11 @@ const EXT_VERSION='1.0.0';
 const EXT_UA='PhysiqueOS/'+EXT_VERSION+' ('+(process.env.PHYSIQUE_CONTACT||'contact not configured')+')';
 const EXT_FIX=process.env.PHYSIQUE_EXT_FIXTURES?path.resolve(process.env.PHYSIQUE_EXT_FIXTURES):null;
 const EXT_CACHE=new Map();const EXT_CACHE_MAX=500;
-const OM_CURRENT=['temperature_2m','relative_humidity_2m','apparent_temperature','is_day','precipitation','cloud_cover','wind_speed_10m','wind_direction_10m','wind_gusts_10m','uv_index'];
-const OM_HOURLY=['temperature_2m','relative_humidity_2m','apparent_temperature','precipitation','precipitation_probability','cloud_cover','et0_fao_evapotranspiration','vapour_pressure_deficit','wind_speed_10m','wind_direction_10m','wind_gusts_10m','uv_index','is_day'];
-const OM_DAILY=['temperature_2m_max','temperature_2m_min','apparent_temperature_max','apparent_temperature_min','precipitation_sum','precipitation_probability_max','et0_fao_evapotranspiration','sunrise','sunset','daylight_duration','uv_index_max','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant'];
-const OM_ARCHIVE_HOURLY=['temperature_2m','relative_humidity_2m','apparent_temperature','precipitation','cloud_cover','et0_fao_evapotranspiration','vapour_pressure_deficit','wind_speed_10m','wind_direction_10m','wind_gusts_10m','is_day'];
-const OM_ARCHIVE_DAILY=['temperature_2m_max','temperature_2m_min','apparent_temperature_max','apparent_temperature_min','precipitation_sum','et0_fao_evapotranspiration','sunrise','sunset','daylight_duration','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant'];
+const OM_CURRENT=['weather_code','temperature_2m','relative_humidity_2m','apparent_temperature','is_day','precipitation','cloud_cover','wind_speed_10m','wind_direction_10m','wind_gusts_10m','uv_index'];
+const OM_HOURLY=['weather_code','temperature_2m','relative_humidity_2m','apparent_temperature','precipitation','precipitation_probability','cloud_cover','et0_fao_evapotranspiration','vapour_pressure_deficit','wind_speed_10m','wind_direction_10m','wind_gusts_10m','uv_index','is_day'];
+const OM_DAILY=['weather_code','temperature_2m_max','temperature_2m_min','apparent_temperature_max','apparent_temperature_min','precipitation_sum','precipitation_probability_max','et0_fao_evapotranspiration','sunrise','sunset','daylight_duration','uv_index_max','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant'];
+const OM_ARCHIVE_HOURLY=['weather_code','temperature_2m','relative_humidity_2m','apparent_temperature','precipitation','cloud_cover','et0_fao_evapotranspiration','vapour_pressure_deficit','wind_speed_10m','wind_direction_10m','wind_gusts_10m','is_day'];
+const OM_ARCHIVE_DAILY=['weather_code','temperature_2m_max','temperature_2m_min','apparent_temperature_max','apparent_temperature_min','precipitation_sum','et0_fao_evapotranspiration','sunrise','sunset','daylight_duration','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant'];
 const OM_AQ=['pm2_5','pm10','ozone','nitrogen_dioxide','sulphur_dioxide','carbon_monoxide','european_aqi','us_aqi'];
 function extErr(code,category,detail){return {code,body:{status:'error',error:{category,detail}}};}
 function extCoords(url){const lat=+url.searchParams.get('lat'),lon=+url.searchParams.get('lon');
@@ -287,7 +295,7 @@ const extRoutes={
 
 const routes={
   ...extRoutes,
-  'GET /v1/health':async()=>({ok:true,service:'physique-os-sync',version:1,ext:EXT_VERSION,
+  'GET /v1/health':async()=>({ok:true,service:'physique-os-sync',version:1,ext:EXT_VERSION,epoch:DATA_EPOCH,startedAt:STARTED_AT,storage:STORAGE_NOTE,
     vaults:fs.readdirSync(path.join(DATA,'vaults')).length,
     vapidPublicKey:VAPID.publicKey,
     note:'this server stores ciphertext it cannot read'}),
@@ -379,7 +387,7 @@ const routes={
     const limit=Math.min(5000,+(url.searchParams.get('limit')||5000));
     const all=readEvents(v.id,since);
     const page=all.slice(0,limit);
-    return {code:200,body:{events:page,serverSeq:v.serverSeq,more:all.length>page.length,
+    return {code:200,body:{events:page,serverSeq:v.serverSeq,epoch:DATA_EPOCH,more:all.length>page.length,
       note:'ciphertext only; this server cannot read these'}};
   },
 

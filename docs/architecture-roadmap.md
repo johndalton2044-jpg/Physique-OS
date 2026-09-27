@@ -2724,3 +2724,31 @@ tests/deployment-smoke.mjs checks a real deployment (--app, --sync) or, as a gat
 
 **What stays with the operator:** running server/server.mjs on a Node host with persistent storage and HTTPS, and
 pointing the rewrite at it. That cannot be done from the repository.
+
+## Voice capture (from use: "the mic starts and nothing happens")
+
+Four defects: a recognition error reached the sheet as {ok:false} with no transcript and rendered nothing; a recognition
+that ended without a result left "Listening…" on screen for good; the recognition object lived in a local variable,
+which Chrome may collect mid-session so that no event arrives; and with interim results off nothing showed until the
+end. Now the object is held, every stage shows (starting, listening, the words as they are heard, heard, ended), every
+browser error is explained with what to do (Chrome's recognition needs the internet; an iPhone home-screen app may not
+allow it; microphone blocked; nothing heard), a safety timer ends a session that never ends, and a typed phrase goes
+through the same understanding and confirmation. tests/voice.mjs plays scripted sessions through a stand-in engine.
+
+## Where the two specifications stand (checked, not assumed)
+
+**External data / API integration.** Implemented: one registry indexing every external source, the error vocabulary,
+the server integration boundary with key custody and the Open Food Facts User-Agent, the Open-Meteo, Meteosource and
+Open Food Facts adapters, per-batch provenance (source, dataset, location, retrieval time, adapter version),
+reconciliation for file imports, truthful maturity labels, and fixture and integration tests through the real server.
+Not implemented: live wearable and health-platform connections (OAuth token custody, per-source sync cursors and
+backfill, webhooks), revocation and source-deletion workflows, a per-source reliability view, and cross-provider
+deduplication beyond the file importers' rules. HealthKit and Health Connect remain native-only.
+
+**Implementation direction (engine architecture).** Built in earlier sessions and probed against the running code:
+run identity (11/11 specified fields) and version vector (7/7) match exactly; universal infer() carries 11 of 16
+specified fields (the request fields context, options, requestedOutputs, subject and outputs are named differently or
+absent); forecasting 6/8; sensor fusion 7/8; optimisation 3/4. The remaining sections exist as code (quantity and model
+registries, dependency graph, provenance, materialisation, causal and Bayesian engines, knowledge graph, twin, renderers)
+but a field-level conformance audit of each needs its entry point called with its real signature, and has not yet been
+done.

@@ -333,6 +333,8 @@ function planAttentionItems(){
   try{var u=(typeof unsavedAtClose==='function')?unsavedAtClose():null;
     if(u)out.push({id:'lost-saves',severity:'action',what:'Your last '+(u.missing===1?'change':u.missing+' changes')+' before the app closed may not have been saved',
       why:'Storage did not have them when the app reopened.',cando:'Check your latest entries',act:'nav.tab',arg:'log',tab:'log'});}catch(e){}
+  try{var LR=(DB.settings.cloud||{}).lastReset;if(LR&&daysBetween(String(LR.at).slice(0,10),todayISO())<=7)out.push({id:'sync-reset:'+LR.at,severity:'review',
+    what:'The sync server lost its data and was refilled from this device',why:'It sent '+LR.resent+' changes again. Free hosting wipes files on restart; a persistent disk stops this. Other devices need re-adding from this one.',cando:'Sync settings',act:'nav.cloud',tab:'tools'});}catch(e){}
   if(!plan)return out;
   var F=planFeasibility();
   if(F.status==='ok'&&!F.ok)out.push({id:'plan-fit',severity:'action',what:'Your plan does not fit your circumstances ('+F.conflicts.length+')',

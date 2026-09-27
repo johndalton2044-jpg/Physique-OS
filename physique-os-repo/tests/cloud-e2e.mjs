@@ -81,6 +81,14 @@ console.log('A has waist+sleep:',A.obsOf('waist').length===1&&A.obsOf('sleep').l
 console.log('B has waist+sleep:',B.obsOf('waist').length===1&&B.obsOf('sleep').length===1);
 console.log('A projection valid:',A.projectionMatchesRecord().ok,'| B projection valid:',B.projectionMatchesRecord().ok);
 
+console.log('--- the server loses its data (a free host restarting with an empty disk) ---');
+{const before=A._EVENTS.length;srv.kill();await new Promise(r=>setTimeout(r,500));fs.rmSync(DATA,{recursive:true,force:true});
+  const srv2=spawn(process.execPath,['server/server.mjs','--port','8791','--data',DATA],{stdio:['ignore','pipe','pipe']});srv2.stdout.on('data',d=>{serverLog+=d;});
+  process.on('exit',()=>{try{srv2.kill();}catch(e){}});await new Promise(r=>setTimeout(r,900));
+  A._cloud.token=null;const again=await A.cloudSync().catch(e=>({err:String(e.message||e)}));
+  console.log('reset detected and everything re-sent:',again.serverReset===true&&again.sent>=before,JSON.stringify({reset:again.serverReset,sent:again.sent,had:before,err:again.err}));
+  const second=await A.cloudSync();console.log('the next sync is quiet again:',second.sent===0&&second.serverReset===false);
+  globalThis.__srv2=srv2;}
 console.log('--- a wrong phrase derives a different vault and cannot decrypt ---');
 const wrong=await A.deriveVault('totally different words entirely here now');
 console.log('different vault id:',wrong.vaultId!==created.vaultId);
@@ -92,4 +100,4 @@ console.log('deleted:',JSON.stringify(del),'| dir gone:',!fs.existsSync(DATA+'/v
 console.log('--- server log is incapable of carrying payloads ---');
 console.log('log mentions a weight or a value:',/221\.4|weight|ciphertext/.test(serverLog));
 console.log('log lines:',serverLog.trim().split('\n').length);
-stop();
+stop();try{globalThis.__srv2&&globalThis.__srv2.kill();}catch(e){}

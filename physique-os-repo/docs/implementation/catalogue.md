@@ -7,15 +7,15 @@ Produced from the running registries on every governance run. Do not edit by han
 | models | 25 |
 | capabilities | 22 |
 | entity contracts | 11 |
-| commands | 449 |
-| sheets | 109 |
+| commands | 453 |
+| sheets | 110 |
 | event types | 44 |
 | observation types | 32 |
 | exercises | 159 |
 | movement patterns | 28 |
 | progression families | 18 |
 | mobility items | 43 |
-| classified panels (rules) | 102 |
+| classified panels (rules) | 103 |
 
 ## Entity contracts
 
@@ -58,5 +58,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- added command: voice.parseTyped
-- added command: voice.typed
+- none

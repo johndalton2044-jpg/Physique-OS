@@ -3502,7 +3502,7 @@ function runSelfTest(opts){
       ok('experience comes from the profile field, the one home for it',(function(){var k=DB.profile.trainingExperience;DB.profile.trainingExperience='advanced';
         var r=trainingExperience();DB.profile.trainingExperience=k;return r.level==='advanced'&&r.source==='you said';})());
       ok('the profile is written through one function',typeof applyProfileFields==='function'&&/applyProfileFields|p\.name=/.test(String(saveProfile)));
-      ok('the setup has a step for each part and can be skipped',WELCOME_STEPS.length===9&&!!ACTIONS['welcome.skip']&&!!ACTIONS['nav.welcome']);
+      ok('the setup has a step for each part and can be skipped',WELCOME_STEPS.length===10&&!!ACTIONS['welcome.skip']&&!!ACTIONS['nav.welcome']);
     });
     ok('every entity contract matches the code and every store is owned or explained',entityContractAudit().ok,entityContractAudit().issues.slice(0,3).join('; '));
     /* ---- H1: the product spine ---- */
@@ -3638,6 +3638,15 @@ function runSelfTest(opts){
       ok('a lateral raise is drawn from the front',movementModel('abduction').view==='front');})();
     /* ---- Ready-made experiments ---- */
     ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMPLATES.every(function(t){return !!t.todo;}));
+    /* ---- Icons, conditions, the feature guide ---- */
+    ok('every weather condition has an icon, and a night version',Object.keys(WEATHER_CONDITIONS).every(function(k){var c=WEATHER_CONDITIONS[k];return !!ICONS[c[1]]&&!!ICONS[c[2]];}));
+    ok('a condition without a code is derived from cloud cover and rain, and says so',(function(){var c=weatherCondition({cloudCover:90,precipitation:0});var r=weatherCondition({precipitation:2});return c&&c.label==='Overcast'&&c.derived&&r&&r.icon==='rain';})());
+    ok('a night hour gets the night icon',weatherCondition({weatherCode:1,isDay:0}).icon==='moonCloud'&&weatherCondition({weatherCode:1,isDay:1}).icon==='sunCloud');
+    ok('Meteosource conditions map onto the same codes',METEOSOURCE_CODES.partly_sunny===2&&METEOSOURCE_CODES.tstorm===95&&adaptMeteosource({units:'metric',current:{weather:'light_rain',temperature:8}},{lat:1,lon:1}).batch.current.values.weatherCode===61);
+    ok('Open-Meteo weather codes arrive as the canonical conditions',adaptOpenMeteo({latitude:1,longitude:1,utc_offset_seconds:0,current_units:{weather_code:'wmo code'},current:{time:'2026-09-26T09:00',weather_code:3}},{dataset:'forecast',retrievedAt:'2026-09-26T09:05:00Z'}).batch.current.values.weatherCode===3);
+    ok('an unknown icon draws nothing rather than a broken image',uiIcon('no-such-icon')==='');
+    ok('every feature in the guide leads somewhere real',featureGuide().every(function(f){return typeof ACTIONS[f.act]==='function'&&!!ICONS[f.icon];}));
+    ok('setup offers a place for weather',WELCOME_STEPS.indexOf('place')>0);
     /* ---- Voice: every browser error is explained ---- */
     ok('every speech recognition error has an explanation',['no-speech','audio-capture','not-allowed','service-not-allowed','network'].every(function(k){return !!VOICE_ERRORS[k];}));
     ok('without speech recognition, voice capture says so rather than failing silently',(function(){var had=typeof window!=='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition);return had||startVoiceCapture(function(){}).ok===false;})());

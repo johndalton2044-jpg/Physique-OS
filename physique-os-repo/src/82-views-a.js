@@ -81,8 +81,9 @@ RENDERERS.today=function(){
   // actions checklist
   /* The latest progress photo as a small icon on Today (usage review): off by default \u2014 progress photos are personal and
      Today is the screen other people glance at \u2014 and shown only when a photo exists. */
-  var _ph=(DB.settings.showPhotoOnToday&&(DB.settings.photos||[]).length)?(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
-  setHTML('actionsZone',(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})());   /* weather only once a place is set */
+  var _ph=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
+    (DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+  setHTML('actionsZone',(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})()+(function(){try{return renderSetupMore();}catch(e){_q(e,'P2');return '';}})());   /* weather once a place is set; then what is not set up yet */
   if(_ph&&typeof hydratePhotoThumbs==='function')setTimeout(hydratePhotoThumbs,0);
   // forecast
   setHTML('forecastZone',renderForecastCard(S));

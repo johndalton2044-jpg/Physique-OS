@@ -114,7 +114,13 @@ function cloudAuthenticate(){
   var c=cloudConfig();
   if(!c.vaultId)return Promise.reject(new Error('unlock a vault first'));
   return deviceKeyPair().then(function(keys){
-    return _api('/v1/auth/challenge',{method:'POST',body:{vaultId:c.vaultId,deviceId:deviceId()}})
+    /* A server that lost its data has no vault: this device registers it again (it holds everything registration
+       needs), becoming its first trusted device; other devices are re-authorised from here. */
+    var challenge=function(retry){return _api('/v1/auth/challenge',{method:'POST',body:{vaultId:c.vaultId,deviceId:deviceId()}}).catch(function(e){
+      if(retry&&e&&e.status===404&&c.enabled){return _api('/v1/vault',{method:'POST',body:{vaultId:c.vaultId,deviceId:deviceId(),devicePublicKey:keys.publicPem}}).then(function(){
+        _cloud.reRegistered=nowISO();DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{reRegisteredAt:_cloud.reRegistered});return challenge(false);});}
+      throw e;});};
+    return challenge(true)
       .then(function(ch){
         return crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},keys.privateKey,new TextEncoder().encode(ch.nonce));
       })
@@ -176,55 +182,59 @@ function _decryptEvent(row){
     .then(function(pt){return JSON.parse(new TextDecoder().decode(pt));})
     .catch(function(){return null;});   // wrong key or damaged row: skip it rather than corrupt the log
 }
+/* SYNC, hardened after use on a free host (Render). Three defects made syncing "abnormal": a wiped server was never
+   noticed \u2014 the app kept its pull position and its list of events already sent, so it neither re-sent nor re-pulled;
+   up to 2,000 events went in one upload against a 2 MB limit, so a long history was refused on every try; and the
+   pull ignored "more", so a long history came down only in part. Now the server's data epoch and sequence are checked
+   every sync (a change, a missing vault, or a server behind what was already pulled means it lost its data: the app
+   re-sends everything and says so), uploads go in batches of 400, pulls follow "more", and a slow first answer is shown
+   as the server waking. */
+var CLOUD_PUSH_BATCH=400;
+function _pullAll(since,acc){acc=acc||{events:[],serverSeq:0,epoch:null};
+  return _api('/v1/events?since='+since+'&limit=2000').then(function(page){acc.events=acc.events.concat(page.events||[]);acc.serverSeq=page.serverSeq||0;acc.epoch=page.epoch||null;
+    var last=(page.events||[]).reduce(function(a,r){return Math.max(a,r.serverSeq||0);},since);
+    return page.more&&last>since?_pullAll(last,acc):acc;});}
 function cloudSync(opts){
   opts=opts||{};
   if(cloudLocked())return Promise.reject(new Error('unlock the vault first'));
   if(_cloud.busy)return Promise.resolve({skipped:'a sync is already running'});
   _cloud.busy=true;_cloud.lastError=null;
-  var c=cloudConfig();
-  var pushed={},sent=0,received=0,conflicts=0;
+  var c=cloudConfig(),stored=DB.settings.cloud||{};
+  var pushed={},sent=0,received=0,conflicts=0,reset=false,since=c.lastPullSeq||0;
   (c.pushedIds||[]).forEach(function(id){pushed[id]=1;});
-  return cloudAuthenticate().then(function(){
-    /* Pull first, so a merge happens before we push and the two devices converge in one round trip. */
-    return _api('/v1/events?since='+(c.lastPullSeq||0)+'&limit=5000');
+  var waking=setTimeout(function(){if(_cloud.busy){_cloud.status='waking';if(typeof renderAll==='function')try{renderAll();}catch(e){}}},8000);
+  return cloudAuthenticate().then(function(){return _pullAll(since);}).then(function(page){
+    /* A server that lost its data: another epoch, or fewer events than this device has already pulled. */
+    if((stored.serverEpoch&&page.epoch&&page.epoch!==stored.serverEpoch)||(since>0&&page.serverSeq<since)){
+      reset=true;pushed={};since=0;return _pullAll(0);}
+    return page;
   }).then(function(page){
-    if(!page.events.length)return {maxSeq:c.lastPullSeq||0,events:[]};
+    DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{serverEpoch:page.epoch||stored.serverEpoch||null});
+    if(!page.events.length)return {maxSeq:reset?0:(c.lastPullSeq||0),events:[],serverSeq:page.serverSeq};
     return Promise.all(page.events.map(_decryptEvent)).then(function(list){
-      var good=list.filter(Boolean);
-      received=good.length;
-      var maxSeq=page.events.reduce(function(a,r){return Math.max(a,r.serverSeq||0);},c.lastPullSeq||0);
-      if(good.length){
-        var merged=mergeEvents(_EVENTS,good);
-        conflicts=merged.conflicts.length;
-        if(merged.events.length>_EVENTS.length){
-          pushUndo('merge '+(merged.events.length-_EVENTS.length)+' change(s) from the cloud');
-          adoptMergedEvents(merged);
-        }
-        (merged.conflicts||[]).forEach(function(x){_syncState.conflicts.push(x);});
-      }
-      return {maxSeq:maxSeq,events:good};
-    });
+      var good=list.filter(Boolean);received=good.length;
+      var maxSeq=page.events.reduce(function(a,r){return Math.max(a,r.serverSeq||0);},reset?0:(c.lastPullSeq||0));
+      if(good.length){var merged=mergeEvents(_EVENTS,good);conflicts=merged.conflicts.length;
+        if(merged.events.length>_EVENTS.length){pushUndo('merge '+(merged.events.length-_EVENTS.length)+' change(s) from the cloud');adoptMergedEvents(merged);}
+        (merged.conflicts||[]).forEach(function(x){_syncState.conflicts.push(x);});}
+      return {maxSeq:maxSeq,events:good};});
   }).then(function(pull){
     var toSend=_EVENTS.filter(function(e){return !pushed[e.id];});
-    if(!toSend.length)return {pull:pull,sent:0};
-    return Promise.all(toSend.slice(0,2000).map(_encryptEvent)).then(function(rows){
-      return _api('/v1/events',{method:'POST',body:{events:rows}}).then(function(r){
-        sent=r.accepted||rows.length;
-        rows.forEach(function(row){pushed[row.id]=1;});
-        return {pull:pull,sent:sent};
-      });
-    });
+    var sendBatch=function(k){var chunk=toSend.slice(k,k+CLOUD_PUSH_BATCH);if(!chunk.length)return Promise.resolve();
+      return Promise.all(chunk.map(_encryptEvent)).then(function(rows){return _api('/v1/events',{method:'POST',body:{events:rows}}).then(function(r){
+        sent+=(r.accepted||rows.length);rows.forEach(function(row){pushed[row.id]=1;});return sendBatch(k+CLOUD_PUSH_BATCH);});});};
+    return sendBatch(0).then(function(){return {pull:pull,sent:sent};});
   }).then(function(res){
-    var ids=Object.keys(pushed);
-    if(ids.length>60000)ids=ids.slice(-60000);
-    DB.settings.cloud=Object.assign({},DB.settings.cloud||{},
-      {lastPullSeq:res.pull.maxSeq,lastSyncAt:nowISO(),pushedIds:ids,enabled:true});
-    save('cloud:sync');
-    _cloud.status='synced';_cloud.busy=false;
-    if(typeof auditAppend==='function')auditAppend('cloud.sync',{sent:sent,received:received,conflicts:conflicts});
-    return {ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq};
+    clearTimeout(waking);
+    var ids=Object.keys(pushed);if(ids.length>60000)ids=ids.slice(-60000);
+    DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{lastPullSeq:res.pull.maxSeq,lastSyncAt:nowISO(),pushedIds:ids,enabled:true,
+      lastReset:reset?{at:nowISO(),resent:sent}:((DB.settings.cloud||{}).lastReset||null)});
+    save('cloud:sync');_cloud.status='synced';_cloud.busy=false;
+    if(typeof auditAppend==='function')auditAppend('cloud.sync',{sent:sent,received:received,conflicts:conflicts,serverReset:reset});
+    return {ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq,serverReset:reset};
   }).catch(function(e){
-    _cloud.busy=false;_cloud.status='error';_cloud.lastError=String(e&&e.message||e);
+    clearTimeout(waking);_cloud.busy=false;_cloud.status='error';
+    _cloud.lastError=e&&e.status===404&&/vault/.test(String(e.message))?'The server no longer has this vault \u2014 it probably lost its data (free hosting wipes files on restart). Join again from Tools \u2192 Cloud sync, then sync to re-send this device\u2019s record.':String(e&&e.message||e);
     throw e;
   });
 }

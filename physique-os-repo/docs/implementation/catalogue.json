@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "db27ea58bc",
+ "build": "3d6c7a007e",
  "models": [
   {
    "id": "adherence",
@@ -679,6 +679,10 @@
    "level": "developer"
   },
   {
+   "id": "dictate",
+   "level": "developer"
+  },
+  {
    "id": "edit.backdrop",
    "level": "developer"
   },
@@ -741,6 +745,10 @@
   {
    "id": "exp.save",
    "level": "insightful"
+  },
+  {
+   "id": "features.open",
+   "level": "casual"
   },
   {
    "id": "fold.hide",
@@ -1251,6 +1259,10 @@
    "level": "insightful"
   },
   {
+   "id": "nav.nextTab",
+   "level": "casual"
+  },
+  {
    "id": "nav.nutritionviz",
    "level": "insightful"
   },
@@ -1268,6 +1280,10 @@
   },
   {
    "id": "nav.planEdit",
+   "level": "casual"
+  },
+  {
+   "id": "nav.prevTab",
    "level": "casual"
   },
   {
@@ -2215,6 +2231,7 @@
   "expTemplate",
   "experiment",
   "exports",
+  "features",
   "foodAdd",
   "foodEdit",
   "forecastFamily",
@@ -2385,5 +2402,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 102
+ "panels": 103
 }

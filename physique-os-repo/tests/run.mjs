@@ -165,12 +165,13 @@ w.DB.settings.contrast='normal';w.DB.settings.motion='auto';w.DB.settings.densit
   /* Back and top are position controls and live on the left rail; attention is a status and lives in the
      header. Six floating buttons over a text column is an obstruction, not a rail. */
   const backFab=w.document.getElementById('backFab'),topFab=w.document.getElementById('upFab'),attnFab=w.document.getElementById('attnFab');
-  ok('back and jump-to-top are position controls on the left rail',
-     !!backFab&&!!topFab&&!!backFab.closest('.rail-left')&&!!topFab.closest('.rail-left'));
+  /* the lone back arrow became a previous/next pair for flipping panels (usage review) */
+  ok('previous/next and jump-to-top are position controls on the left rail',
+     !!w.document.querySelector('.rail-left #prevFab')&&!!w.document.querySelector('.rail-left #nextFab')&&!!topFab&&!!topFab.closest('.rail-left'));
   ok('attention is a header status rather than a floating button',
      !!attnFab&&!attnFab.closest('.rail-left')&&!attnFab.closest('.rail-right')&&!!attnFab.closest('header'));
-  ok('at most two controls float on the right',
-     w.document.querySelectorAll('.rail-right .fab-mini').length<=2);
+  ok('at most two controls always float on the right (undo appears only after an action)',
+     w.document.querySelectorAll('.rail-right .fab-mini:not([data-transient])').length<=2);
   ok('the jump-to-top control is hidden while the view is already at the top',topFab.hidden===true);
   ok('the attention control announces its contents to a screen reader',/Attention: \d+ item/.test(attnFab.getAttribute('aria-label')||''),attnFab.getAttribute('aria-label'));
   /* every navigation sheet opens, traps focus and closes on Escape */

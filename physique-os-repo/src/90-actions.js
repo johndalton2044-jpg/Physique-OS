@@ -2126,7 +2126,7 @@ var _ASK=null,_ASK_Q='';
 function openAsk(){openSheet('edit',{form:'ask',title:'Ask the record',
   desc:'Answered from your own data, not from a model. Where the record cannot answer, it says what it would need.',buf:{}});}
 SHEETS.ask=function(){
-  var body='<label class="fld"><span>Question</span><input id="askInput" type="text" placeholder="what is my trend" value="'+attrEsc(_ASK_Q||'')+'" data-act="ask.field" data-ev="input"></label>'+
+  var body='<label class="fld"><span>Question</span><input id="askInput" type="text" placeholder="what is my trend" value="'+attrEsc(_ASK_Q||'')+'" data-act="ask.field" data-ev="input">'+uiMicBtn('askInput')+'</label>'+
     '<div class="btn-row">'+uiBtn('Ask','ask.run',null,'btn-sm btn-primary')+'</div>';
   /* The value is escaped: an answer can include food names a person typed. "Where this comes from" appears only for a
      registered trace — unregistered names made dead buttons; each answer's own action is its evidence link. */
@@ -2501,7 +2501,7 @@ function openPhotos(){setTimeout(hydratePhotoThumbs,0);openSheet('edit',{form:'p
    view and lighting recorded so photos can be compared fairly. */
 var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',note:''};
 SHEETS.photos=function(){
-  var _todaySwitch=(DB.settings.photos||[]).length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
+  var _todaySwitch=(DB.settings.photos||[]).length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
   var pairs=photoPosePairs();
   var chips=function(reg,cur,act){return '<div class="btn-row" style="margin-top:4px">'+Object.keys(reg).map(function(k){
     return uiBtn(reg[k].label,act,k,'btn-sm '+(cur===k?'btn-primary':'btn-secondary'));}).join('')+'</div>';};
@@ -2680,7 +2680,7 @@ registerAction('selftest.run',function(){_SELFTEST=runSelfTest();renderAll();toa
    much detail you want, how it looks, how the app works \u2014 that can be skipped at any step and reopened from Tools.
    Every choice goes through the same setters the rest of the app uses; nothing is written a second way.
    ============================================================================ */
-var WELCOME_STEPS=['welcome','about','goal','training','food','detail','look','tour','done'];
+var WELCOME_STEPS=['welcome','about','goal','training','food','place','detail','look','tour','done'];
 var _WZ={step:0,b:{}};
 var WZ_EQUIP=[['bodyweight','Just bodyweight'],['dumbbell','Dumbbells'],['barbell','Barbell and rack'],['kettlebell','Kettlebells'],['band','Resistance bands'],['bar','Pull-up bar'],['machine','Gym machines and cables']];
 var WZ_DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -2723,6 +2723,12 @@ SHEETS.welcome=function(){
     '<div class="card-title">Cooking</div>'+_wzChips(CONSTRAINT_OPTIONS.cookingTime,b.cookingTime||'','cookingTime')+
     '<div class="card-title">Food budget</div>'+_wzChips(CONSTRAINT_OPTIONS.foodBudget,b.foodBudget||'','foodBudget')+
     '<div class="card-title">Anything you don\u2019t eat</div>'+_wzChips(CONSTRAINT_OPTIONS.dietRestrictions,b.dietRestrictions||[],'dietRestrictions',true);
+  /* Weather for a place, offered during setup rather than left to be found (usage review). Optional; never guessed. */
+  if(st==='place')body='<h2 class="wz-h">'+uiIcon('pin',{size:22})+' Your place, for weather</h2><div class="hint">Optional. The Today screen then shows the weather, the next hours and 14 days, and air quality. The app never reads your device location; type a town or city.</div>'+
+    '<label class="fld"><span>Town or city</span><input id="wxPlace" type="text" autocomplete="off" value="'+attrEsc(b.q||'')+'" data-act="weather.q" data-ev="input" placeholder="e.g. Leeds"></label>'+uiMicBtn('wxPlace')+uiBtn('Search','weather.search',null,'btn-sm btn-secondary')+
+    (b.places?b.places.map(function(p,i){return '<button class="lib-row" data-act="weather.pick" data-arg="'+i+'"><span class="lib-name">'+esc(p.label)+'</span></button>';}).join(''):'')+
+    (b.searchError?'<div class="hint">'+esc(b.searchError)+' You can set it later: Today \u2192 Set up more, or the palette \u2192 Weather.</div>':'')+
+    (weatherLocation()?'<div class="hint">'+uiIcon('check',{size:16})+' Set to '+esc(weatherLocation().label||'your place')+'.</div>':'');
   if(st==='detail')body='<h2 class="wz-h">How much detail?</h2>'+Object.keys(DETAIL_LEVELS).map(function(k){var L=DETAIL_LEVELS[k],on=detailLevel()===k;
     return '<button class="wz-card'+(on?' active':'')+'" data-act="welcome.detail" data-arg="'+k+'" aria-pressed="'+on+'"><span class="wz-card-t">'+esc(L.label)+(k==='casual'?' \u00b7 simplest':'')+'</span><span class="wz-card-d">'+esc(L.desc)+'</span></button>';}).join('')+
     '<div class="hint">Most people start with Casual or Insightful. Switch any time in Tools \u2192 Display.</div>';
@@ -2889,5 +2895,45 @@ function snoozeAttention(id){var q=attentionQueue().items.filter(function(i){ret
 registerAction('attention.snooze',function(id){var r=snoozeAttention(id);if(r.status==='refused'){toast(r.note);return;}if(r.status!=='ok')return;var d=r.days;
   renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='attention'){_SHEET.buf.q=attentionQueue();renderSheet();}
   toast('Snoozed for '+(d===1?'a day':d+' days')+' \u2014 it comes back if it still applies');});
-registerAction('photo.todayToggle',function(){DB.settings.showPhotoOnToday=!DB.settings.showPhotoOnToday;save('settings');renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='photos')renderSheet();
-  toast(DB.settings.showPhotoOnToday?'Your latest photo shows on Today':'Today no longer shows a photo');});
+registerAction('photo.todayToggle',function(){DB.settings.showPhotoOnToday=DB.settings.showPhotoOnToday===false;save('settings');renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='photos')renderSheet();
+  toast(DB.settings.showPhotoOnToday!==false?'Your latest photo shows on Today':'Today no longer shows a photo');});
+/* ---- panels: previous and next, side by side on the left rail ---- */
+function tabOrder(){var t=[];[].slice.call(document.querySelectorAll('nav [data-act="nav.tab"]')).forEach(function(b){var a=b.getAttribute('data-arg');if(a&&t.indexOf(a)<0&&b.offsetParent!==null)t.push(a);});return t;}
+function flipTab(dir){var t=tabOrder();if(!t.length)return;var i=t.indexOf(_TAB);switchTab(t[(i+dir+t.length)%t.length]);}
+registerAction('nav.prevTab',function(){flipTab(-1);});registerAction('nav.nextTab',function(){flipTab(1);});
+/* ---- dictation into any text field: one tap, the words land in the field, nothing is logged unseen ---- */
+function uiMicBtn(inputId){if(typeof window==='undefined'||!(window.SpeechRecognition||window.webkitSpeechRecognition))return '';
+  return '<button type="button" class="mic-btn" data-act="dictate" data-arg="'+attrEsc(inputId)+'" aria-label="Dictate" title="Dictate">'+uiIcon('mic',{size:18})+'</button>';}
+var _DICTATE=null;
+registerAction('dictate',function(id,ev,btn){var el=document.getElementById(id);if(!el)return;
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){toast('This browser has no speech recognition');return;}
+  if(_DICTATE){try{_DICTATE.abort();}catch(e){}_DICTATE=null;}
+  var r=new SR();_DICTATE=r;r.lang=navigator.language||'en-US';r.interimResults=true;r.maxAlternatives=1;if(btn)btn.classList.add('on');
+  r.onresult=function(e){var t='';for(var i=e.resultIndex||0;i<e.results.length;i++)t+=e.results[i][0].transcript;el.value=t;el.dispatchEvent(new Event('input',{bubbles:true}));};
+  r.onerror=function(e){toast(VOICE_ERRORS[e.error]||('Dictation failed ('+e.error+')'),{tone:'attention',ms:7000});};
+  r.onend=function(){_DICTATE=null;var b2=document.querySelector('[data-act="dictate"][data-arg="'+id+'"]');if(b2)b2.classList.remove('on');try{el.focus();}catch(e){}};
+  try{r.start();}catch(e){toast('Dictation could not start');}});
+/* ---- FEATURE GUIDE: every feature pointed to, with whether it is set up (usage review: features were found by accident
+   or only through the command search) ---- */
+function featureGuide(){var P=DB.settings.photos||[],C=DB.settings.cloud||{},S=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
+  var voice=typeof window!=='undefined'&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+  return [
+    {id:'place',icon:'pin',label:'Weather for your place',what:'Conditions, the next hours, 14 days and air quality on Today.',on:!!weatherLocation(),act:'weather.open',cta:'Set a place'},
+    {id:'schedule',icon:'calendar',label:'Your schedule',what:'Same days each week, rotating shifts such as 2-2-3, or an irregular week.',on:S.mode!=='weekly'||(DB.settings.trainingDays||[]).length>0,state:S.mode==='rotation'?'rotating shifts':(S.mode==='irregular'?'irregular':null),act:'nav.schedule',cta:'Set it'},
+    {id:'workout',icon:'dumbbell',label:'Guided workouts',what:'Today\u2019s session set by set, with a rest timer and swaps.',on:(DB.sessions||[]).some(function(s){return s.source==='workout mode';}),act:'workout.start',cta:'Start one'},
+    {id:'voice',icon:'mic',label:'Log by voice',what:'Say "weight 182.4" or "2 eggs for breakfast"; you confirm before it is kept.',on:voice,state:voice?'available':'not in this browser',act:'nav.voice',cta:'Try it',na:!voice},
+    {id:'photos',icon:'camera',label:'Progress photos',what:'Private photos, compared side by side; the latest can show on Today.',on:P.length>0,act:'nav.photos',cta:'Add one'},
+    {id:'barcode',icon:'barcode',label:'Barcode scanning',what:'Scan or type a barcode; the built-in database first, then Open Food Facts.',on:true,state:'ready',act:'food.scan',cta:'Scan'},
+    {id:'sync',icon:'sync',label:'Sync between devices',what:'End-to-end encrypted: the server stores what it cannot read.',on:!!C.enabled,act:'nav.cloud',cta:'Set up'},
+    {id:'import',icon:'upload',label:'Import your data',what:'Apple Health exports, smart scales (Withings) and other CSV files.',on:(DB.observations||[]).some(function(o){return o.source==='import';}),act:'nav.import',cta:'Import'},
+    {id:'experiments',icon:'flask',label:'Experiments',what:'Ready-made tests of one change, sized to your own data.',on:(DB.experiments||[]).length>0,act:'exp.new',cta:'Browse'},
+    {id:'charts',icon:'chart',label:'Charts of your data',what:'Every chart type the app can draw, from your own record.',on:true,state:'ready',act:'nav.charts',cta:'Open'}
+  ].filter(function(f){return typeof ACTIONS==='undefined'||ACTIONS[f.act];});
+}
+function renderFeatureRow(f){return '<div class="feat">'+uiIcon(f.icon,{size:22})+'<div class="feat-body"><b>'+esc(f.label)+'</b> '+uiPill(f.state||(f.on?'set up':'not set up'),f.on?'good':'neutral')+
+  '<div class="hint">'+esc(f.what)+'</div></div>'+(f.na?'':uiBtn(f.on?'Open':f.cta,f.act,null,'btn-sm '+(f.on?'btn-ghost':'btn-secondary')))+'</div>';}
+function renderSetupMore(){var F=featureGuide(),todo=F.filter(function(f){return !f.on&&!f.na;});if(!todo.length)return '';
+  return uiCard({fold:'today-setup',foldOpen:true,hideable:true,hideLabel:'Hide this list',title:'Set up more',sub:todo.length+' feature'+(todo.length===1?'':'s')+' not set up yet',
+    body:todo.slice(0,4).map(renderFeatureRow).join('')+'<div class="btn-row">'+uiBtn('Everything this app can do','features.open',null,'btn-sm btn-ghost')+'</div>'});}
+registerAction('features.open',function(){openSheet('edit',{form:'features',title:'Everything this app can do',desc:'',buf:{}});});
+SHEETS.features=function(){return {body:featureGuide().map(renderFeatureRow).join(''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};

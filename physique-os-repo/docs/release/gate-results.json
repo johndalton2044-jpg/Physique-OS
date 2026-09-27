@@ -1,125 +1,125 @@
 {
- "build": "db27ea58bc",
+ "build": "3d6c7a007e",
  "gates": {
   "build": {
    "ok": true,
-   "summary": "{\"build\":\"db27ea58bc\",\"release\":\"cd3bed2bb106\",\"inputs\":131,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3058,\"scriptLines\":28390,\"sources\":75,\"files\":29,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}",
-   "at": "2026-09-27T01:58:05.950Z"
+   "summary": "{\"build\":\"3d6c7a007e\",\"release\":\"c6112371335b\",\"inputs\":132,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3078,\"scriptLines\":28507,\"sources\":76,\"files\":29,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}",
+   "at": "2026-09-27T05:37:48.033Z"
   },
   "engine": {
    "ok": true,
-   "summary": "64 passed, 0 failed  (1442 in-app self-test checks)",
-   "at": "2026-09-27T01:58:24.612Z"
+   "summary": "64 passed, 0 failed  (1450 in-app self-test checks)",
+   "at": "2026-09-27T05:38:07.137Z"
   },
   "test": {
    "ok": true,
    "summary": "pass  with no layout measurement it falls back to the document end rather than failing · 398 passed, 0 failed",
-   "at": "2026-09-27T01:59:19.621Z"
+   "at": "2026-09-27T05:39:03.137Z"
   },
   "adversarial": {
    "ok": true,
    "summary": "62 passed, 0 failed",
-   "at": "2026-09-27T01:59:25.662Z"
+   "at": "2026-09-27T05:39:08.678Z"
   },
   "audit": {
    "ok": true,
    "summary": "125 passed, 0 finding(s): 0 P0, 0 P1, 0 P2",
-   "at": "2026-09-27T01:59:48.145Z"
+   "at": "2026-09-27T05:39:30.407Z"
   },
   "conformance": {
    "ok": true,
    "summary": "0 finding(s): 0 P1, 0 P2",
-   "at": "2026-09-27T01:59:51.833Z"
+   "at": "2026-09-27T05:39:34.125Z"
   },
   "governance": {
    "ok": true,
    "summary": "23 passing, 0 tracked, 0 failing — report written to docs/implementation/governance-report.{json,md}",
-   "at": "2026-09-27T01:59:57.643Z"
+   "at": "2026-09-27T05:39:39.694Z"
   },
   "shipped": {
    "ok": true,
-   "summary": "pass  a second run in the same page passes too (1448 passed, 0 failed) · all passed",
-   "at": "2026-09-27T02:00:15.645Z"
+   "summary": "pass  a second run in the same page passes too (1456 passed, 0 failed) · all passed",
+   "at": "2026-09-27T05:39:57.742Z"
   },
   "browser": {
    "ok": true,
    "summary": "6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1",
-   "at": "2026-09-27T02:02:06.063Z"
+   "at": "2026-09-27T05:45:42.151Z"
   },
   "visual": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:02:14.888Z"
+   "at": "2026-09-27T05:47:46.156Z"
   },
   "persistence": {
    "ok": true,
    "summary": "all passed · all passed",
-   "at": "2026-09-27T02:03:08.079Z"
+   "at": "2026-09-27T05:46:45.085Z"
   },
   "spine": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:03:19.661Z"
+   "at": "2026-09-27T05:46:56.779Z"
   },
   "parity": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:03:35.810Z"
+   "at": "2026-09-27T05:47:13.011Z"
   },
   "adapt": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:03:46.337Z"
+   "at": "2026-09-27T05:47:23.665Z"
   },
   "integration": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:03:57.529Z"
+   "at": "2026-09-27T05:47:54.775Z"
   },
   "intelligence": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:04:04.406Z"
+   "at": "2026-09-27T05:48:01.667Z"
   },
   "external": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:04:21.579Z"
+   "at": "2026-09-27T05:48:18.752Z"
   },
   "deploy": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:04:36.873Z"
+   "at": "2026-09-27T05:48:34.565Z"
   },
   "voice": {
    "ok": true,
    "summary": "all passed",
-   "at": "2026-09-27T02:04:51.164Z"
+   "at": "2026-09-27T05:48:52.650Z"
   },
   "perf": {
    "ok": true,
    "summary": "all operations within budget",
-   "at": "2026-09-27T02:05:01.549Z"
+   "at": "2026-09-27T05:48:58.434Z"
   },
   "cloud:e2e": {
    "ok": true,
-   "summary": "log lines: 12",
-   "at": "2026-09-27T02:05:05.951Z"
+   "summary": "log lines: 17",
+   "at": "2026-09-27T05:49:04.210Z"
   },
   "yields:gate": {
    "ok": true,
    "summary": "yields gate: 537 rows, all satisfy yield+loss≈100",
-   "at": "2026-09-27T02:05:06.093Z"
+   "at": "2026-09-27T05:49:04.373Z"
   },
   "baseline": {
    "ok": true,
-   "summary": "baseline written: build db27ea58bc, 38 quantities, 22 capabilities (0 production-ready), 75-node dependency map",
-   "at": "2026-09-27T02:05:11.080Z"
+   "summary": "baseline written: build 3d6c7a007e, 38 quantities, 22 capabilities (0 production-ready), 75-node dependency map",
+   "at": "2026-09-27T05:49:09.443Z"
   },
   "verify": {
    "ok": true,
    "summary": "data/reference: 1 files verified · dist verified.",
-   "at": "2026-09-27T02:05:14.793Z"
+   "at": "2026-09-27T05:49:13.213Z"
   }
  }
 }

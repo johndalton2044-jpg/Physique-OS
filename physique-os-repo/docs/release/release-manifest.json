@@ -1,68 +1,68 @@
 {
-  "build": "db27ea58bc",
-  "release": "cd3bed2bb106",
+  "build": "3d6c7a007e",
+  "release": "c6112371335b",
   "schema": 2,
-  "generatedAt": "2026-09-27T02:05:55.058Z",
+  "generatedAt": "2026-09-27T05:50:04.263Z",
   "verification": [
     {
       "n": 1,
       "label": "Build",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: {\"build\":\"db27ea58bc\",\"release\":\"cd3bed2bb106\",\"inputs\":131,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3058,\"scriptLines\":28390,\"sources\":75,\"files\":29,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
+      "evidence": "recorded against build 3d6c7a007e: {\"build\":\"3d6c7a007e\",\"release\":\"c6112371335b\",\"inputs\":132,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3078,\"scriptLines\":28507,\"sources\":76,\"files\":29,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
     },
     {
       "n": 2,
       "label": "Engine",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: 64 passed, 0 failed  (1442 in-app self-test checks)"
+      "evidence": "recorded against build 3d6c7a007e: 64 passed, 0 failed  (1450 in-app self-test checks)"
     },
     {
       "n": 3,
       "label": "Unit tests (in-app self-tests)",
       "status": "PASS",
-      "evidence": "engine: recorded against build db27ea58bc: 64 passed, 0 failed  (1442 in-app self-test checks) · shipped: recorded against build db27ea58bc: pass  a second run in the same page passes too (1448 passed, 0 failed) · all passed"
+      "evidence": "engine: recorded against build 3d6c7a007e: 64 passed, 0 failed  (1450 in-app self-test checks) · shipped: recorded against build 3d6c7a007e: pass  a second run in the same page passes too (1456 passed, 0 failed) · all passed"
     },
     {
       "n": 4,
       "label": "DOM tests",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: pass  with no layout measurement it falls back to the document end rather than failing · 398 passed, 0 failed"
+      "evidence": "recorded against build 3d6c7a007e: pass  with no layout measurement it falls back to the document end rather than failing · 398 passed, 0 failed"
     },
     {
       "n": 5,
       "label": "Browser tests",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1"
+      "evidence": "recorded against build 3d6c7a007e: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1"
     },
     {
       "n": 6,
       "label": "Audit",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: 125 passed, 0 finding(s): 0 P0, 0 P1, 0 P2"
+      "evidence": "recorded against build 3d6c7a007e: 125 passed, 0 finding(s): 0 P0, 0 P1, 0 P2"
     },
     {
       "n": 7,
       "label": "Conformance",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: 0 finding(s): 0 P1, 0 P2"
+      "evidence": "recorded against build 3d6c7a007e: 0 finding(s): 0 P1, 0 P2"
     },
     {
       "n": 8,
       "label": "Adversarial tests",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: 62 passed, 0 failed"
+      "evidence": "recorded against build 3d6c7a007e: 62 passed, 0 failed"
     },
     {
       "n": 9,
       "label": "Performance tests",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: all operations within budget"
+      "evidence": "recorded against build 3d6c7a007e: all operations within budget"
     },
     {
       "n": 10,
       "label": "Cloud E2E",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: log lines: 12"
+      "evidence": "recorded against build 3d6c7a007e: log lines: 17"
     },
     {
       "n": 11,
@@ -110,7 +110,7 @@
       "n": 18,
       "label": "Visual regression verification",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: all passed"
+      "evidence": "recorded against build 3d6c7a007e: all passed"
     },
     {
       "n": 19,
@@ -128,13 +128,13 @@
       "n": 21,
       "label": "Production build",
       "status": "PASS",
-      "evidence": "recorded against build db27ea58bc: data/reference: 1 files verified · dist verified."
+      "evidence": "recorded against build 3d6c7a007e: data/reference: 1 files verified · dist verified."
     },
     {
       "n": 22,
       "label": "Release manifest",
       "status": "PASS",
-      "evidence": "build db27ea58bc, release cd3bed2bb106, 131 hashed inputs"
+      "evidence": "build 3d6c7a007e, release c6112371335b, 132 hashed inputs"
     },
     {
       "n": 23,
@@ -186,8 +186,8 @@
     },
     {
       "file": "BUILD-MANIFEST.json",
-      "bytes": 24799,
-      "sha256": "33aa39ef52669409acd4f6a2f40cfd3ff00d83b19840bf25e46a4a6376dacf4e"
+      "bytes": 24935,
+      "sha256": "5077742be4f8c32914e2fc3cda066d194d54f57d1ff8f39791d278d359179419"
     },
     {
       "file": "DEPLOYMENT.md",
@@ -202,7 +202,7 @@
     {
       "file": "SHA256SUMS",
       "bytes": 2528,
-      "sha256": "9b19da5ff2601022fd1c1cbe512616eac09ef6a44d2c574083204c1f822fe4a9"
+      "sha256": "e8a44d0fc791c5cad648ceee09f78b4a42c740dbfa5f7253d65987633f64cd6e"
     },
     {
       "file": "data/reference/SHA256SUMS",
@@ -221,8 +221,8 @@
     },
     {
       "file": "docs/architecture-roadmap.md",
-      "bytes": 207403,
-      "sha256": "e4df7c690ccb433afd56d1a63498efc38806cb3909d01708699e7d634e3fceb8"
+      "bytes": 209859,
+      "sha256": "4ba837049876ddfb7b943bacd65aaf449ca85fb8fa34f66a945941a1594a66e1"
     },
     {
       "file": "docs/data-adapters.md",
@@ -306,8 +306,8 @@
     },
     {
       "file": "index.html",
-      "bytes": 3131278,
-      "sha256": "15b44cfacb45f05a184aaa43a7a408e343bf20762874f58167e33e37dd895cc7"
+      "bytes": 3152250,
+      "sha256": "779414fdd05eba6d87ecdf9c3a06fca5bd3c776cd7b2933ed8575888cded3c79"
     },
     {
       "file": "manifest.webmanifest",
@@ -317,7 +317,7 @@
     {
       "file": "sw.js",
       "bytes": 3721,
-      "sha256": "16984381ce5a3ba86340bc6448aab3c3777eced88d61e963b97f376a62e5ed78"
+      "sha256": "6cf07a40c9068dbd3a89dd6e727221898a5c4181f895269afcccb7026c6fdcc9"
     },
     {
       "file": "vercel.json.template",
@@ -326,8 +326,8 @@
     },
     {
       "file": "version.json",
-      "bytes": 2273,
-      "sha256": "11a4bc9fadb3175f55d2441e492fd7837bb7e88046c7c2817642aaef77983769"
+      "bytes": 2289,
+      "sha256": "bf4b7a1176fe23d6f402629ad42954dbc4f6afd79c1730829ce3f034ea4f023c"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-27T01:59:57.626Z",
-  "build": "db27ea58bc",
+  "generatedAt": "2026-09-27T05:39:39.674Z",
+  "build": "3d6c7a007e",
   "counts": {
     "hard": {},
     "soft": {}
@@ -50,7 +50,7 @@
     },
     {
       "cat": "catalogue",
-      "msg": "catalogue generated from the running registries — 2 change(s) since the previous run"
+      "msg": "catalogue generated from the running registries — 0 change(s) since the previous run"
     },
     {
       "cat": "entity-contracts",

@@ -834,10 +834,20 @@ tr.wx-today td{font-weight:700}
 .mv-panels{display:flex;align-items:center;gap:4px}.mv-panel{flex:1;min-width:0;text-align:center}.mv-panel svg{width:100%;height:auto;max-height:180px}
 .mv-cap{font-size:calc(11px*var(--ts,1));color:var(--text-2);text-transform:lowercase}.mv-arrow{color:var(--text-2);font-size:18px}.sk-floor{stroke:var(--border);stroke-width:1}.mv-note{margin-top:2px}
 .voice-state{padding:10px 12px;border-radius:var(--radius-sm,8px);background:var(--surface-2);margin:8px 0}.voice-state.live{border:1px solid var(--accent)}
+.ic{flex:none;vertical-align:-4px}.wx-ic{color:var(--accent)}.wx-now{display:flex;align-items:center;gap:14px}.wx-cond{font-weight:600}
+.wx-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0}.wx-fact{display:grid;justify-items:center;gap:2px;padding:6px 2px;border-radius:8px;background:var(--surface-2);text-align:center;font-size:calc(12px*var(--ts,1))}
+.wx-fact .ic{color:var(--accent)}.wx-day .ic{margin:2px auto}
+/* The left rail ends level with the centre of the + button (it floated about 60 px higher than the right-hand stack); the
+   old lone back arrow is replaced by a previous/next pair for flipping panels. */
+.rail-left{bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
+.rail-left{align-items:flex-start!important}.rail-pair{display:flex;gap:6px}.fab-voice{color:var(--accent)}
+.mic-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);vertical-align:middle}
+.mic-btn.on{border-color:var(--accent);color:var(--accent)}.field-with-mic{display:flex;gap:6px;align-items:flex-end}.field-with-mic .fld{flex:1;min-width:0}
+.feat{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)}.feat:first-child{border-top:0}.feat .ic{color:var(--accent);margin-top:2px}.feat-body{flex:1;min-width:0}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+bwSjMFFUaHyQmnYKtydVb6Lc7V4drRuppmS5bJ9cJc='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="db27ea58bc 2026-09-27T01:58:04.579Z">
-<meta name="physique-release" content="cd3bed2bb106">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ahuN6F4Z7L985GGWw3Y/aFGO5TvTPU2AIKKPPTZyoBM='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="3d6c7a007e 2026-09-27T05:37:46.712Z">
+<meta name="physique-release" content="c6112371335b">
 </head>
 <body>
 
@@ -854,13 +864,14 @@ tr.wx-today td{font-weight:700}
      indicator belongs; back and top live on the position rail. Six floating buttons over a column of text is
      not a rail, it is an obstruction. -->
 <div class="rail-right" id="railRight" role="toolbar" aria-label="Actions">
-<button class="fab-mini" id="undoFab" data-act="undo.last" aria-label="Undo" title="Undo (⌘Z)" hidden>↶</button>
+<button class="fab-mini" data-transient="1" id="undoFab" data-act="undo.last" aria-label="Undo" title="Undo (⌘Z)" hidden>↶</button>
 <button class="fab-mini" id="cmdkFab" data-act="cmdk.open" aria-label="Command palette" title="Command palette (⌘K)">⌘</button>
+<button class="fab-mini fab-voice" id="voiceFab" data-act="nav.voice" aria-label="Log by voice" title="Log by voice"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></button>
 </div>
 <div class="rail-left" id="railLeft" role="toolbar" aria-label="Position">
-<button class="fab-mini" id="backFab" data-act="nav.back" aria-label="Back" title="Back ([)" hidden>‹</button>
-<button class="fab-mini" id="upFab" data-act="nav.top" aria-label="Jump to top" title="Top (Home)" hidden>⤒</button>
-<button class="fab-mini" id="downFab" data-act="nav.bottom" aria-label="Jump to bottom" title="Bottom (End)" hidden>⤓</button>
+<div class="rail-pair"><button class="fab-mini" id="prevFab" data-act="nav.prevTab" aria-label="Previous panel" title="Previous panel ([)">‹</button><button class="fab-mini" id="nextFab" data-act="nav.nextTab" aria-label="Next panel" title="Next panel (])">›</button></div>
+<button class="fab-mini" data-transient="1" id="upFab" data-act="nav.top" aria-label="Jump to top" title="Top (Home)" hidden>⤒</button>
+<button class="fab-mini" data-transient="1" id="downFab" data-act="nav.bottom" aria-label="Jump to bottom" title="Bottom (End)" hidden>⤓</button>
 <button class="fab-mini" id="homeFab" data-act="nav.home" aria-label="Today" title="Today (H)">⌂</button>
 </div>
 
@@ -1041,9 +1052,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='db27ea58bc';        // hash of src/ — identifies the application code
-var RELEASE_ID='cd3bed2bb106';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-27T01:58:04.579Z';
+var BUILD_ID='3d6c7a007e';        // hash of src/ — identifies the application code
+var RELEASE_ID='c6112371335b';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-09-27T05:37:46.712Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -2375,7 +2386,11 @@ if(_cloud.token&&_cloud.tokenExp>Date.now()+5000)return Promise.resolve(_cloud.t
 var c=cloudConfig();
 if(!c.vaultId)return Promise.reject(new Error('unlock a vault first'));
 return deviceKeyPair().then(function(keys){
-return _api('/v1/auth/challenge',{method:'POST',body:{vaultId:c.vaultId,deviceId:deviceId()}})
+var challenge=function(retry){return _api('/v1/auth/challenge',{method:'POST',body:{vaultId:c.vaultId,deviceId:deviceId()}}).catch(function(e){
+if(retry&&e&&e.status===404&&c.enabled){return _api('/v1/vault',{method:'POST',body:{vaultId:c.vaultId,deviceId:deviceId(),devicePublicKey:keys.publicPem}}).then(function(){
+_cloud.reRegistered=nowISO();DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{reRegisteredAt:_cloud.reRegistered});return challenge(false);});}
+throw e;});};
+return challenge(true)
 .then(function(ch){
 return crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},keys.privateKey,new TextEncoder().encode(ch.nonce));
 })
@@ -2431,54 +2446,51 @@ return crypto.subtle.decrypt({name:'AES-GCM',iv:_unb64(row.iv)},_vaultKey,_unb64
 .then(function(pt){return JSON.parse(new TextDecoder().decode(pt));})
 .catch(function(){return null;});   // wrong key or damaged row: skip it rather than corrupt the log
 }
+var CLOUD_PUSH_BATCH=400;
+function _pullAll(since,acc){acc=acc||{events:[],serverSeq:0,epoch:null};
+return _api('/v1/events?since='+since+'&limit=2000').then(function(page){acc.events=acc.events.concat(page.events||[]);acc.serverSeq=page.serverSeq||0;acc.epoch=page.epoch||null;
+var last=(page.events||[]).reduce(function(a,r){return Math.max(a,r.serverSeq||0);},since);
+return page.more&&last>since?_pullAll(last,acc):acc;});}
 function cloudSync(opts){
 opts=opts||{};
 if(cloudLocked())return Promise.reject(new Error('unlock the vault first'));
 if(_cloud.busy)return Promise.resolve({skipped:'a sync is already running'});
 _cloud.busy=true;_cloud.lastError=null;
-var c=cloudConfig();
-var pushed={},sent=0,received=0,conflicts=0;
+var c=cloudConfig(),stored=DB.settings.cloud||{};
+var pushed={},sent=0,received=0,conflicts=0,reset=false,since=c.lastPullSeq||0;
 (c.pushedIds||[]).forEach(function(id){pushed[id]=1;});
-return cloudAuthenticate().then(function(){
-return _api('/v1/events?since='+(c.lastPullSeq||0)+'&limit=5000');
+var waking=setTimeout(function(){if(_cloud.busy){_cloud.status='waking';if(typeof renderAll==='function')try{renderAll();}catch(e){}}},8000);
+return cloudAuthenticate().then(function(){return _pullAll(since);}).then(function(page){
+if((stored.serverEpoch&&page.epoch&&page.epoch!==stored.serverEpoch)||(since>0&&page.serverSeq<since)){
+reset=true;pushed={};since=0;return _pullAll(0);}
+return page;
 }).then(function(page){
-if(!page.events.length)return {maxSeq:c.lastPullSeq||0,events:[]};
+DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{serverEpoch:page.epoch||stored.serverEpoch||null});
+if(!page.events.length)return {maxSeq:reset?0:(c.lastPullSeq||0),events:[],serverSeq:page.serverSeq};
 return Promise.all(page.events.map(_decryptEvent)).then(function(list){
-var good=list.filter(Boolean);
-received=good.length;
-var maxSeq=page.events.reduce(function(a,r){return Math.max(a,r.serverSeq||0);},c.lastPullSeq||0);
-if(good.length){
-var merged=mergeEvents(_EVENTS,good);
-conflicts=merged.conflicts.length;
-if(merged.events.length>_EVENTS.length){
-pushUndo('merge '+(merged.events.length-_EVENTS.length)+' change(s) from the cloud');
-adoptMergedEvents(merged);
-}
-(merged.conflicts||[]).forEach(function(x){_syncState.conflicts.push(x);});
-}
-return {maxSeq:maxSeq,events:good};
-});
+var good=list.filter(Boolean);received=good.length;
+var maxSeq=page.events.reduce(function(a,r){return Math.max(a,r.serverSeq||0);},reset?0:(c.lastPullSeq||0));
+if(good.length){var merged=mergeEvents(_EVENTS,good);conflicts=merged.conflicts.length;
+if(merged.events.length>_EVENTS.length){pushUndo('merge '+(merged.events.length-_EVENTS.length)+' change(s) from the cloud');adoptMergedEvents(merged);}
+(merged.conflicts||[]).forEach(function(x){_syncState.conflicts.push(x);});}
+return {maxSeq:maxSeq,events:good};});
 }).then(function(pull){
 var toSend=_EVENTS.filter(function(e){return !pushed[e.id];});
-if(!toSend.length)return {pull:pull,sent:0};
-return Promise.all(toSend.slice(0,2000).map(_encryptEvent)).then(function(rows){
-return _api('/v1/events',{method:'POST',body:{events:rows}}).then(function(r){
-sent=r.accepted||rows.length;
-rows.forEach(function(row){pushed[row.id]=1;});
-return {pull:pull,sent:sent};
-});
-});
+var sendBatch=function(k){var chunk=toSend.slice(k,k+CLOUD_PUSH_BATCH);if(!chunk.length)return Promise.resolve();
+return Promise.all(chunk.map(_encryptEvent)).then(function(rows){return _api('/v1/events',{method:'POST',body:{events:rows}}).then(function(r){
+sent+=(r.accepted||rows.length);rows.forEach(function(row){pushed[row.id]=1;});return sendBatch(k+CLOUD_PUSH_BATCH);});});};
+return sendBatch(0).then(function(){return {pull:pull,sent:sent};});
 }).then(function(res){
-var ids=Object.keys(pushed);
-if(ids.length>60000)ids=ids.slice(-60000);
-DB.settings.cloud=Object.assign({},DB.settings.cloud||{},
-{lastPullSeq:res.pull.maxSeq,lastSyncAt:nowISO(),pushedIds:ids,enabled:true});
-save('cloud:sync');
-_cloud.status='synced';_cloud.busy=false;
-if(typeof auditAppend==='function')auditAppend('cloud.sync',{sent:sent,received:received,conflicts:conflicts});
-return {ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq};
+clearTimeout(waking);
+var ids=Object.keys(pushed);if(ids.length>60000)ids=ids.slice(-60000);
+DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{lastPullSeq:res.pull.maxSeq,lastSyncAt:nowISO(),pushedIds:ids,enabled:true,
+lastReset:reset?{at:nowISO(),resent:sent}:((DB.settings.cloud||{}).lastReset||null)});
+save('cloud:sync');_cloud.status='synced';_cloud.busy=false;
+if(typeof auditAppend==='function')auditAppend('cloud.sync',{sent:sent,received:received,conflicts:conflicts,serverReset:reset});
+return {ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq,serverReset:reset};
 }).catch(function(e){
-_cloud.busy=false;_cloud.status='error';_cloud.lastError=String(e&&e.message||e);
+clearTimeout(waking);_cloud.busy=false;_cloud.status='error';
+_cloud.lastError=e&&e.status===404&&/vault/.test(String(e.message))?'The server no longer has this vault \u2014 it probably lost its data (free hosting wipes files on restart). Join again from Tools \u2192 Cloud sync, then sync to re-send this device\u2019s record.':String(e&&e.message||e);
 throw e;
 });
 }
@@ -7885,6 +7897,8 @@ var out=[],plan=currentPlan();
 try{var u=(typeof unsavedAtClose==='function')?unsavedAtClose():null;
 if(u)out.push({id:'lost-saves',severity:'action',what:'Your last '+(u.missing===1?'change':u.missing+' changes')+' before the app closed may not have been saved',
 why:'Storage did not have them when the app reopened.',cando:'Check your latest entries',act:'nav.tab',arg:'log',tab:'log'});}catch(e){}
+try{var LR=(DB.settings.cloud||{}).lastReset;if(LR&&daysBetween(String(LR.at).slice(0,10),todayISO())<=7)out.push({id:'sync-reset:'+LR.at,severity:'review',
+what:'The sync server lost its data and was refilled from this device',why:'It sent '+LR.resent+' changes again. Free hosting wipes files on restart; a persistent disk stops this. Other devices need re-adding from this one.',cando:'Sync settings',act:'nav.cloud',tab:'tools'});}catch(e){}
 if(!plan)return out;
 var F=planFeasibility();
 if(F.status==='ok'&&!F.ok)out.push({id:'plan-fit',severity:'action',what:'Your plan does not fit your circumstances ('+F.conflicts.length+')',
@@ -10350,7 +10364,7 @@ function testExternalServer(opts){
 opts=opts||{};var steps=[],base=extServerBase(),done=function(verdict,code){return {verdict:verdict,code:code,steps:steps,base:base,at:nowISO()};};
 if(!base)return Promise.resolve(done('No server address is configured for this app.','A'));
 return _rawGet('/v1/health').then(function(h){
-steps.push({step:'server health ('+base+'/v1/health)',ok:!!(h.ok&&h.json&&h.json.ok),detail:h.network?'could not be reached':(h.html?'a web page came back (HTTP '+h.http+'), not the server':(h.json?('HTTP '+h.http+' \u00b7 '+(h.json.service||'')):('HTTP '+h.http)))});
+steps.push({step:'server health ('+base+'/v1/health)',ok:!!(h.ok&&h.json&&h.json.ok),detail:h.network?'could not be reached':(h.html?'a web page came back (HTTP '+h.http+'), not the server':(h.json?('HTTP '+h.http+' \u00b7 '+(h.json.service||'')+(h.json.storage?' \u00b7 storage: '+h.json.storage:'')):('HTTP '+h.http)))});
 if(h.network)return done('The address '+base+' could not be reached at all.','C');
 if(h.html&&h.http>=502&&h.http<=504)return done('The rewrite is there, but the server behind it is not answering (HTTP '+h.http+').','C');
 if(h.html)return done('Nothing at '+base+' is the Physique OS server \u2014 this deployment has no rewrite to a running server. Deploy server/server.mjs to a Node host and add the /api/sync rewrite (see DEPLOYMENT.md).','B');
@@ -10367,6 +10381,7 @@ return done(g.error&&g.error.category==='malformed_payload'?'The provider sent s
 });
 }
 var ENV_VARIABLES={
+weatherCode:{label:'Conditions',unit:'code',res:['current','hourly','daily']},
 temperature:{label:'Temperature',unit:'\u00b0C',res:['current','hourly']},apparentTemperature:{label:'Feels like',unit:'\u00b0C',res:['current','hourly']},
 humidity:{label:'Humidity',unit:'%',res:['current','hourly']},precipitation:{label:'Precipitation',unit:'mm',res:['current','hourly']},
 precipitationProbability:{label:'Chance of precipitation',unit:'%',res:['hourly']},cloudCover:{label:'Cloud cover',unit:'%',res:['current','hourly']},
@@ -10385,14 +10400,14 @@ ozone:{label:'Ozone',unit:'\u00b5g/m\u00b3',res:['current','hourly'],air:true},n
 so2:{label:'Sulphur dioxide',unit:'\u00b5g/m\u00b3',res:['current','hourly'],air:true},co:{label:'Carbon monoxide',unit:'\u00b5g/m\u00b3',res:['current','hourly'],air:true},
 europeanAqi:{label:'European AQI',unit:'',res:['current','hourly'],air:true},usAqi:{label:'US AQI',unit:'',res:['current','hourly'],air:true}
 };
-var _OM_MAP={temperature_2m:'temperature',relative_humidity_2m:'humidity',apparent_temperature:'apparentTemperature',is_day:'isDay',precipitation:'precipitation',
+var _OM_MAP={weather_code:'weatherCode',temperature_2m:'temperature',relative_humidity_2m:'humidity',apparent_temperature:'apparentTemperature',is_day:'isDay',precipitation:'precipitation',
 precipitation_probability:'precipitationProbability',cloud_cover:'cloudCover',et0_fao_evapotranspiration:'et0',vapour_pressure_deficit:'vpd',wind_speed_10m:'windSpeed',
 wind_direction_10m:'windDirection',wind_gusts_10m:'windGusts',uv_index:'uvIndex',pm2_5:'pm2_5',pm10:'pm10',ozone:'ozone',nitrogen_dioxide:'no2',sulphur_dioxide:'so2',
 carbon_monoxide:'co',european_aqi:'europeanAqi',us_aqi:'usAqi'};
-var _OM_DAILY_MAP={temperature_2m_max:'temperatureMax',temperature_2m_min:'temperatureMin',apparent_temperature_max:'apparentTemperatureMax',apparent_temperature_min:'apparentTemperatureMin',
+var _OM_DAILY_MAP={weather_code:'weatherCode',temperature_2m_max:'temperatureMax',temperature_2m_min:'temperatureMin',apparent_temperature_max:'apparentTemperatureMax',apparent_temperature_min:'apparentTemperatureMin',
 precipitation_sum:'precipitationSum',precipitation_probability_max:'precipitationProbabilityMax',et0_fao_evapotranspiration:'et0Sum',sunrise:'sunrise',sunset:'sunset',
 daylight_duration:'daylightHours',uv_index_max:'uvIndexMax',wind_speed_10m_max:'windSpeedMax',wind_gusts_10m_max:'windGustsMax',wind_direction_10m_dominant:'windDirectionDominant'};
-var _OM_UNITS={'\u00b0C':'\u00b0C','%':'%','mm':'mm','kPa':'kPa','m/s':'m/s','\u00b0':'\u00b0','':'','iso8601':'time','s':'s','\u03bcg/m\u00b3':'\u00b5g/m\u00b3','\u00b5g/m\u00b3':'\u00b5g/m\u00b3','EAQI':'','USAQI':''};
+var _OM_UNITS={'wmo code':'code','\u00b0C':'\u00b0C','%':'%','mm':'mm','kPa':'kPa','m/s':'m/s','\u00b0':'\u00b0','':'','iso8601':'time','s':'s','\u03bcg/m\u00b3':'\u00b5g/m\u00b3','\u00b5g/m\u00b3':'\u00b5g/m\u00b3','EAQI':'','USAQI':''};
 function _envKind(dataset,localTime,retrievedLocal){if(dataset==='archive')return 'historical';return localTime<retrievedLocal?'recent past':'forecast';}
 function _localNow(retrievedAt,offsetSec){var t=Date.parse(retrievedAt)+(offsetSec||0)*1000;return new Date(t).toISOString().slice(0,16);}
 function adaptOpenMeteo(payload,meta){
@@ -10430,7 +10445,8 @@ var batch={id:'env:meteosource:forecast:'+round(lat,2)+','+round(lon,2),source:'
 timezone:'UTC',utcOffsetSeconds:0,retrievedAt:retrievedAt,adapterVersion:EXT_ADAPTER_VERSION,current:null,hourly:null,daily:null,
 unsupported:['et0','et0Sum','uvIndexMax','windGustsMax','apparentTemperatureMax','apparentTemperatureMin','precipitationProbabilityMax'],derived:[],unknownFields:[]};
 var one=function(x){var w=x.wind||{},pr=x.precipitation||{},cc=x.cloud_cover;
-return {temperature:num2(x.temperature),apparentTemperature:num2(x.feels_like),humidity:num2(x.humidity),precipitation:num2(pr.total),
+var wk=String(x.weather||x.icon_name||'').toLowerCase();
+return {weatherCode:METEOSOURCE_CODES[wk]!=null?METEOSOURCE_CODES[wk]:null,temperature:num2(x.temperature),apparentTemperature:num2(x.feels_like),humidity:num2(x.humidity),precipitation:num2(pr.total),
 cloudCover:typeof cc==='object'&&cc?num2(cc.total):num2(cc),windSpeed:num2(w.speed),windDirection:num2(w.angle),windGusts:num2(w.gusts),uvIndex:num2(x.uv_index),
 precipitationProbability:x.probability?num2(x.probability.precipitation):null};};
 if(p.current)batch.current={time:nowUtc,kind:'current',values:one(p.current)};
@@ -10438,8 +10454,8 @@ var H=(p.hourly&&p.hourly.data)||[];
 if(H.length){var hv={};var rows=H.map(one);Object.keys(rows[0]).forEach(function(k){hv[k]=rows.map(function(r){return r[k];});});
 batch.hourly={times:H.map(function(h){return String(h.date).slice(0,16);}),kinds:H.map(function(h){return String(h.date).slice(0,16)<nowUtc?'recent past':'forecast';}),values:hv};}
 var Dd=(p.daily&&p.daily.data)||[];
-if(Dd.length){var dv={temperatureMax:[],temperatureMin:[],precipitationSum:[],windSpeedMax:[],windDirectionDominant:[],sunrise:[],sunset:[],daylightHours:[]};
-Dd.forEach(function(d){var a=d.all_day||{},s=(d.astro&&d.astro.sun)||{};dv.temperatureMax.push(num2(a.temperature_max));dv.temperatureMin.push(num2(a.temperature_min));
+if(Dd.length){var dv={weatherCode:[],temperatureMax:[],temperatureMin:[],precipitationSum:[],windSpeedMax:[],windDirectionDominant:[],sunrise:[],sunset:[],daylightHours:[]};
+Dd.forEach(function(d){var a=d.all_day||{},s=(d.astro&&d.astro.sun)||{},wk=String(d.weather||a.weather||'').toLowerCase();dv.weatherCode.push(METEOSOURCE_CODES[wk]!=null?METEOSOURCE_CODES[wk]:null);dv.temperatureMax.push(num2(a.temperature_max));dv.temperatureMin.push(num2(a.temperature_min));
 dv.precipitationSum.push(a.precipitation?num2(a.precipitation.total):null);dv.windSpeedMax.push(a.wind?num2(a.wind.speed):null);dv.windDirectionDominant.push(a.wind?num2(a.wind.angle):null);
 dv.sunrise.push(s.rise?String(s.rise).slice(11,16):null);dv.sunset.push(s.set?String(s.set).slice(11,16):null);
 dv.daylightHours.push(s.rise&&s.set?round((Date.parse(s.set+'Z')-Date.parse(s.rise+'Z'))/3600000,2):null);});
@@ -10567,15 +10583,22 @@ var L=weatherLocation();if(!L)return '';
 var N=environmentNow(),D=environmentDaily();
 if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+esc(N.note)+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
 var v=N.values,T=todayISO(),today=(D.days||[]).filter(function(d){return d.date===T;})[0],fc=(D.days||[]).filter(function(d){return d.date>=T;}).slice(0,14);
-var top='<div class="wx-now"><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="hint">feels like '+fmtEnv('apparentTemperature',v.apparentTemperature)+' \u00b7 '+fmtEnv('isDay',v.isDay)+(N.derived.indexOf('isDay')>=0?' (from sunrise and sunset)':'')+'</div></div>';
+var cond=weatherCondition(v,v.isDay);
+var top='<div class="wx-now">'+weatherIcon(v,v.isDay,44)+'<div><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="wx-cond">'+esc(cond?cond.label:'')+(cond&&cond.derived?' <span class="hint">(from cloud cover and rain)</span>':'')+'</div>'+
+'<div class="hint">feels like '+fmtEnv('apparentTemperature',v.apparentTemperature)+' \u00b7 '+fmtEnv('isDay',v.isDay)+(N.derived.indexOf('isDay')>=0?' (from sunrise and sunset)':'')+'</div></div></div>'+
+'<div class="wx-facts">'+[['drop','Rain now',fmtEnv('precipitation',v.precipitation)],['cloud','Cloud cover',fmtEnv('cloudCover',v.cloudCover)],['wind','Wind',fmtEnv('windSpeed',v.windSpeed)],['uv','UV',fmtEnv('uvIndex',v.uvIndex)]]
+.map(function(f){return '<div class="wx-fact">'+uiIcon(f[0],{size:18})+'<span class="hint">'+esc(f[1])+'</span><b>'+esc(f[2])+'</b></div>';}).join('')+'</div>';
+var HH=environmentHourly().filter(function(h){return h.kind==='forecast';}).slice(0,12);
+var hourly=HH.length?'<div class="card-title" style="margin-top:8px">Next hours</div><div class="wx-strip">'+HH.map(function(h){return '<div class="wx-day"><b>'+esc(h.time.slice(11,16))+'</b>'+weatherIcon(h.values,h.values.isDay,22)+
+'<span>'+fmtEnv('temperature',h.values.temperature)+'</span><span class="hint">'+(h.values.precipitationProbability!=null?uiIcon('drop',{size:11})+Math.round(h.values.precipitationProbability)+'%':'')+'</span></div>';}).join('')+'</div>':'';
 var rows=uiRow('Humidity',fmtEnv('humidity',v.humidity),{sub:v.vpd!=null?('vapour pressure deficit '+fmtEnv('vpd',v.vpd)+(N.derived.indexOf('vpd')>=0?' (derived from temperature and humidity)':'')):''})+
 uiRow('Wind',fmtEnv('windSpeed',v.windSpeed)+' '+(v.windDirection!=null?fmtEnv('windDirection',v.windDirection).split(' ')[0]:''),{sub:'gusts '+fmtEnv('windGusts',v.windGusts)})+
 uiRow('UV index',fmtEnv('uvIndex',v.uvIndex))+(today?uiRow('Sun',fmtEnv('sunrise',today.values.sunrise)+' \u2013 '+fmtEnv('sunset',today.values.sunset),{sub:'daylight '+fmtEnv('daylightHours',today.values.daylightHours)}):'')+
 (v.usAqi!=null||v.europeanAqi!=null?uiRow('Air quality',v.usAqi!=null?('US AQI '+fmtEnv('usAqi',v.usAqi)):('European AQI '+fmtEnv('europeanAqi',v.europeanAqi)),{sub:'PM2.5 '+fmtEnv('pm2_5',v.pm2_5)}):'');
-var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b><span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
-(d.values.precipitationSum?'<span class="hint">'+fmtEnv('precipitationSum',d.values.precipitationSum)+'</span>':'')+'</div>';}).join('')+'</div>';
+var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b>'+weatherIcon(d.values,true,22)+'<span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
+'<span class="hint">'+(d.values.precipitationSum?fmtEnv('precipitationSum',d.values.precipitationSum):'\u00a0')+(d.values.precipitationProbabilityMax!=null?' '+Math.round(d.values.precipitationProbabilityMax)+'%':'')+'</span></div>';}).join('')+'</div>';
 return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(N.stale?' (out of date)':''),
-body:top+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
+body:top+hourly+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
 }
 /* ===== SOURCE: 67-program-edit.js ===== */
 var DAY_KEYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -13170,6 +13193,59 @@ caveat:(rho!=null&&rho>0.3)?('Your weight series has a lag-one correlation of '+
 'Autocorrelation in this window is low enough that the correction changes little.',
 removed:rows.length-kept.length};
 }
+/* ===== SOURCE: 80-icons.js ===== */
+var ICONS={
+sun:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>',
+moon:'<path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1z"/>',
+cloud:'<path d="M7 18.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 18.5z"/>',
+sunCloud:'<circle cx="8.5" cy="8" r="3"/><path d="M8.5 2.6v1.3M3.2 8H4.5M4.8 4.3l.9.9M12.2 4.3l-.9.9"/><path d="M9 19h9a3.4 3.4 0 0 0 .4-6.8 4.8 4.8 0 0 0-9.2 1.2A2.8 2.8 0 0 0 9 19z"/>',
+moonCloud:'<path d="M11.8 6.8A4.4 4.4 0 0 1 6.3 3a4.4 4.4 0 1 0 5.5 3.8z"/><path d="M9 19h9a3.4 3.4 0 0 0 .4-6.8 4.8 4.8 0 0 0-9.2 1.2A2.8 2.8 0 0 0 9 19z"/>',
+fog:'<path d="M4 9h16M3 13h18M5 17h14M8 5h8"/>',
+drizzle:'<path d="M7 14.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 14.5z"/><path d="M8.5 18v1M12 18.5v1M15.5 18v1"/>',
+rain:'<path d="M7 13.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 13.5z"/><path d="M8.5 16.5l-1 3M12 16.5l-1 3M15.5 16.5l-1 3"/>',
+heavyRain:'<path d="M7 12.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 12.5z"/><path d="M7.5 15l-1.5 5M11 15l-1.5 5M14.5 15l-1.5 5M18 15l-1.5 5"/>',
+snow:'<path d="M7 13.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 13.5z"/><path d="M9 17.5l.01 0M12 19.5l.01 0M15 17.5l.01 0M10.5 20.5l.01 0M13.5 16.5l.01 0" stroke-width="2.6"/>',
+sleet:'<path d="M7 13.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 13.5z"/><path d="M8.5 16.5l-1 3M15.5 16.5l-1 3"/><path d="M12 18.5l.01 0" stroke-width="2.6"/>',
+thunder:'<path d="M7 13.5h10.2a4 4 0 0 0 .5-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 13.5z"/><path d="M12.5 14.5l-2.5 4h3l-2 3.5"/>',
+wind:'<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h8"/>',
+drop:'<path d="M12 3.5c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-10z"/>',
+sunrise:'<path d="M5 17a7 7 0 0 1 14 0M3 20h18M12 3v5M9 6l3-3 3 3"/>',
+sunset:'<path d="M5 17a7 7 0 0 1 14 0M3 20h18M12 8V3M9 5l3 3 3-3"/>',
+uv:'<circle cx="12" cy="12" r="3.2"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/>',
+air:'<path d="M4 8h9a2.5 2.5 0 1 0-2.5-2.5M4 12h13M4 16h9a2.5 2.5 0 1 1-2.5 2.5"/>',
+thermometer:'<path d="M10 14.8V5a2 2 0 1 1 4 0v9.8a3.6 3.6 0 1 1-4 0z"/><path d="M12 9v6.5"/>',
+mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+camera:'<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/>',
+pin:'<path d="M12 21s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+calendar:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+flask:'<path d="M9.5 3h5M10.5 3v6L5 18.5A1.7 1.7 0 0 0 6.5 21h11a1.7 1.7 0 0 0 1.5-2.5L13.5 9V3M7.5 15h9"/>',
+dumbbell:'<path d="M3.5 9.5v5M6.5 7.5v9M17.5 7.5v9M20.5 9.5v5M6.5 12h11"/>',
+barcode:'<path d="M4 6v12M7 6v12M10 6v9M12.5 6v12M15.5 6v9M18 6v12M20 6v12"/>',
+sync:'<path d="M5 12a7 7 0 0 1 12-4.9L19 9M19 5v4h-4M19 12a7 7 0 0 1-12 4.9L5 15M5 19v-4h4"/>',
+upload:'<path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 20h14"/>',
+chart:'<path d="M4 20V4M4 20h16M8 16l3.5-5 3 3L19 7"/>',
+spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.4 2.4M15.3 15.3l2.4 2.4M6.3 17.7l2.4-2.4M15.3 8.7l2.4-2.4"/>',
+check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+chevronLeft:'<path d="M14.5 5.5 8 12l6.5 6.5"/>',chevronRight:'<path d="M9.5 5.5 16 12l-6.5 6.5"/>'
+};
+function uiIcon(name,o){o=o||{};var p=ICONS[name];if(!p)return '';var s=o.size||20;
+return '<svg class="ic'+(o.cls?' '+o.cls:'')+'" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(o.weight||1.8)+'" stroke-linecap="round" stroke-linejoin="round"'+
+(o.title?' role="img" aria-label="'+attrEsc(o.title)+'"><title>'+esc(o.title)+'</title>':' aria-hidden="true">')+p+'</svg>';}
+var WEATHER_CONDITIONS={0:['Clear','sun','moon'],1:['Mostly clear','sunCloud','moonCloud'],2:['Partly cloudy','sunCloud','moonCloud'],3:['Overcast','cloud','cloud'],
+45:['Fog','fog','fog'],48:['Freezing fog','fog','fog'],51:['Light drizzle','drizzle','drizzle'],53:['Drizzle','drizzle','drizzle'],55:['Heavy drizzle','drizzle','drizzle'],
+56:['Freezing drizzle','sleet','sleet'],57:['Freezing drizzle','sleet','sleet'],61:['Light rain','rain','rain'],63:['Rain','rain','rain'],65:['Heavy rain','heavyRain','heavyRain'],
+66:['Freezing rain','sleet','sleet'],67:['Freezing rain','sleet','sleet'],71:['Light snow','snow','snow'],73:['Snow','snow','snow'],75:['Heavy snow','snow','snow'],77:['Snow grains','snow','snow'],
+80:['Showers','rain','rain'],81:['Showers','rain','rain'],82:['Heavy showers','heavyRain','heavyRain'],85:['Snow showers','snow','snow'],86:['Heavy snow showers','snow','snow'],
+95:['Thunderstorm','thunder','thunder'],96:['Thunderstorm with hail','thunder','thunder'],99:['Thunderstorm with hail','thunder','thunder']};
+function conditionCodeFrom(v){if(!v)return null;var pr=v.precipitation!=null?v.precipitation:v.precipitationSum,cc=v.cloudCover;
+if(pr!=null&&pr>=0.1){var cold=v.temperature!=null&&v.temperature<=0;return cold?73:(pr>=4?65:(pr>=1?63:61));}
+if(cc==null)return null;return cc<15?0:(cc<40?1:(cc<75?2:3));}
+function weatherCondition(v,isDay){var code=v&&v.weatherCode!=null?v.weatherCode:null,derived=false;if(code==null){code=conditionCodeFrom(v);derived=code!=null;}
+if(code==null||!WEATHER_CONDITIONS[code])return null;var c=WEATHER_CONDITIONS[code],day=isDay==null?(v&&v.isDay!=null?!!v.isDay:true):!!isDay;
+return {code:code,label:c[0],icon:day?c[1]:c[2],derived:derived};}
+function weatherIcon(v,isDay,size){var c=weatherCondition(v,isDay);return c?uiIcon(c.icon,{size:size||22,title:c.label+(c.derived?' (from cloud cover and rain)':''),cls:'wx-ic'}):'';}
+var METEOSOURCE_CODES={clear:0,sunny:0,mostly_sunny:1,mostly_clear:1,partly_sunny:2,partly_clear:2,mostly_cloudy:3,cloudy:3,overcast:3,overcast_with_low_clouds:3,fog:45,
+light_rain:61,rain:63,psbl_rain:80,rain_shower:81,tstorm:95,tstorm_shower:95,psbl_tstorm:95,light_snow:71,snow:73,psbl_snow:85,snow_shower:86,rain_snow:66,psbl_rain_snow:66,freezing_rain:66,psbl_freezing_rain:66,hail:96};
 /* ===== SOURCE: 80-ui.js ===== */
 var _TAB='today';
 function h(strings){var out='';for(var i=0;i<strings.length;i++){out+=strings[i];if(i<arguments.length-1){var v=arguments[i+1];out+=(v==null?'':v);}}return out;}
@@ -13681,8 +13757,9 @@ tiles.push(uiMetric({personal:(function(){var L=personalizationLabel(S.tdee,{bec
 var pr=S.nutrition;tiles.push(uiMetric({trace:'adherence',label:'Protein today',value:pr.protein!=null?fmtNum(pr.protein,0):null,unit:'g'+(pr.proteinTarget?' / '+fmtNum(pr.proteinTarget,0):''),cls:'MEASURED',source:pr.fromFoodLog?'food log':'logged',date:pr.protein!=null?today:null,need:'log protein or food',badge:pr.protein!=null&&pr.proteinTarget?uiPill(pr.protein>=pr.proteinTarget*0.9?'on target':'below',pr.protein>=pr.proteinTarget*0.9?'good':'attention'):''}));
 tiles.push(uiMetric({label:'Steps \u00b7 7-day avg',value:S.steps.mean7!=null?fmtNum(S.steps.mean7,0):null,unit:'',cls:'MEASURED',source:S.steps.n7+' of 7 days'+(S.steps.target?' \u00b7 target '+fmtNum(S.steps.target,0):''),date:S.steps.last?S.steps.last.date:null,type:'steps',need:'log steps'}));
 setHTML('vitalsZone','<div class="vitals">'+tiles.join('')+'</span></div>');
-var _ph=(DB.settings.showPhotoOnToday&&(DB.settings.photos||[]).length)?(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
-setHTML('actionsZone',(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})());   /* weather only once a place is set */
+var _ph=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
+(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+setHTML('actionsZone',(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})()+(function(){try{return renderSetupMore();}catch(e){_q(e,'P2');return '';}})());   /* weather once a place is set; then what is not set up yet */
 if(_ph&&typeof hydratePhotoThumbs==='function')setTimeout(hydratePhotoThumbs,0);
 setHTML('forecastZone',renderForecastCard(S));
 var voi=valueOfInformation();
@@ -14373,7 +14450,7 @@ out+=uiCard({fold:'tools-server',title:'External server',sub:(L?(L.code==='OK'?'
 uiRow('This app',esc(D.client)+' site',{sub:esc(D.note)})+uiRow('Server path',esc(D.syncEndpoint||'none'),{sub:D.proxyRequired?'forwarded to the server by the deployment (a rewrite)':''})+
 uiRow('Needs the server','weather, online food lookups, cloud sync')+
 (L?renderServerDiagnosis(L):'')+'<div class="btn-row">'+uiBtn('Test external server','diag.server',null,'btn-sm btn-primary')+'</div>'});})();
-out+=uiCard({fold:'tools-display',title:'Display',sub:(Object.keys(DB.settings.hiddenFolds||{}).length?(Object.keys(DB.settings.hiddenFolds).length+' hidden section'+(Object.keys(DB.settings.hiddenFolds).length===1?'':'s')+' \u00b7 '):'')+'text size, density, contrast and motion apply immediately and persist',body:((DB.settings.photos||[]).length?uiRow('Latest photo on Today',DB.settings.showPhotoOnToday?'on':'off',{sub:'a small icon of your newest progress photo'})+'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday?'Hide it':'Show it','photo.todayToggle',null,'btn-sm btn-secondary')+'</div>':'')+(function(){var h=Object.keys(DB.settings.hiddenFolds||{}).length;return h?uiRow('Hidden sections',String(h),{sub:'finished sections you hid'})+'<div class="btn-row">'+uiBtn('Show all','fold.showAll',null,'btn-sm btn-secondary')+'</div>':'';})()+uiRow('Detail','',{sub:opt([['casual','Casual'],['insightful','Insightful'],['developer','Developer']],detailLevel(),'settings.detail')+'<div class="hint">'+esc(DETAIL_LEVELS[detailLevel()].desc)+'</div>'})+uiRow('Units','',{sub:opt([['imperial','lb / in'],['metric','kg / cm']],s.units,'settings.units')})+uiRow('Text size','',{sub:opt([['XS','XS'],['S','S'],['M','M'],['L','L'],['XL','XL']],s.textScale,'settings.textScale')})+uiRow('Density','',{sub:opt([['compact','Compact'],['cozy','Cozy'],['comfortable','Comfortable']],s.density,'settings.density')})+uiRow('Contrast','',{sub:opt([['normal','Normal'],['high','High']],s.contrast,'settings.contrast')})+uiRow('Motion','',{sub:opt([['auto','System'],['reduced','Reduced']],s.motion,'settings.motion')})+uiRow('Thumb rails','',{sub:opt([['on','Show'],['off','Hide \u2014 charts use the full width']],s.rails||'on','settings.rails')})+'<div data-level="developer">'+uiRow('Show model marks','',{sub:opt([['on','Show'],['off','Hide']],s.showModels===false?'off':'on','settings.showModels')})+'</div>'});
+out+=uiCard({fold:'tools-display',title:'Display',sub:(Object.keys(DB.settings.hiddenFolds||{}).length?(Object.keys(DB.settings.hiddenFolds).length+' hidden section'+(Object.keys(DB.settings.hiddenFolds).length===1?'':'s')+' \u00b7 '):'')+'text size, density, contrast and motion apply immediately and persist',body:((DB.settings.photos||[]).length?uiRow('Latest photo on Today',DB.settings.showPhotoOnToday!==false?'on':'off',{sub:'a small icon of your newest progress photo'})+'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Hide it':'Show it','photo.todayToggle',null,'btn-sm btn-secondary')+'</div>':'')+(function(){var h=Object.keys(DB.settings.hiddenFolds||{}).length;return h?uiRow('Hidden sections',String(h),{sub:'finished sections you hid'})+'<div class="btn-row">'+uiBtn('Show all','fold.showAll',null,'btn-sm btn-secondary')+'</div>':'';})()+uiRow('Detail','',{sub:opt([['casual','Casual'],['insightful','Insightful'],['developer','Developer']],detailLevel(),'settings.detail')+'<div class="hint">'+esc(DETAIL_LEVELS[detailLevel()].desc)+'</div>'})+uiRow('Units','',{sub:opt([['imperial','lb / in'],['metric','kg / cm']],s.units,'settings.units')})+uiRow('Text size','',{sub:opt([['XS','XS'],['S','S'],['M','M'],['L','L'],['XL','XL']],s.textScale,'settings.textScale')})+uiRow('Density','',{sub:opt([['compact','Compact'],['cozy','Cozy'],['comfortable','Comfortable']],s.density,'settings.density')})+uiRow('Contrast','',{sub:opt([['normal','Normal'],['high','High']],s.contrast,'settings.contrast')})+uiRow('Motion','',{sub:opt([['auto','System'],['reduced','Reduced']],s.motion,'settings.motion')})+uiRow('Thumb rails','',{sub:opt([['on','Show'],['off','Hide \u2014 charts use the full width']],s.rails||'on','settings.rails')})+'<div data-level="developer">'+uiRow('Show model marks','',{sub:opt([['on','Show'],['off','Hide']],s.showModels===false?'off':'on','settings.showModels')})+'</div>'});
 out+=uiCard({id:'textCard',title:'Text',sub:'the typeface and how text is spaced \u2014 changes apply immediately',body:(function(){
 var cur=canonicalFont(s.font||'system');
 var faces='<div class="face-list">'+Object.keys(FONT_REGISTRY).map(function(k){var f=FONT_REGISTRY[k];
@@ -16228,7 +16305,7 @@ var _FOODSHEET={q:'',local:[],branded:[],state:'idle',picked:null};
 function openFoodAdd(day,pre){_FOODSHEET={q:'',local:[],branded:[],state:'idle',picked:pre||null};openSheet('edit',{form:'foodAdd',title:'Add food',desc:'Search, choose a portion, assign a meal. The nutrient snapshot and source version travel with the entry.',buf:{date:day||todayISO(),meal:'lunch',amount:1,unit:'serving'}});if(pre)prepPortion(pre);}
 function prepPortion(f){normalizeFood(f);var b=_SHEET.buf;var opts=portionOptions(f);b.unit=opts[0].value;b.amount=1;if(f.lastQuantity!=null&&!f.portions.length){b.unit=f.lastBasis==='ml'?'ml':(f.lastBasis==='serving'?'serving':'g');b.amount=f.lastQuantity;}renderSheet();}
 SHEETS.foodAdd=function(b){var F=_FOODSHEET;var body='';
-if(!F.picked){body+='<div class="form-row"><label for="fs_q">Search</label><input id="fs_q" type="search" value="'+attrEsc(F.q)+'" placeholder="name or barcode" data-act="foodsheet.search" data-ev="input" autocomplete="off">'+uiBtn('Scan barcode','food.scan',null,'btn-sm btn-secondary')+'</div><div id="fs_results">'+renderFoodSheetResults()+'</div>';}
+if(!F.picked){body+='<div class="form-row"><label for="fs_q">Search</label><input id="fs_q" type="search" value="'+attrEsc(F.q)+'" placeholder="name or barcode" data-act="foodsheet.search" data-ev="input" autocomplete="off">'+uiMicBtn('fs_q')+uiBtn('Scan barcode','food.scan',null,'btn-sm btn-secondary')+'</div><div id="fs_results">'+renderFoodSheetResults()+'</div>';}
 else{var f=normalizeFood(F.picked);var res=portionResolve(f,b.amount,b.unit);var n=res&&res.qty>0?nutrientsFor(f,res.qty):null;var mc=macroConsistency(f);var basisNote=f.basis==='ml'?'nutrients per 100 mL (label serving unit is mL); logged by volume or servings \u2014 grams are not invented':(f.basis==='serving'?'per-serving nutrients only (volume ingredients without a density)':'nutrients per 100 g');
 body+='<div class="card" style="padding:12px"><div class="card-title">'+esc(f.name)+(f.brand?' <span class="muted">'+esc(f.brand)+'</span>':'')+'</div><div class="prov">'+esc(f.source)+' '+esc(String(f.version||''))+(f.category?' \u00b7 '+esc(f.category):'')+(f.energySource&&f.energySource!=='label'?' \u00b7 energy '+esc(f.energySource):'')+(f.gtin?' \u00b7 GTIN '+esc(f.gtin):'')+' \u00b7 '+esc(basisNote)+(f.householdServing?' \u00b7 label serving '+esc(f.householdServing):'')+'</div>'+(mc&&mc.note?'<div class="hint warn">'+esc(mc.note)+'</div>':'')+'</div><div class="form-trio">'+fld('amount','Amount',{type:'number'})+fld('unit','Portion',{type:'select',options:portionOptions(f).map(function(o){return [o.value,o.label];})})+fld('meal','Meal',{type:'select',options:MEALS.map(function(m){return [m,m];})})+'</div>'+fld('date','Date',{type:'date'})+(n?'<div class="row"><div class="l">'+esc(res.label)+(res.approx?' <span class="muted">approximate</span>':'')+'</div><div class="r"><strong>'+(n.kcal!=null?fmtNum(n.kcal,0)+' kcal':'energy unknown')+'</strong><small>P '+fmtNum(n.protein,0)+' \u00b7 C '+fmtNum(n.carbs,0)+' \u00b7 F '+fmtNum(n.fat,0)+' \u00b7 fiber '+fmtNum(n.fiber,0)+'</small></div></div>':'<div class="hint warn">'+(f.basis==='ml'&&UNIT_G[b.unit]!=null?'this product is labelled by volume; log it in mL, fl oz or servings (no density is known, so grams cannot be derived)':'portion does not resolve to a quantity')+'</div>')+'<div class="btn-row">'+uiBtn('\u2190 Different food','foodsheet.back',null,'btn-ghost btn-sm')+uiBtn(favorites().some(function(x){return x.id===f.id;})?'\u2605 Favorite':'\u2606 Favorite','food.fav',f.kind+'|'+f.id,'btn-ghost btn-sm')+'</div>';}
 return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Cancel</button>'+(F.picked?'<button class="btn btn-primary" data-act="foodsheet.save">Log it</button>':'')};};
@@ -20636,7 +20713,7 @@ var _ASK=null,_ASK_Q='';
 function openAsk(){openSheet('edit',{form:'ask',title:'Ask the record',
 desc:'Answered from your own data, not from a model. Where the record cannot answer, it says what it would need.',buf:{}});}
 SHEETS.ask=function(){
-var body='<label class="fld"><span>Question</span><input id="askInput" type="text" placeholder="what is my trend" value="'+attrEsc(_ASK_Q||'')+'" data-act="ask.field" data-ev="input"></label>'+
+var body='<label class="fld"><span>Question</span><input id="askInput" type="text" placeholder="what is my trend" value="'+attrEsc(_ASK_Q||'')+'" data-act="ask.field" data-ev="input">'+uiMicBtn('askInput')+'</label>'+
 '<div class="btn-row">'+uiBtn('Ask','ask.run',null,'btn-sm btn-primary')+'</div>';
 if(_ASK&&_ASK.status==='ok'){
 body+=uiRow(esc(_ASK.question),'<strong>'+esc(String(_ASK.value))+'</strong>',
@@ -21002,7 +21079,7 @@ foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};}
 function openPhotos(){setTimeout(hydratePhotoThumbs,0);openSheet('edit',{form:'photos',title:'Progress photos',desc:'Photos are stored in the browser database, never in the record document, so exports stay small and a photo is never shared by exporting a backup.',buf:{}});}
 var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',note:''};
 SHEETS.photos=function(){
-var _todaySwitch=(DB.settings.photos||[]).length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
+var _todaySwitch=(DB.settings.photos||[]).length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
 var pairs=photoPosePairs();
 var chips=function(reg,cur,act){return '<div class="btn-row" style="margin-top:4px">'+Object.keys(reg).map(function(k){
 return uiBtn(reg[k].label,act,k,'btn-sm '+(cur===k?'btn-primary':'btn-secondary'));}).join('')+'</div>';};
@@ -21166,7 +21243,7 @@ var baseEx=SHEETS.exlibrary;
 SHEETS.exlibrary=function(){var r=baseEx.apply(this,arguments);
 r.body='<button class="lib-row" data-act="move.library"><span class="lib-name">Mobility, activation and breathing</span><span class="lib-meta">the preparation and recovery side of the library</span><span class="lib-level">\u2192</span></button>'+r.body;return r;};
 })();
-var WELCOME_STEPS=['welcome','about','goal','training','food','detail','look','tour','done'];
+var WELCOME_STEPS=['welcome','about','goal','training','food','place','detail','look','tour','done'];
 var _WZ={step:0,b:{}};
 var WZ_EQUIP=[['bodyweight','Just bodyweight'],['dumbbell','Dumbbells'],['barbell','Barbell and rack'],['kettlebell','Kettlebells'],['band','Resistance bands'],['bar','Pull-up bar'],['machine','Gym machines and cables']];
 var WZ_DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -21209,6 +21286,11 @@ if(st==='food')body='<h2 class="wz-h">Food</h2><div class="hint">So meal suggest
 '<div class="card-title">Cooking</div>'+_wzChips(CONSTRAINT_OPTIONS.cookingTime,b.cookingTime||'','cookingTime')+
 '<div class="card-title">Food budget</div>'+_wzChips(CONSTRAINT_OPTIONS.foodBudget,b.foodBudget||'','foodBudget')+
 '<div class="card-title">Anything you don\u2019t eat</div>'+_wzChips(CONSTRAINT_OPTIONS.dietRestrictions,b.dietRestrictions||[],'dietRestrictions',true);
+if(st==='place')body='<h2 class="wz-h">'+uiIcon('pin',{size:22})+' Your place, for weather</h2><div class="hint">Optional. The Today screen then shows the weather, the next hours and 14 days, and air quality. The app never reads your device location; type a town or city.</div>'+
+'<label class="fld"><span>Town or city</span><input id="wxPlace" type="text" autocomplete="off" value="'+attrEsc(b.q||'')+'" data-act="weather.q" data-ev="input" placeholder="e.g. Leeds"></label>'+uiMicBtn('wxPlace')+uiBtn('Search','weather.search',null,'btn-sm btn-secondary')+
+(b.places?b.places.map(function(p,i){return '<button class="lib-row" data-act="weather.pick" data-arg="'+i+'"><span class="lib-name">'+esc(p.label)+'</span></button>';}).join(''):'')+
+(b.searchError?'<div class="hint">'+esc(b.searchError)+' You can set it later: Today \u2192 Set up more, or the palette \u2192 Weather.</div>':'')+
+(weatherLocation()?'<div class="hint">'+uiIcon('check',{size:16})+' Set to '+esc(weatherLocation().label||'your place')+'.</div>':'');
 if(st==='detail')body='<h2 class="wz-h">How much detail?</h2>'+Object.keys(DETAIL_LEVELS).map(function(k){var L=DETAIL_LEVELS[k],on=detailLevel()===k;
 return '<button class="wz-card'+(on?' active':'')+'" data-act="welcome.detail" data-arg="'+k+'" aria-pressed="'+on+'"><span class="wz-card-t">'+esc(L.label)+(k==='casual'?' \u00b7 simplest':'')+'</span><span class="wz-card-d">'+esc(L.desc)+'</span></button>';}).join('')+
 '<div class="hint">Most people start with Casual or Insightful. Switch any time in Tools \u2192 Display.</div>';
@@ -21362,8 +21444,44 @@ return {status:'ok',days:d};}
 registerAction('attention.snooze',function(id){var r=snoozeAttention(id);if(r.status==='refused'){toast(r.note);return;}if(r.status!=='ok')return;var d=r.days;
 renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='attention'){_SHEET.buf.q=attentionQueue();renderSheet();}
 toast('Snoozed for '+(d===1?'a day':d+' days')+' \u2014 it comes back if it still applies');});
-registerAction('photo.todayToggle',function(){DB.settings.showPhotoOnToday=!DB.settings.showPhotoOnToday;save('settings');renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='photos')renderSheet();
-toast(DB.settings.showPhotoOnToday?'Your latest photo shows on Today':'Today no longer shows a photo');});
+registerAction('photo.todayToggle',function(){DB.settings.showPhotoOnToday=DB.settings.showPhotoOnToday===false;save('settings');renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='photos')renderSheet();
+toast(DB.settings.showPhotoOnToday!==false?'Your latest photo shows on Today':'Today no longer shows a photo');});
+function tabOrder(){var t=[];[].slice.call(document.querySelectorAll('nav [data-act="nav.tab"]')).forEach(function(b){var a=b.getAttribute('data-arg');if(a&&t.indexOf(a)<0&&b.offsetParent!==null)t.push(a);});return t;}
+function flipTab(dir){var t=tabOrder();if(!t.length)return;var i=t.indexOf(_TAB);switchTab(t[(i+dir+t.length)%t.length]);}
+registerAction('nav.prevTab',function(){flipTab(-1);});registerAction('nav.nextTab',function(){flipTab(1);});
+function uiMicBtn(inputId){if(typeof window==='undefined'||!(window.SpeechRecognition||window.webkitSpeechRecognition))return '';
+return '<button type="button" class="mic-btn" data-act="dictate" data-arg="'+attrEsc(inputId)+'" aria-label="Dictate" title="Dictate">'+uiIcon('mic',{size:18})+'</button>';}
+var _DICTATE=null;
+registerAction('dictate',function(id,ev,btn){var el=document.getElementById(id);if(!el)return;
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){toast('This browser has no speech recognition');return;}
+if(_DICTATE){try{_DICTATE.abort();}catch(e){}_DICTATE=null;}
+var r=new SR();_DICTATE=r;r.lang=navigator.language||'en-US';r.interimResults=true;r.maxAlternatives=1;if(btn)btn.classList.add('on');
+r.onresult=function(e){var t='';for(var i=e.resultIndex||0;i<e.results.length;i++)t+=e.results[i][0].transcript;el.value=t;el.dispatchEvent(new Event('input',{bubbles:true}));};
+r.onerror=function(e){toast(VOICE_ERRORS[e.error]||('Dictation failed ('+e.error+')'),{tone:'attention',ms:7000});};
+r.onend=function(){_DICTATE=null;var b2=document.querySelector('[data-act="dictate"][data-arg="'+id+'"]');if(b2)b2.classList.remove('on');try{el.focus();}catch(e){}};
+try{r.start();}catch(e){toast('Dictation could not start');}});
+function featureGuide(){var P=DB.settings.photos||[],C=DB.settings.cloud||{},S=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
+var voice=typeof window!=='undefined'&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+return [
+{id:'place',icon:'pin',label:'Weather for your place',what:'Conditions, the next hours, 14 days and air quality on Today.',on:!!weatherLocation(),act:'weather.open',cta:'Set a place'},
+{id:'schedule',icon:'calendar',label:'Your schedule',what:'Same days each week, rotating shifts such as 2-2-3, or an irregular week.',on:S.mode!=='weekly'||(DB.settings.trainingDays||[]).length>0,state:S.mode==='rotation'?'rotating shifts':(S.mode==='irregular'?'irregular':null),act:'nav.schedule',cta:'Set it'},
+{id:'workout',icon:'dumbbell',label:'Guided workouts',what:'Today\u2019s session set by set, with a rest timer and swaps.',on:(DB.sessions||[]).some(function(s){return s.source==='workout mode';}),act:'workout.start',cta:'Start one'},
+{id:'voice',icon:'mic',label:'Log by voice',what:'Say "weight 182.4" or "2 eggs for breakfast"; you confirm before it is kept.',on:voice,state:voice?'available':'not in this browser',act:'nav.voice',cta:'Try it',na:!voice},
+{id:'photos',icon:'camera',label:'Progress photos',what:'Private photos, compared side by side; the latest can show on Today.',on:P.length>0,act:'nav.photos',cta:'Add one'},
+{id:'barcode',icon:'barcode',label:'Barcode scanning',what:'Scan or type a barcode; the built-in database first, then Open Food Facts.',on:true,state:'ready',act:'food.scan',cta:'Scan'},
+{id:'sync',icon:'sync',label:'Sync between devices',what:'End-to-end encrypted: the server stores what it cannot read.',on:!!C.enabled,act:'nav.cloud',cta:'Set up'},
+{id:'import',icon:'upload',label:'Import your data',what:'Apple Health exports, smart scales (Withings) and other CSV files.',on:(DB.observations||[]).some(function(o){return o.source==='import';}),act:'nav.import',cta:'Import'},
+{id:'experiments',icon:'flask',label:'Experiments',what:'Ready-made tests of one change, sized to your own data.',on:(DB.experiments||[]).length>0,act:'exp.new',cta:'Browse'},
+{id:'charts',icon:'chart',label:'Charts of your data',what:'Every chart type the app can draw, from your own record.',on:true,state:'ready',act:'nav.charts',cta:'Open'}
+].filter(function(f){return typeof ACTIONS==='undefined'||ACTIONS[f.act];});
+}
+function renderFeatureRow(f){return '<div class="feat">'+uiIcon(f.icon,{size:22})+'<div class="feat-body"><b>'+esc(f.label)+'</b> '+uiPill(f.state||(f.on?'set up':'not set up'),f.on?'good':'neutral')+
+'<div class="hint">'+esc(f.what)+'</div></div>'+(f.na?'':uiBtn(f.on?'Open':f.cta,f.act,null,'btn-sm '+(f.on?'btn-ghost':'btn-secondary')))+'</div>';}
+function renderSetupMore(){var F=featureGuide(),todo=F.filter(function(f){return !f.on&&!f.na;});if(!todo.length)return '';
+return uiCard({fold:'today-setup',foldOpen:true,hideable:true,hideLabel:'Hide this list',title:'Set up more',sub:todo.length+' feature'+(todo.length===1?'':'s')+' not set up yet',
+body:todo.slice(0,4).map(renderFeatureRow).join('')+'<div class="btn-row">'+uiBtn('Everything this app can do','features.open',null,'btn-sm btn-ghost')+'</div>'});}
+registerAction('features.open',function(){openSheet('edit',{form:'features',title:'Everything this app can do',desc:'',buf:{}});});
+SHEETS.features=function(){return {body:featureGuide().map(renderFeatureRow).join(''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 /* ===== SOURCE: 90-workout.js ===== */
 var WORKOUT_DRAFT_KEY='physiqueOS_workout_draft';
 var _WORKOUT=null,_REST=null;
@@ -21541,7 +21659,7 @@ fetchHistoricalWeather(start,end).then(function(r){renderAll();if(_SHEET&&_SHEET
 SHEETS.weather=function(b){
 var L=weatherLocation(),D=environmentDaily(),T=todayISO(),out='';
 out+='<div class="card-title">Place</div>'+(L?uiRow(esc(L.label||'set'),L.lat+', '+L.lon,{sub:'rounded to about 1 km before it leaves this device; the app never reads your device location'}):'<div class="hint">No place set. Weather needs one, and it is never guessed.</div>')+
-'<label class="fld"><span>Search for a place</span><input id="wxPlace" type="text" autocomplete="off" value="'+attrEsc(b.q||'')+'" data-act="weather.q" data-ev="input" placeholder="e.g. Leeds"></label>'+uiBtn('Search','weather.search',null,'btn-sm btn-secondary')+
+'<label class="fld"><span>Search for a place</span><input id="wxPlace" type="text" autocomplete="off" value="'+attrEsc(b.q||'')+'" data-act="weather.q" data-ev="input" placeholder="e.g. Leeds"></label>'+uiMicBtn('wxPlace')+uiBtn('Search','weather.search',null,'btn-sm btn-secondary')+
 (b.places?b.places.map(function(p,i){return '<button class="lib-row" data-act="weather.pick" data-arg="'+i+'"><span class="lib-name">'+esc(p.label)+'</span><span class="lib-meta">'+round(p.lat,2)+', '+round(p.lon,2)+'</span></button>';}).join(''):'')+
 (b.searchError?'<div class="banner attention"><span class="banner-text">'+esc(b.searchError)+'</span>'+uiBtn('Check the connection','diag.server',null,'btn-sm btn-secondary')+'</div>'+
 (b.searchDetail?'<div class="hint">'+esc(b.searchDetail)+'</div>':''):'')+
@@ -21554,10 +21672,10 @@ var aqk=['usAqi','europeanAqi','pm2_5','pm10','ozone','no2','so2','co'].filter(f
 if(aqk.length)out+='<div class="card-title" style="margin-top:12px">Air quality</div>'+aqk.map(function(k){return uiRow(esc(ENV_VARIABLES[k].label),fmtEnv(k,N.values[k]));}).join('')+
 '<div class="hint">Environmental measurements, not a medical assessment. Each AQI is on its own scale.</div>';
 var H=environmentHourly(T).filter(function(h){return h.kind!=='recent past';}).slice(0,12);
-if(H.length)out+='<div class="card-title" style="margin-top:12px">Rest of today</div><div class="table-wrap"><table class="data"><thead><tr><th>time</th><th>temp</th><th>feels</th><th>rain</th><th>wind</th><th>UV</th></tr></thead><tbody>'+
-H.map(function(h){return '<tr><td>'+esc(h.time.slice(11))+'</td><td>'+fmtEnv('temperature',h.values.temperature)+'</td><td>'+fmtEnv('apparentTemperature',h.values.apparentTemperature)+'</td><td>'+fmtEnv('precipitationProbability',h.values.precipitationProbability)+'</td><td>'+fmtEnv('windSpeed',h.values.windSpeed)+'</td><td>'+fmtEnv('uvIndex',h.values.uvIndex)+'</td></tr>';}).join('')+'</tbody></table></div>';}
-if(D.status==='ok'){out+='<div class="card-title" style="margin-top:12px">Day by day</div><div class="table-wrap"><table class="data"><thead><tr><th>day</th><th>kind</th><th>low\u2013high</th><th>feels</th><th>rain</th><th>ET\u2080</th><th>UV</th><th>wind / gust</th><th>sun</th></tr></thead><tbody>'+
-D.days.map(function(d){var x=d.values;return '<tr'+(d.date===T?' class="wx-today"':'')+'><td>'+esc(shortDate(d.date))+'</td><td>'+esc(d.kind==='recent past'?'past':(d.kind==='historical'?'history':'forecast'))+'</td><td>'+fmtEnv('temperatureMin',x.temperatureMin)+'\u2013'+fmtEnv('temperatureMax',x.temperatureMax)+'</td>'+
+if(H.length)out+='<div class="card-title" style="margin-top:12px">Rest of today</div><div class="table-wrap"><table class="data"><thead><tr><th>time</th><th></th><th>temp</th><th>feels</th><th>rain</th><th>wind</th><th>UV</th></tr></thead><tbody>'+
+H.map(function(h){var cd=weatherCondition(h.values,h.values.isDay);return '<tr><td>'+esc(h.time.slice(11))+'</td><td>'+weatherIcon(h.values,h.values.isDay,18)+(cd?' '+esc(cd.label):'')+'</td><td>'+fmtEnv('temperature',h.values.temperature)+'</td><td>'+fmtEnv('apparentTemperature',h.values.apparentTemperature)+'</td><td>'+fmtEnv('precipitationProbability',h.values.precipitationProbability)+'</td><td>'+fmtEnv('windSpeed',h.values.windSpeed)+'</td><td>'+fmtEnv('uvIndex',h.values.uvIndex)+'</td></tr>';}).join('')+'</tbody></table></div>';}
+if(D.status==='ok'){out+='<div class="card-title" style="margin-top:12px">Day by day</div><div class="table-wrap"><table class="data"><thead><tr><th>day</th><th>kind</th><th></th><th>low\u2013high</th><th>feels</th><th>rain</th><th>ET\u2080</th><th>UV</th><th>wind / gust</th><th>sun</th></tr></thead><tbody>'+
+D.days.map(function(d){var x=d.values;return '<tr'+(d.date===T?' class="wx-today"':'')+'><td>'+esc(shortDate(d.date))+'</td><td>'+esc(d.kind==='recent past'?'past':(d.kind==='historical'?'history':'forecast'))+'</td><td>'+weatherIcon(x,true,18)+'</td><td>'+fmtEnv('temperatureMin',x.temperatureMin)+'\u2013'+fmtEnv('temperatureMax',x.temperatureMax)+'</td>'+
 '<td>'+fmtEnv('apparentTemperatureMin',x.apparentTemperatureMin)+'\u2013'+fmtEnv('apparentTemperatureMax',x.apparentTemperatureMax)+'</td><td>'+fmtEnv('precipitationSum',x.precipitationSum)+(x.precipitationProbabilityMax!=null?' ('+Math.round(x.precipitationProbabilityMax)+'%)':'')+'</td>'+
 '<td>'+fmtEnv('et0Sum',x.et0Sum)+'</td><td>'+fmtEnv('uvIndexMax',x.uvIndexMax)+'</td><td>'+fmtEnv('windSpeedMax',x.windSpeedMax)+' / '+fmtEnv('windGustsMax',x.windGustsMax)+'</td><td>'+esc((x.sunrise||'')+'\u2013'+(x.sunset||''))+(x.daylightHours!=null?' \u00b7 '+fmtEnv('daylightHours',x.daylightHours):'')+'</td></tr>';}).join('')+'</tbody></table></div>';}
 out+='<div class="btn-row">'+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Load the last 30 days of history','weather.history',null,'btn-sm btn-secondary')+'</div>';
@@ -23067,7 +23185,7 @@ var KEYMAP=[
 {keys:'Tab / Shift+Tab',label:'Move through controls; inside a sheet focus stays in the sheet',group:'navigation'},
 {keys:'Enter / Space',label:'Activate the focused control',group:'navigation'}
 ];
-var REQUIRES_SUBJECT=/^(welcome\.|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
 'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -23132,6 +23250,7 @@ k:['deload','easier week','rest week','back off','fatigue']},
 'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
 'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
 'exp.custom':{d:'An experiment you design yourself, when none of the ready-made ones fits',k:['experiment','design','custom','own']},
+'features.open':{d:'Every feature, whether it is set up, and one tap to start',k:['features','help','what can','set up','guide','tour']},
 'diag.server':{d:'Checks, layer by layer, whether this deployment reaches the Physique OS server and the weather provider',k:['server','connection','weather not working','sync','deployment','diagnostics','something went wrong']},
 'nav.schedule':{d:'Weekly days, rotating shifts (2-2-3, DuPont, 4-on-4-off, your own) or an irregular week',k:['schedule','shifts','rotation','nights','2-2-3','availability','days']},
 'weather.open':{d:'Current weather, 14-day forecast, the past week, history and air quality for your place',k:['weather','forecast','temperature','rain','uv','air quality','humidity','sunrise','wind']},
@@ -23364,6 +23483,7 @@ var NAV_COMMANDS=[
 {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
 {id:'exp.custom',label:'Design my own experiment',group:'decisions',surfaces:['ui','palette']},
+{id:'features.open',label:'Everything this app can do',group:'discovery',surfaces:['ui','palette']},
 {id:'diag.server',label:'Test external server',group:'system',surfaces:['ui','palette']},
 {id:'nav.schedule',label:'Your schedule',group:'navigation',surfaces:['ui','palette']},
 {id:'weather.open',label:'Weather',group:'navigation',surfaces:['ui','palette']},
@@ -23729,7 +23849,7 @@ commandRegister().forEach(function(c){if(!DETAIL_LEVELS[commandLevel(c.id,c.grou
 return {ok:issues.length===0,issues:issues,levels:Object.keys(DETAIL_LEVELS)};
 }
 var PANEL_LEVEL_RULES=[
-[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
+[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Set up more/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
 [/^Quick log/,'casual'],[/^Today$/,'casual'],[/^All observations/,'casual'],
 [/^[A-Z][A-Za-z ]+ \u00b7 week \d+/,'casual'],[/^No active phase/,'casual'],[/^Profile$/,'casual'],
 [/^How targets and estimates are kept apart/,'developer'],[/^Criteria/,'insightful'],[/^Phase progression/,'insightful'],[/^Phase history/,'insightful'],[/^What if/,'insightful'],
@@ -26945,7 +27065,7 @@ return r.have.indexOf('kettlebell')>=0&&r.have.indexOf('band')>=0;})());
 ok('experience comes from the profile field, the one home for it',(function(){var k=DB.profile.trainingExperience;DB.profile.trainingExperience='advanced';
 var r=trainingExperience();DB.profile.trainingExperience=k;return r.level==='advanced'&&r.source==='you said';})());
 ok('the profile is written through one function',typeof applyProfileFields==='function'&&/applyProfileFields|p\.name=/.test(String(saveProfile)));
-ok('the setup has a step for each part and can be skipped',WELCOME_STEPS.length===9&&!!ACTIONS['welcome.skip']&&!!ACTIONS['nav.welcome']);
+ok('the setup has a step for each part and can be skipped',WELCOME_STEPS.length===10&&!!ACTIONS['welcome.skip']&&!!ACTIONS['nav.welcome']);
 });
 ok('every entity contract matches the code and every store is owned or explained',entityContractAudit().ok,entityContractAudit().issues.slice(0,3).join('; '));
 withFixture('successful_cut',function(){
@@ -27071,6 +27191,14 @@ DB.settings.schedule=keep;_memoInvalidate();
 ok('a bench press is drawn lying down and a push-up face down',exerciseOrientation('Bench press').id==='supine'&&exerciseOrientation('Push-up').id==='prone'&&exerciseOrientation('Lat pulldown').id==='seated');
 ok('a lateral raise is drawn from the front',movementModel('abduction').view==='front');})();
 ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMPLATES.every(function(t){return !!t.todo;}));
+ok('every weather condition has an icon, and a night version',Object.keys(WEATHER_CONDITIONS).every(function(k){var c=WEATHER_CONDITIONS[k];return !!ICONS[c[1]]&&!!ICONS[c[2]];}));
+ok('a condition without a code is derived from cloud cover and rain, and says so',(function(){var c=weatherCondition({cloudCover:90,precipitation:0});var r=weatherCondition({precipitation:2});return c&&c.label==='Overcast'&&c.derived&&r&&r.icon==='rain';})());
+ok('a night hour gets the night icon',weatherCondition({weatherCode:1,isDay:0}).icon==='moonCloud'&&weatherCondition({weatherCode:1,isDay:1}).icon==='sunCloud');
+ok('Meteosource conditions map onto the same codes',METEOSOURCE_CODES.partly_sunny===2&&METEOSOURCE_CODES.tstorm===95&&adaptMeteosource({units:'metric',current:{weather:'light_rain',temperature:8}},{lat:1,lon:1}).batch.current.values.weatherCode===61);
+ok('Open-Meteo weather codes arrive as the canonical conditions',adaptOpenMeteo({latitude:1,longitude:1,utc_offset_seconds:0,current_units:{weather_code:'wmo code'},current:{time:'2026-09-26T09:00',weather_code:3}},{dataset:'forecast',retrievedAt:'2026-09-26T09:05:00Z'}).batch.current.values.weatherCode===3);
+ok('an unknown icon draws nothing rather than a broken image',uiIcon('no-such-icon')==='');
+ok('every feature in the guide leads somewhere real',featureGuide().every(function(f){return typeof ACTIONS[f.act]==='function'&&!!ICONS[f.icon];}));
+ok('setup offers a place for weather',WELCOME_STEPS.indexOf('place')>0);
 ok('every speech recognition error has an explanation',['no-speech','audio-capture','not-allowed','service-not-allowed','network'].every(function(k){return !!VOICE_ERRORS[k];}));
 ok('without speech recognition, voice capture says so rather than failing silently',(function(){var had=typeof window!=='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition);return had||startVoiceCapture(function(){}).ok===false;})());
 ok('an error without the server\u2019s envelope never reads "Something went wrong"',extError(undefined,'x').error.text!=='Something went wrong.'&&extError('bogus','x').error.category==='provider_unavailable'&&/problems/.test(extError('bogus','x').error.text));

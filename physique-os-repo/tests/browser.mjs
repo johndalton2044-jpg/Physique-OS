@@ -269,9 +269,13 @@ for(const vp of VIEWPORTS){
         lvis:getComputedStyle(l).display!=='none', rvis:getComputedStyle(r).display!=='none'};
     });
     if(rails && rails.lvis && rails.rvis){
-      if(Math.abs(rails.lb-rails.rb) > 2)
-        add('P1','rails',`the rails sit at different heights on ${vp.name}`,
-          `left bottom ${rails.lb}, right bottom ${rails.rb}`);
+      /* The right-hand column ends with the + button, below its rail. Matching the two rails' bottom edges left the left
+         stack floating about 60 px above + — the misalignment reported in the usage review. The left rail's last
+         button is now checked against the centre of +. */
+      const al=await page.evaluate(()=>{const h=document.getElementById('homeFab'),p=document.querySelector('.fab:not(.fab-mini)');if(!h||!p)return null;
+        const a=h.getBoundingClientRect(),b=p.getBoundingClientRect();return {home:Math.round(a.top+a.height/2),plus:Math.round(b.top+b.height/2)};});
+      if(al&&Math.abs(al.home-al.plus)>4)
+        add('P1','rails',`the left rail does not end level with the + button on ${vp.name}`,`home centre ${al.home}, + centre ${al.plus}`);
       else good('rails',`the rails align on ${vp.name}`,`both bottom at ${rails.lb}`);
     }
   }
@@ -311,6 +315,21 @@ for(const vp of VIEWPORTS){
       return await page.evaluate(()=>{const b=document.getElementById('editBackdrop');return !!(b&&b.classList.contains('show')&&/Chart catalogue/.test(b.textContent)&&b.querySelectorAll('svg.chart-svg').length>=20);});}catch(e){return false;}})();
     await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.dispatchAct('settings.detail','insightful');});
     if(!ok)add('P1','nav','nav.charts: the chart catalogue does not open from the palette with its charts drawn','');else good('nav','nav.charts: palette \u2192 chart catalogue, drawn from the record','nav.charts');
+  }
+  /* RAILS: the left rail ends level with the + button, flush with its edge; previous/next sit side by side and flip
+     panels; the microphone sits above + (usage review). */
+  if(vp.name==='iPhone 15'){
+    const f=[];await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.switchTab('today');window.scrollTo(0,0);});await page.waitForTimeout(200);
+    const R=await page.evaluate(()=>{const g=s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return {l:Math.round(r.left),r:Math.round(r.right),t:Math.round(r.top),b:Math.round(r.bottom),cy:Math.round(r.top+r.height/2)};};
+      return {plus:g('.fab:not(.fab-mini)'),home:g('#homeFab'),prev:g('#prevFab'),next:g('#nextFab'),mic:g('#voiceFab')};});
+    if(!R.plus||!R.home||Math.abs(R.home.cy-R.plus.cy)>4)f.push('the left rail does not end level with the + button '+JSON.stringify([R.home,R.plus]));
+    if(R.prev&&R.home&&R.prev.l!==R.home.l)f.push('the left rail buttons are not flush with its edge');
+    if(!R.prev||!R.next||Math.abs(R.prev.cy-R.next.cy)>2||R.next.l<=R.prev.r)f.push('previous and next are not side by side');
+    if(!R.mic||!R.plus||R.mic.b>R.plus.t||R.plus.t-R.mic.b>24)f.push('the microphone is not directly above the + button');
+    if(!(await page.evaluate(()=>document.getElementById('prevFab').getAttribute('data-act')==='nav.prevTab'&&document.getElementById('nextFab').getAttribute('data-act')==='nav.nextTab')))f.push('the pair is not wired to nav.prevTab and nav.nextTab');
+    const t0=await page.evaluate(()=>window._TAB);await page.click('#nextFab',{force:true});await page.waitForTimeout(150);const t1=await page.evaluate(()=>window._TAB);
+    await page.click('#prevFab',{force:true});await page.waitForTimeout(150);if(t0===t1||await page.evaluate(()=>window._TAB)!==t0)f.push('previous/next do not flip panels');
+    if(f.length)add('P1','rails','the side rails are not aligned or do not flip panels',f.join('; '));else good('rails','left rail level with +, previous/next side by side and flipping, microphone above +','usage review');
   }
   /* SCHEDULES, READY-MADE EXPERIMENTS, MOVEMENT PANELS — through their controls. */
   if(vp.name==='iPhone 15'){

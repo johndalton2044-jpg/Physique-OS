@@ -113,7 +113,7 @@ function testExternalServer(opts){
   opts=opts||{};var steps=[],base=extServerBase(),done=function(verdict,code){return {verdict:verdict,code:code,steps:steps,base:base,at:nowISO()};};
   if(!base)return Promise.resolve(done('No server address is configured for this app.','A'));
   return _rawGet('/v1/health').then(function(h){
-    steps.push({step:'server health ('+base+'/v1/health)',ok:!!(h.ok&&h.json&&h.json.ok),detail:h.network?'could not be reached':(h.html?'a web page came back (HTTP '+h.http+'), not the server':(h.json?('HTTP '+h.http+' \u00b7 '+(h.json.service||'')):('HTTP '+h.http)))});
+    steps.push({step:'server health ('+base+'/v1/health)',ok:!!(h.ok&&h.json&&h.json.ok),detail:h.network?'could not be reached':(h.html?'a web page came back (HTTP '+h.http+'), not the server':(h.json?('HTTP '+h.http+' \u00b7 '+(h.json.service||'')+(h.json.storage?' \u00b7 storage: '+h.json.storage:'')):('HTTP '+h.http)))});
     if(h.network)return done('The address '+base+' could not be reached at all.','C');
     if(h.html&&h.http>=502&&h.http<=504)return done('The rewrite is there, but the server behind it is not answering (HTTP '+h.http+').','C');
     if(h.html)return done('Nothing at '+base+' is the Physique OS server \u2014 this deployment has no rewrite to a running server. Deploy server/server.mjs to a Node host and add the /api/sync rewrite (see DEPLOYMENT.md).','B');
@@ -132,6 +132,7 @@ function testExternalServer(opts){
 
 /* ---- the canonical environmental variables: stored metric; converted for display only ---- */
 var ENV_VARIABLES={
+  weatherCode:{label:'Conditions',unit:'code',res:['current','hourly','daily']},
   temperature:{label:'Temperature',unit:'\u00b0C',res:['current','hourly']},apparentTemperature:{label:'Feels like',unit:'\u00b0C',res:['current','hourly']},
   humidity:{label:'Humidity',unit:'%',res:['current','hourly']},precipitation:{label:'Precipitation',unit:'mm',res:['current','hourly']},
   precipitationProbability:{label:'Chance of precipitation',unit:'%',res:['hourly']},cloudCover:{label:'Cloud cover',unit:'%',res:['current','hourly']},
@@ -150,14 +151,14 @@ var ENV_VARIABLES={
   so2:{label:'Sulphur dioxide',unit:'\u00b5g/m\u00b3',res:['current','hourly'],air:true},co:{label:'Carbon monoxide',unit:'\u00b5g/m\u00b3',res:['current','hourly'],air:true},
   europeanAqi:{label:'European AQI',unit:'',res:['current','hourly'],air:true},usAqi:{label:'US AQI',unit:'',res:['current','hourly'],air:true}
 };
-var _OM_MAP={temperature_2m:'temperature',relative_humidity_2m:'humidity',apparent_temperature:'apparentTemperature',is_day:'isDay',precipitation:'precipitation',
+var _OM_MAP={weather_code:'weatherCode',temperature_2m:'temperature',relative_humidity_2m:'humidity',apparent_temperature:'apparentTemperature',is_day:'isDay',precipitation:'precipitation',
   precipitation_probability:'precipitationProbability',cloud_cover:'cloudCover',et0_fao_evapotranspiration:'et0',vapour_pressure_deficit:'vpd',wind_speed_10m:'windSpeed',
   wind_direction_10m:'windDirection',wind_gusts_10m:'windGusts',uv_index:'uvIndex',pm2_5:'pm2_5',pm10:'pm10',ozone:'ozone',nitrogen_dioxide:'no2',sulphur_dioxide:'so2',
   carbon_monoxide:'co',european_aqi:'europeanAqi',us_aqi:'usAqi'};
-var _OM_DAILY_MAP={temperature_2m_max:'temperatureMax',temperature_2m_min:'temperatureMin',apparent_temperature_max:'apparentTemperatureMax',apparent_temperature_min:'apparentTemperatureMin',
+var _OM_DAILY_MAP={weather_code:'weatherCode',temperature_2m_max:'temperatureMax',temperature_2m_min:'temperatureMin',apparent_temperature_max:'apparentTemperatureMax',apparent_temperature_min:'apparentTemperatureMin',
   precipitation_sum:'precipitationSum',precipitation_probability_max:'precipitationProbabilityMax',et0_fao_evapotranspiration:'et0Sum',sunrise:'sunrise',sunset:'sunset',
   daylight_duration:'daylightHours',uv_index_max:'uvIndexMax',wind_speed_10m_max:'windSpeedMax',wind_gusts_10m_max:'windGustsMax',wind_direction_10m_dominant:'windDirectionDominant'};
-var _OM_UNITS={'\u00b0C':'\u00b0C','%':'%','mm':'mm','kPa':'kPa','m/s':'m/s','\u00b0':'\u00b0','':'','iso8601':'time','s':'s','\u03bcg/m\u00b3':'\u00b5g/m\u00b3','\u00b5g/m\u00b3':'\u00b5g/m\u00b3','EAQI':'','USAQI':''};
+var _OM_UNITS={'wmo code':'code','\u00b0C':'\u00b0C','%':'%','mm':'mm','kPa':'kPa','m/s':'m/s','\u00b0':'\u00b0','':'','iso8601':'time','s':'s','\u03bcg/m\u00b3':'\u00b5g/m\u00b3','\u00b5g/m\u00b3':'\u00b5g/m\u00b3','EAQI':'','USAQI':''};
 function _envKind(dataset,localTime,retrievedLocal){if(dataset==='archive')return 'historical';return localTime<retrievedLocal?'recent past':'forecast';}
 function _localNow(retrievedAt,offsetSec){var t=Date.parse(retrievedAt)+(offsetSec||0)*1000;return new Date(t).toISOString().slice(0,16);}
 
@@ -198,7 +199,8 @@ function adaptMeteosource(payload,meta){
     timezone:'UTC',utcOffsetSeconds:0,retrievedAt:retrievedAt,adapterVersion:EXT_ADAPTER_VERSION,current:null,hourly:null,daily:null,
     unsupported:['et0','et0Sum','uvIndexMax','windGustsMax','apparentTemperatureMax','apparentTemperatureMin','precipitationProbabilityMax'],derived:[],unknownFields:[]};
   var one=function(x){var w=x.wind||{},pr=x.precipitation||{},cc=x.cloud_cover;
-    return {temperature:num2(x.temperature),apparentTemperature:num2(x.feels_like),humidity:num2(x.humidity),precipitation:num2(pr.total),
+    var wk=String(x.weather||x.icon_name||'').toLowerCase();
+    return {weatherCode:METEOSOURCE_CODES[wk]!=null?METEOSOURCE_CODES[wk]:null,temperature:num2(x.temperature),apparentTemperature:num2(x.feels_like),humidity:num2(x.humidity),precipitation:num2(pr.total),
       cloudCover:typeof cc==='object'&&cc?num2(cc.total):num2(cc),windSpeed:num2(w.speed),windDirection:num2(w.angle),windGusts:num2(w.gusts),uvIndex:num2(x.uv_index),
       precipitationProbability:x.probability?num2(x.probability.precipitation):null};};
   if(p.current)batch.current={time:nowUtc,kind:'current',values:one(p.current)};
@@ -206,8 +208,8 @@ function adaptMeteosource(payload,meta){
   if(H.length){var hv={};var rows=H.map(one);Object.keys(rows[0]).forEach(function(k){hv[k]=rows.map(function(r){return r[k];});});
     batch.hourly={times:H.map(function(h){return String(h.date).slice(0,16);}),kinds:H.map(function(h){return String(h.date).slice(0,16)<nowUtc?'recent past':'forecast';}),values:hv};}
   var Dd=(p.daily&&p.daily.data)||[];
-  if(Dd.length){var dv={temperatureMax:[],temperatureMin:[],precipitationSum:[],windSpeedMax:[],windDirectionDominant:[],sunrise:[],sunset:[],daylightHours:[]};
-    Dd.forEach(function(d){var a=d.all_day||{},s=(d.astro&&d.astro.sun)||{};dv.temperatureMax.push(num2(a.temperature_max));dv.temperatureMin.push(num2(a.temperature_min));
+  if(Dd.length){var dv={weatherCode:[],temperatureMax:[],temperatureMin:[],precipitationSum:[],windSpeedMax:[],windDirectionDominant:[],sunrise:[],sunset:[],daylightHours:[]};
+    Dd.forEach(function(d){var a=d.all_day||{},s=(d.astro&&d.astro.sun)||{},wk=String(d.weather||a.weather||'').toLowerCase();dv.weatherCode.push(METEOSOURCE_CODES[wk]!=null?METEOSOURCE_CODES[wk]:null);dv.temperatureMax.push(num2(a.temperature_max));dv.temperatureMin.push(num2(a.temperature_min));
       dv.precipitationSum.push(a.precipitation?num2(a.precipitation.total):null);dv.windSpeedMax.push(a.wind?num2(a.wind.speed):null);dv.windDirectionDominant.push(a.wind?num2(a.wind.angle):null);
       dv.sunrise.push(s.rise?String(s.rise).slice(11,16):null);dv.sunset.push(s.set?String(s.set).slice(11,16):null);
       dv.daylightHours.push(s.rise&&s.set?round((Date.parse(s.set+'Z')-Date.parse(s.rise+'Z'))/3600000,2):null);});
@@ -360,15 +362,22 @@ function renderWeatherCard(){
   var N=environmentNow(),D=environmentDaily();
   if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+esc(N.note)+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
   var v=N.values,T=todayISO(),today=(D.days||[]).filter(function(d){return d.date===T;})[0],fc=(D.days||[]).filter(function(d){return d.date>=T;}).slice(0,14);
-  var top='<div class="wx-now"><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="hint">feels like '+fmtEnv('apparentTemperature',v.apparentTemperature)+' \u00b7 '+fmtEnv('isDay',v.isDay)+(N.derived.indexOf('isDay')>=0?' (from sunrise and sunset)':'')+'</div></div>';
+  var cond=weatherCondition(v,v.isDay);
+  var top='<div class="wx-now">'+weatherIcon(v,v.isDay,44)+'<div><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="wx-cond">'+esc(cond?cond.label:'')+(cond&&cond.derived?' <span class="hint">(from cloud cover and rain)</span>':'')+'</div>'+
+    '<div class="hint">feels like '+fmtEnv('apparentTemperature',v.apparentTemperature)+' \u00b7 '+fmtEnv('isDay',v.isDay)+(N.derived.indexOf('isDay')>=0?' (from sunrise and sunset)':'')+'</div></div></div>'+
+    '<div class="wx-facts">'+[['drop','Rain now',fmtEnv('precipitation',v.precipitation)],['cloud','Cloud cover',fmtEnv('cloudCover',v.cloudCover)],['wind','Wind',fmtEnv('windSpeed',v.windSpeed)],['uv','UV',fmtEnv('uvIndex',v.uvIndex)]]
+      .map(function(f){return '<div class="wx-fact">'+uiIcon(f[0],{size:18})+'<span class="hint">'+esc(f[1])+'</span><b>'+esc(f[2])+'</b></div>';}).join('')+'</div>';
+  var HH=environmentHourly().filter(function(h){return h.kind==='forecast';}).slice(0,12);
+  var hourly=HH.length?'<div class="card-title" style="margin-top:8px">Next hours</div><div class="wx-strip">'+HH.map(function(h){return '<div class="wx-day"><b>'+esc(h.time.slice(11,16))+'</b>'+weatherIcon(h.values,h.values.isDay,22)+
+      '<span>'+fmtEnv('temperature',h.values.temperature)+'</span><span class="hint">'+(h.values.precipitationProbability!=null?uiIcon('drop',{size:11})+Math.round(h.values.precipitationProbability)+'%':'')+'</span></div>';}).join('')+'</div>':'';
   var rows=uiRow('Humidity',fmtEnv('humidity',v.humidity),{sub:v.vpd!=null?('vapour pressure deficit '+fmtEnv('vpd',v.vpd)+(N.derived.indexOf('vpd')>=0?' (derived from temperature and humidity)':'')):''})+
     uiRow('Wind',fmtEnv('windSpeed',v.windSpeed)+' '+(v.windDirection!=null?fmtEnv('windDirection',v.windDirection).split(' ')[0]:''),{sub:'gusts '+fmtEnv('windGusts',v.windGusts)})+
     uiRow('UV index',fmtEnv('uvIndex',v.uvIndex))+(today?uiRow('Sun',fmtEnv('sunrise',today.values.sunrise)+' \u2013 '+fmtEnv('sunset',today.values.sunset),{sub:'daylight '+fmtEnv('daylightHours',today.values.daylightHours)}):'')+
     (v.usAqi!=null||v.europeanAqi!=null?uiRow('Air quality',v.usAqi!=null?('US AQI '+fmtEnv('usAqi',v.usAqi)):('European AQI '+fmtEnv('europeanAqi',v.europeanAqi)),{sub:'PM2.5 '+fmtEnv('pm2_5',v.pm2_5)}):'');
-  var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b><span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
-    (d.values.precipitationSum?'<span class="hint">'+fmtEnv('precipitationSum',d.values.precipitationSum)+'</span>':'')+'</div>';}).join('')+'</div>';
+  var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b>'+weatherIcon(d.values,true,22)+'<span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
+    '<span class="hint">'+(d.values.precipitationSum?fmtEnv('precipitationSum',d.values.precipitationSum):'\u00a0')+(d.values.precipitationProbabilityMax!=null?' '+Math.round(d.values.precipitationProbabilityMax)+'%':'')+'</span></div>';}).join('')+'</div>';
   return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(N.stale?' (out of date)':''),
-    body:top+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
+    body:top+hourly+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
 }
 /* SHEETS.weather lives in 90-workout.js: SHEETS is defined in 85-log-sheet.js, after this file, and assigning to it here
    threw at load — the load-order trap, a third time. Governance now fails any top-level use of a registry before its definition. */

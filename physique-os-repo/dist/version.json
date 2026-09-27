@@ -2,8 +2,8 @@
  "app": "Physique OS",
  "version": "1.0.0",
  "schema": 2,
- "build": "db27ea58bc",
- "release": "cd3bed2bb106",
+ "build": "3d6c7a007e",
+ "release": "c6112371335b",
  "deployment": {
   "client": "static",
   "server": "external",
@@ -16,10 +16,10 @@
    "online food lookups",
    "cloud sync"
   ],
-  "rewriteConfigured": false
+  "rewriteConfigured": true
  },
- "cacheName": "physique-os-1.0.0-cd3bed2bb106",
- "builtAt": "2026-09-27T01:58:04.579Z",
+ "cacheName": "physique-os-1.0.0-c6112371335b",
+ "builtAt": "2026-09-27T05:37:46.712Z",
  "sources": [
   "10-core.js",
   "20-schema-storage.js",
@@ -68,6 +68,7 @@
   "76-visual-views.js",
   "77-lifecycle.js",
   "79-rigour.js",
+  "80-icons.js",
   "80-ui.js",
   "81-conformance.js",
   "82-views-a.js",
@@ -97,7 +98,7 @@
   "98-measurement.js",
   "99-boot.js"
  ],
- "buildInputs": 131,
+ "buildInputs": 132,
  "food": {
   "databaseVersion": "fdc-2026-04-30",
   "branded": 455381,

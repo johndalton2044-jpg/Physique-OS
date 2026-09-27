@@ -135,7 +135,9 @@ const script=/<script>([\s\S]*?)<\/script>/.exec(html)[1];
   }
   /* Congestion and duplication are structural, so they are checked structurally. The right rail had six
      buttons over the text column, two of which (jump-to-top) duplicated the left rail exactly. */
-  const railActs=id=>[...w.document.querySelectorAll('#'+id+' .fab-mini')].map(b=>b.getAttribute('data-act'));
+  /* Refined after the usage review asked for a voice button above +: controls that appear only when useful (undo after an
+     action, jump top/bottom while scrolled) are transient and are not counted; the limits apply to what always floats. */
+  const railActs=id=>[...w.document.querySelectorAll('#'+id+' .fab-mini:not([data-transient])')].map(b=>b.getAttribute('data-act'));
   const rightActs=railActs('railRight'), leftActs=railActs('railLeft');
   if(rightActs.length>2)add('P1','rail','the right rail carries more than two floating controls',
     rightActs.length+': '+rightActs.join(', '));

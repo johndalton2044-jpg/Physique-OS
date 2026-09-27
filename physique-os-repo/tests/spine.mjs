@@ -29,6 +29,8 @@ for(const e of ['dumbbell','bodyweight'])await click('button[data-arg="equipment
 for(const d of ['Mon','Wed','Fri'])await click('button[data-arg="days|'+d+'"]');
 await click('button[data-arg="sessionMinutes|45"]');await next();
 await click('button[data-arg="cookingTime|quick"]');await click('button[data-arg="foodBudget|moderate"]');await click('button[data-arg="dietRestrictions|vegetarian"]');await next();
+/* the place step (weather) is optional: it is skipped here, and the Set up more guide offers it later */
+line(await S(()=>/Your place, for weather/.test(document.getElementById('editBackdrop').textContent)),'setup offers a place for weather');await next();
 await click('button[data-act="welcome.detail"][data-arg="casual"]');await next();await next();await next();
 await click('button[data-act="welcome.finish"]');await p.waitForTimeout(500);
 const G=await S(()=>{const g=window.canonicalGoal(),c=window.constraintModel();return {type:g.type,target:g.targetWeightLb,days:c.trainingDays,mins:c.sessionMinutes,restr:c.restrictions};});
