@@ -1,0 +1,333 @@
+{
+  "build": "db27ea58bc",
+  "release": "cd3bed2bb106",
+  "schema": 2,
+  "generatedAt": "2026-09-27T02:05:55.058Z",
+  "verification": [
+    {
+      "n": 1,
+      "label": "Build",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: {\"build\":\"db27ea58bc\",\"release\":\"cd3bed2bb106\",\"inputs\":131,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3058,\"scriptLines\":28390,\"sources\":75,\"files\":29,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
+    },
+    {
+      "n": 2,
+      "label": "Engine",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: 64 passed, 0 failed  (1442 in-app self-test checks)"
+    },
+    {
+      "n": 3,
+      "label": "Unit tests (in-app self-tests)",
+      "status": "PASS",
+      "evidence": "engine: recorded against build db27ea58bc: 64 passed, 0 failed  (1442 in-app self-test checks) · shipped: recorded against build db27ea58bc: pass  a second run in the same page passes too (1448 passed, 0 failed) · all passed"
+    },
+    {
+      "n": 4,
+      "label": "DOM tests",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: pass  with no layout measurement it falls back to the document end rather than failing · 398 passed, 0 failed"
+    },
+    {
+      "n": 5,
+      "label": "Browser tests",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1"
+    },
+    {
+      "n": 6,
+      "label": "Audit",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: 125 passed, 0 finding(s): 0 P0, 0 P1, 0 P2"
+    },
+    {
+      "n": 7,
+      "label": "Conformance",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: 0 finding(s): 0 P1, 0 P2"
+    },
+    {
+      "n": 8,
+      "label": "Adversarial tests",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: 62 passed, 0 failed"
+    },
+    {
+      "n": 9,
+      "label": "Performance tests",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: all operations within budget"
+    },
+    {
+      "n": 10,
+      "label": "Cloud E2E",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: log lines: 12"
+    },
+    {
+      "n": 11,
+      "label": "Replay verification",
+      "status": "PASS",
+      "evidence": "{\"leaks\":0,\"future\":0,\"decided\":true}"
+    },
+    {
+      "n": 12,
+      "label": "Migration verification",
+      "status": "PASS",
+      "evidence": "{\"upgraded\":true,\"applied\":1,\"newerRefused\":true,\"junkRefused\":true}"
+    },
+    {
+      "n": 13,
+      "label": "Provenance verification",
+      "status": "PASS",
+      "evidence": "{\"audit\":true,\"missing\":[]}"
+    },
+    {
+      "n": 14,
+      "label": "Uncertainty propagation verification",
+      "status": "PASS",
+      "evidence": "{\"forecastWidens\":true,\"recoveryWidens\":true,\"scenarioCarriesTrend\":true}"
+    },
+    {
+      "n": 15,
+      "label": "Dependency invalidation verification",
+      "status": "PASS",
+      "evidence": "{\"reachesTrend\":true,\"reachesTdee\":true,\"identityChanges\":true}"
+    },
+    {
+      "n": 16,
+      "label": "Accessibility verification",
+      "status": "PASS",
+      "evidence": "browser gate: contrast and 44px targets at 6 viewports; audit: labels, focus, reachability"
+    },
+    {
+      "n": 17,
+      "label": "Responsive verification",
+      "status": "PASS",
+      "evidence": "browser gate: 6 viewports × 12 tabs and every form sheet"
+    },
+    {
+      "n": 18,
+      "label": "Visual regression verification",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: all passed"
+    },
+    {
+      "n": 19,
+      "label": "Export/import round trips",
+      "status": "PASS",
+      "evidence": "{\"dashboard\":\"ok\",\"appearance\":\"ok\",\"visualizationPreset\":\"ok\",\"experiment\":\"ok\"}"
+    },
+    {
+      "n": 20,
+      "label": "Model reproducibility",
+      "status": "PASS",
+      "evidence": "25 models, identical results and run identities across independent loads at a pinned time"
+    },
+    {
+      "n": 21,
+      "label": "Production build",
+      "status": "PASS",
+      "evidence": "recorded against build db27ea58bc: data/reference: 1 files verified · dist verified."
+    },
+    {
+      "n": 22,
+      "label": "Release manifest",
+      "status": "PASS",
+      "evidence": "build db27ea58bc, release cd3bed2bb106, 131 hashed inputs"
+    },
+    {
+      "n": 23,
+      "label": "Architecture/conformance report",
+      "status": "PASS",
+      "evidence": "docs/implementation/governance-report.md"
+    },
+    {
+      "n": 24,
+      "label": "Capability maturity report",
+      "status": "PASS",
+      "evidence": "docs/release/capability-maturity.md"
+    }
+  ],
+  "adversarial": {
+    "missing data": true,
+    "conflicting data": true,
+    "corrected data": true,
+    "retracted data": true,
+    "stale data": true,
+    "unit mismatch": true,
+    "invalid dates": true,
+    "version mismatch": true,
+    "dependency invalidation": true,
+    "duplicate events": true,
+    "impossible values": true
+  },
+  "traceability": {
+    "OBSERVATION": true,
+    "EVENT": true,
+    "STATE": true,
+    "MODEL": true,
+    "INFERENCE": true,
+    "EVIDENCE": true,
+    "UNCERTAINTY": true,
+    "PROVENANCE": true,
+    "DECISION": true,
+    "PRESENTATION MODEL": true,
+    "VISUALIZATION": true,
+    "VIEW": true,
+    "USER ACTION": true,
+    "NEW OBSERVATION": true
+  },
+  "files": [
+    {
+      "file": "ARCHITECTURE.md",
+      "bytes": 10746,
+      "sha256": "06a6b9259dd30fb1edf53f4c7bbcaae02207896a096a43c81e4840d07ace6666"
+    },
+    {
+      "file": "BUILD-MANIFEST.json",
+      "bytes": 24799,
+      "sha256": "33aa39ef52669409acd4f6a2f40cfd3ff00d83b19840bf25e46a4a6376dacf4e"
+    },
+    {
+      "file": "DEPLOYMENT.md",
+      "bytes": 1722,
+      "sha256": "dfadb97ad67f4112616cd7a05c91109bdff4d7c485ce464ea5772d350a5f88a5"
+    },
+    {
+      "file": "README.md",
+      "bytes": 24710,
+      "sha256": "7941fab77fa0f8ac44e7f6cd33b1631c537829f61e4958ab441dcf6e2ce869d4"
+    },
+    {
+      "file": "SHA256SUMS",
+      "bytes": 2528,
+      "sha256": "9b19da5ff2601022fd1c1cbe512616eac09ef6a44d2c574083204c1f822fe4a9"
+    },
+    {
+      "file": "data/reference/SHA256SUMS",
+      "bytes": 78,
+      "sha256": "d970d246bcbd6047e496c2a602f680c2f78abb8f27d64b43e74454cd7fa08364"
+    },
+    {
+      "file": "data/reference/compendium-2024.json",
+      "bytes": 120147,
+      "sha256": "ebab0b8f9e50a39a66b9cdff5d2afb32f830b9a0b17728b7a0ba4ce3972dbf55"
+    },
+    {
+      "file": "data/reference/yields.json",
+      "bytes": 104808,
+      "sha256": "9204869700aaaa7f7a1cbd44e4141af693b0bcaba099897f5d3db8ac91aafe62"
+    },
+    {
+      "file": "docs/architecture-roadmap.md",
+      "bytes": 207403,
+      "sha256": "e4df7c690ccb433afd56d1a63498efc38806cb3909d01708699e7d634e3fceb8"
+    },
+    {
+      "file": "docs/data-adapters.md",
+      "bytes": 5237,
+      "sha256": "0ea5847e11a5a8283f09563038a4a9a0d2e6f967261bb8b19a69a90454ccaaf6"
+    },
+    {
+      "file": "docs/deployment.md",
+      "bytes": 5359,
+      "sha256": "4f1685aede467d41dc211f88a9a384b64b00824549d635e18bab647adf41c94a"
+    },
+    {
+      "file": "docs/interaction-spec.md",
+      "bytes": 22946,
+      "sha256": "1fe59a788f68593d9e9445bbff1f3d603502a49fa1d88ea0faa9e01fba1f639d"
+    },
+    {
+      "file": "docs/ios-device-test.md",
+      "bytes": 5514,
+      "sha256": "f3c2a266f97938f69dc5e0286f2f0d36412141751ead16fe580b1f4c10097efd"
+    },
+    {
+      "file": "docs/presentation-implementation-verification.md",
+      "bytes": 1858,
+      "sha256": "b3fefe48a00049a68059f44d77aa5821e808eedd15b4d41fa39b23b7ea7ff338"
+    },
+    {
+      "file": "docs/server-operations.md",
+      "bytes": 5143,
+      "sha256": "3d6403048aba0ecd2351657d2207ddffe150ad81a28ae72ef82567009422d184"
+    },
+    {
+      "file": "icons/apple-touch-icon.png",
+      "bytes": 2354,
+      "sha256": "4fdf17748dedf665a25cecaa93efe42adabafc2ee92bdde657b54078f2f2755e"
+    },
+    {
+      "file": "icons/favicon-16.png",
+      "bytes": 272,
+      "sha256": "039a9ae97a3989e323f929dca62aa62dbf4e07ab5141d84749a120a756cb900b"
+    },
+    {
+      "file": "icons/favicon-32.png",
+      "bytes": 452,
+      "sha256": "0c6881cb09efa461212bcbd281652007758925ad338c9832d3ebf59e3036aa4e"
+    },
+    {
+      "file": "icons/favicon.svg",
+      "bytes": 395,
+      "sha256": "8b29ce157fdfc35aedf10e18ea0407ab8674dd8d561c109269bc2c72f2569983"
+    },
+    {
+      "file": "icons/icon-16.png",
+      "bytes": 272,
+      "sha256": "039a9ae97a3989e323f929dca62aa62dbf4e07ab5141d84749a120a756cb900b"
+    },
+    {
+      "file": "icons/icon-192.png",
+      "bytes": 2525,
+      "sha256": "bcf1d38e74108633787bced00421911e61f3a2c483681f9499976fa497d2b3e7"
+    },
+    {
+      "file": "icons/icon-32.png",
+      "bytes": 452,
+      "sha256": "0c6881cb09efa461212bcbd281652007758925ad338c9832d3ebf59e3036aa4e"
+    },
+    {
+      "file": "icons/icon-512.png",
+      "bytes": 7007,
+      "sha256": "a2caeeb557e0610fbca583019ca1cfaed554fd1c0423548467bec262a8a1ff48"
+    },
+    {
+      "file": "icons/icon.svg",
+      "bytes": 395,
+      "sha256": "8b29ce157fdfc35aedf10e18ea0407ab8674dd8d561c109269bc2c72f2569983"
+    },
+    {
+      "file": "icons/maskable-512.png",
+      "bytes": 5096,
+      "sha256": "ceaec3d8debd2feaf8b91c813a3239cf9bd88ca7c3bcc22a78047614cb8fbdf1"
+    },
+    {
+      "file": "index.html",
+      "bytes": 3131278,
+      "sha256": "15b44cfacb45f05a184aaa43a7a408e343bf20762874f58167e33e37dd895cc7"
+    },
+    {
+      "file": "manifest.webmanifest",
+      "bytes": 807,
+      "sha256": "d4800695053af785841ae75ac178c1d8be38d14374b5bda3856e9c82f690ca12"
+    },
+    {
+      "file": "sw.js",
+      "bytes": 3721,
+      "sha256": "16984381ce5a3ba86340bc6448aab3c3777eced88d61e963b97f376a62e5ed78"
+    },
+    {
+      "file": "vercel.json.template",
+      "bytes": 865,
+      "sha256": "dabb3555492f76fb5819d61d6c177665fcc18889e2f2a6ce6a12ecec0398b108"
+    },
+    {
+      "file": "version.json",
+      "bytes": 2273,
+      "sha256": "11a4bc9fadb3175f55d2441e492fd7837bb7e88046c7c2817642aaef77983769"
+    }
+  ]
+}

@@ -2676,5 +2676,51 @@ by barcode into the existing food identity, with missing nutrients and energy-fr
 All three are fixture-tested and integration-tested through the real server (tests/external.mjs); none is called
 production-ready, which needs live synchronisation, provider terms and a security review.
 
-**Still to do from this review:** the latest progress photo on Today, prebuilt experiments, an audit of the movement and
-mobility drawings, and schedules for rotating shifts.
+**Schedules.** Availability was weekday names and programme sessions were keyed to weekdays, which cannot describe a
+rotation that does not repeat weekly (2-2-3 on 12-hour days and nights). A schedule is now weekly (unchanged), a rotation
+(a repeating cycle of day shifts, night shifts and days off, anchored to the date it started, with presets for 2-2-3,
+DuPont and 4-on-4-off and a pattern editor, and a rule per shift: no training, short or full), or irregular (the free
+days picked one by one). For rotations, sessions are placed in order onto available dates from the anchor, so past days
+keep their assignments; no more lifting sessions in any seven days than the programme asks for, never more than three
+in a row, short slots on short days, and the first day off after nights kept for sleep. The one line that mapped dates
+to weekdays now asks the schedule, so Today, execution, feasibility, adherence and adaptation all follow it; adherence
+groups misses by shift in a rotation, and a rotation gets "stop scheduling on day-shift days" rather than "train fewer
+days a week".
+
+**Ready-made experiments.** The eight templates existed but "New experiment" opened an open-ended form; it now opens the
+ready-made options first, each saying in plain words what you would do and how long it would need for you.
+
+**Latest photo on Today.** An optional small icon of the newest progress photo, off by default and offered only when a
+photo exists.
+
+**Movement drawings, audited.** Looking at all 38 figures found start and end frames overlaid, sideways movements drawn
+side-on (the moving limb hidden on the torso line), one standing figure for every exercise in a pattern (a bench press
+drawn standing, a pull-up and a pulldown identical), and crow and pigeon drawn wrongly. Now: start and end side by side
+at one scale, with the range arc and load on the end panel; a front view with both arms and legs chosen from the
+pattern's plane (lateral raise, overhead press and pull, shrug, hip adduction, external rotation, side plank, tree,
+warrior II); each exercise's posture (lying, face down, inclined, seated, hanging); corrected crow and pigeon; and
+movementVisualAudit(), which checks views against planes, that each figure visibly moves, and that a lying press pushes
+up and a push-up down. The first version had every rotation sign reversed — a bench press pushing into the floor —
+which is what the direction check now catches.
+
+## Deployment repair (from use: "Something went wrong" setting a weather place)
+
+The deployment was a static site with nothing behind /api/sync: no rewrite, and server.mjs copied into dist, which a
+static host serves as a file rather than running. The code made it worse in two ways. The error text was looked up by
+the raw category, so any response without the server's envelope — a static host's HTML 404 — read "Something went
+wrong."; and the service worker served every same-origin GET cache-first, /api/sync included, so once connected the
+first forecast would have been served forever and sync pulls could replay stale copies.
+
+Now: failures are classified by what came back (a web page means no rewrite or no server; a proxy 502–504 means the
+server behind it is down; a JSON 404 means an older server; a failed fetch means unreachable; otherwise the server's own
+category), each with its stage; "Test external server" (Tools → External server, the Weather sheet, the palette) checks
+the layers in order and names the broken one; the service worker never intercepts /api/; the server's rate limit can
+trust X-Forwarded-For behind a proxy (TRUST_PROXY=1), which otherwise throttled everyone as one; the build records the
+deployment contract in version.json and BUILD-MANIFEST.json, writes DEPLOYMENT.md and a vercel.json template into dist,
+and with SYNC_DEPLOYMENT_MODE=reverse-proxy fails unless vercel.json forwards /api/sync to a real https server;
+scripts/configure-deploy.mjs writes that rewrite and refuses http, localhost, placeholders and paths; and
+tests/deployment-smoke.mjs checks a real deployment (--app, --sync) or, as a gate, three local production-shaped stacks
+— no server (named as a missing rewrite), a working rewrite and server, and a rewrite to a stopped server.
+
+**What stays with the operator:** running server/server.mjs on a Node host with persistent storage and HTTPS, and
+pointing the rewrite at it. That cannot be done from the repository.

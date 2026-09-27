@@ -2,10 +2,24 @@
  "app": "Physique OS",
  "version": "1.0.0",
  "schema": 2,
- "build": "63021a8fbd",
- "release": "e0b641281c5b",
- "cacheName": "physique-os-1.0.0-e0b641281c5b",
- "builtAt": "2026-09-26T14:11:47.859Z",
+ "build": "db27ea58bc",
+ "release": "cd3bed2bb106",
+ "deployment": {
+  "client": "static",
+  "server": "external",
+  "syncPath": "/api/sync",
+  "proxyRequired": true,
+  "serverEntry": "server/server.mjs",
+  "healthCheck": "/api/sync/v1/health",
+  "requiresServer": [
+   "weather",
+   "online food lookups",
+   "cloud sync"
+  ],
+  "rewriteConfigured": false
+ },
+ "cacheName": "physique-os-1.0.0-cd3bed2bb106",
+ "builtAt": "2026-09-27T01:58:04.579Z",
  "sources": [
   "10-core.js",
   "20-schema-storage.js",
@@ -83,7 +97,7 @@
   "98-measurement.js",
   "99-boot.js"
  ],
- "buildInputs": 128,
+ "buildInputs": 131,
  "food": {
   "databaseVersion": "fdc-2026-04-30",
   "branded": 455381,

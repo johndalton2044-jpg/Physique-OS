@@ -833,10 +833,11 @@ tr.wx-today td{font-weight:700}
 .today-photo img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);background:var(--surface-2)}
 .mv-panels{display:flex;align-items:center;gap:4px}.mv-panel{flex:1;min-width:0;text-align:center}.mv-panel svg{width:100%;height:auto;max-height:180px}
 .mv-cap{font-size:calc(11px*var(--ts,1));color:var(--text-2);text-transform:lowercase}.mv-arrow{color:var(--text-2);font-size:18px}.sk-floor{stroke:var(--border);stroke-width:1}.mv-note{margin-top:2px}
+.voice-state{padding:10px 12px;border-radius:var(--radius-sm,8px);background:var(--surface-2);margin:8px 0}.voice-state.live{border:1px solid var(--accent)}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wv5lnEkH00btC+pDCR8+W24WtagX/upJn5RANPzrIvo='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="63021a8fbd 2026-09-26T14:11:47.859Z">
-<meta name="physique-release" content="e0b641281c5b">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+bwSjMFFUaHyQmnYKtydVb6Lc7V4drRuppmS5bJ9cJc='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="db27ea58bc 2026-09-27T01:58:04.579Z">
+<meta name="physique-release" content="cd3bed2bb106">
 </head>
 <body>
 
@@ -1040,9 +1041,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='63021a8fbd';        // hash of src/ — identifies the application code
-var RELEASE_ID='e0b641281c5b';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-26T14:11:47.859Z';
+var BUILD_ID='db27ea58bc';        // hash of src/ — identifies the application code
+var RELEASE_ID='cd3bed2bb106';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-09-27T01:58:04.579Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -10315,13 +10316,55 @@ var EXT_ERROR_TEXT={network_unavailable:'The server could not reach the source.'
 rate_limited:'The source is limiting requests; try again in a little while.',authorization_denied:'The source refused this server\u2019s credentials.',
 configuration_error:'This needs setting up first.',malformed_payload:'The source sent something unreadable.',unsupported_record:'The source has no such record.',
 authentication_required:'Sign-in is required.',invalid_timestamp:'Those dates are not valid.'};
-function extError(category,detail){return {status:'error',error:{category:EXT_ERRORS.indexOf(category)>=0?category:'provider_unavailable',detail:detail||'',text:EXT_ERROR_TEXT[category]||'Something went wrong.'}};}
+function extError(category,detail,meta){var cat=EXT_ERRORS.indexOf(category)>=0?category:'provider_unavailable';meta=meta||{};
+var text=meta.text||EXT_ERROR_TEXT[cat]||'The request failed.';
+return {status:'error',error:{category:cat,detail:detail||'',text:text,stage:meta.stage||null,http:meta.http||null}};}
 function extServerBase(){try{var c=cloudConfig();return c&&c.url?String(c.url).replace(/\/$/,''):null;}catch(e){return null;}}
+var EXT_NO_SERVER_TEXT='Weather and online food lookups need the Physique OS server, and none is answering for this app.';
 function extRequest(pathQuery){
-var base=extServerBase();if(!base||typeof fetch!=='function')return Promise.resolve(extError('configuration_error','no Physique OS server is configured, so external sources are unavailable here'));
-return fetch(base+pathQuery,{headers:{accept:'application/json'}}).then(function(r){return r.json().then(function(j){
-if(!r.ok||j.status==='error')return j&&j.error?extError(j.error.category,j.error.detail):extError('provider_unavailable','HTTP '+r.status);return j;});},
-function(){return extError('network_unavailable','the server could not be reached');});
+var base=extServerBase();if(!base||typeof fetch!=='function')return Promise.resolve(extError('configuration_error','no Physique OS server is configured, so external sources are unavailable here',{stage:'configuration',text:EXT_NO_SERVER_TEXT}));
+return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
+var ct=String((r.headers&&r.headers.get&&r.headers.get('content-type'))||'');
+if(!/json/i.test(ct)){
+if(r.status>=502&&r.status<=504)return extError('network_unavailable','the address '+base+' is forwarded, but the server behind it is not answering (HTTP '+r.status+')',{stage:'routing',http:r.status,text:'The Physique OS server is not answering right now.'});
+return extError('configuration_error','the address '+base+' answered with a web page (HTTP '+r.status+'), not the Physique OS server \u2014 the deployment has no rewrite from '+base+' to a running server',{stage:'routing',http:r.status,text:EXT_NO_SERVER_TEXT});}
+return r.json().then(function(j){
+if(j&&j.status==='error'&&j.error&&j.error.category)return extError(j.error.category,j.error.detail,{stage:'server',http:r.status});
+if(!r.ok){
+if(r.status===404)return extError('configuration_error','the server at '+base+' has no '+pathQuery.split('?')[0]+' route \u2014 it may be an older version',{stage:'server',http:404,text:'The Physique OS server is an older version without this feature.'});
+if(r.status===429)return extError('rate_limited','the server is limiting requests',{stage:'server',http:429});
+if(r.status>=500)return extError('provider_unavailable','the server returned '+r.status,{stage:'server',http:r.status});
+return extError('configuration_error',String((j&&j.error)||('HTTP '+r.status)),{stage:'server',http:r.status});}
+return j;},function(){return extError('malformed_payload','the server sent a response that could not be read',{stage:'server',http:r.status});});
+},function(){return extError('network_unavailable','the address '+base+' could not be reached',{stage:'network',text:'The Physique OS server could not be reached.'});});
+}
+function deploymentStatus(){var base=extServerBase();
+return {client:'static',externalServer:'required',syncEndpoint:base,proxyRequired:!!base&&base.charAt(0)==='/',
+weatherRequiresServer:true,foodExternalRequiresServer:true,cloudSyncRequiresServer:true,
+note:'The app is a static site. Weather, online food lookups and cloud sync need the Physique OS server, reached at '+(base||'(none)')+(base&&base.charAt(0)==='/'?' on this same site through a rewrite.':'.')};}
+function _rawGet(pathQuery){var base=extServerBase();if(!base)return Promise.resolve({ok:false,reason:'no server path configured'});
+return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){var ct=String((r.headers&&r.headers.get&&r.headers.get('content-type'))||'');
+if(!/json/i.test(ct))return {ok:false,http:r.status,html:true};return r.json().then(function(j){return {ok:r.ok,http:r.status,json:j};},function(){return {ok:false,http:r.status,unreadable:true};});},
+function(){return {ok:false,network:true};});}
+function testExternalServer(opts){
+opts=opts||{};var steps=[],base=extServerBase(),done=function(verdict,code){return {verdict:verdict,code:code,steps:steps,base:base,at:nowISO()};};
+if(!base)return Promise.resolve(done('No server address is configured for this app.','A'));
+return _rawGet('/v1/health').then(function(h){
+steps.push({step:'server health ('+base+'/v1/health)',ok:!!(h.ok&&h.json&&h.json.ok),detail:h.network?'could not be reached':(h.html?'a web page came back (HTTP '+h.http+'), not the server':(h.json?('HTTP '+h.http+' \u00b7 '+(h.json.service||'')):('HTTP '+h.http)))});
+if(h.network)return done('The address '+base+' could not be reached at all.','C');
+if(h.html&&h.http>=502&&h.http<=504)return done('The rewrite is there, but the server behind it is not answering (HTTP '+h.http+').','C');
+if(h.html)return done('Nothing at '+base+' is the Physique OS server \u2014 this deployment has no rewrite to a running server. Deploy server/server.mjs to a Node host and add the /api/sync rewrite (see DEPLOYMENT.md).','B');
+if(!h.ok)return done('The server answered HTTP '+h.http+' to its health check.','C');
+return _rawGet('/v1/ext/sources').then(function(sx){
+steps.push({step:'external sources on the server',ok:!!(sx.ok&&sx.json&&sx.json.status==='ok'),detail:sx.ok?Object.keys((sx.json&&sx.json.sources)||{}).map(function(k){return k+(sx.json.sources[k].live?'':' (not configured)');}).join(', '):('HTTP '+sx.http+' \u2014 an older server without /v1/ext')});
+if(!sx.ok)return done('The server is running but is an older version without weather and food routes. Update server/server.mjs.','C');
+if(!opts.probeProvider)return done('The server is reachable and offers its external sources.','OK');
+return extRequest('/v1/ext/geocode?name=London').then(function(g){var ok=g.status==='ok'&&g.payload&&Array.isArray(g.payload.results);
+steps.push({step:'a place search through the server (Open-Meteo)',ok:ok,detail:ok?(g.payload.results.length+' places'):((g.error&&(g.error.category+': '+g.error.detail))||'failed')});
+if(ok)return done('Everything works: the server reaches the weather provider.','OK');
+return done(g.error&&g.error.category==='malformed_payload'?'The provider sent something unreadable.':'The server is fine, but it could not reach the weather provider: '+((g.error&&g.error.detail)||'unknown')+'.',g.error&&g.error.category==='malformed_payload'?'E':'D');});
+});
+});
 }
 var ENV_VARIABLES={
 temperature:{label:'Temperature',unit:'\u00b0C',res:['current','hourly']},apparentTemperature:{label:'Feels like',unit:'\u00b0C',res:['current','hourly']},
@@ -10833,25 +10876,45 @@ return {ok:true,kind:'food',record:rec2};
 }
 return {ok:false,reason:'unknown intent'};
 }
-function startVoiceCapture(onResult){
+var _VOICE_REC=null,_VOICE_TIMER=null;
+var VOICE_ERRORS={
+'no-speech':'Nothing was heard. Tap Start and speak straight away.',
+'audio-capture':'No sound reached the browser from a microphone. Check which microphone the device is using.',
+'not-allowed':'Microphone access is blocked for this site. Allow it in the browser\u2019s site settings.',
+'service-not-allowed':'This browser does not allow speech recognition here. On iPhone it may not work in an app added to the home screen \u2014 open the app in Safari, or type it below.',
+'network':'Speech recognition needs an internet connection: the browser sends the audio to its speech service (Google, in Chrome) to recognise it.',
+'aborted':'Listening stopped.',
+'language-not-supported':'Speech recognition does not support this device\u2019s language.',
+'bad-grammar':'Speech recognition could not start.'
+};
+function stopVoiceCapture(){try{if(_VOICE_REC)_VOICE_REC.abort();}catch(e){}_VOICE_REC=null;if(_VOICE_TIMER){clearTimeout(_VOICE_TIMER);_VOICE_TIMER=null;}}
+function startVoiceCapture(onUpdate){
 var SR=(typeof window!=='undefined')&&(window.SpeechRecognition||window.webkitSpeechRecognition);
-if(!SR)return {ok:false,reason:'this browser has no speech recognition; type it instead'};
+if(!SR)return {ok:false,reason:'This browser has no speech recognition; type it below instead.'};
+stopVoiceCapture();
 try{
-var r=new SR();
+var r=new SR(),finalDone=false,heardAny=false;_VOICE_REC=r;   /* held: a collected recognition fires nothing */
 r.lang=(typeof navigator!=='undefined'&&navigator.language)||'en-US';
-r.interimResults=false;r.maxAlternatives=3;
-r.onresult=function(ev){
-var alts=[];
-for(var i=0;i<ev.results[0].length&&i<3;i++)alts.push(ev.results[0][i].transcript);
+r.interimResults=true;r.maxAlternatives=3;r.continuous=false;
+var bump=function(){if(_VOICE_TIMER)clearTimeout(_VOICE_TIMER);_VOICE_TIMER=setTimeout(function(){if(!finalDone){try{r.stop();}catch(e){}
+setTimeout(function(){if(!finalDone){finalDone=true;_VOICE_REC=null;onUpdate({phase:'ended',heardAny:heardAny,reason:heardAny?'Listening stopped before a whole phrase was recognised.':'Nothing was heard.'});}},1500);}},12000);};
+r.onstart=function(){bump();onUpdate({phase:'listening'});};
+r.onspeechstart=function(){heardAny=true;bump();onUpdate({phase:'hearing',interim:''});};
+r.onresult=function(ev){bump();var interim='',fin=null;
+for(var i=ev.resultIndex||0;i<ev.results.length;i++){var res=ev.results[i];if(res.isFinal){fin=res;}else interim+=res[0].transcript;}
+if(!fin){heardAny=true;onUpdate({phase:'hearing',interim:interim});return;}
+var alts=[];for(var k=0;k<fin.length&&k<3;k++)alts.push(fin[k].transcript);
 var parsed=parseUtterance(alts[0]);
 if(!parsed.ok)for(var j=1;j<alts.length;j++){var p2=parseUtterance(alts[j]);if(p2.ok){parsed=p2;break;}}
-parsed.alternatives=alts;
-onResult(parsed);
-};
-r.onerror=function(ev){onResult({ok:false,reason:'speech recognition failed: '+(ev.error||'unknown')});};
-r.start();
-return {ok:true,stop:function(){try{r.stop();}catch(e){}}};
-}catch(e){return {ok:false,reason:String(e&&e.message||e)};}
+parsed.alternatives=alts;parsed.phase='heard';finalDone=true;onUpdate(parsed);};
+r.onnomatch=function(){finalDone=true;onUpdate({phase:'ended',heardAny:true,reason:'Something was heard, but no words were recognised. Try again a little closer to the microphone.'});};
+r.onerror=function(ev){var code=ev&&ev.error||'unknown';if(code==='aborted'&&finalDone)return;finalDone=true;
+onUpdate({phase:'error',code:code,reason:VOICE_ERRORS[code]||('Speech recognition failed ('+code+').')});};
+r.onend=function(){if(_VOICE_TIMER){clearTimeout(_VOICE_TIMER);_VOICE_TIMER=null;}_VOICE_REC=null;
+if(!finalDone){finalDone=true;onUpdate({phase:'ended',heardAny:heardAny,reason:heardAny?'Listening ended before a phrase was recognised.':'Nothing was heard. Tap Start and speak straight away.'});}};
+r.start();bump();onUpdate({phase:'starting'});
+return {ok:true,stop:stopVoiceCapture};
+}catch(e){_VOICE_REC=null;return {ok:false,reason:'Speech recognition could not start: '+String(e&&e.message||e)};}
 }
 var LABEL_FIELDS=[
 {key:'kcal',pat:/(?:calories|energy|kcal)\D{0,12}(\d{1,4})/i,unit:'kcal'},
@@ -14305,6 +14368,11 @@ out+=uiCard({fold:'tools-appearance',title:'Appearance',
 sub:'every option is contrast-checked before it is offered \u2014 a combination that fails is withheld rather than warned about',
 body:body});
 })();
+(function(){var D=deploymentStatus(),L=DB.settings.lastServerCheck;
+out+=uiCard({fold:'tools-server',title:'External server',sub:(L?(L.code==='OK'?'working':'not working')+' \u00b7 checked '+esc(String(L.at).slice(0,16).replace('T',' ')):'not checked yet'),body:
+uiRow('This app',esc(D.client)+' site',{sub:esc(D.note)})+uiRow('Server path',esc(D.syncEndpoint||'none'),{sub:D.proxyRequired?'forwarded to the server by the deployment (a rewrite)':''})+
+uiRow('Needs the server','weather, online food lookups, cloud sync')+
+(L?renderServerDiagnosis(L):'')+'<div class="btn-row">'+uiBtn('Test external server','diag.server',null,'btn-sm btn-primary')+'</div>'});})();
 out+=uiCard({fold:'tools-display',title:'Display',sub:(Object.keys(DB.settings.hiddenFolds||{}).length?(Object.keys(DB.settings.hiddenFolds).length+' hidden section'+(Object.keys(DB.settings.hiddenFolds).length===1?'':'s')+' \u00b7 '):'')+'text size, density, contrast and motion apply immediately and persist',body:((DB.settings.photos||[]).length?uiRow('Latest photo on Today',DB.settings.showPhotoOnToday?'on':'off',{sub:'a small icon of your newest progress photo'})+'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday?'Hide it':'Show it','photo.todayToggle',null,'btn-sm btn-secondary')+'</div>':'')+(function(){var h=Object.keys(DB.settings.hiddenFolds||{}).length;return h?uiRow('Hidden sections',String(h),{sub:'finished sections you hid'})+'<div class="btn-row">'+uiBtn('Show all','fold.showAll',null,'btn-sm btn-secondary')+'</div>':'';})()+uiRow('Detail','',{sub:opt([['casual','Casual'],['insightful','Insightful'],['developer','Developer']],detailLevel(),'settings.detail')+'<div class="hint">'+esc(DETAIL_LEVELS[detailLevel()].desc)+'</div>'})+uiRow('Units','',{sub:opt([['imperial','lb / in'],['metric','kg / cm']],s.units,'settings.units')})+uiRow('Text size','',{sub:opt([['XS','XS'],['S','S'],['M','M'],['L','L'],['XL','XL']],s.textScale,'settings.textScale')})+uiRow('Density','',{sub:opt([['compact','Compact'],['cozy','Cozy'],['comfortable','Comfortable']],s.density,'settings.density')})+uiRow('Contrast','',{sub:opt([['normal','Normal'],['high','High']],s.contrast,'settings.contrast')})+uiRow('Motion','',{sub:opt([['auto','System'],['reduced','Reduced']],s.motion,'settings.motion')})+uiRow('Thumb rails','',{sub:opt([['on','Show'],['off','Hide \u2014 charts use the full width']],s.rails||'on','settings.rails')})+'<div data-level="developer">'+uiRow('Show model marks','',{sub:opt([['on','Show'],['off','Hide']],s.showModels===false?'off':'on','settings.showModels')})+'</div>'});
 out+=uiCard({id:'textCard',title:'Text',sub:'the typeface and how text is spaced \u2014 changes apply immediately',body:(function(){
 var cur=canonicalFont(s.font||'system');
@@ -19576,14 +19644,17 @@ confirmDialog({title:'Delete the vault from the server?',msg:'Every synced event
 .then(function(y){if(!y)return;cloudDeleteVault().then(function(){toast('Vault deleted from the server');renderSheet();})
 .catch(function(e){toast(String(e&&e.message||e),{tone:'negative'});});});});
 registerAction('voice.start',function(){
-var r=startVoiceCapture(function(p){_VOICE=p;renderSheet();});
-if(!r.ok)toast(r.reason,{tone:'negative'});else{_VOICE={listening:true};renderSheet();}});
+if(_VOICE&&(_VOICE.phase==='listening'||_VOICE.phase==='hearing'||_VOICE.phase==='starting')){stopVoiceCapture();_VOICE={phase:'ended',reason:'Listening stopped.'};renderSheet();return;}
+var r=startVoiceCapture(function(p){_VOICE=p;if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='voice')renderSheet();});
+if(!r.ok){_VOICE={phase:'error',code:'unavailable',reason:r.reason};renderSheet();}});
+registerAction('voice.typed',function(a,ev,el){if(_SHEET&&_SHEET.buf)_SHEET.buf.typed=el?el.value:'';});
+registerAction('voice.parseTyped',function(){var t=((_SHEET&&_SHEET.buf&&_SHEET.buf.typed)||'').trim();if(!t)return;var p=parseUtterance(t);p.phase='heard';p.typed=true;_VOICE=p;renderSheet();});
 registerAction('voice.apply',function(){
 if(!_VOICE||!_VOICE.ok)return;
 var r=applyUtterance(_VOICE,{});
 if(r.ok){_VOICE=null;closeSheet();renderAll();toast('Logged',{undo:true});}
 else toast(r.reason,{tone:'negative'});});
-registerAction('voice.discard',function(){_VOICE=null;renderSheet();});
+registerAction('voice.discard',function(){stopVoiceCapture();_VOICE=null;renderSheet();});
 registerAction('label.parse',function(arg,ev,el){
 var text=(document.getElementById('labelText')||{}).value||'';
 _LABEL=parseNutritionLabel(text);renderSheet();});
@@ -19707,21 +19778,28 @@ uiBtn('Enable push reminders','cloud.push',null,'btn-sm btn-ghost')+
 '<div class="btn-row">'+uiBtn('Stop syncing here','cloud.disable',null,'btn-sm btn-ghost')+uiBtn('Delete the vault','cloud.delete',null,'btn-sm btn-danger')+'</div>'+
 '<div class="prov">'+esc(c.note)+' A second device joining must be authorised from one already signed in, so a stolen phrase alone cannot silently join.</div>',
 foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
-function openVoice(){_VOICE=null;openSheet('edit',{form:'voice',title:'Say it',desc:'Everything dictated is shown for confirmation before it reaches the record. Recognition mishears, and a misheard number that lands unseen is a silent corruption.',buf:{}});}
-SHEETS.voice=function(){
+function openVoice(){stopVoiceCapture();_VOICE=null;openSheet('edit',{form:'voice',title:'Say it',desc:'Everything dictated is shown for confirmation before it reaches the record. Recognition mishears, and a misheard number that lands unseen is a silent corruption.',buf:{}});}
+SHEETS.voice=function(b){
+var V=_VOICE||{},ph=V.phase,live=ph==='starting'||ph==='listening'||ph==='hearing';
 var body=voiceAvailable()?
-('<div class="btn-row">'+uiBtn(_VOICE&&_VOICE.listening?'Listening\u2026':'Start listening','voice.start',null,'btn-sm btn-primary')+'</div>'):
-'<div class="hint warn">This browser has no speech recognition. Everything below is still reachable by typing.</div>';
-if(_VOICE&&_VOICE.ok){
-body+=uiRow('Heard',esc(_VOICE.transcript),{sub:_VOICE.alternatives&&_VOICE.alternatives.length>1?('also considered: '+esc(_VOICE.alternatives.slice(1).join('; '))):''})+
-uiRow('Understood as',esc(_VOICE.say||''),{sub:_VOICE.intent==='food'?('unit '+esc(String(_VOICE.unit||'serving'))+(_VOICE.meal?(' \u00b7 '+esc(_VOICE.meal)):'')):esc(String(_VOICE.type||''))})+
-(_VOICE.note?'<div class="hint warn">'+esc(_VOICE.note)+'</div>':'')+
+('<div class="btn-row">'+uiBtn(live?'Stop':'Start listening','voice.start',null,'btn-sm '+(live?'btn-secondary':'btn-primary'))+'</div>'):
+'<div class="hint warn">This browser has no speech recognition. Type it below instead.</div>';
+if(ph==='starting')body+='<div class="voice-state">Starting the microphone\u2026</div>';
+if(ph==='listening')body+='<div class="voice-state live">Listening \u2014 speak now</div>';
+if(ph==='hearing')body+='<div class="voice-state live">Hearing: <b>'+esc(V.interim||'\u2026')+'</b></div>';
+if(ph==='error'||ph==='ended')body+='<div class="banner attention"><span class="banner-text">'+esc(V.reason||'Listening ended.')+'</span>'+(voiceAvailable()?uiBtn('Try again','voice.start',null,'btn-sm btn-secondary'):'')+'</div>';
+if(V.ok){
+body+=uiRow(V.typed?'Typed':'Heard',esc(V.transcript),{sub:V.alternatives&&V.alternatives.length>1?('also considered: '+esc(V.alternatives.slice(1).join('; '))):''})+
+uiRow('Understood as',esc(V.say||''),{sub:V.intent==='food'?('unit '+esc(String(V.unit||'serving'))+(V.meal?(' \u00b7 '+esc(V.meal)):'')):esc(String(V.type||''))})+
+(V.note?'<div class="hint warn">'+esc(V.note)+'</div>':'')+
 '<div class="btn-row">'+uiBtn('Log it','voice.apply',null,'btn-sm btn-primary')+uiBtn('Discard','voice.discard',null,'btn-sm btn-ghost')+'</div>';
-}else if(_VOICE&&_VOICE.transcript){
-body+=uiRow('Heard',esc(_VOICE.transcript),{sub:esc(_VOICE.reason||'')})+
-'<div class="prov">Try: '+(_VOICE.examples||[]).map(esc).join(' \u00b7 ')+'</div>';
+}else if(V.transcript){
+body+=uiRow(V.typed?'Typed':'Heard',esc(V.transcript),{sub:'not understood'+(V.reason?(' \u2014 '+esc(V.reason)):'')})+
+'<div class="prov">Try: '+(V.examples||['weight 182.4','protein 30 grams','2 eggs for breakfast','slept 7 hours']).map(esc).join(' \u00b7 ')+'</div>';
 }
-return {body:body+'<div class="prov">Dictation produces a proposal, never a record. Nothing here writes until you confirm it.</div>',
+body+='<label class="fld" style="margin-top:10px"><span>Or type it</span><input id="voiceTyped" type="text" autocomplete="off" value="'+attrEsc((b&&b.typed)||'')+'" placeholder="e.g. weight 182.4" data-act="voice.typed" data-ev="input"></label>'+
+uiBtn('Understand this','voice.parseTyped',null,'btn-sm btn-secondary');
+return {body:body+'<div class="prov">Dictation produces a proposal, never a record. Nothing here writes until you confirm it.'+(voiceAvailable()?' In Chrome, speech is recognised by Google\u2019s speech service, so it needs an internet connection.':'')+'</div>',
 foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 var _YIELDS=null,_YIELD_Q='',_YIELD_RAW='',_YIELD_RESULT=null;
 var _EVENT_CHECK=null;
@@ -21453,7 +21531,8 @@ function openWeather(){openSheet('edit',{form:'weather',title:'Weather',desc:'',
 registerAction('weather.open',function(){openWeather();});
 registerAction('weather.q',function(a,ev,el){if(_SHEET&&_SHEET.buf)_SHEET.buf.q=el?el.value:'';});
 registerAction('weather.search',function(){var q=(_SHEET.buf.q||'').trim();if(q.length<2){toast('Type at least two letters of a place');return;}
-searchPlaces(q).then(function(r){if(r.status!=='ok'){_SHEET.buf.searchError=r.error.text;_SHEET.buf.places=null;}else{_SHEET.buf.places=r.places;_SHEET.buf.searchError=r.places.length?null:'No places found';}renderSheet();});});
+searchPlaces(q).then(function(r){if(r.status!=='ok'){_SHEET.buf.searchError=r.error.text;_SHEET.buf.searchDetail=r.error.category+(r.error.stage?' at the '+r.error.stage+' stage':'')+': '+r.error.detail;_SHEET.buf.places=null;}
+else{_SHEET.buf.places=r.places;_SHEET.buf.searchError=r.places.length?null:'No places found';_SHEET.buf.searchDetail=null;}renderSheet();});});
 registerAction('weather.pick',function(i){var p=(_SHEET.buf.places||[])[+i];if(!p)return;setWeatherLocation(p);_SHEET.buf.places=null;renderSheet();toast('Weather place set to '+p.label);dispatchAct('weather.refresh');});
 registerAction('weather.refresh',function(){toast('Fetching the weather\u2026');refreshEnvironment().then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();
 toast(r.status==='ok'?'Weather updated':((r.error&&r.error.text)||'The weather could not be fetched'),r.status==='ok'?null:{tone:'attention'});});});
@@ -21464,7 +21543,9 @@ var L=weatherLocation(),D=environmentDaily(),T=todayISO(),out='';
 out+='<div class="card-title">Place</div>'+(L?uiRow(esc(L.label||'set'),L.lat+', '+L.lon,{sub:'rounded to about 1 km before it leaves this device; the app never reads your device location'}):'<div class="hint">No place set. Weather needs one, and it is never guessed.</div>')+
 '<label class="fld"><span>Search for a place</span><input id="wxPlace" type="text" autocomplete="off" value="'+attrEsc(b.q||'')+'" data-act="weather.q" data-ev="input" placeholder="e.g. Leeds"></label>'+uiBtn('Search','weather.search',null,'btn-sm btn-secondary')+
 (b.places?b.places.map(function(p,i){return '<button class="lib-row" data-act="weather.pick" data-arg="'+i+'"><span class="lib-name">'+esc(p.label)+'</span><span class="lib-meta">'+round(p.lat,2)+', '+round(p.lon,2)+'</span></button>';}).join(''):'')+
-(b.searchError?'<div class="hint">'+esc(b.searchError)+'</div>':'');
+(b.searchError?'<div class="banner attention"><span class="banner-text">'+esc(b.searchError)+'</span>'+uiBtn('Check the connection','diag.server',null,'btn-sm btn-secondary')+'</div>'+
+(b.searchDetail?'<div class="hint">'+esc(b.searchDetail)+'</div>':''):'')+
+(b.diag?renderServerDiagnosis(b.diag):'');
 if(!L)return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 var N=environmentNow();
 if(N.status==='ok'){out+='<div class="card-title" style="margin-top:12px">Now</div>'+['temperature','apparentTemperature','humidity','vpd','precipitation','cloudCover','windSpeed','windDirection','windGusts','uvIndex','isDay'].map(function(k){
@@ -21484,7 +21565,7 @@ var ws=DB.settings.weatherSync||{};
 out+='<div class="card-title" style="margin-top:12px">Where this comes from</div>'+(N.status==='ok'?uiRow('Source',esc(EXTERNAL_SOURCES[N.source].name),{sub:'retrieved '+esc(String(N.retrievedAt).replace('T',' ').slice(0,16))+' UTC'+(ws.state?' \u00b7 last refresh '+esc(ws.state):'')}):'')+
 '<div class="hint">'+Object.keys(ENV_KIND_TEXT).map(function(k){return '<b>'+esc(k)+'</b>: '+esc(ENV_KIND_TEXT[k]);}).join(' \u00b7 ')+'</div>'+
 (N.status==='ok'&&N.unsupported.length?'<div class="hint">Not supplied by this source: '+esc(N.unsupported.map(function(k){return (ENV_VARIABLES[k]||{}).label||k;}).join(', '))+'.</div>':'')+
-(ws.error?'<div class="hint">Last problem: '+esc(ws.error.text||ws.error.category)+'</div>':'')+
+(ws.error?'<div class="hint">Last problem: '+esc(ws.error.text||ws.error.category)+' ('+esc(ws.error.category)+(ws.error.stage?', '+esc(ws.error.stage):'')+(ws.error.detail?': '+esc(ws.error.detail):'')+')</div>'+uiBtn('Check the connection','diag.server',null,'btn-sm btn-ghost'):'')+
 '<div class="hint">'+esc((EXTERNAL_SOURCES['open-meteo']||{}).terms||'')+'</div>';
 return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 };
@@ -21527,6 +21608,14 @@ registerAction('sched.rule',function(arg){var q=String(arg).split('|'),r={};r[q[
 registerAction('sched.minutes',function(arg){var q=String(arg).split('|'),m={};m[q[0]]=+q[1];_sched({minutes:m});});
 registerAction('sched.protect',function(){_sched({protectAfterNights:!scheduleModel().protectAfterNights});});
 registerAction('sched.avail',function(arg){var q=String(arg).split('|'),a={};a[q[0]]=+q[1];_sched({available:a});});
+function renderServerDiagnosis(d){
+if(d==='running')return '<div class="hint">Checking the server\u2026</div>';
+return '<div class="card-title" style="margin-top:10px">Connection check</div>'+d.steps.map(function(x){return uiRow(esc(x.step),x.ok?'ok':'failed',{sub:esc(x.detail||''),tone:x.ok?'good':'attention'});}).join('')+
+'<div class="banner '+(d.code==='OK'?'neutral':'attention')+'"><span class="banner-text">'+esc(d.verdict)+'</span></div>';
+}
+registerAction('diag.server',function(){var target=_SHEET&&_SHEET.buf?_SHEET.buf:null;if(target){target.diag='running';renderSheet();}
+testExternalServer({probeProvider:true}).then(function(d){DB.settings.lastServerCheck={code:d.code,verdict:d.verdict,at:d.at,steps:d.steps};save('settings');
+if(target&&_SHEET&&_SHEET.buf===target){target.diag=d;renderSheet();}renderAll();toast(d.code==='OK'?'The server works':'Server check: '+d.verdict.slice(0,90),d.code==='OK'?null:{tone:'attention',ms:8000});});});
 /* ===== SOURCE: 91-inference.js ===== */
 function _pFromT(t,n){
 if(t==null||!isFinite(t))return null;
@@ -22978,7 +23067,7 @@ var KEYMAP=[
 {keys:'Tab / Shift+Tab',label:'Move through controls; inside a sheet focus stays in the sheet',group:'navigation'},
 {keys:'Enter / Space',label:'Activate the focused control',group:'navigation'}
 ];
-var REQUIRES_SUBJECT=/^(welcome\.|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
 'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -23043,6 +23132,7 @@ k:['deload','easier week','rest week','back off','fatigue']},
 'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
 'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
 'exp.custom':{d:'An experiment you design yourself, when none of the ready-made ones fits',k:['experiment','design','custom','own']},
+'diag.server':{d:'Checks, layer by layer, whether this deployment reaches the Physique OS server and the weather provider',k:['server','connection','weather not working','sync','deployment','diagnostics','something went wrong']},
 'nav.schedule':{d:'Weekly days, rotating shifts (2-2-3, DuPont, 4-on-4-off, your own) or an irregular week',k:['schedule','shifts','rotation','nights','2-2-3','availability','days']},
 'weather.open':{d:'Current weather, 14-day forecast, the past week, history and air quality for your place',k:['weather','forecast','temperature','rain','uv','air quality','humidity','sunrise','wind']},
 'nav.charts':{d:'Every chart type the app can draw, each from your own record',k:['charts','graphs','visualisation','catalogue','gallery']},
@@ -23274,6 +23364,7 @@ var NAV_COMMANDS=[
 {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
 {id:'exp.custom',label:'Design my own experiment',group:'decisions',surfaces:['ui','palette']},
+{id:'diag.server',label:'Test external server',group:'system',surfaces:['ui','palette']},
 {id:'nav.schedule',label:'Your schedule',group:'navigation',surfaces:['ui','palette']},
 {id:'weather.open',label:'Weather',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.charts',label:'Chart catalogue',group:'discovery',surfaces:['ui','palette']},
@@ -23659,7 +23750,7 @@ var PANEL_LEVEL_RULES=[
 [/^Appearance/,'casual'],[/^Display/,'casual'],[/^Text$/,'casual'],[/^Data$/,'casual'],[/^Demo and reset/,'casual'],[/^Keyboard and gestures/,'casual'],
 [/^About/,'casual'],[/^Areas tracked/,'casual'],[/^Navigation/,'casual'],
 [/^Reference knowledge/,'insightful'],[/^Evidence/,'insightful'],[/^Learning/,'insightful'],[/^Layout/,'insightful'],[/^Food database$/,'insightful'],
-[/^Self-test/,'developer'],[/^System diagnostics/,'developer'],[/^Scheduled checks/,'developer'],[/^Device test checklist/,'developer'],
+[/^Self-test/,'developer'],[/^External server/,'casual'],[/^System diagnostics/,'developer'],[/^Scheduled checks/,'developer'],[/^Device test checklist/,'developer'],
 [/^Data dependency graph/,'developer'],[/^Food database internals/,'developer'],[/^Interaction matrix/,'developer'],[/^System health/,'developer'],
 [/^Storage and integrity/,'developer'],[/^Event log and sync/,'developer']
 ];
@@ -26980,6 +27071,11 @@ DB.settings.schedule=keep;_memoInvalidate();
 ok('a bench press is drawn lying down and a push-up face down',exerciseOrientation('Bench press').id==='supine'&&exerciseOrientation('Push-up').id==='prone'&&exerciseOrientation('Lat pulldown').id==='seated');
 ok('a lateral raise is drawn from the front',movementModel('abduction').view==='front');})();
 ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMPLATES.every(function(t){return !!t.todo;}));
+ok('every speech recognition error has an explanation',['no-speech','audio-capture','not-allowed','service-not-allowed','network'].every(function(k){return !!VOICE_ERRORS[k];}));
+ok('without speech recognition, voice capture says so rather than failing silently',(function(){var had=typeof window!=='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition);return had||startVoiceCapture(function(){}).ok===false;})());
+ok('an error without the server\u2019s envelope never reads "Something went wrong"',extError(undefined,'x').error.text!=='Something went wrong.'&&extError('bogus','x').error.category==='provider_unavailable'&&/problems/.test(extError('bogus','x').error.text));
+ok('a missing server is said plainly',/need the Physique OS server/.test(extError('configuration_error','x',{stage:'routing',text:EXT_NO_SERVER_TEXT}).error.text)&&extError('configuration_error','x',{stage:'routing'}).error.stage==='routing');
+ok('the deployment status says weather, online food lookups and sync need the server',(function(){var d=deploymentStatus();return d.client==='static'&&d.externalServer==='required'&&d.weatherRequiresServer&&d.foodExternalRequiresServer&&d.cloudSyncRequiresServer;})());
 withFixture('successful_cut',function(){
 var keep=DB.settings.attentionSnooze;DB.settings.attentionSnooze={};
 var q=attentionQueue().items.filter(function(i){return i.severity==='review';})[0];

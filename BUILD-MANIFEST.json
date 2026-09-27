@@ -1,14 +1,28 @@
 {
- "build": "63021a8fbd",
- "release": "e0b641281c5b",
- "builtAt": "2026-09-26T14:11:47.859Z",
+ "build": "db27ea58bc",
+ "release": "cd3bed2bb106",
+ "builtAt": "2026-09-27T01:58:04.579Z",
  "version": "1.0.0",
  "schema": 2,
+ "deployment": {
+  "client": "static",
+  "server": "external",
+  "syncPath": "/api/sync",
+  "proxyRequired": true,
+  "serverEntry": "server/server.mjs",
+  "healthCheck": "/api/sync/v1/health",
+  "requiresServer": [
+   "weather",
+   "online food lookups",
+   "cloud sync"
+  ],
+  "rewriteConfigured": false
+ },
  "inputs": [
   {
    "file": "src/00-head.html",
-   "bytes": 76077,
-   "sha256": "05f7d71ebe047860d51b73c8cbdd8edd478870c930ca0c1ea15226b048c9868c"
+   "bytes": 76234,
+   "sha256": "444d2019886031ca691cc32453793ca7c17271192c3f8e8ce6d8088a4d49502c"
   },
   {
    "file": "src/01-body.html",
@@ -192,8 +206,8 @@
   },
   {
    "file": "src/66-external.js",
-   "bytes": 35587,
-   "sha256": "01a37a9fff2ef9e9b8e1db72cb54a85bbda70c73a6855491b478317130975629"
+   "bytes": 42357,
+   "sha256": "6b9eb2fe8258a0506d58adba2c0ee7223451bcda9d38e023afb0a6ed90b5fc6b"
   },
   {
    "file": "src/67-program-edit.js",
@@ -202,8 +216,8 @@
   },
   {
    "file": "src/68-capture.js",
-   "bytes": 18720,
-   "sha256": "1d9d9a87e513db9cfc23a2f52f298b68115c1ac3f2003c11623775b5acfe47fc"
+   "bytes": 21984,
+   "sha256": "68ecdec457364ff802f00641475681ddf449e98931dd4e41c01947cc022d0cfc"
   },
   {
    "file": "src/69-nutrition.js",
@@ -272,8 +286,8 @@
   },
   {
    "file": "src/83-views-b.js",
-   "bytes": 71920,
-   "sha256": "248822c86f66b1d6bbc66cf73867fab871df59ab08c88bac1797b35a6958c55b"
+   "bytes": 72716,
+   "sha256": "099bafa87f6571c4fd52a5104f3ccc7da04cc26bb569717a2a356bcf59ae2725"
   },
   {
    "file": "src/84-presentation.js",
@@ -322,13 +336,13 @@
   },
   {
    "file": "src/90-actions.js",
-   "bytes": 282942,
-   "sha256": "31a4f2cd2d1b63bf1870f6353c0328f0c5712b9b51e82f5eafee0e7cc86992dc"
+   "bytes": 284718,
+   "sha256": "6e0c4c2dd1a15db6743bd4b2522140fc2606f7f0becff67ccd1c63432d7fa74d"
   },
   {
    "file": "src/90-workout.js",
-   "bytes": 31657,
-   "sha256": "f2a4328b4d36e956cabc4f89bdf458b2786b17f6a083b65d0eed3b946b11b017"
+   "bytes": 33289,
+   "sha256": "d4cd2874d9e9412de1d9615fcb6ebe65d4e401fd6a6d9f5b20208231a9737670"
   },
   {
    "file": "src/91-inference.js",
@@ -352,13 +366,13 @@
   },
   {
    "file": "src/94-navigation.js",
-   "bytes": 99927,
-   "sha256": "7a73e0a7ce3abcb0e64ae4435a795f13dfc66593193584675e0ae0e784fe11e5"
+   "bytes": 100294,
+   "sha256": "c0269bfc1ab8d7f994d28058931442785c7bd77cc4ae932681595db6a1ae74df"
   },
   {
    "file": "src/95-selftest.js",
-   "bytes": 336004,
-   "sha256": "d12444a2ee6509cabcbb05107b0aad2bc973145ced9c626c0773f517928577c1"
+   "bytes": 337381,
+   "sha256": "8bbfecee93cb88070a8df41491c35b86efc449f08e1a2e7c64365940aa23a328"
   },
   {
    "file": "src/96-bayes-engine.js",
@@ -392,13 +406,13 @@
   },
   {
    "file": "build.mjs",
-   "bytes": 27262,
-   "sha256": "1e7c716f5c3cda04c98def320ccab694abf8efc8fe641022539a737ebf2d0cfd"
+   "bytes": 31925,
+   "sha256": "dea4a49313af1205c8de971366a322e4cb421f2ad05cd24fc3195e2439b3eb96"
   },
   {
    "file": "package.json",
-   "bytes": 2824,
-   "sha256": "9bb5273138aa8ace9df712430949f4c29f4ea22752f111c1eb4a1a97495cfd49"
+   "bytes": 3069,
+   "sha256": "dd4abd1faca68d62d1920bf851aa5eea637b3f0fedc0613fdedf735744bd248c"
   },
   {
    "file": "scripts/ah102-extract.mjs",
@@ -414,6 +428,11 @@
    "file": "scripts/baseline.mjs",
    "bytes": 5015,
    "sha256": "623326dd1f48c538962dacca790537330a4d8bdf20664b7add8a352a9f8793db"
+  },
+  {
+   "file": "scripts/configure-deploy.mjs",
+   "bytes": 2208,
+   "sha256": "60c9a577326df57e0e6fb77b34a5b7893a89ac24d3639b1f7a6b43d5e1e7f1cb"
   },
   {
    "file": "scripts/dsld-build.mjs",
@@ -492,8 +511,8 @@
   },
   {
    "file": "tests/browser.mjs",
-   "bytes": 41002,
-   "sha256": "d18df936a4ed2152f63f118c4090cef118be830babd4634dd464bcf1762dce8c"
+   "bytes": 41154,
+   "sha256": "c9905db1b849fb88581011bc8063878d9b2c33ccbad8704a999268580b54ea5f"
   },
   {
    "file": "tests/cloud-e2e.mjs",
@@ -504,6 +523,11 @@
    "file": "tests/conformance.mjs",
    "bytes": 14433,
    "sha256": "9144a190a128077f1a4cb15e86c8d40c5d785df0a3128f40a31dbcef484dbd59"
+  },
+  {
+   "file": "tests/deployment-smoke.mjs",
+   "bytes": 8791,
+   "sha256": "9413651760452b33c31b1f0c08f1787b0626ccf31519fbeb77bdb5e1bf2be6c0"
   },
   {
    "file": "tests/engine-check.mjs",
@@ -612,8 +636,8 @@
   },
   {
    "file": "tests/release.mjs",
-   "bytes": 17785,
-   "sha256": "7b0ff54314c7084281345a307e594f53fb23d024ce8e48a31f91f516df4464df"
+   "bytes": 17802,
+   "sha256": "7147752ab5915e0bf975bcc786be28163761ca8cf399bcc33e4f7949b5e9553f"
   },
   {
    "file": "tests/run.mjs",
@@ -632,13 +656,18 @@
   },
   {
    "file": "tests/visual-baseline.json",
-   "bytes": 3884,
-   "sha256": "b32cff23b837981e22319b9349e775241fc7b13d7272197210950110b575c208"
+   "bytes": 3883,
+   "sha256": "c69dbbfe3b852f8ace7a959cf9b8397f3d5bb1f2c1433224b637f85bafd3add8"
   },
   {
    "file": "tests/visual.mjs",
    "bytes": 9852,
    "sha256": "d76793ec3ca72e21d5f4c00581d0703dc5fa81ac6cd0c1122e154efcfa8f0250"
+  },
+  {
+   "file": "tests/voice.mjs",
+   "bytes": 5953,
+   "sha256": "a5ef5c667778a6a19727ae9644a0fcb7c961d5ca89adc63795c308a74d422a23"
   },
   {
    "file": "data/food/manifest.json (database identity)",
@@ -651,6 +680,11 @@
    "file": "ARCHITECTURE.md",
    "bytes": 10746,
    "sha256": "06a6b9259dd30fb1edf53f4c7bbcaae02207896a096a43c81e4840d07ace6666"
+  },
+  {
+   "file": "DEPLOYMENT.md",
+   "bytes": 1722,
+   "sha256": "dfadb97ad67f4112616cd7a05c91109bdff4d7c485ce464ea5772d350a5f88a5"
   },
   {
    "file": "README.md",
@@ -674,8 +708,8 @@
   },
   {
    "file": "docs/architecture-roadmap.md",
-   "bytes": 203153,
-   "sha256": "ac3e5c839cb9b5df20898c5ab5d6a0ba580d290820e83da67d65518c88601473"
+   "bytes": 207403,
+   "sha256": "e4df7c690ccb433afd56d1a63498efc38806cb3909d01708699e7d634e3fceb8"
   },
   {
    "file": "docs/data-adapters.md",
@@ -759,8 +793,8 @@
   },
   {
    "file": "index.html",
-   "bytes": 3117957,
-   "sha256": "a30bb164b48e5ef465f74e7cb2fe638df47a6f6bd32d6a43c9218789bd50656f"
+   "bytes": 3131278,
+   "sha256": "15b44cfacb45f05a184aaa43a7a408e343bf20762874f58167e33e37dd895cc7"
   },
   {
    "file": "manifest.webmanifest",
@@ -769,20 +803,26 @@
   },
   {
    "file": "sw.js",
-   "bytes": 3515,
-   "sha256": "62751e0867c443e2f797639419809fdd3d1ae210701523422d8b3cd5df192ccd"
+   "bytes": 3721,
+   "sha256": "16984381ce5a3ba86340bc6448aab3c3777eced88d61e963b97f376a62e5ed78"
+  },
+  {
+   "file": "vercel.json.template",
+   "bytes": 865,
+   "sha256": "dabb3555492f76fb5819d61d6c177665fcc18889e2f2a6ce6a12ecec0398b108"
   },
   {
    "file": "version.json",
-   "bytes": 1964,
-   "sha256": "c0ec795a985bce62212bf577e34e0c3fa475b74d76c9200b110a3e53d04e6bf5"
+   "bytes": 2273,
+   "sha256": "11a4bc9fadb3175f55d2441e492fd7837bb7e88046c7c2817642aaef77983769"
   }
  ],
- "indexBytes": 3117957,
- "scriptLines": 28295,
+ "indexBytes": 3131278,
+ "scriptLines": 28390,
  "components": {
   "client": [
    "ARCHITECTURE.md",
+   "DEPLOYMENT.md",
    "README.md",
    "data/reference/SHA256SUMS",
    "data/reference/compendium-2024.json",
@@ -807,6 +847,7 @@
    "index.html",
    "manifest.webmanifest",
    "sw.js",
+   "vercel.json.template",
    "version.json"
   ],
   "food": {

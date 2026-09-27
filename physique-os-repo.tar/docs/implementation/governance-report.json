@@ -1,0 +1,105 @@
+{
+  "generatedAt": "2026-09-27T01:59:57.626Z",
+  "build": "db27ea58bc",
+  "counts": {
+    "hard": {},
+    "soft": {}
+  },
+  "hard": [],
+  "soft": [],
+  "pass": [
+    {
+      "cat": "undeclared-reference",
+      "msg": "every typeof guard probes a name some module declares"
+    },
+    {
+      "cat": "duplicate-system",
+      "msg": "no name pairs suggesting a second version of a system"
+    },
+    {
+      "cat": "function-declared-twice",
+      "msg": "every top-level function is declared once"
+    },
+    {
+      "cat": "action-registered-twice",
+      "msg": "every action is registered once"
+    },
+    {
+      "cat": "chart-without-renderer",
+      "msg": "every chart type a surface draws has a renderer (37 renderers)"
+    },
+    {
+      "cat": "action-before-registry",
+      "msg": "no file uses a registry before the file that defines it"
+    },
+    {
+      "cat": "goal-ownership",
+      "msg": "every goal read goes through canonicalGoal()"
+    },
+    {
+      "cat": "sheet-defined-twice",
+      "msg": "no sheet is silently redefined"
+    },
+    {
+      "cat": "registry-without-consumer",
+      "msg": "every registry is read somewhere or classified with a reason (1 classified)"
+    },
+    {
+      "cat": "audit-never-run",
+      "msg": "47 audit functions, every one invoked"
+    },
+    {
+      "cat": "catalogue",
+      "msg": "catalogue generated from the running registries — 2 change(s) since the previous run"
+    },
+    {
+      "cat": "entity-contracts",
+      "msg": "all 11 entity contracts hold, and every store in the record is owned or explained"
+    },
+    {
+      "cat": "model-without-version",
+      "msg": "25 models, each versioned"
+    },
+    {
+      "cat": "model-without-provenance",
+      "msg": "every model result carries provenance"
+    },
+    {
+      "cat": "model-without-uncertainty",
+      "msg": "every model result carries the full uncertainty contract"
+    },
+    {
+      "cat": "registered-but-unimplemented",
+      "msg": "every registry entry resolves to an implementation"
+    },
+    {
+      "cat": "implemented-but-unsurfaced",
+      "msg": "every capability is surfaced"
+    },
+    {
+      "cat": "surfaced-but-untested",
+      "msg": "every navigable surface is exercised by a gate"
+    },
+    {
+      "cat": "consumer-without-registry-entry",
+      "msg": "every reference resolves to a registry entry"
+    },
+    {
+      "cat": "view-without-canonical-model",
+      "msg": "every widget reads a registered model or a declared source"
+    },
+    {
+      "cat": "unused-model",
+      "msg": "every registered model has a consumer"
+    },
+    {
+      "cat": "missing-test",
+      "msg": "every registered model is named by a test"
+    },
+    {
+      "cat": "field-read-never-written",
+      "msg": "every field read on a stored record exists on some record of its type"
+    }
+  ],
+  "note": "Generated from code metadata and the runtime registries by tests/governance.mjs. Do not edit by hand."
+}
