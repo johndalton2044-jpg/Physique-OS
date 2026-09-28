@@ -116,7 +116,12 @@ function dailySeries(type,asOfDate,days,opts){
     var from=days?addDays(asOfDate,-(days-1)):null;if(opts.from&&(!from||opts.from>from))from=opts.from;
     var list=obsOf(type,{asOf:asOfDate,phaseId:opts.phaseId,from:from});
     var by={};list.forEach(function(o){if(!by[o.date])by[o.date]={date:o.date,vals:[],obs:[]};by[o.date].vals.push(o.value);by[o.date].obs.push(o);});
-    return Object.keys(by).sort().map(function(d){var b=by[d];var v=SUM_TYPES[type]?b.vals.reduce(function(s,x){return s+x;},0):mean(b.vals);return {date:d,value:v,n:b.vals.length,obs:b.obs,x:daysBetween(from||b.date,d)};});
+    /* Device totals (steps, sleep) from two sources are one quantity measured twice: one source is chosen (see
+       90-sources.js), not added — an iPhone's 9,000 and a Fitbit's 11,000 steps had become 20,000. */
+    return Object.keys(by).sort().map(function(d){var b=by[d],pick=null;
+      if(SUM_TYPES[type]&&typeof DEVICE_TOTAL_TYPES!=='undefined'&&DEVICE_TOTAL_TYPES[type]&&typeof pickDayTotal==='function'){pick=pickDayTotal(type,b.obs);if(!pick.alternatives.length)pick=null;}
+      var v=pick?pick.value:(SUM_TYPES[type]?b.vals.reduce(function(s,x){return s+x;},0):mean(b.vals));
+      var row={date:d,value:v,n:b.vals.length,obs:b.obs,x:daysBetween(from||b.date,d)};if(pick){row.source=pick.chosen;row.alternatives=pick.alternatives;row.rule=pick.rule;}return row;});
   });
 }
 function seriesWindow(type,days,asOfDate){return dailySeries(type,asOfDate||asOf(),days);}

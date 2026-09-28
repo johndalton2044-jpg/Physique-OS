@@ -23,7 +23,7 @@ const run=(cmd)=>{const r=spawnSync(process.platform==='win32'?'npm.cmd':'npm',[
 console.log('running the gates \u2014 this takes several minutes');
 /* ---------------- gates, in order ---------------- */
 const G={};
-const GATES=['build','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','perf','cloud:e2e','yields:gate','baseline','verify'];
+const GATES=['build','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','direction','server','perf','cloud:e2e','yields:gate','baseline','verify'];
 /* --from-results: use gates recorded by tests/gate-record.mjs, ONLY if every one passed against the identical build now in
    dist/. Anything else — a missing gate, a failure, a different build — and the gates are run here as before. */
 let reused=false;

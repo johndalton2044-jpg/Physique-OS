@@ -316,6 +316,40 @@ for(const vp of VIEWPORTS){
     await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.dispatchAct('settings.detail','insightful');});
     if(!ok)add('P1','nav','nav.charts: the chart catalogue does not open from the palette with its charts drawn','');else good('nav','nav.charts: palette \u2192 chart catalogue, drawn from the record','nav.charts');
   }
+  /* SOURCES: from the palette; removing previews first, and cancelling removes nothing. */
+  if(vp.name==='iPhone 15'){const f=[];
+    await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.openCmdk();});await page.waitForTimeout(100);await page.fill('#cmdkInput','your data sources');await page.waitForTimeout(150);await page.keyboard.press('Enter');await page.waitForTimeout(300);
+    if(!(await page.evaluate(()=>window._SHEET&&window._SHEET.opts&&window._SHEET.opts.form==='sources'&&typeof window.ACTIONS['sources.open']==='function')))f.push('sources.open does not open from the palette');
+    else{const n0=await page.evaluate(()=>window.DB.observations.filter(o=>!o.retracted).length);const btn=await page.$('#editBackdrop [data-act="sources.deletePreview"]');
+      if(btn){await btn.click();await page.waitForTimeout(150);if(!(await page.$('#editBackdrop [data-act="sources.deleteConfirm"]')))f.push('removing a source does not preview first');
+        await page.click('#editBackdrop [data-act="sources.deleteCancel"]');await page.waitForTimeout(150);if(await page.evaluate(n=>window.DB.observations.filter(o=>!o.retracted).length!==n,n0))f.push('cancelling removed data');}}
+    await page.evaluate(()=>window.closeSheet&&window.closeSheet());
+    if(f.length)add('P1','sources','the sources screen does not work through its controls',f.join('; '));else good('sources','palette → sources → preview → cancel removes nothing','sources');}
+  /* AUTOMATION: Next up on Today, a one-tap chip that writes and can be undone, and the automation sheet from the palette. */
+  if(vp.name==='iPhone 15'){const f=[];
+    await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.DB.settings.quickHidden={};window.switchTab('today');window.scrollTo(0,0);});await page.waitForTimeout(200);
+    const chips=await page.evaluate(()=>[...document.querySelectorAll('#view-today .qa-chip')].map(c=>c.getAttribute('data-arg')));
+    if(chips.includes('water')){const w0=await page.evaluate(()=>window.obsOf('water').length);await page.click('#view-today .qa-chip[data-arg="water"]');await page.waitForTimeout(250);
+      if(await page.evaluate(n=>window.obsOf('water').length!==n+1,w0))f.push('the one-tap water chip did not log');}
+    await page.evaluate(()=>window.openCmdk());await page.waitForTimeout(100);await page.fill('#cmdkInput','shortcuts and automation');await page.waitForTimeout(150);await page.keyboard.press('Enter');await page.waitForTimeout(300);
+    if(!(await page.evaluate(()=>window._SHEET&&window._SHEET.opts&&window._SHEET.opts.form==='automation'&&typeof window.ACTIONS['automation.open']==='function')))f.push('automation.open does not open from the palette');
+    await page.evaluate(()=>window.closeSheet&&window.closeSheet());
+    /* nav.today, the action the weigh-in automation runs */
+    await page.evaluate(()=>{window.switchTab('food');window.dispatchAct('nav.today');});await page.waitForTimeout(150);if(await page.evaluate(()=>window._TAB!=='today'))f.push('nav.today does not open Today');
+    if(f.length)add('P1','automation','quick actions or automation do not work through their controls',f.join('; '));else good('automation','Next up on Today, one-tap chip, automation sheet from the palette','automation');}
+  /* SUPPLEMENTS AND VITAMINS, through their controls: palette → sheet → add → dose → the Food card. */
+  if(vp.name==='iPhone 15'){const f=[];
+    await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.openCmdk();});await page.waitForTimeout(100);
+    await page.fill('#cmdkInput','supplements and vitamins');await page.waitForTimeout(150);await page.keyboard.press('Enter');await page.waitForTimeout(350);
+    if(!(await page.evaluate(()=>window._SHEET&&window._SHEET.opts&&window._SHEET.opts.form==='supplements'&&typeof window.ACTIONS['supp.open']==='function')))f.push('supp.open does not open from the palette');
+    else{const had=await page.evaluate(()=>window.supplementStack().some(s=>s.id==='magnesium'));
+      if(!had){await page.click('#editBackdrop [data-act="supp.add"][data-arg="magnesium"]');await page.waitForTimeout(200);}
+      const inp=await page.$('#editBackdrop [data-act="supp.dose"][data-arg="magnesium"]');if(inp){await inp.fill('250');await inp.dispatchEvent('change');await page.waitForTimeout(150);}
+      const st=await page.evaluate(()=>window.supplementStack().filter(s=>s.id==='magnesium')[0]);if(!st||st.dose!==250)f.push('adding magnesium and setting 250 mg did not stick '+JSON.stringify(st));
+      await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.switchTab('food');});await page.waitForTimeout(200);
+      if(!(await page.evaluate(()=>[...document.querySelectorAll('#view-food .card')].some(c=>/Supplements and vitamins/.test(c.textContent)&&/Magnesium/.test(c.textContent)))))f.push('the Food card does not show the regimen');
+      await page.evaluate(()=>window.setSupplementStack(window.supplementStack().filter(s=>s.id!=='magnesium')));}
+    if(f.length)add('P1','supplements','the supplements and vitamins flow does not work through its controls',f.join('; '));else good('supplements','palette → regimen → dose → Food card','supplements');}
   /* RAILS: the left rail ends level with the + button, flush with its edge; previous/next sit side by side and flip
      panels; the microphone sits above + (usage review). */
   if(vp.name==='iPhone 15'){
@@ -331,6 +365,20 @@ for(const vp of VIEWPORTS){
     await page.click('#prevFab',{force:true});await page.waitForTimeout(150);if(t0===t1||await page.evaluate(()=>window._TAB)!==t0)f.push('previous/next do not flip panels');
     if(f.length)add('P1','rails','the side rails are not aligned or do not flip panels',f.join('; '));else good('rails','left rail level with +, previous/next side by side and flipping, microphone above +','usage review');
   }
+  /* TODAY SUMMARY, UNDO, TOOLS ORDER (usage review) */
+  if(vp.name==='iPhone 15'){const f=[];
+    await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.switchTab('today');window.scrollTo(0,0);});await page.waitForTimeout(200);
+    const T=await page.evaluate(()=>{const h=document.querySelector('.today-hero'),w=document.querySelector('[data-fold="today-why"]'),u=document.getElementById('undoFab');
+      return {hero:!!h,heroFirst:!!h&&h.getBoundingClientRect().top<(document.getElementById('actionsZone').getBoundingClientRect().top),why:!!w&&!w.open,undo:!!u&&!u.hidden&&getComputedStyle(u).display!=='none',nums:[...document.querySelectorAll('.hero-num b')].filter(b=>b.textContent.trim()!=='\u2014').length};});
+    if(!T.hero||!T.heroFirst)f.push('the summary is not at the top of Today');if(!T.why)f.push('the reasoning is not folded');if(!T.undo)f.push('undo is not in the right rail');if(T.nums<2)f.push('the summary shows '+T.nums+' numbers');
+    await page.evaluate(()=>window.switchTab('tools'));await page.waitForTimeout(250);
+    const first=await page.evaluate(()=>{const v=document.getElementById('toolsZone');const k=[...v.children].filter(c=>c.offsetParent!==null).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top)[0];return k?(k.getAttribute('data-fold')||((k.querySelector('[data-fold]')||{}).getAttribute||(()=>null)).call(k.querySelector('[data-fold]'),'data-fold')):null;});
+    if(first!=='tools-server')f.push('Tools does not start with External server ('+first+')');
+    await page.evaluate(()=>{window.switchTab('today');window.dispatchAct('features.open');});await page.waitForTimeout(200);
+    await page.evaluate(()=>{const b=[...document.querySelectorAll('#editBackdrop [data-act="features.go"]')].find(x=>x.getAttribute('data-arg')==='nav.schedule');if(b)b.click();});await page.waitForTimeout(300);
+    if(!(await page.evaluate(()=>window._SHEET&&window._SHEET.opts&&window._SHEET.opts.form==='schedule')))f.push('a feature opened from the guide did not come to the front');
+    await page.evaluate(()=>window.closeSheet&&window.closeSheet());
+    if(f.length)add('P1','today','the Today summary, undo, Tools order or the guide misbehave',f.join('; '));else good('today','summary first with folded reasoning, undo present, External server first, guide opens features in front','usage review');}
   /* SCHEDULES, READY-MADE EXPERIMENTS, MOVEMENT PANELS — through their controls. */
   if(vp.name==='iPhone 15'){
     const f=[];

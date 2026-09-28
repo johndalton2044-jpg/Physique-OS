@@ -89,6 +89,8 @@ console.log('--- the server loses its data (a free host restarting with an empty
   console.log('reset detected and everything re-sent:',again.serverReset===true&&again.sent>=before,JSON.stringify({reset:again.serverReset,sent:again.sent,had:before,err:again.err}));
   const second=await A.cloudSync();console.log('the next sync is quiet again:',second.sent===0&&second.serverReset===false);
   globalThis.__srv2=srv2;}
+console.log('--- the base address answers with an index, not "no such endpoint" ---');
+{const r=await fetch('http://127.0.0.1:8791/');const j=await r.json();console.log('base address is friendly:',r.status===200&&j.ok===true&&!j.error);}
 console.log('--- a wrong phrase derives a different vault and cannot decrypt ---');
 const wrong=await A.deriveVault('totally different words entirely here now');
 console.log('different vault id:',wrong.vaultId!==created.vaultId);

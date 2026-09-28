@@ -89,11 +89,15 @@ function reconcileDay(type,date){
     weighted+=o.value*t;wsum+=t;
   });
   var vals=obs.map(function(o){return o.value;});
-  var spread=Math.max.apply(null,vals)-Math.min.apply(null,vals);
-  return {type:type,date:date,sources:obs.map(function(o){return {source:o.source,value:o.value,trust:o.trust!=null?o.trust:1};}),
-    reconciled:round(weighted/wsum,2),spread:round(spread,2),
-    agreement:spread<0.3?'close':(spread<1?'moderate':'poor'),
-    note:spread>=1?'These sources disagree by '+fmtWeight(spread)+'. That is a measurement problem, not a body that changed \u2014 prefer one source and keep it.':'sources agree within normal measurement noise'};
+  var spread=Math.max.apply(null,vals)-Math.min.apply(null,vals),mid=Math.abs(mean(vals))||1;
+  /* judged in the type's own terms: weight keeps its absolute pounds; everything else by relative spread. The first
+     version used weight's thresholds and formatter for every type ("steps disagree by 2,000.0 lb"). */
+  var isW=type==='weight',rel=spread/mid,agreement=isW?(spread<0.3?'close':(spread<1?'moderate':'poor')):(rel<0.02?'close':(rel<0.08?'moderate':'poor'));
+  var unit=((typeof OBS_TYPES!=='undefined'&&OBS_TYPES[type])||{}).unit||'',shown=isW?fmtWeight(spread):(fmtNum(spread,spread>=100?0:1)+(unit?' '+unit:''));
+  return {type:type,date:date,sources:obs.map(function(o){return {source:typeof sourceKeyOf==='function'?sourceKeyOf(o):o.source,value:o.value,trust:o.trust!=null?o.trust:1};}),
+    reconciled:round(weighted/wsum,2),spread:round(spread,2),relativeSpread:round(rel,3),
+    agreement:agreement,
+    note:agreement==='poor'?'These sources disagree by '+shown+'. That is a measurement difference, not a change in you \u2014 choose one source and keep it.':'sources agree within normal measurement noise'};
 }
 function sourceReliability(type,days){
   days=days||90;var from=addDays(asOf(),-days);

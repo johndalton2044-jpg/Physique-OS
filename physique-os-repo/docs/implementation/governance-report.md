@@ -1,6 +1,6 @@
 # Governance report
 
-Build 3d6c7a007e · generated 2026-09-27T05:39:39.674Z
+Build a75467fc29 · generated 2026-09-28T03:04:00.909Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **23 passing**
 
@@ -18,7 +18,7 @@ Build 3d6c7a007e · generated 2026-09-27T05:39:39.674Z
 - **audit-never-run** — 47 audit functions, every one invoked
 - **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 11 entity contracts hold, and every store in the record is owned or explained
-- **model-without-version** — 25 models, each versioned
+- **model-without-version** — 33 models, each versioned
 - **model-without-provenance** — every model result carries provenance
 - **model-without-uncertainty** — every model result carries the full uncertainty contract
 - **registered-but-unimplemented** — every registry entry resolves to an implementation

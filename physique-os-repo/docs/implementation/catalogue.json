@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "3d6c7a007e",
+ "build": "a75467fc29",
  "models": [
   {
    "id": "adherence",
@@ -18,6 +18,11 @@
    "fn": "bodyComp"
   },
   {
+   "id": "cardio_fitness_latent",
+   "cls": "EMPIRICAL",
+   "fn": "cardioFitnessModel"
+  },
+  {
    "id": "change_point",
    "cls": "DERIVED",
    "fn": "changePoints"
@@ -28,9 +33,19 @@
    "fn": "dataTrust"
   },
   {
+   "id": "diet_digestibility",
+   "cls": "PRIOR",
+   "fn": "dietDigestibility"
+  },
+  {
    "id": "e1rm",
    "cls": "DERIVED",
    "fn": "e1rmFrom"
+  },
+  {
+   "id": "energy_availability",
+   "cls": "DERIVED",
+   "fn": "energyAvailability"
   },
   {
    "id": "energy_balance",
@@ -53,6 +68,11 @@
    "fn": "goalTrajectory"
   },
   {
+   "id": "hydration_balance",
+   "cls": "HEURISTIC",
+   "fn": "hydrationBalance"
+  },
+  {
    "id": "measurement_quality",
    "cls": "DERIVED",
    "fn": "measurementQuality"
@@ -61,6 +81,11 @@
    "id": "met_energy",
    "cls": "DERIVED",
    "fn": "metKcal"
+  },
+  {
+   "id": "micronutrient_coverage",
+   "cls": "DERIVED",
+   "fn": "micronutrientCoverage"
   },
   {
    "id": "muscle_risk",
@@ -83,6 +108,11 @@
    "fn": "recoveryLatentState"
   },
   {
+   "id": "recovery_allocation",
+   "cls": "HEURISTIC",
+   "fn": "recoveryAllocation"
+  },
+  {
    "id": "response_matrix",
    "cls": "EMPIRICAL",
    "fn": "personalResponse"
@@ -91,6 +121,16 @@
    "id": "strength_trend",
    "cls": "DERIVED",
    "fn": "strengthTrend"
+  },
+  {
+   "id": "supplement_adherence",
+   "cls": "DERIVED",
+   "fn": "supplementAdherence"
+  },
+  {
+   "id": "supplement_efficacy",
+   "cls": "EMPIRICAL",
+   "fn": "supplementEfficacy"
   },
   {
    "id": "tdee_personal",
@@ -419,6 +459,10 @@
    "level": "developer"
   },
   {
+   "id": "automation.open",
+   "level": "casual"
+  },
+  {
    "id": "bm.days",
    "level": "developer"
   },
@@ -745,6 +789,10 @@
   {
    "id": "exp.save",
    "level": "insightful"
+  },
+  {
+   "id": "features.go",
+   "level": "developer"
   },
   {
    "id": "features.open",
@@ -1459,6 +1507,14 @@
    "level": "casual"
   },
   {
+   "id": "pattern.accept",
+   "level": "developer"
+  },
+  {
+   "id": "pattern.dismiss",
+   "level": "developer"
+  },
+  {
    "id": "pg.weeks",
    "level": "developer"
   },
@@ -1500,6 +1556,10 @@
   },
   {
    "id": "photo.view",
+   "level": "casual"
+  },
+  {
+   "id": "physio.open",
    "level": "casual"
   },
   {
@@ -1587,6 +1647,22 @@
    "level": "developer"
   },
   {
+   "id": "qa.hide",
+   "level": "developer"
+  },
+  {
+   "id": "qa.repeatMeal",
+   "level": "developer"
+  },
+  {
+   "id": "qa.run",
+   "level": "developer"
+  },
+  {
+   "id": "qa.water",
+   "level": "developer"
+  },
+  {
    "id": "recipe.addIng",
    "level": "casual"
   },
@@ -1640,6 +1716,14 @@
   },
   {
    "id": "res.exercise",
+   "level": "developer"
+  },
+  {
+   "id": "rule.enable",
+   "level": "developer"
+  },
+  {
+   "id": "rule.toggle",
    "level": "developer"
   },
   {
@@ -1899,6 +1983,26 @@
    "level": "developer"
   },
   {
+   "id": "sources.deleteCancel",
+   "level": "developer"
+  },
+  {
+   "id": "sources.deleteConfirm",
+   "level": "developer"
+  },
+  {
+   "id": "sources.deletePreview",
+   "level": "developer"
+  },
+  {
+   "id": "sources.open",
+   "level": "casual"
+  },
+  {
+   "id": "sources.prefer",
+   "level": "developer"
+  },
+  {
    "id": "storage.checkpoint",
    "level": "casual"
   },
@@ -1971,6 +2075,34 @@
    "level": "developer"
   },
   {
+   "id": "supp.add",
+   "level": "developer"
+  },
+  {
+   "id": "supp.dose",
+   "level": "developer"
+  },
+  {
+   "id": "supp.logStack",
+   "level": "developer"
+  },
+  {
+   "id": "supp.open",
+   "level": "casual"
+  },
+  {
+   "id": "supp.q",
+   "level": "developer"
+  },
+  {
+   "id": "supp.remove",
+   "level": "developer"
+  },
+  {
+   "id": "supp.when",
+   "level": "developer"
+  },
+  {
    "id": "sync.export",
    "level": "casual"
   },
@@ -1984,6 +2116,22 @@
   },
   {
    "id": "timeline.filter",
+   "level": "developer"
+  },
+  {
+   "id": "tools.pin",
+   "level": "developer"
+  },
+  {
+   "id": "tpl.delete",
+   "level": "developer"
+  },
+  {
+   "id": "tpl.run",
+   "level": "developer"
+  },
+  {
+   "id": "tpl.saveMeal",
    "level": "developer"
   },
   {
@@ -2206,6 +2354,7 @@
  "sheets": [
   "ask",
   "attention",
+  "automation",
   "bodymap",
   "causal",
   "chartGallery",
@@ -2266,6 +2415,7 @@
   "optimise",
   "phase",
   "photos",
+  "physio",
   "planEdit",
   "planSearch",
   "prepare",
@@ -2292,6 +2442,7 @@
   "setup",
   "since",
   "skillLimiter",
+  "sources",
   "storage",
   "stretchInfo",
   "studio",
@@ -2402,5 +2553,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 103
+ "panels": 107
 }

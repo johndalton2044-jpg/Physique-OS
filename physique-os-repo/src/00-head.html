@@ -829,5 +829,20 @@ tr.wx-today td{font-weight:700}
 .mic-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);vertical-align:middle}
 .mic-btn.on{border-color:var(--accent);color:var(--accent)}.field-with-mic{display:flex;gap:6px;align-items:flex-end}.field-with-mic .fld{flex:1;min-width:0}
 .feat{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)}.feat:first-child{border-top:0}.feat .ic{color:var(--accent);margin-top:2px}.feat-body{flex:1;min-width:0}
+#undoFab.is-empty{opacity:.45}
+/* Today: the summary first, then what to do, then the rest. */
+#view-today{display:flex;flex-direction:column}#decisionZone{order:1}#actionsZone{order:2}#attentionZone{order:3}#vitalsZone{order:4}#forecastZone{order:5}#dataQualityZone{order:6}#upcomingZone{order:7}#todayTechZone{order:8}
+.today-hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 14px;align-items:center}.hero-photo{flex:none;border:0;padding:0;background:none;border-radius:14px;overflow:hidden;width:96px;height:96px}
+.hero-photo img{width:96px;height:96px;object-fit:cover;display:block;background:var(--surface-2)}.hero-main{flex:1;min-width:0}.hero-decision{margin:4px 0 8px;font-size:calc(15px*var(--ts,1))}
+.hero-nums{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}/* outlined, not filled: secondary text on the lighter fill fell to 4.19:1 (4.5 needed) */
+.hero-num{display:grid;gap:1px;padding:6px;border-radius:8px;background:transparent;border:1px solid var(--border);font-size:calc(12px*var(--ts,1))}.hero-num b{font-size:calc(15px*var(--ts,1))}
+/* The old headline is now a subtitle: its facts are in the summary card below it. */
+#todayHeadline{font-size:calc(17px*var(--ts,1))!important;line-height:1.35;font-weight:500}
+.cov{display:grid;gap:5px;margin:6px 0}.cov-row{display:grid;grid-template-columns:7.5em 1fr 3em;gap:8px;align-items:center;font-size:calc(12.5px*var(--ts,1))}
+.cov-bar{position:relative;height:8px;border-radius:4px;background:var(--surface-2)}.cov-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent)}
+.cov-fill.low{background:var(--warn,#c9a227)}.cov-fill.over{background:var(--neg,#c0504d)}.cov-ref{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text)}.cov-ul{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--neg,#c0504d)}.cov-v{text-align:right}
+.next-up{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px}/* chips keep their width and the row scrolls: shrinking made a label spill into its neighbour on small phones */
+.qa-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;font:inherit}
+.qa-chip .ic{color:var(--accent)}.qa-more{color:var(--text-2)}
 </style>
 </head>

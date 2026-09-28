@@ -25,6 +25,17 @@
    origin IS localhost. */
 var CLOUD_DEFAULT_URL='/api/sync';
 var _cloud={status:'not configured',token:null,tokenExp:0,busy:false,lastError:null};
+/* The app can only reach its own site (connect-src 'self'), so a server address on another site — the Render URL typed on a
+   second device — fails with a bare "Failed to fetch". It is replaced with /api/sync, which the deployment forwards to
+   the server, and the replacement is reported. */
+/* Replaced only when the page's own policy does not allow the address: a build made with --sync-origin adds that server
+   to connect-src, and it must still be used. (jsdom, the test harness, does not enforce the policy.) */
+function _cspAllows(origin){try{if(typeof navigator!=='undefined'&&/jsdom/i.test(navigator.userAgent||''))return true;
+  var m=typeof document!=='undefined'&&document.querySelector('meta[http-equiv="Content-Security-Policy"]');if(!m)return true;
+  var c=(String(m.getAttribute('content')).match(/connect-src([^;]*)/)||[])[1];if(!c)return true;return c.split(/\s+/).indexOf(origin)>=0;}catch(e){return true;}}
+function _sameSiteServerUrl(u){if(!u)return CLOUD_DEFAULT_URL;var s=String(u);if(s.charAt(0)==='/')return s;
+  try{var o=new URL(s).origin;if((typeof window!=='undefined'&&window.location&&o===window.location.origin)||_cspAllows(o))return s;}catch(e){}
+  _cloud.urlReplaced=s;return CLOUD_DEFAULT_URL;}
 function cloudConfig(){
   var s=DB.settings.cloud||{};
   return {url:s.url||CLOUD_DEFAULT_URL,vaultId:s.vaultId||null,enabled:!!s.enabled,
@@ -102,10 +113,13 @@ function _api(pathname,opts){
   var c=cloudConfig();
   var headers={'content-type':'application/json'};
   if(_cloud.token&&_cloud.tokenExp>Date.now())headers['authorization']='Bearer '+_cloud.token;
-  var base=String(c.url||CLOUD_DEFAULT_URL).replace(/\/$/,'');
-  return fetch(base+pathname,{method:opts.method||'GET',headers:headers,
+  var base=String(_sameSiteServerUrl(c.url)).replace(/\/$/,'');
+  return fetch(base+pathname,{method:opts.method||'GET',headers:headers,cache:'no-store',
     body:opts.body?JSON.stringify(opts.body):undefined})
-    .then(function(r){return r.json().then(function(j){
+    .catch(function(){var e=new Error('Could not reach the sync server at '+base+'. It may be waking up (free hosting sleeps when idle \u2014 try again in a minute), or this device is offline.'+(_cloud.urlReplaced?' (The address '+_cloud.urlReplaced+' was replaced by '+CLOUD_DEFAULT_URL+': this app can only reach its own site.)':''));e.status=0;throw e;})
+    .then(function(r){var ct=String((r.headers&&r.headers.get&&r.headers.get('content-type'))||'');
+      if(!/json/i.test(ct)){var e2=new Error(r.status>=502&&r.status<=504?'The sync server did not answer in time (HTTP '+r.status+'); it may be waking up \u2014 try again in a minute.':'The address '+base+' answered with a web page (HTTP '+r.status+'), not the sync server.');e2.status=r.status;throw e2;}
+      return r.json().then(function(j){
       if(!r.ok){var e=new Error(j.error||('HTTP '+r.status));e.status=r.status;e.detail=j;throw e;}
       return j;});});
 }
@@ -265,7 +279,13 @@ function cloudSubscribePush(){
     return navigator.serviceWorker.ready;
   }).then(function(reg){
     return _api('/v1/health').then(function(h){
-      return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_urlB64ToBytes(h.vapidPublicKey)});
+      /* A server that regenerated its push keys (a wiped disk) no longer matches the browser's existing subscription:
+         "Provided applicationServerKey does not match". The old subscription is dropped and a new one made. */
+      var key=_urlB64ToBytes(h.vapidPublicKey);
+      return reg.pushManager.getSubscription().then(function(old){
+        var same=old&&old.options&&old.options.applicationServerKey&&(function(a,b){a=new Uint8Array(a);if(a.length!==b.length)return false;for(var i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;})(old.options.applicationServerKey,key);
+        if(old&&!same)return old.unsubscribe().then(function(){return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});});
+        return old||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});});
     });
   }).then(function(sub){
     return cloudAuthenticate().then(function(){

@@ -1,6 +1,6 @@
 {
   "pinnedTime": "2026-06-15T12:00:00.000Z",
-  "capturedAt": "2026-09-27T05:47:40.115Z",
+  "capturedAt": "2026-09-27T17:35:55.819Z",
   "snapshot": {
     "svg": {
       "line": "c1c78a94c2375795",
@@ -12,7 +12,7 @@
       "scatter": "a0c635b2ce25a4db",
       "bodyMap": "98b5ffd304f5bbda",
       "squat": "4369bd70f9fd6baf",
-      "dashboard": "05dd5a203c0755a5"
+      "dashboard": "2204378e29aab1c3"
     },
     "semantics": {
       "line": {
@@ -171,9 +171,9 @@
       ],
       "main .card": [
         18,
-        2597,
+        437,
         357,
-        394
+        234
       ]
     }
   }

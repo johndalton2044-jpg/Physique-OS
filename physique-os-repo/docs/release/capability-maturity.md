@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build 3d6c7a007e. Every status is derived from evidence the build can check; none is assigned by hand.
+Build a75467fc29. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -56,5 +56,13 @@ Build 3d6c7a007e. Every status is derived from evidence the build can check; non
 | response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | assigned |
 | exercise_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | uncertainty_chain | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| cardio_fitness_latent | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| hydration_balance | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
+| supplement_efficacy | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| energy_availability | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| diet_digestibility | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
+| recovery_allocation | 1.0 | INFRASTRUCTURE_GRADE | assigned |
+| micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 
 Production-ready capabilities: 0. Experimentally validated engines: 0.

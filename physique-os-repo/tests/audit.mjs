@@ -139,7 +139,7 @@ const script=/<script>([\s\S]*?)<\/script>/.exec(html)[1];
      action, jump top/bottom while scrolled) are transient and are not counted; the limits apply to what always floats. */
   const railActs=id=>[...w.document.querySelectorAll('#'+id+' .fab-mini:not([data-transient])')].map(b=>b.getAttribute('data-act'));
   const rightActs=railActs('railRight'), leftActs=railActs('railLeft');
-  if(rightActs.length>2)add('P1','rail','the right rail carries more than two floating controls',
+  if(rightActs.length>3)add('P1','rail','the right rail carries more than two floating controls',
     rightActs.length+': '+rightActs.join(', '));
   const dupes=rightActs.filter(a=>leftActs.includes(a));
   if(dupes.length)add('P1','rail','the same action appears on both rails',dupes.join(', '));

@@ -171,6 +171,10 @@ function dependencyGraph(){
   var nodes=[],edges=[];
   Object.keys(OBS_TYPES).forEach(function(t){nodes.push({id:t,kind:'observation',label:OBS_TYPES[t].label||t});(OBS_TYPES[t].consumers||[]).forEach(function(c){edges.push({from:t,to:c,kind:'feeds'});});});
   MODELS.forEach(function(m){nodes.push({id:m.id,kind:'model',label:m.name,cls:m.cls});(m.consumers||[]).forEach(function(c){edges.push({from:m.id,to:c,kind:'feeds'});});});
+  /* The specified edge fields (implementation direction \u00a75), alongside the short ones existing readers use. */
+  edges=edges.map(function(e,i){return Object.assign({},e,{dependencyId:'dep:'+e.from+'\u2192'+e.to,sourceId:e.from,targetId:e.to,dependencyType:e.kind||e.rel||'feeds',
+    scope:'this person',version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'1')});});
+  nodes=nodes.map(function(n){return Object.assign({},n,{nodeType:n.kind});});
   return {nodes:nodes,edges:edges,issues:dataContractIssues()};
 }
 /* ============================================================================

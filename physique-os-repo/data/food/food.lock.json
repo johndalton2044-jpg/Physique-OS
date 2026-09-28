@@ -1,0 +1,10 @@
+{
+  "databaseVersion": "fdc-2026-04-30",
+  "sumsSha256": "8ab856bd4bee107b907796c71fb77bd31beaf318f802322ad12d0f362ed0cb2c",
+  "files": 1107,
+  "archive": {
+    "name": "physique-os-food-data.tar.gz",
+    "sha256": "b018a060a1f543f3ac21afb3a65bbde5d213a8d6f7840d5150887b0079095ef3"
+  },
+  "note": "The food corpus is an external release artifact. The build verifies data/food (or dist/data/food) against this lock, file by file; scripts/food-fetch.mjs fetches the archive by URL and checks it against archive.sha256."
+}

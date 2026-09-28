@@ -96,6 +96,7 @@ function boot(){
   try{applyLayout();window.addEventListener('resize',function(){applyLayout();},{passive:true});}catch(e){_q(e,'P3');}
   window.addEventListener('hashchange',function(){var t=location.hash.replace('#','');if(t&&document.getElementById('view-'+t)&&t!==_TAB)switchTab(t);});
   var start=location.hash.replace('#','');switchTab(document.getElementById('view-'+start)?start:'today');
+  if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);   /* home-screen shortcuts: ?do=weigh-in and friends */
   makeDelegatedControlsFocusable();
   onSave(function(){_memoInvalidate();});
   /* Durable startup, in order of authority:

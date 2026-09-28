@@ -460,6 +460,10 @@ var QUANTITY_REGISTRY=(function(){
     t.uncertaintySemantics=UNCERTAINTY[t.cls]||'unspecified';
     /* A missing value of a quantity is a GAP, never a zero \u2014 the one rule every renderer must honour. */
     t.missingnessSemantics='gap';
+    /* conversion and display (implementation direction \u00a72): the factors come from the dimension table itself, so they
+       cannot drift from the converter that uses them. */
+    t.conversion={canonicalUnit:t.canonicalUnit,factors:dim.units?Object.assign({},dim.units):{},rule:'value in unit \u00d7 factor = value in the canonical unit'};
+    t.display={decimals:t.precision,unit:t.canonicalUnit,label:t.label||t.id};
   });
   return TYPES;   // the same object: one registry, two names during migration, zero copies
 })();

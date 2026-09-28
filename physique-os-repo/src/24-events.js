@@ -236,6 +236,7 @@ function emitEvent(type,data,opts){
   var e={id:(opts.id||uid('ev')),seq:++_EVENT_SEQ,type:type,at:opts.at||nowISO(),
     device:deviceId(),schema:EVENT_SCHEMA,data:data};
   _EVENTS.push(e);
+  if(typeof _automationOnEvent==='function')_automationOnEvent(e);   /* workflow rules: after recording, never during replay (replay does not emit) */
   if(_EVENTS.length>EVENT_WINDOW){try{compactEvents();}catch(err){_q(err,'P0');}}
   if(DB&&DB.ledger)DB.ledger.events=(DB.ledger.events||0)+1;
   return e;

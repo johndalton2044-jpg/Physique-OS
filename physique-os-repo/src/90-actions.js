@@ -89,7 +89,9 @@ function updateRail(){
       att.classList.toggle('urgent',n>0);}
     updateHealthBanner();updateReplayBanner();
     var undoFab=document.getElementById('undoFab');
-    if(undoFab){var lbl=undoLabel();undoFab.hidden=!lbl;if(lbl)undoFab.setAttribute('title','Undo: '+lbl);}
+    /* Undo is always in the right rail (usage review: "undo button still missing" \u2014 it only appeared after an action and
+       vanished on reload); with nothing to undo it is dimmed and says so. */
+    if(undoFab){var lbl=undoLabel();undoFab.hidden=false;undoFab.setAttribute('title',lbl?('Undo: '+lbl):'Nothing to undo');undoFab.setAttribute('aria-label',lbl?('Undo: '+lbl):'Nothing to undo');}
   }catch(e){_q(e);}
 }
 /* Secondary interaction: right-click on a pointer device, long press on touch. It never introduces an action
@@ -422,7 +424,8 @@ registerAction('colors.tintStrength',function(a,ev,el){if(!el)return;var co=DB.s
   setTintFriendly(co.tintHue!=null?co.tintHue:210,el.value);_colorsLive();clearTimeout(window._tintT);window._tintT=setTimeout(function(){_colorsCommit();},500);});
 registerAction('colors.noTint',function(){var co=Object.assign({},DB.settings.colorOverrides||{});co.tintStrength=0;co.tintRequested=0;DB.settings.colorOverrides=co;_colorsCommit('Background tint removed');});
 registerAction('colors.reset',function(){resetColors();DB.settings.accentHue=null;_colorsCommit('Colours reset');});
-registerAction('settings.textCard',function(){if(typeof switchTab==='function')switchTab('tools');setTimeout(function(){var el=document.getElementById('textCard');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'});},60);});
+/* The Text card is now a fold: open it, then scroll to it. */
+registerAction('settings.textCard',function(){DB.settings.folds=DB.settings.folds||{};DB.settings.folds['tools-text']=true;if(typeof switchTab==='function')switchTab('tools');setTimeout(function(){var el=document.getElementById('fold-tools-text')||document.getElementById('textCard');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'});},60);});
 registerAction('nav.weightTrend',function(){switchTab('progress');setTimeout(function(){var el=document.querySelector('#view-progress svg.chart');
   if(el&&el.scrollIntoView)el.scrollIntoView({block:'center'});},60);});
 registerAction('nav.forecast',function(){openSheet('edit',{form:'forecastFamily',title:'Weight forecast',
@@ -680,6 +683,16 @@ registerAction('data.diagnostics',function(){var j=diagnosticsJSON();var copied=
 var _SW_STATE='not registered',_SW_UPDATE=null,_SW_REG=null,_STORAGE_EST=null;
 function registerServiceWorker(){if(!('serviceWorker' in navigator)){_SW_STATE='unsupported';return;}if(location.protocol==='file:'){_SW_STATE='file:// (service workers need http or https)';return;}try{navigator.serviceWorker.register('./sw.js').then(function(reg){_SW_REG=reg;_SW_STATE=reg.active?'active':'installing';reg.addEventListener('updatefound',function(){var nw=reg.installing;if(!nw)return;nw.addEventListener('statechange',function(){if(nw.state==='installed'&&navigator.serviceWorker.controller){_SW_UPDATE=nw;_SW_STATE='update ready';renderAll();}});});}).catch(function(e){_SW_STATE='failed: '+(e&&e.message||e);_q(e);});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_SW_APPLYING){location.reload();}});}catch(e){_SW_STATE='error';_q(e);}}
 var _SW_APPLYING=false;
+/* UPDATES APPLY THEMSELVES (usage review: a phone kept running an old build \u2014 old Tools, no undo, a cached 404 \u2014 because
+   the update waited behind a dismissible notice). An update found within 15 s of launch is applied at once and the app
+   reloads once; later in a session a banner on Today offers it; returning to the app checks for one. */
+var _SW_LAUNCH=Date.now(),_SW_RELOADED=false;
+/* Only an UPDATE reloads: controllerchange also fires when a first-ever service worker claims the page, and reloading
+   then interrupted a first visit on a slow phone (mid-setup). A page that started with no controller is not reloaded. */
+var _SW_HAD_CONTROLLER=typeof navigator!=='undefined'&&!!(navigator.serviceWorker&&navigator.serviceWorker.controller);
+if(typeof navigator!=='undefined'&&navigator.serviceWorker){navigator.serviceWorker.addEventListener('controllerchange',function(){if(!_SW_HAD_CONTROLLER){_SW_HAD_CONTROLLER=true;return;}if(_SW_RELOADED)return;_SW_RELOADED=true;try{window.location.reload();}catch(e){}});
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&_SW_REG&&_SW_REG.update)try{_SW_REG.update();}catch(e){}});
+  setInterval(function(){if(_SW_UPDATE&&!_SW_APPLYING&&Date.now()-_SW_LAUNCH<15000&&!(typeof _SHEET!=='undefined'&&_SHEET)){_SW_APPLYING=true;try{_SW_UPDATE.postMessage({type:'SKIP_WAITING'});}catch(e){}}},1000);}
 registerAction('pwa.update',function(){if(!_SW_UPDATE)return;_SW_APPLYING=true;try{_SW_UPDATE.postMessage({type:'SKIP_WAITING'});}catch(e){_q(e);}toast('Applying update\u2026');});
 registerAction('pwa.later',function(){_SW_UPDATE=null;renderAll();});
 registerAction('pwa.reload',function(){location.reload();});
@@ -2511,8 +2524,8 @@ SHEETS.photos=function(){
     uiRow('Lighting','',{sub:chips(LIGHTING_KINDS,_PHOTO_FORM.lighting,'photo.light')+'<div class="hint">consistency: '+esc(l.consistency)+'</div>'})+
     '<label class="fld"><span>Note (optional)</span><input id="photoNote" type="text" maxlength="200" value="'+esc(_PHOTO_FORM.note)+'" aria-label="photo note"></label>'+
     '<div class="btn-row">'+uiBtn('Take photo','photo.pick','camera','btn-sm btn-primary')+uiBtn('Choose from library','photo.pick','library','btn-sm btn-secondary')+'</div>'+
-    '<input id="photoCam" class="visually-hidden" type="file" accept="image/*" capture="environment" data-act="photo.file" data-arg="camera" data-ev="change" tabindex="-1" aria-hidden="true">'+
-    '<input id="photoLib" class="visually-hidden" type="file" accept="image/*" data-act="photo.file" data-arg="library" data-ev="change" tabindex="-1" aria-hidden="true">'+
+    '<input id="photoCam" class="visually-hidden" aria-label="Take a photo" type="file" accept="image/*" capture="environment" data-act="photo.file" data-arg="camera" data-ev="change" tabindex="-1" aria-hidden="true">'+
+    '<input id="photoLib" class="visually-hidden" aria-label="Choose a photo" type="file" accept="image/*" data-act="photo.file" data-arg="library" data-ev="change" tabindex="-1" aria-hidden="true">'+
     '<div class="hint">Photos stay on this device, resized to '+PHOTO_MAX_EDGE+' px. Same view, same light and the same time of day make two photos worth comparing.</div>';
   var gallery=m.length?('<div class="card-title" style="margin-top:12px">Your photos</div><div class="photo-grid">'+m.slice(0,24).map(function(p){
     var vw=(PHOTO_VIEWS[p.view||p.pose]||{}).label||p.pose;
@@ -2801,15 +2814,12 @@ SHEETS.hydration=function(){var r=hydrationContext(),e=_statusBody(r,'Not enough
   return {body:e||(uiRow('Scale reading',r.likelyDistorted?uiPill('likely distorted','attention'):uiPill('looks normal','good'),{sub:esc(r.note||'')})+
     ((r.flags||[]).length?r.flags.map(function(f){return uiRow(esc(f.label||f),'',{sub:esc(f.detail||'')});}).join(''):'')+
     '<div class="prov">'+esc(r.caveat)+'</div>'),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
-SHEETS.supplements=function(){var r=supplementReview(),e=_statusBody(r,'No supplements logged');
-  return {body:e||('<div class="hint">'+esc(r.note)+'</div>'+r.rows.map(function(x){
-    return uiRow(esc(x.name),x.personallyTested?uiPill('you tested it','good'):(x.evidence?uiPill('general evidence','neutral'):uiPill('no evidence entry','attention')),
-      {sub:esc(x.standing)+(x.evidence?(' \u00b7 '+esc(x.evidence.ingredient)+': '+esc(x.evidence.efficacy)):'')});}).join('')+
-    '<div class="prov">'+esc(r.caveat)+'</div>'),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+/* The supplements sheet is SHEETS.supplements in 90-workout.js (regimen, catalogue, vitamins, guidance, personal tests,
+   and everything else logged, from supplementReview). This older view was merged into it. */
 registerAction('nav.recoveryAllocation',function(){openSheet('edit',{form:'recoveryAllocation',title:'What is using your recovery',desc:'',buf:{}});});
 registerAction('nav.motorLearning',function(){openSheet('edit',{form:'motorLearning',title:'Skill in your lifts',desc:'',buf:{}});});
 registerAction('nav.hydration',function(){openSheet('edit',{form:'hydration',title:'Water and the scale',desc:'',buf:{}});});
-registerAction('nav.supplements',function(){openSheet('edit',{form:'supplements',title:'Your supplements',desc:'',buf:{}});});
+registerAction('nav.supplements',function(){dispatchAct('supp.open');});
 /* ---- execution marks from Today (H1) ---- */
 registerAction('exec.variant',function(arg){var i=String(arg).indexOf('|'),item=String(arg).slice(0,i),v=String(arg).slice(i+1);
   if(!PLAN_VARIANTS[v])return;markExecution(todayISO(),item,v==='recovery'?'done':'variant',{variant:v});renderAll();
@@ -2925,15 +2935,26 @@ function featureGuide(){var P=DB.settings.photos||[],C=DB.settings.cloud||{},S=t
     {id:'photos',icon:'camera',label:'Progress photos',what:'Private photos, compared side by side; the latest can show on Today.',on:P.length>0,act:'nav.photos',cta:'Add one'},
     {id:'barcode',icon:'barcode',label:'Barcode scanning',what:'Scan or type a barcode; the built-in database first, then Open Food Facts.',on:true,state:'ready',act:'food.scan',cta:'Scan'},
     {id:'sync',icon:'sync',label:'Sync between devices',what:'End-to-end encrypted: the server stores what it cannot read.',on:!!C.enabled,act:'nav.cloud',cta:'Set up'},
+    {id:'sources',icon:'sync',label:'Your data sources',what:'Where each part of the record comes from, how sources agree, and which to trust.',on:true,state:'ready',act:'sources.open',cta:'Open'},
     {id:'import',icon:'upload',label:'Import your data',what:'Apple Health exports, smart scales (Withings) and other CSV files.',on:(DB.observations||[]).some(function(o){return o.source==='import';}),act:'nav.import',cta:'Import'},
+    {id:'automation',icon:'spark',label:'Shortcuts and automation',what:'One-tap actions ranked for the moment, meal templates, automations and home-screen shortcuts.',on:(DB.settings.templates||[]).length>0||(DB.settings.automations||[]).length>0,act:'automation.open',cta:'Set up'},
+    {id:'supplements',icon:'pill',label:'Supplements and vitamins',what:'A regimen with reminders of what is due, vitamins and minerals counted with food, and evidence for each.',on:(DB.settings.supplementStack||[]).length>0,act:'supp.open',cta:'Set up'},
     {id:'experiments',icon:'flask',label:'Experiments',what:'Ready-made tests of one change, sized to your own data.',on:(DB.experiments||[]).length>0,act:'exp.new',cta:'Browse'},
     {id:'charts',icon:'chart',label:'Charts of your data',what:'Every chart type the app can draw, from your own record.',on:true,state:'ready',act:'nav.charts',cta:'Open'}
   ].filter(function(f){return typeof ACTIONS==='undefined'||ACTIONS[f.act];});
 }
 function renderFeatureRow(f){return '<div class="feat">'+uiIcon(f.icon,{size:22})+'<div class="feat-body"><b>'+esc(f.label)+'</b> '+uiPill(f.state||(f.on?'set up':'not set up'),f.on?'good':'neutral')+
-  '<div class="hint">'+esc(f.what)+'</div></div>'+(f.na?'':uiBtn(f.on?'Open':f.cta,f.act,null,'btn-sm '+(f.on?'btn-ghost':'btn-secondary')))+'</div>';}
+  '<div class="hint">'+esc(f.what)+'</div></div>'+(f.na?'':uiBtn(f.on?'Open':f.cta,'features.go',f.act,'btn-sm '+(f.on?'btn-ghost':'btn-secondary')))+'</div>';}
 function renderSetupMore(){var F=featureGuide(),todo=F.filter(function(f){return !f.on&&!f.na;});if(!todo.length)return '';
   return uiCard({fold:'today-setup',foldOpen:true,hideable:true,hideLabel:'Hide this list',title:'Set up more',sub:todo.length+' feature'+(todo.length===1?'':'s')+' not set up yet',
     body:todo.slice(0,4).map(renderFeatureRow).join('')+'<div class="btn-row">'+uiBtn('Everything this app can do','features.open',null,'btn-sm btn-ghost')+'</div>'});}
 registerAction('features.open',function(){openSheet('edit',{form:'features',title:'Everything this app can do',desc:'',buf:{}});});
 SHEETS.features=function(){return {body:featureGuide().map(renderFeatureRow).join(''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+/* A feature opened from the guide opened BEHIND it (usage review): the guide closes first, then the feature opens. */
+registerAction('features.go',function(act){if(typeof closeSheet==='function')closeSheet();setTimeout(function(){dispatchAct(act);},30);});
+/* Tools layout: any section can be pinned to the top; External server is first by default (usage review). */
+function toolsPinned(){var p=DB.settings.toolsPinned;return Array.isArray(p)?p:['tools-server'];}
+registerAction('tools.pin',function(id){var p=toolsPinned().slice(),i=p.indexOf(id);if(i>=0)p.splice(i,1);else p.unshift(id);DB.settings.toolsPinned=p;save('settings');renderAll();toast(i>=0?'Unpinned':'Pinned to the top of Tools');});
+function applyToolsOrder(){var v=document.getElementById('toolsZone');if(!v)return;v.style.display='flex';v.style.flexDirection='column';
+  [].slice.call(v.children).forEach(function(c){c.style.order='';});var p=toolsPinned();
+  p.forEach(function(id,i){var d=v.querySelector('[data-fold="'+id+'"]');var host=d?(d.closest('#toolsZone > *')||d):null;if(host&&host.parentElement===v)host.style.order=String(-100+i);else if(d&&d.parentElement===v)d.style.order=String(-100+i);});}

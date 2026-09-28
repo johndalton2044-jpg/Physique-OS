@@ -472,7 +472,12 @@ infer=function(request){
   var fresh=c.applicability.freshnessDays||14;if(request.maxAgeDays!=null)fresh=Math.min(fresh,request.maxAgeDays);
   var out=_inferCore({model:c.fn,args:request.args||[],dependsOn:dataDeps,requiresPhase:request.requiresPhase||undefined,
     maxAgeDays:fresh,inputs:Object.assign({},request.inputs||{},{recordContent:content,asOf:asOf()}),params:request.options||{}});
+  /* The specified request is echoed and the outputs returned by name (implementation direction \u00a74): subject, context,
+     options and requestedOutputs were accepted in spirit but dropped on the way to the core. */
+  var _req={modelId:c.id,subject:request.subject||'self',context:request.context||{},options:request.options||{},requestedOutputs:request.requestedOutputs||null};
+  var _val=out.value,_outputs=_val;if(_req.requestedOutputs&&_val&&typeof _val==='object'){_outputs={};_req.requestedOutputs.forEach(function(k){_outputs[k]=_val[k];});}
   return Object.assign({},out,{
+    request:_req,subject:_req.subject,context:_req.context,outputs:_outputs,
     modelId:c.id,modelVersion:c.version,maturity:c.maturity,
     asOf:asOf(),
     assumptions:c.assumptions,applicability:c.applicability,

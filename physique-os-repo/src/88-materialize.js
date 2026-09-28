@@ -100,17 +100,21 @@ function materialize(name,opts){
   var id=_viewIdentity(name);
   var hit=store[name];
   if(!opts.force&&hit&&hit.identity===id&&!hit.stale)
-    return {status:'cached',name:name,value:hit.value,identity:id,
+    return {status:'cached',name:name,value:hit.value,identity:id,runId:'mat:'+id,asOf:hit.asOf,modelVersion:((typeof MODELS!=='undefined'?MODELS.filter(function(m){return m.fn===v.fn||m.id===name;})[0]:null)||{}).version||null,
       computedAt:hit.computedAt,
       note:'Served from the materialized store: nothing it depends on has changed since it was computed.'};
   var out=null;try{out=g[v.fn].apply(null,v.args||[]);}catch(e){
     return {status:'error',name:name,error:String(e&&e.message||e)};}
   var val=out&&v.pick!=null?out[v.pick]:out;
   var prev=hit?hit.value:null;
+  /* A recomputation that changes a value is a RESTATEMENT: kept, with what it was, what it became and when
+     (implementation direction \u00a79). It was only reported in the moment. */
+  if(hit&&prev!=null&&String(prev)!==String(val)){DB.settings.restatements=(DB.settings.restatements||[]).concat([{view:name,at:nowISO(),before:prev,after:val,identity:id}]).slice(-200);}
   store[name]={identity:id,value:val,computedAt:nowISO(),asOf:asOf(),
     stale:false,previous:prev,
     changed:prev!=null&&String(prev)!==String(val)};
-  return {status:'computed',name:name,value:val,identity:id,
+  var _mdl=(typeof MODELS!=='undefined')?MODELS.filter(function(m){return m.fn===v.fn||m.id===name;})[0]:null;
+  return {status:'computed',name:name,value:val,identity:id,runId:'mat:'+id,modelVersion:_mdl?_mdl.version:null,asOf:asOf(),computedAt:store[name].computedAt,
     previous:prev,changed:store[name].changed,
     note:prev!=null&&store[name].changed?
       ('Recomputed and CHANGED from '+prev+' to '+val+'. Anything that read the old value is now out of date.'):
@@ -223,3 +227,7 @@ function materializationStatus(){
     cls:'MEASURED',
     note:'Working state for this device, not part of the record. It is never exported and never synced, because a cache that travels between devices goes stale in two places instead of one.'};
 }
+/* Invalidate and recompute, as named operations (implementation direction \u00a79). */
+function invalidateView(name){var st=_materialStore();if(!st[name])return {status:'not-materialized',name:name};st[name].stale=true;return {status:'invalidated',name:name};}
+function recomputeView(name){return materialize(name,{force:true});}
+function restatements(name){return (DB.settings.restatements||[]).filter(function(r){return !name||r.view===name;});}

@@ -36,6 +36,19 @@ var ICONS={
   chart:'<path d="M4 20V4M4 20h16M8 16l3.5-5 3 3L19 7"/>',
   spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.4 2.4M15.3 15.3l2.4 2.4M6.3 17.7l2.4-2.4M15.3 8.7l2.4-2.4"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M5.5 12h3l1.5-2.5 2 4 1.5-2.5h5"/>',
+  bolt:'<path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z"/>',
+  pill:'<rect x="3.5" y="9" width="17" height="6" rx="3" transform="rotate(-35 12 12)"/><path d="M9.5 8.5l5 7"/>',
+  bed:'<path d="M3 18V7M3 13h18v5M21 18v-3a3 3 0 0 0-3-3h-7v1"/><circle cx="7" cy="10.5" r="1.8"/>',
+  stopwatch:'<circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10M10 3h4M18.5 7l1.3-1.3"/>',
+  scale:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5a5 5 0 0 1 7 0L12 12z"/>',
+  fork:'<path d="M7 3v7a2 2 0 0 0 4 0V3M9 10v11M16 3c-1.7 1.4-2.5 3.4-2.5 6v3H16v9"/>',
+  walk:'<circle cx="13" cy="4.5" r="1.8"/><path d="M11 21l2-6-2.5-2.5L12 8l3 3 3 1M9.5 12.5 8 16M12 8l-3 2-1.5 3"/>',
+  run:'<circle cx="15" cy="4.5" r="1.8"/><path d="M5 21l4-4 2 1 2-4M9 11l3-3 3 2 3 1M13 14l3 3v4"/>',
+  bike:'<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l3 7M13.5 5.5h2"/>',
+  brain:'<path d="M9 4.5a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 2V4.5zM15 4.5a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 2V4.5z"/>',
+  lungs:'<path d="M12 4v8M12 12c-1.5 1-3 1.5-3 1.5M12 12c1.5 1 3 1.5 3 1.5M8.5 7C6 8 4 12 4 16a3 3 0 0 0 5 2V9M15.5 7c2.5 1 4.5 5 4.5 9a3 3 0 0 1-5 2V9"/>',
+  trend:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
   chevronLeft:'<path d="M14.5 5.5 8 12l6.5 6.5"/>',chevronRight:'<path d="M9.5 5.5 16 12l-6.5 6.5"/>'
 };
 function uiIcon(name,o){o=o||{};var p=ICONS[name];if(!p)return '';var s=o.size||20;

@@ -72,7 +72,9 @@ function cardioSessions(days){
       pace:(meta.distance&&o.value)?round(o.value/num(meta.distance),2):null,
       paceUnit:'min per '+(meta.distanceUnit||'mi'),
       modalityData:CARDIO_MODALITIES[mod]||CARDIO_MODALITIES.other,
-      zone:cardioZoneFor({zone:meta.zone,hr:meta.hr,maxHr:(prof().maxHr||null),rpe:meta.rpe})};
+      zone:cardioZoneFor({zone:meta.zone,hr:meta.hr,grade:meta.grade!=null?+meta.grade:null,maxHr:(prof().maxHr||null),rpe:meta.rpe}),
+      /* the measurements themselves, not only the zone they imply: the fitness model needs them */
+      hr:meta.hr!=null?+meta.hr:null,rpe:meta.rpe!=null?+meta.rpe:null,grade:meta.grade!=null?+meta.grade:null};
   });
   if(!rows.length)return {status:'insufficient',need:['cardio sessions logged'],days:days};
   var minutes=rows.reduce(function(a,r){return a+(r.minutes||0);},0);

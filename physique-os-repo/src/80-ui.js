@@ -96,6 +96,7 @@ function _safeSignal(sig,allowHtml){
 function uiFold(id,title,signal,body,opts){opts=opts||{};
   /* A finished section can be hidden; Tools \u2192 Display shows how many are hidden and restores them. */
   if(opts.hideable&&DB.settings.hiddenFolds&&DB.settings.hiddenFolds[id])return '';
+  if(/^tools-/.test(id)&&typeof toolsPinned==='function'){var _pb=body;var _pinned=toolsPinned().indexOf(id)>=0;body=function(){var inner=typeof _pb==='function'?_pb():(_pb||'');return inner+'<div class="btn-row">'+uiBtn(_pinned?'Unpin from the top':'Pin to the top','tools.pin',id,'btn-sm btn-ghost')+'</div>';};}
   if(opts.hideable){var _b=body;body=function(){var inner=typeof _b==='function'?_b():(_b||'');return inner+'<div class="btn-row">'+uiBtn(opts.hideLabel||'Hide this section','fold.hide',id,'btn-sm btn-ghost')+'</div>';};}
   signal=_safeSignal(signal,opts.signalHtml);var _open=DB.settings.folds&&DB.settings.folds[id]!=null?!!DB.settings.folds[id]:!!opts.open;var _lazy=(typeof body==='function');if(_lazy)body=_open?body():'';var open=_open;return '<details id="fold-'+id+'" class="fold'+(opts.urgent?' urgent':'')+'" data-fold="'+id+'"'+(_lazy&&!_open?' data-lazy="1"':'')+''+(open?' open':'')+'><summary data-act="ui.fold" data-arg="'+id+'"><span class="f-title">'+title+'</span><span class="f-signal'+(opts.tone?' '+opts.tone:'')+'">'+(signal||'')+'</span><span class="f-chev">\u203a</span></summary><div class="f-body">'+body+'</div></details>';}
 /* Every banner wraps its message, so inline markup inside the sentence cannot become a flex item. */

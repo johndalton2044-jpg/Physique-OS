@@ -15,12 +15,12 @@
     "dsld": "node scripts/dsld-build.mjs --in ./dsld-export --out dist/data/supplements",
     "reference": "node scripts/reference-build.mjs --out dist/data/reference",
     "verify": "node scripts/verify-dist.mjs --dist ./dist",
-    "check": "npm run build && npm run engine && npm run test && npm run adversarial && npm run audit && npm run conformance && npm run governance && npm run shipped && npm run browser && npm run visual && npm run persistence && npm run spine && npm run parity && npm run adapt && npm run integration && npm run intelligence && npm run external && npm run deploy && npm run voice && npm run perf && npm run yields:gate && npm run cloud:e2e && npm run baseline && npm run verify",
+    "check": "npm run build && npm run engine && npm run test && npm run adversarial && npm run audit && npm run conformance && npm run governance && npm run shipped && npm run browser && npm run visual && npm run persistence && npm run spine && npm run parity && npm run adapt && npm run integration && npm run intelligence && npm run external && npm run deploy && npm run voice && npm run direction && npm run server && npm run perf && npm run yields:gate && npm run cloud:e2e && npm run baseline && npm run verify",
     "perf": "node tests/perf.mjs --years=1,5",
     "perf:full": "node tests/perf.mjs --years=1,5,10",
     "adversarial": "node tests/adversarial.mjs",
     "check:full": "npm run check && npm run perf:full",
-    "server": "node server/server.mjs --port 8787 --data ./server-data",
+    "server": "node tests/server.mjs",
     "cloud:e2e": "node tests/cloud-e2e.mjs",
     "yields": "node scripts/ah102-extract.mjs",
     "yields:geometry": "node scripts/ah102-geometry.mjs",
@@ -44,7 +44,8 @@
     "deploy": "node tests/deployment-smoke.mjs --local",
     "deploy:smoke": "node tests/deployment-smoke.mjs",
     "deploy:configure": "node scripts/configure-deploy.mjs",
-    "voice": "node tests/voice.mjs"
+    "voice": "node tests/voice.mjs",
+    "direction": "node tests/direction.mjs"
   },
   "devDependencies": {
     "jsdom": "^30.1.0",

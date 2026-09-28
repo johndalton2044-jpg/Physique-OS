@@ -27,7 +27,10 @@ function generateRecord(spec,seedIn){
     if(spec.waist&&i%7===0){var wk=i/7;var wz=spec.waist;var inFlat=wz.flatFrom!=null&&i>=wz.flatFrom&&i<wz.flatTo;var flatWeeks=wz.flatFrom!=null?Math.max(0,Math.min(i,wz.flatTo)-wz.flatFrom)/7:0;var waistV=wz.start+wz.ratePerWeek*(wk-(inFlat?(i-wz.flatFrom)/7:flatWeeks))+_gauss(r)*0.15;push('waist',i,round(waistV,2),{method:'tape'});if(i%28===0)push('neck',i,round(17+_gauss(r)*0.1,2),{method:'tape'});}
     (spec.context||[]).forEach(function(c){if(c.day===i)push('context',i,c.text);});
     if(spec.supplements!==false&&i>=3&&i%1===0&&r()<0.5)push('supplement',i,'creatine 5 g');
-    var car=seg(spec.cardio,i,{perWeek:2});var cardioDays=car.perWeek>=3?[3,5,6]:(car.perWeek===2?[3,5]:(car.perWeek===1?[5]:[]));if(cardioDays.indexOf(i%7)>=0)push('cardio',i,30+(car.perWeek>=3?10:0),{method:'incline walk'});
+    if(spec.supplements!==false&&i>=40){push('supplement',i,'Vitamin D3 50 \u00b5g',{meta:{supplementId:'vitd',dose:50,unit:'\u00b5g'}});if(i%7===2||i%7===4)push('supplement',i,'Caffeine 200 mg',{meta:{supplementId:'caffeine',dose:200,unit:'mg'}});}
+    var car=seg(spec.cardio,i,{perWeek:2});var cardioDays=car.perWeek>=3?[3,5,6]:(car.perWeek===2?[3,5]:(car.perWeek===1?[5]:[]));if(cardioDays.indexOf(i%7)>=0)(function(){var mins=30+(car.perWeek>=3?10:0);   /* heart rate at the same work falls as fitness improves */
+      push('cardio',i,mins,{method:'incline walk',meta:{hr:Math.round(138-i*0.12+((i*37)%5-2)),distance:+(3.2*mins/60).toFixed(2),distanceUnit:'mi',grade:10,rpe:6}});})();
+    push('rhr',i,Math.round(70-i*0.08+((i*13)%3-1)));push('water',i,+(2.1+((i*7)%9)/10).toFixed(1));if(i%14===3)push('bodyfat',i,+(32-i*0.05).toFixed(1));
   }
   /* training */
   var tr=spec.training||{program:'fullbody3',switchDay:42,strength:'up'};var lifts={'Squat':185,'Bench press':155,'Lat pulldown':130,'Romanian deadlift':155,'Leg press':320,'Incline DB press':55,'Seated cable row':120,'Overhead press':95};
@@ -95,6 +98,8 @@ function _loadDemoInner(){
   DB=db;_memoInvalidate();
   if(typeof dismissWelcome==='function')dismissWelcome();
   try{seedDemoFoodLogs();}catch(e){_q(e);}
+  /* a supplement regimen: creatine daily, vitamin D daily, caffeine on training days */
+  DB.settings.supplementStack=[{id:'creatine',dose:5,unit:'g',when:'daily'},{id:'vitd',dose:50,unit:'\u00b5g',when:'daily'},{id:'caffeine',dose:200,unit:'mg',when:'training days'}];
   /* The generator writes the record directly rather than through the mutators, so the event log must be
      restarted from it. Without this the log would describe a different record than the one on screen. */
   try{

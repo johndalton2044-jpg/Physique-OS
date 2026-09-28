@@ -2752,3 +2752,163 @@ absent); forecasting 6/8; sensor fusion 7/8; optimisation 3/4. The remaining sec
 registries, dependency graph, provenance, materialisation, causal and Bayesian engines, knowledge graph, twin, renderers)
 but a field-level conformance audit of each needs its entry point called with its real signature, and has not yet been
 done.
+
+## After deployment (Render + Vercel): sync, rails, voice, weather visuals, discoverability
+
+**Sync on a free host.** Render's free plan wipes files on restart and sleeps when idle, so the server kept losing its
+vaults and events while the app kept its pull position and its list of events already sent — it neither re-sent nor
+re-pulled. Uploads of up to 2,000 events also met a 2 MB limit, and pulls ignored "more". Now the server writes a data
+epoch into its folder and reports it (and whether its storage is likely persistent); the app compares it every sync,
+re-registers a vault the server no longer has, treats a changed epoch or a server behind what was pulled as lost data,
+re-sends everything and says so; uploads go in batches of 400; pulls follow "more"; a slow first answer shows as the
+server waking. tests/cloud-e2e.mjs now wipes the server's folder mid-test and checks the recovery.
+
+**Rails.** The left rail ended at the same height as the right rail, but the right column continues with the + button,
+so the left stack floated about 60 px higher; it now ends level with + and flush with its edge. The lone back arrow is a
+previous/next pair that flips panels. A microphone sits above +. The design rules were refined to count only the
+controls that always float (undo, top and bottom appear when useful), and the rail-height rule now compares the left
+rail with + rather than with the right rail's edge — the old rule had encoded the reported misalignment as correct.
+
+**Voice across the app.** Beyond the voice sheet: a dictation button on the food search, the place search and the
+assistant's question box.
+
+**Icons and weather visuals.** One line-icon set in the movement figures' style (strokes, round ends, the theme's
+colours). Conditions come from Open-Meteo's weather_code (WMO), Meteosource's condition names map onto the same codes,
+and without a code a condition is derived from cloud cover and rain and labelled so. The Today card shows the condition
+with its icon (night icons at night), rain now, cloud cover, wind and UV, the next hours and 14 days with icons and
+chance of rain; the weather sheet's tables carry the icons too.
+
+**Discoverability.** Setup gains a place step for weather. Today shows "Set up more" — the features not set up yet,
+each with what it does and one tap to start — and "Everything this app can do" lists every feature and its state.
+The latest progress photo now shows on Today once one exists (it was off by default).
+
+**Still open:** the engine-conformance items found in the implementation-direction audit (materialize() run metadata,
+dependency-edge fields, model-contract fields, quantity conversion/display fields, infer() request fields).
+
+## Live diagnostics (physique-diagnostics-2026-09-27)
+
+- The recurring "HTTP 404 for manifest.json" was the food database's manifest: the database (about 100 MB, built by
+  scripts/food-build.mjs) was never produced by `npm run build`, so a deployment built from the repository had none.
+  It now lives in the repository at data/food/ and the build copies it; without it the build warns (fails in
+  production mode) and the app states once that it is missing.
+- Push: the server kept its VAPID keys on a disk that Render wipes, so new keys no longer matched the browser's
+  subscription ("applicationServerKey does not match"). Keys can come from PHYSIQUE_VAPID_JSON; the app drops a
+  mismatched subscription and subscribes again.
+- "Failed to fetch" on a second device: a server address on another site is blocked by connect-src 'self'. Such an
+  address is replaced with /api/sync unless the page's policy allows it, and network failures say what was tried.
+- The server's base address answers with an index instead of "no such endpoint".
+- Tools: Text, Data, Learning, Layout and Navigation are folds too. Accessibility: the hidden photo inputs are named and
+  the About section's heading no longer skips a level.
+- Undo: visible and uncovered on every viewport after an action; it is transient by design and the undo history does
+  not survive a reload.
+
+## Implementation direction: conformance, now gated (tests/direction.mjs)
+
+The earlier audit was partly wrong and is corrected here. It probed MODEL_CONTRACTS, a small older table, and reported
+the model registry incomplete; the registry the gateway uses, modelContract(id), already carries every specified field
+for all 25 models, with maturity derived from evidence. It also called infer() with a function name, which the gateway
+refuses, so its infer() figures described a refusal.
+
+What was genuinely missing, and is now in place: quantities gain conversion (the dimension table's own factors) and
+display; dependency edges gain dependencyId, sourceId, targetId, dependencyType, scope and version; infer() carries the
+specified request (subject, context, options, requestedOutputs), echoes it and returns outputs by name \u2014 the gateway
+had accepted these in spirit and dropped them on the way to the core; materialize() returns runId, modelVersion and
+asOf, with invalidateView, recomputeView and a kept restatement log when a recomputation changes a value.
+
+The direction gate checks \u00a72\u20135 and \u00a77\u201310 against real calls on the demo record. Sections not yet gated
+(forecasting, causal and Bayesian engines, sensor fusion, knowledge graph, twin, optimisation, renderers, navigation)
+exist as code; their field lists should be added to the gate from the specification before they are called conformant.
+
+## Physiology maturity, deployment findings, Today (build 7aeff7adaf)
+
+**Food database 404s.** The repository held the database and the build kept it; the 404 was cached. vercel.json marked
+/data/ immutable for a year, and that applied to the 404 served before the data existed, so browsers and the service
+worker (which fetches through the HTTP cache) replayed it. Now the food manifest is no-cache, other data files a day
+with revalidation (shard names are not content-hashed, so they must never be immutable), and a food-file 404 is retried
+once with cache:'reload'.
+
+**Server review.** The reviewed server.mjs predated fixes already in this repository: HTTPS push transport; both VAPID
+formats and the separate VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY variables, validated at startup (a present but invalid or
+mismatched key stops the server rather than rotating silently); retirement of subscriptions on 404/410 or five failures;
+the event log as the authoritative record with the vault repaired from it on read, a crash's partial line terminated
+before the next append, a kept event count and a sparse sequence index for pagination; a per-socket ceiling so a forged
+X-Forwarded-For cannot pass it; Vercel builds failing without a valid rewrite; a vercel.json in dist; a food-data lock.
+Snapshot compaction is not possible server-side: it holds ciphertext it cannot read.
+
+**Physiology models** (src/61-physiology.js), each registered in the canonical model registry with an evidence class,
+uncertainty, method and limits: cardio fitness as a latent state (ACSM equations and heart-rate reserve per steady
+session; a Kalman filter per modality family, never pooled; FRIEND registry priors; decay; a one-step backtest), with
+every session's intensity labelled known, proxy or unknown; hydration balance (EFSA intake plus sweat by intensity and
+weather; food water 0.3 ml/kcal — the first version's 1 ml/kcal was the total requirement, not food's content);
+supplement efficacy (N-of-1, trend-adjusted, placebo-checked); energy availability (Loucks, refused without body fat);
+protein quality and digestibility (FAO 2013 group values); a learning curve per lift; photo comparison validity.
+Computer-vision diagnosis from photos stays a declared limitation.
+
+**Today** leads with a hero (photo, the decision and its confidence, three figures) and folds the explanation. Undo
+shows at the top of the right rail. Sheets opened from "Set up more" close it first. Tools opens with External server
+and any section can be pinned. Automatic updates reload only on an update, not on a first install (which interrupted
+a first visit on a slow phone). "What is worth measuring next" is always drawn and says when nothing is.
+
+## Supplements and vitamins at the food domain's maturity (src/62-supplements.js)
+
+Before: free-text supplement logs, a static advice list, a partial reference table. Now the same layers food has:
+a reference (NASEM adult RDA/AI by sex and age, and upper limits that say whether they bound total intake or
+supplements only — magnesium, folic acid, niacin and vitamin E are supplement-only limits) for the 16 micronutrients
+foods carry plus vitamins E and K, iodine and selenium; a canonical catalogue of 18 supplements with aliases, units,
+usual dose ranges, nutrient content per unit, evidence graded A–D per outcome (NIH ODS 2024, ISSN position stands),
+cautions and the outcome this app can test; entity resolution of free text (IU to µg, mcg, mg, scoops; "D3" is a
+name, not a dose), so old text logs count; a regimen with daily or training-day schedules — training days from the
+schedule itself, so rotating shifts work — adherence and one-tap logging; micronutrient coverage from food plus
+supplements against reference intakes and upper limits; evidence-graded guidance that says "test first" where testing
+matters; and personal efficacy driven by the catalogue.
+
+Found on the demo before shipping: the dose parser read "Vit D3 2000 IU" as 3 µg; training-day doses were never due
+(the check looked for a plan item that does not exist); food was averaged over supplement-only days, understating it
+several-fold; and completeness was judged per food, not per nutrient, so a food carrying iron but no vitamin C value
+reported "0% vitamin C" — no data read as a shortfall. Each nutrient is now judged only when most logged energy comes
+from foods that report it, and otherwise says so. The older supplement sheet was merged into the new one.
+
+## Automation (src/90-automation.js) and the expanded supplement catalogue
+
+**One automation layer over the existing actions**, keeping the app's rules: nothing writes unseen (every automatic
+write is announced, undoable and audited), automation runs only an allow-list of safe, reversible actions, smart
+defaults are suggestions edited before saving and never guess food intake, patterns are offered and never applied
+silently, and nothing runs during replay, import or the self-test.
+Quick actions and one-tap actions, each knowing when it fits (time of day, what is already logged, what the schedule
+plans), ranked by that fit blended with this person's own use of each action near this hour (Laplace-smoothed), shown
+as "Next up" on Today. Smart defaults in the log form (last weight in display units, median sleep, usual cardio).
+Carry-forward through the existing repeat paths ("same as yesterday" for the meal of the moment). Templates: a meal
+replayed through the same path as repeatMeal, or a sequence of allowed one-tap steps. Patterns: a meal repeated on
+4 of 7 days, a supplement taken on 5 of 7 days outside the regimen, a morning weigh-in habit — each offered with one
+tap to accept. Workflow rules (after a workout, on the first meal, after weighing in), at most once a day, hooked to
+the event bus after recording. Shortcuts: home-screen shortcuts in the manifest (?do=… on an allow-list, the
+parameter removed after use) and Alt+1–4 for the top quick actions. Rule matching is pure (automationMatches) and
+tested; running refuses during the self-test so that no automated write touches data mid-test.
+
+**Supplements: 80 in the catalogue, 26 micronutrients.** Added copper, manganese, chromium, biotin, pantothenic acid,
+choline and molybdenum to the reference, and about 60 supplements: every common vitamin and mineral, performance and
+recovery products, joints, sleep, stress and focus (L-theanine, ashwagandha, rhodiola, glycine, valerian), and
+products marketed for hormones, prostate and weight loss (pygeum, saw palmetto, tongkat ali, fenugreek, DHEA,
+berberine, green tea extract, yohimbine) — graded honestly, with the cautions that matter most carried on each:
+liver injury (green tea extract, ashwagandha, turmeric), lab-test interference (biotin), serotonin syndrome (5-HTP),
+drug interactions (St John's wort, berberine), anti-doping (DHEA). An interaction checker reads the regimen: zinc
+without copper, iron with calcium, 5-HTP with St John's wort (danger), stacked bleeding risk, stacked liver-injury
+reports, yohimbine with caffeine, several sleep aids at once, biotin before blood tests, vitamin K with warfarin.
+
+## Implementation direction: every section with specified fields is now gated
+
+The direction gate now checks §2–5, §7–15, §19–22, §25–26 and §29–31 against real calls, with each section's
+required fields kept in the gate. Probing with real arguments separated artefacts from gaps: the visualisation check
+had probed the contract table rather than a built visualisation, the causal engine had stopped (not identifiable on
+this record) and the experiment designer was called without an effect. The genuine gaps, now closed in the functions
+that own them (wrappers keep every name and caller, and add parts derived from real data): the point forecast and a
+calibration summary; the causal estimator and its uncertainty, stated even when the analysis stops; the Bayesian
+likelihood and diagnostics, including a prior–data conflict test; the fused measurement's uncertainty; recovery's
+observations, uncertainty and a declared persistence forecast; the twin's adherence, environment, resources,
+intervention, forecast and uncertainty; a visualisation spec on every built chart; the specified relation vocabulary,
+and model and source entities, in the knowledge graph; views' capabilities, dependencies, renderer and guards;
+experiments' estimand, design, analysis and finding — set at creation before the plan fingerprint, never rewritten on
+old records (that would change their hash and falsely flag their plans as changed). One part was genuinely absent:
+mobility routines had no step structure; mobilitySequence() now gives each routine ordered steps with pose, regions,
+joints, positions, constraints, duration and intensity. §16–18, §23–24, §27–28 and §32–38 specify behaviour
+rather than fields; they are covered by the domain gates.

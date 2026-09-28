@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/sync/:path*",
-      "destination": "https://REPLACE-WITH-YOUR-SYNC-SERVER/:path*"
+      "destination": "https://physique-os.onrender.com/:path*"
     }
   ],
   "headers": [

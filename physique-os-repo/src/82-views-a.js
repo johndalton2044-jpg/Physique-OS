@@ -33,7 +33,7 @@ function renderHeader(){
   el.innerHTML=parts.join(' \u00b7 ');
   var dot=document.getElementById('profileDot');if(dot)dot.className='dot '+((DB.profile&&DB.profile.age&&DB.profile.heightIn)?'good':'attention');
 }
-function updateFabs(){var u=document.getElementById('undoFab');if(u)u.className='fab-mini'+(canUndo()?' show':'');var c=document.getElementById('cmdkFab');if(c)c.className='fab-mini show';}
+function updateFabs(){var u=document.getElementById('undoFab');if(u){u.className='fab-mini show'+(canUndo()?'':' is-empty');u.setAttribute('aria-disabled',canUndo()?'false':'true');}var c=document.getElementById('cmdkFab');if(c)c.className='fab-mini show';}
 /* ---- TODAY ---- */
 var _WHATIF=null;
 var WHATIF_PRESETS=[
@@ -67,7 +67,20 @@ RENDERERS.today=function(){
   setHTML('todayHeadline',head);
   setHTML('todaySubtitle',ph?('Data trust '+S.trust.overall.level+' ('+S.trust.overall.pct+'%) \u00b7 TDEE '+(S.tdee.status==='ok'?(fmtKcal(S.tdee.value,{estimate:true})+' '+clsMark(S.tdee.cls)):'unknown')+' \u00b7 recovery '+S.recovery.level+' \u00b7 appetite '+S.appetite.level):'The system needs a person and a phase before it can say anything about a body.');
   // decision
-  setHTML('decisionZone',renderDecisionCard(dec,S));
+  /* TODAY, REORGANISED (usage review: "the long block of text on open", "photo is too small"). A compact summary comes
+     first \u2014 the latest photo, the date, the week's decision as one line, three numbers \u2014 and the decision's full
+     reasoning sits in a fold beneath it. */
+  var _phH=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+  var _num=function(l,v){return '<div class="hero-num"><span class="hint">'+esc(l)+'</span><b>'+v+'</b></div>';};
+  var _wa=weightAverages(),_tr=weightTrend(14),_phT=activePhase();
+  var _wt=_wa&&_wa.avg7!=null?fmtWeight(_wa.avg7):'\u2014',_rate=_tr&&_tr.status==='ok'&&_tr.slopePerWeek!=null?(fmtSigned(_tr.slopePerWeek,1)+' /wk'):'\u2014',_kc=_phT&&_phT.calorieTarget?fmtNum(_phT.calorieTarget,0):'\u2014';
+  var _hero='<div class="card today-hero"><h3 class="card-title visually-hidden">Today at a glance</h3>'+(_phH?'<button class="hero-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_phH.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_phH.date||String(_phH.at||'').slice(0,10)))+'"></button>':'')+
+    '<div class="hero-main"><div class="hint">'+esc(longDate(todayISO()))+'</div><div class="hero-decision"><b>'+esc(dec.verb||dec.code||'')+'</b>'+(dec.lede?' \u2014 '+esc(dec.lede):'')+' '+uiPill(String(dec.confidence||''),dec.confidence==='high'?'good':'neutral')+'</div>'+
+    /* the figures span the hero's full width under the photo and headline: squeezed beside the photo, the third was cut off */
+    '</div><div class="hero-nums">'+_num('Weight, 7-day',_wt)+_num('Rate',_rate)+_num('Calories',_kc)+'</div></div>';
+  setHTML('decisionZone',(typeof _SW_UPDATE!=='undefined'&&_SW_UPDATE?uiBanner('neutral','A new version of the app is ready.',uiBtn('Update now','pwa.update',null,'btn-sm btn-primary')):'')+_hero+
+    uiFold('today-why','Why, and what would change it',esc(dec.reverseIf?('recheck in '+(dec.recheckDays||7)+' days'):'the reasoning behind this week\u2019s call'),renderDecisionCard(dec,S),{open:false}));
+  if(_phH&&typeof hydratePhotoThumbs==='function')setTimeout(hydratePhotoThumbs,0);
   // attention
   var att=attentionItems();
   setHTML('attentionZone',att.items.length?(sectionH('Needs attention',att.items.length+(att.dropped?' shown \u00b7 '+att.dropped+' held back':''))+att.items.map(renderWatch).join('')):'');
@@ -83,7 +96,9 @@ RENDERERS.today=function(){
      Today is the screen other people glance at \u2014 and shown only when a photo exists. */
   var _ph=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
     (DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
-  setHTML('actionsZone',(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})()+(function(){try{return renderSetupMore();}catch(e){_q(e,'P2');return '';}})());   /* weather once a place is set; then what is not set up yet */
+  _ph=null;   /* the photo now lives in the summary at the top */
+  var _nextUp=(function(){try{return renderNextUp();}catch(e){_q(e,'P2');return '';}})();   /* quick actions for this moment */
+  setHTML('actionsZone',_nextUp+(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})()+(function(){try{return renderSetupMore();}catch(e){_q(e,'P2');return '';}})());   /* weather once a place is set; then what is not set up yet */
   if(_ph&&typeof hydratePhotoThumbs==='function')setTimeout(hydratePhotoThumbs,0);
   // forecast
   setHTML('forecastZone',renderForecastCard(S));
@@ -427,6 +442,7 @@ RENDERERS.food=function(){
     (ad.caveat?'<div class="hint warn">'+esc(ad.caveat)+'</div>':'')});
   else out+=uiCard({title:'Adequacy (7-day)',sub:'not enough logged food',body:'<div class="muted">'+esc(ad.need||'log a day of food')+'</div>'});
   out+='<div class="btn-row">'+uiBtn('Intake composition','nav.nutritionviz',null,'btn-sm btn-secondary')+'</div>';
+  try{out+=supplementsCard();}catch(e){_q(e,'P2');}   /* supplements and vitamins, beside the food they add to */
   setHTML('foodZone',out);
 };
 function foodItem(f,day,extra){return _foodItemCore(f,day,extra)+(f.lastQuantity!=null?'<div class="fi-again">'+uiBtn('Log again \u00b7 '+(f.lastLabel||(fmtNum(f.lastQuantity,0)+' '+(f.lastBasis||'g'))),'food.again',f.kind+'|'+f.id+'|'+day,'btn-sm btn-ghost')+'</div>':'');}

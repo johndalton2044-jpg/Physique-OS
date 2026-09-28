@@ -302,10 +302,19 @@ function pendingPredictions(){return (DB.predictions||[]).filter(function(p){ret
    REGION: INTERVENTIONS + EXPERIMENTS — change one variable, predict, recheck, score, learn.
    ============================================================================ */
 function baselineSnapshot(){var S=getCurrentState();return {date:asOf(),trend:S.trend.status==='ok'?round(S.trend.slopePerWeek,2):null,avg7:S.averages.avg7!=null?round(S.averages.avg7,1):null,steps:S.steps.mean7!=null?Math.round(S.steps.mean7):null,calories:S.nutrition.avg7!=null?Math.round(S.nutrition.avg7):null,protein:S.nutrition.protein7!=null?Math.round(S.nutrition.protein7):null,recovery:S.recovery.status==='ok'?S.recovery.level:null,hunger:S.appetite.hunger?round(S.appetite.hunger.mean,1):null,strength:S.training.strength.status==='ok'?S.training.strength.overall:null};}
+function experimentSpec(r){r=r||{};var dur=r.durationDays||14;
+  return {estimand:'the difference in '+(r.metric||'the outcome')+' between the baseline ('+(r.baselineValue!=null?r.baselineValue:'current')+') and the intervention ('+(r.interventionValue!=null?r.interventionValue:'changed')+') periods for this person',
+    design:{kind:'single-subject A\u2013B (baseline, then intervention)',days:dur,washoutDays:r.washoutDays||null,recheck:r.recheckDate||null},
+    intervention:r.intervention||(r.variable?{variable:r.variable,from:r.baselineValue,to:r.interventionValue}:null),outcome:r.outcome||null,
+    analysis:{method:'trend-adjusted comparison of the two periods, scored against the stated prediction interval',prediction:r.prediction||null,interval:[r.predLo!=null?r.predLo:null,r.predHi!=null?r.predHi:null]},
+    finding:r.conclusion?{conclusion:r.conclusion,confidence:r.confidence||null}:null};}
 function createExperiment(e){
   var start=e.startDate||todayISO();var dur=num(e.durationDays)||14;
   var rec={id:uid('exp'),createdAt:nowISO(),question:e.question||'',hypothesis:e.hypothesis||'',variable:e.variable||'other',baselineValue:e.baselineValue!=null?e.baselineValue:null,interventionValue:e.interventionValue!=null?e.interventionValue:null,intervention:e.intervention||'',
     prediction:e.prediction||'',predLo:num(e.predLo),predHi:num(e.predHi),metric:e.metric||'weight trend (lb/week)',startDate:start,durationDays:dur,recheckDate:addDays(start,dur),baseline:e.baseline||baselineSnapshot(),successCriteria:e.successCriteria||'',status:e.status||'active',outcome:null,conclusion:null,confidence:null,confounders:[],phaseId:(activePhase()||{}).id||null,decisionId:e.decisionId||null,notes:e.notes||''};
+  /* §19 fields, set BEFORE the fingerprint: older records are never rewritten (that would change their hash and falsely
+     flag their plan as changed); experimentSpec(e) derives the same fields for them, read-only. */
+  Object.assign(rec,experimentSpec(rec));
   if(!e.silent)pushUndo('create experiment');
   /* §19: the plan is fingerprinted at creation, so any later change to it is detectable once results exist. */
   if(typeof experimentPlanHash==='function'){rec.planVersion=1;rec.planHash=experimentPlanHash(rec);}

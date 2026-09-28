@@ -45,6 +45,22 @@ const hashInput=(rel)=>{const abs=path.join(ROOT,rel);if(!fs.existsSync(abs))ret
 ['src','build.mjs','package.json','scripts','data/reference','tests'].forEach(r=>hashInput(r));
 /* the food database is an input too, but it is 93 MB — its own manifest already carries a content hash of
    every shard, so the manifest's identity stands in for the corpus rather than re-reading it here */
+/* THE FOOD DATABASE (\u2248100 MB) is not produced by this build: scripts/food-build.mjs downloads and shards the USDA sources.
+   A deployment built from the repository had none (every lookup 404ed on data/food/manifest.json). It is kept in the
+   repository at data/food/ and copied here; without it the build warns, and in production mode it fails. */
+{const srcFood=path.join('data','food'),dstFood=path.join(DIST,'data','food');
+  if(!fs.existsSync(path.join(dstFood,'manifest.json'))&&fs.existsSync(path.join(srcFood,'manifest.json'))){fs.mkdirSync(path.dirname(dstFood),{recursive:true});fs.cpSync(srcFood,dstFood,{recursive:true});console.log('food database copied from data/food');}
+  /* Reproducibility: the corpus must be exactly the one data/food.lock.json declares, file by file. */
+  const lockP=path.join('data','food.lock.json');
+  if(fs.existsSync(lockP)&&fs.existsSync(path.join(dstFood,'SHA256SUMS'))){const lock=JSON.parse(fs.readFileSync(lockP,'utf8'));
+    const sums=fs.readFileSync(path.join(dstFood,'SHA256SUMS'));const h=crypto.createHash('sha256').update(sums).digest('hex');
+    if(h!==lock.sumsSha256){console.error('FOOD DATA: SHA256SUMS does not match data/food.lock.json ('+lock.databaseVersion+'): a different corpus');process.exit(1);}
+    let bad=0;for(const ln of sums.toString('utf8').split('\n')){const m=ln.match(/^([a-f0-9]{64})\s+(.+)$/);if(!m)continue;const f=path.join(dstFood,m[2]);
+      if(!fs.existsSync(f)||crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex')!==m[1]){bad++;if(bad<4)console.error('FOOD DATA: '+m[2]+' is missing or altered');}}
+    if(bad){console.error('FOOD DATA: '+bad+' file(s) do not match the declared corpus');process.exit(1);}
+    console.log('food data verified: '+lock.databaseVersion+', '+lock.files+' files');}
+  if(!fs.existsSync(path.join(dstFood,'manifest.json'))){const m='the bundled food database is missing (no data/food/manifest.json): food search and barcode lookups will only reach Open Food Facts. Extract physique-os-food-data.tar.gz into data/food/.';
+    if(process.env.SYNC_DEPLOYMENT_MODE==='reverse-proxy'){console.error('DEPLOYMENT: '+m);process.exit(1);}console.warn('WARNING: '+m);}}
 const foodManifestForId=path.join(DIST,'data','food','manifest.json');
 if(fs.existsSync(foodManifestForId)){const m=JSON.parse(fs.readFileSync(foodManifestForId,'utf8'));
   inputSet.push({file:'data/food/manifest.json (database identity)',bytes:0,sha256:crypto.createHash('sha256').update(String(m.databaseVersion)+':'+String(m.totalBytes)+':'+String((m.files||[]).length)).digest('hex')});}
@@ -191,7 +207,9 @@ self.addEventListener('fetch',function(e){
 `;
 fs.writeFileSync(path.join(DIST,'sw.js'),sw);
 /* ---- manifest ---- */
-const manifest={name:'Physique OS',short_name:'Physique',description:'Offline-first adaptive body-composition operating system: observe, model, decide, predict, learn.',start_url:'./',scope:'./',display:'standalone',orientation:'portrait',background_color:'#101216',theme_color:'#101216',lang:'en',categories:['health','fitness','productivity'],icons:[{src:'icons/icon.svg',sizes:'any',type:'image/svg+xml',purpose:'any'},{src:'icons/icon-192.png',sizes:'192x192',type:'image/png'},{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'},{src:'icons/maskable-512.png',sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+/* home-screen shortcuts: long-press the icon; each opens an allow-listed quick action */
+const MANIFEST_SHORTCUTS=[['Weigh in','weigh-in'],['Log supplements','supplements'],['+0.5 L water','water'],['Start workout','workout']].map(([n,id])=>({name:n,short_name:n,url:'./?do='+id,icons:[{src:'./icons/icon-192.png',sizes:'192x192',type:'image/png'}]}));
+const manifest={shortcuts:MANIFEST_SHORTCUTS,name:'Physique OS',short_name:'Physique',description:'Offline-first adaptive body-composition operating system: observe, model, decide, predict, learn.',start_url:'./',scope:'./',display:'standalone',orientation:'portrait',background_color:'#101216',theme_color:'#101216',lang:'en',categories:['health','fitness','productivity'],icons:[{src:'icons/icon.svg',sizes:'any',type:'image/svg+xml',purpose:'any'},{src:'icons/icon-192.png',sizes:'192x192',type:'image/png'},{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'},{src:'icons/maskable-512.png',sizes:'512x512',type:'image/png',purpose:'maskable'}]};
 fs.writeFileSync(path.join(DIST,'manifest.webmanifest'),JSON.stringify(manifest,null,1));
 /* ---- icons: SVG mark + PNG rasters via PIL ---- */
 const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#101216"/><circle cx="256" cy="256" r="150" fill="none" stroke="#8fbc8f" stroke-width="18"/><path d="M150 300 L215 235 L262 282 L362 182" fill="none" stroke="#e4e7e4" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><circle cx="362" cy="182" r="20" fill="#9b8db3"/></svg>`;
@@ -237,6 +255,12 @@ const dsldManifestPath=path.join(DIST,'data','supplements','manifest.json');cons
    Copying server.mjs into dist does not run it. The contract is recorded here (no secrets), DEPLOYMENT.md and a
    vercel.json template go into dist for anyone deploying dist on its own, and with SYNC_DEPLOYMENT_MODE=reverse-proxy
    the build fails unless vercel.json forwards /api/sync to a real HTTPS server. ---- */
+/* One set of headers for every deployment path. The food manifest revalidates and other data files are cached for a day
+   and revalidated: shard names are not content-hashed, so "immutable" was wrong \u2014 and it made a 404 served before
+   the database was deployed stick in browsers for a year. */
+const DATA_HEADERS=[{source:'/(index.html|sw.js|version.json)',headers:[{key:'Cache-Control',value:'no-cache'}]},{source:'/api/(.*)',headers:[{key:'Cache-Control',value:'no-store'}]},
+  {source:'/data/food/manifest.json',headers:[{key:'Cache-Control',value:'no-cache'}]},{source:'/data/(.*)',headers:[{key:'Cache-Control',value:'public, max-age=86400, must-revalidate'}]},
+  {source:'/(.*)',headers:[{key:'X-Content-Type-Options',value:'nosniff'},{key:'Referrer-Policy',value:'no-referrer'},{key:'Permissions-Policy',value:'geolocation=(), microphone=(self), camera=(self)'}]}];
 const DEPLOY={client:'static',server:'external',syncPath:'/api/sync',proxyRequired:true,serverEntry:'server/server.mjs',
   healthCheck:'/api/sync/v1/health',requiresServer:['weather','online food lookups','cloud sync']};
 function syncRewriteOf(vj){const r=(vj&&vj.rewrites||[]).find(x=>/^\/api\/sync\/?(:path\*|\(\.\*\))?/.test(String(x.source||'')));return r?r.destination:null;}
@@ -246,7 +270,11 @@ function validSyncOrigin(u){try{const x=new URL(String(u).replace(/\/:path\*$|\/
 {let vj=null;try{vj=JSON.parse(fs.readFileSync('vercel.json','utf8'));}catch(e){}
   const dest=syncRewriteOf(vj),bad=dest?validSyncOrigin(dest):'vercel.json has no /api/sync rewrite';
   DEPLOY.rewriteConfigured=!bad;
-  if(process.env.SYNC_DEPLOYMENT_MODE==='reverse-proxy'&&bad){console.error('DEPLOYMENT: '+bad+'. Run: node scripts/configure-deploy.mjs --sync-origin https://your-sync-server');process.exit(1);}
+  /* On Vercel the server is required: a build without a working rewrite FAILS unless it is opted out deliberately. It only
+     warned unless SYNC_DEPLOYMENT_MODE was set, so a production deploy could ship a broken route. */
+  if(bad&&(process.env.SYNC_DEPLOYMENT_MODE==='reverse-proxy'||(process.env.VERCEL&&process.env.PHYSIQUE_ALLOW_NO_SERVER!=='1'))){console.error('DEPLOYMENT: '+bad+'. Run: node scripts/configure-deploy.mjs --sync-origin https://your-sync-server  (or set PHYSIQUE_ALLOW_NO_SERVER=1 to deploy without weather, online food lookups and sync)');process.exit(1);}
+  /* dist is self-contained: with a valid rewrite it carries its own vercel.json. */
+  if(!bad){fs.writeFileSync(path.join(DIST,'vercel.json'),JSON.stringify({rewrites:vj.rewrites.filter(r=>String(r.source).startsWith('/api/sync')),headers:DATA_HEADERS},null,2)+'\n');}
   if(!DEPLOY.rewriteConfigured&&process.env.VERCEL)console.warn('WARNING: this Vercel build has no working /api/sync rewrite ('+bad+'): weather, online food lookups and cloud sync will not work. See DEPLOYMENT.md.');}
 fs.writeFileSync(path.join(DIST,'DEPLOYMENT.md'),`# Deploying Physique OS
 
@@ -280,9 +308,7 @@ server's https origin. Never use localhost or 127.0.0.1 — on Vercel those mean
 \`https://YOUR-APP/api/sync/v1/health\` must return the same JSON as above (a web page means the rewrite is missing).
 In the app: Tools → External server → Test external server names the layer that fails.
 `);
-fs.writeFileSync(path.join(DIST,'vercel.json.template'),JSON.stringify({rewrites:[{source:'/api/sync/:path*',destination:'https://REPLACE-WITH-YOUR-SYNC-SERVER/:path*'}],
-  headers:[{source:'/(index.html|sw.js|version.json)',headers:[{key:'Cache-Control',value:'no-cache'}]},{source:'/api/(.*)',headers:[{key:'Cache-Control',value:'no-store'}]},
-    {source:'/(.*)',headers:[{key:'X-Content-Type-Options',value:'nosniff'},{key:'Referrer-Policy',value:'no-referrer'},{key:'Permissions-Policy',value:'geolocation=(), microphone=(self), camera=(self)'}]}]},null,2)+'\n');
+fs.writeFileSync(path.join(DIST,'vercel.json.template'),JSON.stringify({rewrites:[{source:'/api/sync/:path*',destination:'https://REPLACE-WITH-YOUR-SYNC-SERVER/:path*'}],headers:DATA_HEADERS},null,2)+'\n');
 fs.writeFileSync(path.join(DIST,'version.json'),JSON.stringify({app:'Physique OS',version:APP_VERSION,schema:SCHEMA_VERSION,build:BUILD_ID,release:RELEASE_ID,deployment:DEPLOY,cacheName:'physique-os-'+APP_VERSION+'-'+RELEASE_ID,builtAt:buildTime,sources:js,buildInputs:inputSet.length,food:foodInfo?{databaseVersion:foodInfo.databaseVersion,branded:foodInfo.branded?foodInfo.branded.records:0,foundation:foodInfo.foundation.count,totalBytes:foodInfo.totalBytes}:null,fndds:fnddsInfo?{version:fnddsInfo.version,foods:fnddsInfo.foods}:null,dsld:dsldInfo?{version:dsldInfo.version,products:dsldInfo.products}:null},null,1));
 const walk=(dir,base='')=>fs.readdirSync(dir).flatMap(f=>{const p=path.join(dir,f);const rel=base?base+'/'+f:f;return fs.statSync(p).isDirectory()?walk(p,rel):[rel];});
 const isData=f=>f.startsWith('data/food/')||f.startsWith('data/supplements/');

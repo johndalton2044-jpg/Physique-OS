@@ -166,12 +166,15 @@ w.DB.settings.contrast='normal';w.DB.settings.motion='auto';w.DB.settings.densit
      header. Six floating buttons over a text column is an obstruction, not a rail. */
   const backFab=w.document.getElementById('backFab'),topFab=w.document.getElementById('upFab'),attnFab=w.document.getElementById('attnFab');
   /* the lone back arrow became a previous/next pair for flipping panels (usage review) */
+  { const mf=JSON.parse(fs.readFileSync('dist/manifest.webmanifest','utf8'));
+    ok('the manifest carries home-screen shortcuts to allowed quick actions',Array.isArray(mf.shortcuts)&&mf.shortcuts.length>=3&&mf.shortcuts.every(s=>/\?do=(weigh-in|supplements|water|workout)$/.test(s.url))); }
   ok('previous/next and jump-to-top are position controls on the left rail',
      !!w.document.querySelector('.rail-left #prevFab')&&!!w.document.querySelector('.rail-left #nextFab')&&!!topFab&&!!topFab.closest('.rail-left'));
   ok('attention is a header status rather than a floating button',
      !!attnFab&&!attnFab.closest('.rail-left')&&!attnFab.closest('.rail-right')&&!!attnFab.closest('header'));
-  ok('at most two controls always float on the right (undo appears only after an action)',
-     w.document.querySelectorAll('.rail-right .fab-mini:not([data-transient])').length<=2);
+  /* undo is persistent again (usage review: it kept disappearing); undo, palette and voice always float on the right */
+  ok('at most three controls always float on the right (undo, palette, voice)',
+     w.document.querySelectorAll('.rail-right .fab-mini:not([data-transient])').length<=3);
   ok('the jump-to-top control is hidden while the view is already at the top',topFab.hidden===true);
   ok('the attention control announces its contents to a screen reader',/Attention: \d+ item/.test(attnFab.getAttribute('aria-label')||''),attnFab.getAttribute('aria-label'));
   /* every navigation sheet opens, traps focus and closes on Escape */

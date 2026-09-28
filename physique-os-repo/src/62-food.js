@@ -53,11 +53,16 @@ function loadFoodJSON(rel,opts){
   opts=opts||{};
   if(_foodCache[rel]){var i=_foodCacheOrder.indexOf(rel);if(i>=0){_foodCacheOrder.splice(i,1);_foodCacheOrder.push(rel);}return _foodCache[rel];}
   if(typeof fetch!=='function'){var e=new Error('food database not reachable in this environment');e.availability=true;return Promise.reject(e);}
-  var p=fetch(FOOD_DATA_BASE+rel).then(function(r){if(!r.ok){var e=new Error('HTTP '+r.status+' for '+rel);e.availability=true;throw e;}return r.json();}).catch(function(e){if(e&&!e.availability&&/fetch|network|Failed/i.test(String(e.message)))e.availability=true;throw e;});
+  /* The manifest is revalidated every time; any 404 is retried once past the browser's cache. A 404 served before the
+     database was deployed had been cached as immutable for a year, so the files were there and still "missing". */
+  var get=function(mode){return fetch(FOOD_DATA_BASE+rel,{cache:mode});};
+  var p=get(rel==='manifest.json'?'no-cache':'default').then(function(r){return r.status===404?get('reload'):r;}).then(function(r){if(!r.ok){var e=new Error('HTTP '+r.status+' for '+rel);e.availability=true;throw e;}return r.json();}).catch(function(e){if(e&&!e.availability&&/fetch|network|Failed/i.test(String(e.message)))e.availability=true;throw e;});
   if(opts.retain===false)return p; // prefetch: warm the service-worker cache, keep nothing in RAM
   _foodCacheStore(rel,p);p.catch(function(){delete _foodCache[rel];var j=_foodCacheOrder.indexOf(rel);if(j>=0)_foodCacheOrder.splice(j,1);});return p;
 }
-function loadFoodManifest(){if(_foodManifest)return Promise.resolve(_foodManifest);_foodManifestState='loading';return loadFoodJSON('manifest.json').then(function(m){_foodManifest=m;_foodManifestState='loaded';try{detectFoodDatabaseChange(m);}catch(e){_q(e);}return m;}).catch(function(e){_foodManifestState='unavailable: '+(e&&e.message||e);throw e;});}
+/* A deployment without the bundled database gets one clear state, not a 404 on every lookup. */
+var _FOOD_DB_MISSING=false;
+function loadFoodManifest(){if(_foodManifest)return Promise.resolve(_foodManifest);if(_FOOD_DB_MISSING)return Promise.reject(new Error('the bundled food database is not part of this deployment'));_foodManifestState='loading';return loadFoodJSON('manifest.json').catch(function(e){if(/404/.test(String(e&&e.message))){_FOOD_DB_MISSING=true;_foodManifestState='missing: the bundled food database is not part of this deployment (search uses your own foods and Open Food Facts)';}throw e;}).then(function(m){_foodManifest=m;_foodManifestState='loaded';try{detectFoodDatabaseChange(m);}catch(e){_q(e);}return m;}).catch(function(e){_foodManifestState='unavailable: '+(e&&e.message||e);throw e;});}
 function detectFoodDatabaseChange(m){ // protocol-change detection: a new food database version is a discontinuity for intake comparisons
   var v=m&&m.databaseVersion;if(!v||!DB||!DB.settings)return;var prev=DB.settings.foodDatabaseVersion;
   if(prev&&prev!==v){try{addObservation({type:'context',date:todayISO(),value:'new food database ('+v+', was '+prev+')',source:'system'},{silent:true,noSave:true});}catch(e){_q(e);}}

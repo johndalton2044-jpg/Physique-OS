@@ -430,7 +430,7 @@ var KEYMAP=[
 
    `available` returns true, or a STRING SAYING WHY NOT. A disabled control that will not say why is a dead
    end; the catalogue is explicit about this and it is the whole reason the reason is a string. */
-var REQUIRES_SUBJECT=/^(welcome\.|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
   'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -495,6 +495,10 @@ var COMMAND_META={
   'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
   'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
   'exp.custom':{d:'An experiment you design yourself, when none of the ready-made ones fits',k:['experiment','design','custom','own']},
+  'sources.open':{d:'Where your record comes from, how sources agree, which one to trust for steps and sleep, and removing a source\u2019s data',k:['sources','data sources','import','apple health','fitbit','withings','duplicate','delete data','devices']},
+  'automation.open':{d:'Quick actions, templates, automations, patterns noticed in your record, and home-screen shortcuts',k:['automation','shortcuts','quick actions','templates','routine','one tap','repeat','auto']},
+  'supp.open':{d:'Your supplement regimen, vitamins and minerals from food and supplements, evidence and cautions',k:['supplements','vitamins','minerals','creatine','vitamin d','magnesium','iron','regimen','stack','multivitamin']},
+  'physio.open':{d:'Aerobic fitness, hydration, energy availability, protein quality, motor learning and supplement effects',k:['fitness','vo2max','cardio','hydration','water','energy availability','protein quality','digestibility','supplements','learning']},
   'features.open':{d:'Every feature, whether it is set up, and one tap to start',k:['features','help','what can','set up','guide','tour']},
   'diag.server':{d:'Checks, layer by layer, whether this deployment reaches the Physique OS server and the weather provider',k:['server','connection','weather not working','sync','deployment','diagnostics','something went wrong']},
   'nav.schedule':{d:'Weekly days, rotating shifts (2-2-3, DuPont, 4-on-4-off, your own) or an irregular week',k:['schedule','shifts','rotation','nights','2-2-3','availability','days']},
@@ -736,6 +740,10 @@ var NAV_COMMANDS=[
   {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
   {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
   {id:'exp.custom',label:'Design my own experiment',group:'decisions',surfaces:['ui','palette']},
+  {id:'sources.open',label:'Your data sources',group:'navigation',surfaces:['ui','palette']},
+  {id:'automation.open',label:'Shortcuts and automation',group:'navigation',surfaces:['ui','palette']},
+  {id:'supp.open',label:'Supplements and vitamins',group:'navigation',surfaces:['ui','palette']},
+  {id:'physio.open',label:'Physiology models',group:'navigation',surfaces:['ui','palette']},
   {id:'features.open',label:'Everything this app can do',group:'discovery',surfaces:['ui','palette']},
   {id:'diag.server',label:'Test external server',group:'system',surfaces:['ui','palette']},
   {id:'nav.schedule',label:'Your schedule',group:'navigation',surfaces:['ui','palette']},
@@ -1180,7 +1188,7 @@ function detailAudit(){
    ============================================================================ */
 var PANEL_LEVEL_RULES=[
   /* today */
-  [/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Set up more/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
+  [/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
   /* log */
   [/^Quick log/,'casual'],[/^Today$/,'casual'],[/^All observations/,'casual'],
   /* plan */

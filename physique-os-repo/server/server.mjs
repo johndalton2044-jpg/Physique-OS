@@ -26,6 +26,7 @@
      node server/server.mjs --port 8787 --data ./server-data
    ============================================================================ */
 import http from 'node:http';
+import https from 'node:https';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,9 +64,24 @@ const log=(level,msg,extra)=>{
 const vaultDir=id=>path.join(DATA,'vaults',id);
 const vaultMetaPath=id=>path.join(vaultDir(id),'vault.json');
 const validId=id=>typeof id==='string'&&/^[a-f0-9]{32}$/.test(id);
+/* THE LEDGER IS AUTHORITATIVE. events.ndjson rows carry their serverSeq; vault.json is written after the append. A crash
+   between the two left events the metadata did not know about, so reading a vault reconciles it with the ledger's tail
+   (and a torn last line from a crash mid-append is skipped and fenced off by a newline before the next append).
+   An offset index (every 500th event) and a maintained count keep reads from scanning the whole file. */
+const IDX_EVERY=500;
+function eventsPath(id){return path.join(vaultDir(id),'events.ndjson');}
+function _tailRows(p,maxBytes){const st=fs.statSync(p);const n=Math.min(st.size,maxBytes);const buf=Buffer.alloc(n);const fd=fs.openSync(p,'r');
+  try{fs.readSync(fd,buf,0,n,st.size-n);}finally{fs.closeSync(fd);}
+  const lines=buf.toString('utf8').split('\n');const rows=[];for(const l of lines){if(!l)continue;try{rows.push(JSON.parse(l));}catch(e){}}return {rows,size:st.size,endsWithNewline:buf.length===0||buf[buf.length-1]===10};}
 function readVault(id){
   if(!validId(id))return null;
-  try{return JSON.parse(fs.readFileSync(vaultMetaPath(id),'utf8'));}catch(e){return null;}
+  let v;try{v=JSON.parse(fs.readFileSync(vaultMetaPath(id),'utf8'));}catch(e){return null;}
+  const p=eventsPath(id);
+  if(fs.existsSync(p)){const t=_tailRows(p,256*1024);const last=t.rows.length?t.rows[t.rows.length-1].serverSeq||0:0;
+    if(last>(v.serverSeq||0)){log('warn','vault recovered from its ledger',{vault:id.slice(0,8),from:v.serverSeq||0,to:last});
+      v.serverSeq=last;v.eventCount=countEventsSlow(id);v.offsets=rebuildOffsets(id);writeVault(v);}
+    if(v.eventCount==null){v.eventCount=countEventsSlow(id);v.offsets=rebuildOffsets(id);writeVault(v);}}
+  return v;
 }
 function writeVault(v){
   fs.mkdirSync(vaultDir(v.id),{recursive:true});
@@ -73,28 +89,30 @@ function writeVault(v){
   fs.writeFileSync(tmp,JSON.stringify(v));
   fs.renameSync(tmp,vaultMetaPath(v.id));   // atomic: a crash mid-write never leaves a half-vault
 }
-function appendEvents(id,rows){
-  const p=path.join(vaultDir(id),'events.ndjson');
-  fs.appendFileSync(p,rows.map(r=>JSON.stringify(r)).join('\n')+'\n');
+function appendEvents(v,rows){
+  const p=eventsPath(v.id);let size=fs.existsSync(p)?fs.statSync(p).size:0;
+  let prefix='';if(size>0){const t=_tailRows(p,1);if(!t.endsWithNewline)prefix='\n';}   // fence off a torn line
+  size+=Buffer.byteLength(prefix);v.offsets=v.offsets||{};
+  const parts=rows.map(r=>{const line=JSON.stringify(r)+'\n';if(r.serverSeq%IDX_EVERY===1)v.offsets[r.serverSeq]=size;size+=Buffer.byteLength(line);return line;});
+  fs.appendFileSync(p,prefix+parts.join(''));
+  v.eventCount=(v.eventCount||0)+rows.length;
 }
-function readEvents(id,since){
-  const p=path.join(vaultDir(id),'events.ndjson');
-  if(!fs.existsSync(p))return [];
-  const out=[];
-  for(const line of fs.readFileSync(p,'utf8').split('\n')){
-    if(!line)continue;
-    let r;try{r=JSON.parse(line);}catch(e){continue;}
-    if(since&&r.serverSeq<=since)continue;
-    out.push(r);
-  }
-  return out;
-}
-function countEvents(id){
-  const p=path.join(vaultDir(id),'events.ndjson');
-  if(!fs.existsSync(p))return 0;
-  let n=0;const s=fs.readFileSync(p,'utf8');
-  for(let i=0;i<s.length;i++)if(s[i]==='\n')n++;
-  return n;
+function countEventsSlow(id){const p=eventsPath(id);if(!fs.existsSync(p))return 0;let n=0;
+  for(const line of fs.readFileSync(p,'utf8').split('\n')){if(!line)continue;try{JSON.parse(line);n++;}catch(e){}}return n;}
+function rebuildOffsets(id){const p=eventsPath(id),out={};if(!fs.existsSync(p))return out;let off=0;
+  for(const line of fs.readFileSync(p,'utf8').split('\n')){const len=Buffer.byteLength(line)+1;if(line){try{const r=JSON.parse(line);if(r.serverSeq%IDX_EVERY===1)out[r.serverSeq]=off;}catch(e){}}off+=len;}return out;}
+/* Bounded read: seek to the nearest indexed event at or before since+1, read forward in chunks, stop at the limit. */
+function readEvents(v,since,limit){
+  const p=eventsPath(v.id);if(!fs.existsSync(p))return {rows:[],more:false};
+  let start=0;const keys=Object.keys(v.offsets||{}).map(Number).filter(k=>k<=since+1).sort((a,b)=>b-a);if(keys.length)start=v.offsets[keys[0]];
+  const fd=fs.openSync(p,'r'),size=fs.statSync(p).size,out=[];let pos=start,rest='',more=false;
+  try{while(pos<size){const n=Math.min(1<<20,size-pos),buf=Buffer.alloc(n);fs.readSync(fd,buf,0,n,pos);pos+=n;
+      const lines=(rest+buf.toString('utf8')).split('\n');rest=lines.pop();
+      for(const l of lines){if(!l)continue;let r;try{r=JSON.parse(l);}catch(e){continue;}if(r.serverSeq<=since)continue;if(out.length>=limit){more=true;break;}out.push(r);}
+      if(more)break;}
+    if(!more&&rest){try{const r=JSON.parse(rest);if(r.serverSeq>since){if(out.length>=limit)more=true;else out.push(r);}}catch(e){}}}
+  finally{fs.closeSync(fd);}
+  return {rows:out,more};
 }
 
 /* ---------- auth: signature over a server challenge, no passwords anywhere ---------- */
@@ -126,12 +144,12 @@ function authFor(req){
   if(rec.exp<Date.now()){tokens.delete(m[1]);return null;}
   return rec;
 }
-function rateOk(ip){
+function rateOk(ip,max){
   const now=Date.now();
   const r=rate.get(ip)||{n:0,reset:now+RATE_WINDOW_MS};
   if(r.reset<now){r.n=0;r.reset=now+RATE_WINDOW_MS;}
   r.n++;rate.set(ip,r);
-  return r.n<=RATE_MAX;
+  return r.n<=(max||RATE_MAX);
 }
 setInterval(()=>{
   const now=Date.now();
@@ -146,17 +164,39 @@ setInterval(()=>{
    push service is a third party and the whole point of the encryption above is that third parties see
    nothing. */
 const vapidPath=path.join(DATA,'vapid.json');
+/* Push keys survive a wiped disk only if they live outside it: PHYSIQUE_VAPID_JSON holds the JSON of vapid.json. Keys
+   regenerated after a wipe no longer match the browsers' subscriptions. */
+/* CONFIGURED KEYS ARE AN INVARIANT. Accepted: VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY (web-push's format: base64url raw keys),
+   or PHYSIQUE_VAPID_JSON holding {publicKey, privateKeyPem} (this server's) or {publicKey, privateKey} (web-push's).
+   Configured but unreadable, or a private key that does not produce the given public key, stops the server: falling
+   back would generate new keys and silently break every existing subscription. */
+function normaliseVapid(pub,priv,privPem,source){
+  const fail=m=>{throw new Error('push keys from '+source+': '+m);};
+  if(!pub)fail('publicKey is missing');if(!priv&&!privPem)fail('privateKey or privateKeyPem is missing');
+  const P=Buffer.from(String(pub),'base64url');if(P.length!==65||P[0]!==4)fail('publicKey is not an uncompressed P-256 point (65 bytes, base64url)');
+  let key;try{key=privPem?crypto.createPrivateKey(privPem):crypto.createPrivateKey({format:'jwk',key:{kty:'EC',crv:'P-256',d:String(priv),x:P.subarray(1,33).toString('base64url'),y:P.subarray(33).toString('base64url')}});}
+  catch(e){fail('the private key does not parse ('+e.message+')');}
+  /* Node trusts the public point supplied with a JWK and does not recompute it from d, so comparing public keys proves
+     nothing. A signature made with the private key must verify under the configured public key. */
+  let pubKey;try{pubKey=crypto.createPublicKey({format:'jwk',key:{kty:'EC',crv:'P-256',x:P.subarray(1,33).toString('base64url'),y:P.subarray(33).toString('base64url')}});}catch(e){fail('the public key does not parse');}
+  const probe=Buffer.from('physique-os vapid pair check');let sig;try{sig=crypto.sign('sha256',probe,key);}catch(e){fail('the private key cannot sign ('+e.message+')');}
+  if(!crypto.verify('sha256',probe,pubKey,sig))fail('the private key does not belong to the public key');
+  return {publicKey:String(pub),privateKeyPem:key.export({type:'pkcs8',format:'pem'}),source};
+}
 function vapidKeys(){
+  if(process.env.VAPID_PUBLIC_KEY||process.env.VAPID_PRIVATE_KEY)return normaliseVapid(process.env.VAPID_PUBLIC_KEY,process.env.VAPID_PRIVATE_KEY,null,'VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY');
+  if(process.env.PHYSIQUE_VAPID_JSON){let j;try{j=JSON.parse(process.env.PHYSIQUE_VAPID_JSON);}catch(e){throw new Error('push keys from PHYSIQUE_VAPID_JSON: not valid JSON');}
+    return normaliseVapid(j.publicKey,j.privateKey,j.privateKeyPem,'PHYSIQUE_VAPID_JSON');}
   if(fs.existsSync(vapidPath))return JSON.parse(fs.readFileSync(vapidPath,'utf8'));
   const {publicKey,privateKey}=crypto.generateKeyPairSync('ec',{namedCurve:'prime256v1'});
   const pub=publicKey.export({type:'spki',format:'der'});
   const keys={publicKey:Buffer.from(pub.subarray(pub.length-65)).toString('base64url'),
     privateKeyPem:privateKey.export({type:'pkcs8',format:'pem'}),createdAt:new Date().toISOString()};
   fs.writeFileSync(vapidPath,JSON.stringify(keys));
-  log('info','vapid keypair generated');
+  log('info','vapid keypair generated; copy '+vapidPath+' into PHYSIQUE_VAPID_JSON to keep push working after the disk is wiped');
   return keys;
 }
-const VAPID=vapidKeys();
+let VAPID;try{VAPID=vapidKeys();}catch(e){console.error('STARTUP REFUSED: '+e.message);if(process.env.PHYSIQUE_SERVER_TEST==='1')throw e;process.exit(1);}
 function vapidAuthHeader(endpoint,subject){
   const url=new URL(endpoint);
   const header=Buffer.from(JSON.stringify({typ:'JWT',alg:'ES256'})).toString('base64url');
@@ -176,12 +216,18 @@ function derToRaw(der){
   const r=readInt(),s=readInt();
   return Buffer.concat([r,s]);
 }
+function retireSubscriptions(v,subs,results){let removed=0;subs.forEach((s,i)=>{const r=results[i];const rec=(v.pushSubscriptions||[]).find(x=>x.endpoint===s.endpoint);if(!rec)return;
+  if(r.ok){rec.failures=0;return;}
+  if(r.status===404||r.status===410){v.pushSubscriptions=v.pushSubscriptions.filter(x=>x!==rec);removed++;return;}
+  rec.failures=(rec.failures||0)+1;if(rec.failures>=5){v.pushSubscriptions=v.pushSubscriptions.filter(x=>x!==rec);removed++;}});return removed;}
 async function sendPush(sub,payloadText){
   /* Payload encryption (aes128gcm) is required by the spec for a body. A nudge needs no body, so this sends
      a bodiless push, which is allowed, needs no content encryption, and leaks nothing to the push service. */
   return new Promise(resolve=>{
     let url;try{url=new URL(sub.endpoint);}catch(e){return resolve({ok:false,reason:'bad endpoint'});}
-    const req=http.request({protocol:url.protocol,hostname:url.hostname,port:url.port||(url.protocol==='https:'?443:80),
+    /* https endpoints need https.request: http.request rejects the https protocol, so every real push failed. */
+    const transport=url.protocol==='https:'?https:http;
+    const req=transport.request({protocol:url.protocol,hostname:url.hostname,port:url.port||(url.protocol==='https:'?443:80),
       path:url.pathname+url.search,method:'POST',
       headers:{'TTL':'86400','Authorization':vapidAuthHeader(sub.endpoint),'Content-Length':0}},
       res=>{res.resume();resolve({ok:res.statusCode<300,status:res.statusCode});});
@@ -295,6 +341,9 @@ const extRoutes={
 
 const routes={
   ...extRoutes,
+  /* The base address answers with an index, not "no such endpoint": people open it to check the server. */
+  'GET /':async()=>({ok:true,service:'physique-os-sync',health:'/v1/health',note:'This is the Physique OS server. The app talks to it; there is nothing to see here.'}),
+  'GET /v1':async()=>({ok:true,service:'physique-os-sync',health:'/v1/health'}),
   'GET /v1/health':async()=>({ok:true,service:'physique-os-sync',version:1,ext:EXT_VERSION,epoch:DATA_EPOCH,startedAt:STARTED_AT,storage:STORAGE_NOTE,
     vaults:fs.readdirSync(path.join(DATA,'vaults')).length,
     vapidPublicKey:VAPID.publicKey,
@@ -363,7 +412,7 @@ const routes={
     if(!v)return {code:404,body:{error:'no such vault'}};
     if(!Array.isArray(body.events))return {code:400,body:{error:'events must be an array'}};
     if(body.events.length>5000)return {code:400,body:{error:'batch too large'}};
-    const existing=countEvents(v.id);
+    const existing=v.eventCount||0;
     if(existing+body.events.length>MAX_EVENTS_PER_VAULT)return {code:507,body:{error:'vault event limit reached'}};
     const rows=[];
     for(const e of body.events){
@@ -373,7 +422,7 @@ const routes={
       rows.push({id:e.id,ciphertext:e.ciphertext,iv:String(e.iv||''),device:String(e.device||'').slice(0,64),
         serverSeq:++v.serverSeq,receivedAt:new Date().toISOString()});
     }
-    if(rows.length){appendEvents(v.id,rows);writeVault(v);}
+    if(rows.length){appendEvents(v,rows);writeVault(v);}   /* the ledger first; the metadata is recoverable from it */
     log('info','events appended',{vault:v.id.slice(0,8),count:rows.length,serverSeq:v.serverSeq});
     return {code:200,body:{ok:true,accepted:rows.length,serverSeq:v.serverSeq}};
   },
@@ -384,10 +433,9 @@ const routes={
     const v=readVault(auth.vaultId);
     if(!v)return {code:404,body:{error:'no such vault'}};
     const since=+(url.searchParams.get('since')||0);
-    const limit=Math.min(5000,+(url.searchParams.get('limit')||5000));
-    const all=readEvents(v.id,since);
-    const page=all.slice(0,limit);
-    return {code:200,body:{events:page,serverSeq:v.serverSeq,epoch:DATA_EPOCH,more:all.length>page.length,
+    const limit=Math.max(1,Math.min(5000,+(url.searchParams.get('limit')||2000)));
+    const page=readEvents(v,since,limit);
+    return {code:200,body:{events:page.rows,serverSeq:v.serverSeq,epoch:DATA_EPOCH,more:page.more,
       note:'ciphertext only; this server cannot read these'}};
   },
 
@@ -414,7 +462,10 @@ const routes={
     if(!v)return {code:404,body:{error:'no such vault'}};
     const subs=(v.pushSubscriptions||[]).filter(s=>s.device!==auth.deviceId);
     const results=await Promise.all(subs.map(s=>sendPush(s)));
-    return {code:200,body:{ok:true,sent:results.filter(r=>r.ok).length,attempted:results.length}};
+    /* A subscription the push service says is gone (404, 410) is removed; others are retired after 5 failures in a row. */
+    const removed=retireSubscriptions(v,subs,results);
+    if(subs.length)writeVault(v);
+    return {code:200,body:{ok:true,sent:results.filter(r=>r.ok).length,attempted:results.length,removed}};
   },
 
   /* Delete everything. Immediate and total, because a service holding health data that cannot be left is
@@ -436,7 +487,10 @@ const server=http.createServer(async(req,res)=>{
      throttle everyone together. With TRUST_PROXY=1 the client address comes from X-Forwarded-For. Only set it behind a
      proxy you run: otherwise a client can choose its own address. */
   const fwd=process.env.TRUST_PROXY==='1'?String(req.headers['x-forwarded-for']||'').split(',')[0].trim():'';
-  const ip=fwd||req.socket.remoteAddress||'?';
+  const sock=req.socket.remoteAddress||'?',ip=fwd||sock;
+  /* The connecting socket is limited as well (with a ceiling fit for a proxy carrying many people), so a forged
+     X-Forwarded-For can only share out one socket's allowance, never escape the limit. */
+  if(fwd&&!rateOk('sock:'+sock,RATE_MAX*(+process.env.PROXY_RATE_FACTOR||20)))return json(res,429,{error:'too many requests'});
   if(req.method==='OPTIONS')return json(res,204,{});
   if(!rateOk(ip))return json(res,429,{error:'too many requests'});
   let url;try{url=new URL(req.url,'http://'+(req.headers.host||'localhost'));}catch(e){return json(res,400,{error:'bad url'});}
@@ -457,8 +511,10 @@ const server=http.createServer(async(req,res)=>{
   }
 });
 
-server.listen(PORT,HOST,()=>{
+if(process.env.PHYSIQUE_SERVER_TEST!=='1')server.listen(PORT,HOST,()=>{
   log('info','listening',{host:HOST,port:PORT,data:DATA,
     note:'put TLS in front of this before it leaves localhost'});
 });
 export {server};
+/* for tests: load with PHYSIQUE_SERVER_TEST=1 (nothing listens) */
+export {sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,rateOk};

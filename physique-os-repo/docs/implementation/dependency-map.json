@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-27T05:49:08.235Z",
-  "buildId": "3d6c7a007e",
-  "nodes": 75,
-  "edges": 195,
-  "contractDerived": 63,
+  "generatedAt": "2026-09-28T03:10:25.985Z",
+  "buildId": "a75467fc29",
+  "nodes": 87,
+  "edges": 221,
+  "contractDerived": 75,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -226,6 +226,16 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "weight",
+      "targetId": "cardio_fitness_latent",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "weight_avg",
       "targetId": "weight_trend",
       "dependencyType": "model"
@@ -438,6 +448,26 @@
     {
       "sourceId": "calories",
       "targetId": "uncertainty_chain",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "hydration_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "diet_digestibility",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "micronutrient_coverage",
       "dependencyType": "data"
     },
     {
@@ -681,6 +711,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "sleep",
+      "targetId": "recovery_allocation",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "sleepq",
       "targetId": "recovery",
       "dependencyType": "data"
@@ -816,6 +851,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "steps",
+      "targetId": "recovery_allocation",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "coverage",
       "targetId": "data_trust",
       "dependencyType": "model"
@@ -878,6 +918,26 @@
     {
       "sourceId": "cardio",
       "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "cardio_fitness_latent",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "hydration_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "recovery_allocation",
       "dependencyType": "data"
     },
     {
@@ -978,6 +1038,76 @@
     {
       "sourceId": "uncertainty_chain",
       "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rhr",
+      "targetId": "cardio_fitness_latent",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio_fitness_latent",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water",
+      "targetId": "hydration_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hydration_balance",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "supplement",
+      "targetId": "supplement_efficacy",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "supplement",
+      "targetId": "micronutrient_coverage",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "supplement",
+      "targetId": "supplement_adherence",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "supplement_efficacy",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "bodyfat",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "energy_availability",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "diet_digestibility",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "recovery_allocation",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "micronutrient_coverage",
+      "targetId": "supplementsCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "supplement_adherence",
+      "targetId": "supplementsCard",
       "dependencyType": "model"
     }
   ],

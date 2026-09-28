@@ -3638,6 +3638,107 @@ function runSelfTest(opts){
       ok('a lateral raise is drawn from the front',movementModel('abduction').view==='front');})();
     /* ---- Ready-made experiments ---- */
     ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMPLATES.every(function(t){return !!t.todo;}));
+    /* ---- Usage review: Tools order, the guide, Today ---- */
+    ok('External server is pinned to the top of Tools by default, and any section can be pinned',toolsPinned()[0]==='tools-server'&&typeof ACTIONS['tools.pin']==='function');
+    ok('a feature opened from the guide closes the guide first (nothing opens behind it)',typeof ACTIONS['features.go']==='function'&&renderFeatureRow({id:'x',icon:'pin',label:'x',what:'x',on:false,act:'weather.open',cta:'Go'}).indexOf('features.go')>=0);
+    /* ---- Sources: identity, deduplication, preferences, deletion ---- */
+    withFixture('successful_cut',function(){
+      var keepO=DB.observations,keepP=DB.settings.sourcePreference,d=addDays(todayISO(),-3);DB.settings.sourcePreference={};
+      DB.observations=DB.observations.filter(function(o){return !(o.date===d&&/steps|water|cardio/.test(o.type));});
+      DB.observations.push(makeObservation({type:'steps',date:d,value:9000,source:'import',meta:{importSource:'apple-health'}}));
+      DB.observations.push(makeObservation({type:'steps',date:d,value:11000,source:'import',meta:{importSource:'fitbit'}}));
+      DB.observations.push(makeObservation({type:'water',date:d,value:0.5,source:'manual'}));DB.observations.push(makeObservation({type:'water',date:d,value:0.7,source:'import',meta:{importSource:'apple-health'}}));
+      DB.observations.push(makeObservation({type:'cardio',date:d,value:30,source:'manual'}));DB.observations.push(makeObservation({type:'cardio',date:d,value:45,source:'import',meta:{importSource:'strava'}}));_memoInvalidate();
+      var day=function(t){return seriesWindow(t,7).filter(function(x){return x.date===d;})[0];};
+      ok('steps from two devices are one quantity: one source is used, not both added',day('steps').value===11000&&day('steps').alternatives.length===1);
+      setSourcePreference('steps','import:apple-health');ok('a preferred source for a type is used',day('steps').value===9000&&day('steps').source==='import:apple-health');
+      ok('drinks from two sources are still added (two drinks are two drinks)',Math.abs(day('water').value-1.2)<1e-9);
+      ok('cardio from two sources is still added (two workouts may be two workouts)',day('cardio').value===75);
+      ok('each provider is its own source, not one "import"',sourceKeyOf({source:'import',meta:{importSource:'fitbit'}})==='import:fitbit'&&sourceLabel('import:apple-health')==='Apple Health');
+      ok('a disagreement is judged and stated in the type\u2019s own unit',/steps/.test(reconcileDay('steps',d).note)&&!/lb/.test(reconcileDay('steps',d).note));
+      var pv=deleteSourceData('import:fitbit',{preview:true});ok('deleting a source previews first, and exactly',pv.status==='preview'&&pv.count===1&&pv.byType.steps===1);
+      var dl=deleteSourceData('import:fitbit');ok('deleting a source retracts only its entries, and they stay in the record as retracted',dl.count===1&&DB.observations.some(function(o){return o.meta&&o.meta.importSource==='fitbit'&&o.retracted;})&&DB.observations.some(function(o){return o.meta&&o.meta.importSource==='apple-health'&&!o.retracted;}));
+      ok('derived food-log totals cannot be deleted as a source',deleteSourceData('food-log').status==='refused');
+      DB.observations=keepO;DB.settings.sourcePreference=keepP;_memoInvalidate();
+    });
+    /* ---- Automation: defaults, quick actions, templates, patterns, rules, shortcuts ---- */
+    withFixture('successful_cut',function(){
+      ok('smart defaults never guess food intake',['calories','protein','carbs','fat','fiber'].every(function(k){return smartDefault(k)===null;}));
+      ok('the weight default is the last weigh-in, and says so',(function(){var d=smartDefault('weight'),l=obsOf('weight').slice(-1)[0];return d&&l&&d.value===l.value&&/last/.test(d.why);})());
+      ok('the sleep default is the middle of recent nights',(function(){var d=smartDefault('sleep');return !d||(d.value>0&&/middle/.test(d.why));})());
+      ok('a weigh-in is not offered once today\u2019s is logged',(function(){if(!obsOf('weight').some(function(o){return o.date===todayISO();}))DB.observations.push(makeObservation({type:'weight',date:todayISO(),value:250,source:'test'}));_memoInvalidate();
+        return !quickActions({hour:7,limit:99}).some(function(q){return q.id==='weigh-in';});})());
+      ok('a hidden quick action is not offered',(function(){var k=DB.settings.quickHidden;DB.settings.quickHidden={water:true};var r=!quickActions({hour:12,limit:99}).some(function(q){return q.id==='water';});DB.settings.quickHidden=k;return r;})());
+      ok('quick actions are ranked, highest first',(function(){var Q=quickActions({hour:12,limit:99});return Q.every(function(q,i){return i===0||Q[i-1].score>=q.score;});})());
+      var keepL=DB.foodLogs,keepT=DB.settings.templates;var y=addDays(todayISO(),-1);
+      DB.foodLogs=(DB.foodLogs||[]).filter(function(l){return l.date!==y&&l.date!==todayISO();}).concat([{id:'a1',date:y,meal:'breakfast',food:{name:'Oats'},nutrients:{kcal:300},qty:80,createdAt:nowISO()},{id:'a2',date:y,meal:'breakfast',food:{name:'Milk'},nutrients:{kcal:120},qty:200,createdAt:nowISO()}]);
+      var sv=saveMealTemplate(y,'breakfast');var before=foodLogsOn(todayISO()).length;var rr=runTemplate(sv.template.id,todayISO());
+      ok('a saved meal template logs the same foods again, through the app\u2019s own path',sv.status==='ok'&&rr.logged===2&&foodLogsOn(todayISO()).length===before+2);
+      DB.foodLogs=keepL;DB.settings.templates=keepT;
+      var keepR=DB.settings.automations;DB.settings.automations=[{id:'workoutFinished|supp.logStack',trigger:'workoutFinished',action:'supp.logStack',enabled:true}];
+      var ev={type:'session.added',data:{date:todayISO()}},lg={};
+      ok('a rule matches its event',automationMatches(ev,lg).length===1&&automationMatches({type:'food.logged',data:{}},lg).length===0);
+      lg['workoutFinished|supp.logStack@'+todayISO()]='x';ok('a rule runs at most once a day',automationMatches(ev,lg).length===0);
+      ok('no automation runs during the self-test (or replay)',runAutomationsFor(ev).length===0);
+      ok('only allowed actions can be automated',setAutomation('workoutFinished','settings.reset',true).status==='refused');
+      DB.settings.automations=keepR;
+      ok('an unknown home-screen shortcut is refused',runShortcut('delete-everything').status==='refused');
+      var keepO=DB.observations,keepS=DB.settings.supplementStack;DB.settings.supplementStack=[];
+      for(var i=0;i<6;i++)DB.observations.push(makeObservation({type:'supplement',date:addDays(todayISO(),-i),value:'L-theanine 200 mg',source:'test'}));_memoInvalidate();
+      ok('a supplement taken most days but not in the regimen is offered as a pattern',detectPatterns().some(function(p){return p.id==='supp:theanine';}));
+      DB.observations=keepO;DB.settings.supplementStack=keepS;_memoInvalidate();
+    });
+    /* ---- the expanded catalogue ---- */
+    ok('the catalogue covers the named supplements and minerals',['theanine','pygeum','ashwagandha','copper','zinc','creatine','sawpalmetto','manganese','chromium','selenium','iodine','biotin','collagen','berberine'].every(function(k){return !!SUPPLEMENT_CATALOGUE[k];})&&Object.keys(SUPPLEMENT_CATALOGUE).length>=70);
+    ok('a brand number is not read as a dose ("KSM-66 ashwagandha 600mg" is 600 mg)',resolveSupplement('KSM-66 ashwagandha 600mg').dose===600);
+    ok('copper is counted in \u00b5g from a dose in mg',supplementNutrients({id:'copper',dose:2}).copper===2000);
+    ok('high-dose zinc without copper is flagged; with copper it is not',(function(){var k=DB.settings.supplementStack;DB.settings.supplementStack=[{id:'zinc',dose:50,unit:'mg',when:'daily'}];var a=supplementInteractions().some(function(x){return /copper/.test(x.text);});
+      DB.settings.supplementStack.push({id:'copper',dose:2,unit:'mg',when:'daily'});var b=supplementInteractions().some(function(x){return /copper deficiency/.test(x.text);});DB.settings.supplementStack=k;return a&&!b;})());
+    ok('5-HTP with St John\u2019s wort is flagged as dangerous',supplementInteractions(['htp','stjohns']).some(function(x){return x.level==='danger';}));
+    ok('saw palmetto is graded honestly (large trials found no benefit)',SUPPLEMENT_CATALOGUE.sawpalmetto.evidence[0][1]==='D');
+    /* ---- Supplements and vitamins ---- */
+    ok('every catalogue entry has a unit, a dose range, graded evidence, a source, and nutrient keys that exist',Object.keys(SUPPLEMENT_CATALOGUE).every(function(id){var c=SUPPLEMENT_CATALOGUE[id];
+      return c.label&&c.unit&&c.dose&&c.dose[0]<=c.dose[1]&&c.evidence.length&&c.evidence.every(function(e){return /^[ABCD]$/.test(e[1]);})&&c.source&&Object.keys(c.per||{}).every(function(k){return !!MICRONUTRIENTS[k];});}));
+    ok('every upper limit says what it bounds',Object.keys(MICRONUTRIENTS).every(function(k){var m=MICRONUTRIENTS[k];return m.ul==null||!!m.ulScope;}));
+    ok('every food micronutrient has a reference intake',MICRO_KEYS.filter(function(k){return k!=='cholesterol';}).every(function(k){return !!MICRONUTRIENTS[k];}));
+    ok('IU converts to \u00b5g for vitamin D, and "D3" is a name, not a dose',resolveSupplement('Vit D3 2000 IU').dose===50&&resolveSupplement('vitamin D3').dose===null);
+    ok('mcg, mg and scoops are converted to the catalogue unit',resolveSupplement('B12 1000 mcg').dose===1000&&resolveSupplement('creatine 5000 mg').dose===5&&resolveSupplement('1 scoop whey').dose===30);
+    ok('an unknown supplement stays unresolved rather than being guessed',resolveSupplement('mystery blend').resolved===false);
+    withFixture('successful_cut',function(){
+      var keepL=DB.foodLogs,keepO=DB.observations,keepS=DB.settings.supplementStack;
+      DB.foodLogs=[];for(var i=0;i<3;i++)DB.foodLogs.push({id:'t'+i,date:addDays(todayISO(),-i),meal:'lunch',food:{name:'Test food'},nutrients:{kcal:2000,iron:20,potassium:3000},createdAt:nowISO()});
+      DB.observations=DB.observations.filter(function(o){return o.type!=='supplement';});
+      for(var j=0;j<7;j++){DB.observations.push(makeObservation({type:'supplement',date:addDays(todayISO(),-j),value:'magnesium 500 mg',source:'test'}));DB.observations.push(makeObservation({type:'supplement',date:addDays(todayISO(),-j),value:'vitamin d 150 \u00b5g',source:'test'}));}
+      _memoInvalidate();var C=micronutrientCoverage(7),row=function(k){return C.rows.filter(function(r){return r.key===k;})[0];};
+      ok('a nutrient the logged foods do not report is not judged (iron data says nothing about vitamin C)',row('vitc').judged===false&&row('iron').judged===true);
+      ok('magnesium above the supplement-only limit is flagged, by what supplements supply',row('magnesium').overUL===true&&row('magnesium').fromSupplements===500);
+      ok('vitamin D above the total upper limit is flagged',row('vitd').overUL===true);
+      DB.settings.supplementStack=[{id:'creatine',dose:5,unit:'g',when:'daily'}];var a=logSupplementStack(todayISO()),b=logSupplementStack(todayISO());
+      ok('logging the regimen twice logs nothing the second time',a.logged===1&&b.logged===0);
+      DB.observations.push(makeObservation({type:'supplement',date:addDays(todayISO(),-1),value:'creatine 5 g',source:'test'}));_memoInvalidate();
+      ok('an old text log and a structured log are one supplement',supplementIntakes(addDays(todayISO(),-1),todayISO()).filter(function(x){return x.id==='creatine';}).length===2&&supplementAdherence(2).rows[0].taken===2);
+      DB.foodLogs=keepL;DB.observations=keepO;DB.settings.supplementStack=keepS;_memoInvalidate();
+    });
+    /* ---- Physiology models: the arithmetic, on constructed cases ---- */
+    ok('intensity is labelled by what was measured, never invented from duration',cardioIntensityClass({watts:200}).cls==='known'&&cardioIntensityClass({hr:130}).cls==='known'&&cardioIntensityClass({pace:10}).cls==='proxy'&&cardioIntensityClass({rpe:6}).cls==='proxy'&&cardioIntensityClass({minutes:30}).cls==='unknown');
+    withFixture('successful_cut',function(){
+      /* only this case's readings: the fixture's own resting heart rates would move the median */
+      var keepHr=DB.settings.hrMax,keepObs=DB.observations;DB.observations=DB.observations.filter(function(o){return o.type!=='rhr';});DB.settings.hrMax=190;for(var i=0;i<3;i++)DB.observations.push(makeObservation({type:'rhr',date:addDays(todayISO(),-i),value:60,source:'test'}));_memoInvalidate();
+      var o=cardioFitnessObservation({date:todayISO(),modality:'incline walk',minutes:30,hr:125,pace:20,distanceUnit:'mi',grade:10});
+      ok('a worked example: 3 mph at 10% grade, heart rate 125 of 60\u2013190, gives about 48.6 ml/kg/min',o.use&&Math.abs(o.estimate-48.6)<0.3,JSON.stringify(o));
+      ok('intervals are left to conditioning capacity, with the reason',cardioFitnessObservation({date:todayISO(),modality:'intervals',minutes:20,hr:160,pace:8}).use===false);
+      ok('a session with duration only is not used, and says why',/no heart rate/.test(cardioFitnessObservation({date:todayISO(),modality:'walk',minutes:30}).why));
+      ok('swimming is not converted: there is no validated equation from these inputs',cardioFitnessObservation({date:todayISO(),modality:'swim',minutes:30,hr:140}).use===false);
+      DB.settings.hrMax=keepHr;DB.observations=keepObs;_memoInvalidate();
+      ok('energy availability is refused without a body-fat reading, not guessed',(function(){var keep=DB.observations;DB.observations=DB.observations.filter(function(o){return o.type!=='bodyfat';});_memoInvalidate();var r=energyAvailability();DB.observations=keep;_memoInvalidate();return r.status==='insufficient'&&/body-fat/.test(r.need.join(' '));})());
+    });
+    ok('walking and cycling are separate families: never pooled',_modalityFamily('incline walk')==='weight-bearing'&&_modalityFamily('cycle')==='cycling'&&_modalityFamily('swim')===null);
+    ok('protein quality comes from the food group',_foodGroup('Whey protein').q===1&&_foodGroup('Red lentils').q===0.65&&_foodGroup('Something unknown').group==='unclassified');
+    ok('the prior is a FRIEND registry median, lower for cycling',(function(){var a=_vo2Prior('weight-bearing').mean,b=_vo2Prior('cycling').mean;return Math.abs(b-a*0.9)<0.01;})());
+    ok('every physiology model is in the canonical registry with a full contract',['cardio_fitness_latent','hydration_balance','supplement_efficacy','energy_availability','diet_digestibility','recovery_allocation'].every(function(id){var c=modelContract(id);return c&&c.executable&&c.uncertaintyContract&&c.provenanceContract;}));
+    /* ---- Diagnostics from a live deployment ---- */
+    ok('a same-site sync address is kept, and a relative one is used as given',_sameSiteServerUrl('/api/sync')==='/api/sync'&&typeof _cspAllows==='function');
+    ok('the food database says once that it is missing, instead of failing every lookup',typeof _FOOD_DB_MISSING==='boolean');
     /* ---- Icons, conditions, the feature guide ---- */
     ok('every weather condition has an icon, and a night version',Object.keys(WEATHER_CONDITIONS).every(function(k){var c=WEATHER_CONDITIONS[k];return !!ICONS[c[1]]&&!!ICONS[c[2]];}));
     ok('a condition without a code is derived from cloud cover and rain, and says so',(function(){var c=weatherCondition({cloudCover:90,precipitation:0});var r=weatherCondition({precipitation:2});return c&&c.label==='Overcast'&&c.derived&&r&&r.icon==='rain';})());

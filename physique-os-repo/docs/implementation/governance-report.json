@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-27T05:39:39.674Z",
-  "build": "3d6c7a007e",
+  "generatedAt": "2026-09-28T03:04:00.909Z",
+  "build": "a75467fc29",
   "counts": {
     "hard": {},
     "soft": {}
@@ -58,7 +58,7 @@
     },
     {
       "cat": "model-without-version",
-      "msg": "25 models, each versioned"
+      "msg": "33 models, each versioned"
     },
     {
       "cat": "model-without-provenance",
