@@ -1,26 +1,26 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/sync/:path*",
-      "destination": "https://physique-os.onrender.com/:path*"
-    }
-  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": null,
+  "cleanUrls": false,
+  "trailingSlash": false,
   "headers": [
-    {
-      "source": "/(index.html|sw.js|version.json)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        }
-      ]
-    },
     {
       "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/(index.html|sw.js|version.json)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
         }
       ]
     },
@@ -58,6 +58,12 @@
           "value": "geolocation=(), microphone=(self), camera=(self)"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/sync/:path*",
+      "destination": "https://physique-os.onrender.com/:path*"
     }
   ]
 }
