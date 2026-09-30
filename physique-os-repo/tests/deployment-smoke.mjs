@@ -21,11 +21,30 @@ async function remote(app,sync){
     const f=await getJSON(app+'/api/sync/v1/ext/weather/forecast?'+q+'&past_days=7&forecast_days=14');
     line(f.json&&f.json.status==='ok'&&f.json.provider==='open-meteo'&&f.json.payload&&f.json.payload.current&&f.json.payload.hourly&&f.json.payload.daily,'4 the forecast arrives with current, hourly and daily',JSON.stringify(f).slice(0,160));
     const a=await getJSON(app+'/api/sync/v1/ext/weather/air-quality?'+q);line(a.json&&a.json.status==='ok','5 air quality arrives',JSON.stringify(a).slice(0,160));}
+  await certify(app,{build:arg('--build'),metricsToken:arg('--metrics-token')||process.env.METRICS_TOKEN,out:arg('--certificate')});
 }
+/* DEPLOYMENT CERTIFICATION (audit §87, §111 phase 4): every layer of a live deployment, with a certificate of the results. */
+async function certify(app,o){o=o||{};const R=[],rec=(layer,ok,detail)=>{R.push({layer,ok:!!ok,detail:String(detail||'').slice(0,200)});line(ok,'certify: '+layer,detail);};
+  const v=await getJSON(app+'/version.json');rec('app build',v.json&&v.json.build&&(!o.build||v.json.build===o.build),v.json?('live build '+v.json.build+(o.build?' (expected '+o.build+')':'')):'no version.json');
+  const h=await getJSON(app+'/api/sync/v1/health');const sc=h.json&&h.json.storageCheck;
+  rec('server through the rewrite',h.json&&h.json.ok,h.json?('epoch '+h.json.epoch):'HTTP '+h.status);
+  rec('server storage',sc&&sc.writable&&!sc.warnings.length,sc?(sc.warnings.join('; ')||'writable, no warnings'):'no storage check (older server)');
+  rec('push keys',h.json&&typeof h.json.vapidPublicKey==='string'&&h.json.vapidPublicKey.length>60,'VAPID public key '+(h.json&&h.json.vapidPublicKey?'present':'missing'));
+  const man=await getJSON(app+'/data/food/manifest.json');let shardOk=false,shardDetail='no manifest';
+  if(man.json){try{const sums=await (await fetch(app+'/data/food/SHA256SUMS',{cache:'no-store'})).text(),first=sums.split('\n').find(l=>/\.json$/.test(l.trim())&&!/manifest/.test(l));
+    const [hash,name]=first.trim().split(/\s+/);const buf=Buffer.from(await (await fetch(app+'/data/food/'+name.replace(/^\.\//,''),{cache:'no-store'})).arrayBuffer());
+    const got=(await import('node:crypto')).createHash('sha256').update(buf).digest('hex');shardOk=got===hash;shardDetail=name+(shardOk?' matches its checksum':' does NOT match its checksum');}catch(e){shardDetail='could not check a shard: '+e.message;}}
+  rec('food database',man.json&&shardOk,man.json?('manifest '+(man.json.databaseVersion||'')+'; '+shardDetail):'manifest.json: HTTP '+man.status);
+  const off=await getJSON(app+'/api/sync/v1/ext/food/off/product?code=3017624010701');rec('Open Food Facts lookup',off.json&&(off.json.status==='ok'||(off.json.error&&off.json.error.category==='unsupported_record')),off.json?(off.json.status||off.json.error.category):'HTTP '+off.status);
+  const cp=await getJSON(app+'/api/sync/v1/ext/connect/providers');rec('connected services endpoint',cp.json&&Array.isArray(cp.json.providers),cp.json?(cp.json.providers.filter(p=>p.configured).map(p=>p.id).join(', ')||'none configured')+(cp.json.tokenCustody?'; sign-ins encrypted':'; no CONNECT_TOKEN_KEY'):'HTTP '+cp.status);
+  if(o.metricsToken){const m=await fetch(app+'/api/sync/v1/metrics',{headers:{authorization:'Bearer '+o.metricsToken}});let mj=null;try{mj=await m.json();}catch(e){}rec('server metrics',m.status===200&&mj&&mj.uptimeSeconds>=0,mj?('up '+mj.uptimeSeconds+' s, '+mj.vaults+' vaults'):'HTTP '+m.status);}
+  const cert={certificate:'Physique OS deployment',app,at:new Date().toISOString(),passed:R.every(r=>r.ok),layers:R};
+  if(o.out){fs.writeFileSync(o.out,JSON.stringify(cert,null,2));console.log('certificate written to '+o.out);}
+  return cert;}
 async function local(){
   const {chromium}=await import('playwright-core');const {findBrowser}=await import('./_browser-path.mjs');
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pos-deploy-'));const API=18801,wait=ms=>new Promise(r=>setTimeout(r,ms));
-  const api=spawn(process.execPath,['server/server.mjs'],{env:Object.assign({},process.env,{PORT:String(API),HOST:'127.0.0.1',DATA_DIR:tmp,TRUST_PROXY:'1',PHYSIQUE_EXT_FIXTURES:path.resolve('tests/fixtures/ext')}),stdio:'ignore'});
+  const api=spawn(process.execPath,['server/server.mjs'],{env:Object.assign({},process.env,{PORT:String(API),HOST:'127.0.0.1',DATA_DIR:tmp,TRUST_PROXY:'1',METRICS_TOKEN:'met',PHYSIQUE_EXT_FIXTURES:path.resolve('tests/fixtures/ext')}),stdio:'ignore'});
   await wait(900);
   /* a static host: files from dist, and for anything missing its own HTML 404 page (as Vercel serves) */
   const site=(port,rewriteTo)=>new Promise(res=>{const s=http.createServer((q,r)=>{const u=decodeURIComponent(q.url.split('?')[0]);
@@ -54,6 +73,7 @@ async function local(){
     const again1=await p.evaluate(()=>fetch('/api/sync/v1/ext/sources').then(r=>r.status).catch(()=>0));return Object.assign(c,{e,again1,sw:await p.evaluate(()=>!!(navigator.serviceWorker&&navigator.serviceWorker.controller))});});
   line(o.r.d.code==='OK','with the rewrite and server, the connection check passes every layer',JSON.stringify(o.r.d).slice(0,200));
   line(o.r.e.includes('forecast')&&o.r.e.includes('air-quality'),'picking a place loads the forecast and air quality',JSON.stringify(o.r.e));
+  { const cert=await certify('http://127.0.0.1:18803',{metricsToken:'met'});line(cert.passed,'the certificate passes for a correct deployment',JSON.stringify(cert.layers.filter(l=>!l.ok)));}
   api.kill('SIGKILL');await wait(400);
   const again2=await (async()=>{const ctx=await browser.newContext();const p=await ctx.newPage();await p.goto('http://127.0.0.1:18803/index.html');await p.waitForTimeout(1200);
     const s=await p.evaluate(()=>fetch('/api/sync/v1/ext/sources').then(r=>r.status).catch(()=>0));await ctx.close();return s;})();

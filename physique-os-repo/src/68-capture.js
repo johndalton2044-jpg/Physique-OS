@@ -268,7 +268,7 @@ var WEARABLE_PROVIDERS={
     adapt:function(json){
       var out=[];var groups=(json.body&&json.body.measuregrps)||[];
       groups.forEach(function(g){
-        var date=new Date((g.date||0)*1000).toISOString().slice(0,10);
+        var date=localDateOf(new Date((g.date||0)*1000).toISOString());
         (g.measures||[]).forEach(function(m){
           var value=m.value*Math.pow(10,m.unit);
           if(m.type===1)out.push({type:'weight',date:date,value:round(kgToLb(value),2),unit:'lb',externalId:'withings:'+g.grpid+':w'});
@@ -316,3 +316,19 @@ function wearableSetupInstructions(providerId){
     why:'A client id and secret identify the DEPLOYMENT, not the user. They cannot be bundled into a public single-file app without publishing them, so they are supplied by whoever runs it.',
     alternative:'Until then, every one of these vendors exports a file, and file import is fully implemented.'};
 }
+
+/* STRAVA: workouts, not daily totals. Endurance activities become cardio with modality, moving time, distance, heart
+   rate and power; strength and mobility activities become sessions (adaptSessions). */
+var STRAVA_MODALITY={Run:'run',TrailRun:'run',VirtualRun:'run',Walk:'walk',Hike:'hike',Ride:'cycle',VirtualRide:'cycle',EBikeRide:'cycle',GravelRide:'cycle',MountainBikeRide:'cycle',
+  Swim:'swim',Rowing:'row',VirtualRow:'row',Elliptical:'elliptical',StairStepper:'stairs',HighIntensityIntervalTraining:'intervals',Workout:'other',InlineSkate:'skate',NordicSki:'ski',AlpineSki:'ski',Snowshoe:'hike',Canoeing:'paddle',Kayaking:'paddle',StandUpPaddling:'paddle'};
+var STRAVA_SESSIONS={WeightTraining:'Weight training',Crossfit:'CrossFit',Yoga:'Yoga',Pilates:'Pilates'};
+WEARABLE_PROVIDERS.strava={label:'Strava',auth:'oauth2',authorizeUrl:'https://www.strava.com/oauth/authorize',tokenUrl:'https://www.strava.com/oauth/token',scopes:['read','activity:read_all'],
+  needs:['a client id and secret from strava.com/settings/api','the callback domain set to this app'],
+  adapt:function(json){return (json.activities||[]).filter(function(a){var t=a.sport_type||a.type;return !STRAVA_SESSIONS[t]&&a.moving_time>0;}).map(function(a){var t=a.sport_type||a.type,km=a.distance?round(a.distance/1000,2):null;
+    var meta={modality:STRAVA_MODALITY[t]||'other',sportType:t,name:a.name||null,distance:km,distanceUnit:km!=null?'km':null,hr:a.average_heartrate!=null?Math.round(a.average_heartrate):null,
+      maxHr:a.max_heartrate!=null?Math.round(a.max_heartrate):null,watts:a.device_watts&&a.average_watts!=null?Math.round(a.average_watts):null,elevationGain:a.total_elevation_gain!=null?a.total_elevation_gain:null,
+      elapsedMin:a.elapsed_time?round(a.elapsed_time/60,1):null,kilojoules:a.kilojoules!=null?a.kilojoules:null,startTime:a.start_date||null,stravaId:String(a.id)};
+    if(a._streams&&typeof cardioSteadySegment==='function'){var sg=cardioSteadySegment(a._streams,'km');if(sg)meta.steady=sg;}
+    return {type:'cardio',date:String(a.start_date_local||a.start_date||'').slice(0,10),value:round(a.moving_time/60,1),unit:'min',method:meta.modality,meta:meta,externalId:'strava:activity:'+a.id};}).filter(function(x){return x.date;});},
+  adaptSessions:function(json){return (json.activities||[]).filter(function(a){return STRAVA_SESSIONS[a.sport_type||a.type];}).map(function(a){
+    return {date:String(a.start_date_local||a.start_date||'').slice(0,10),name:a.name||STRAVA_SESSIONS[a.sport_type||a.type],durationMin:Math.round((a.moving_time||a.elapsed_time||0)/60),externalId:'strava:activity:'+a.id,sets:[],source:'strava'};});}};

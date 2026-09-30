@@ -53,7 +53,7 @@ function knowledgeGraph(opts){
       link('decision:'+d.id,ik,'produced');
     });
     (DB.predictions||[]).filter(function(p){
-      return p.madeAt&&String(p.madeAt).slice(0,10)===iv.date;}).forEach(function(p){
+      return p.madeAt&&localDateOf(p.madeAt)===iv.date;}).forEach(function(p){
       var pk=add('hypothesis',p.id,(p.subject||'forecast')+' '+fmtNum(p.point,1),{date:iv.date});
       link(ik,pk,'predicted');
       if(p.status==='scored'){
@@ -77,7 +77,7 @@ function knowledgeGraph(opts){
        duration. Bounding by e.endDate meant the bound was always missing, so every reading from the start onward
        was attributed to the experiment, including readings taken long after it ended. Found by the governance
        gate's never-written-field detector. */
-    var eEnd=e.completedAt?String(e.completedAt).slice(0,10):(e.recheckDate||(e.startDate&&e.durationDays?addDays(e.startDate,+e.durationDays):null));
+    var eEnd=e.completedAt?localDateOf(e.completedAt):(e.recheckDate||(e.startDate&&e.durationDays?addDays(e.startDate,+e.durationDays):null));
     var window=obsOf(metric,{from:e.startDate}).filter(function(o){
       return !eEnd||o.date<=eEnd;}).slice(0,40);
     if(window.length){
@@ -88,9 +88,9 @@ function knowledgeGraph(opts){
     (DB.interventions||[]).filter(function(iv){return iv.variable===e.variable&&Math.abs(daysBetween(iv.date,e.startDate))<=3;})
       .forEach(function(iv){link('intervention:'+iv.id,ek,'tested by');});
     if(e.status==='complete'){
-      var ok3=add('outcome',e.id+'-out',String(e.conclusion||'evaluated'),{date:e.completedAt?String(e.completedAt).slice(0,10):null});
+      var ok3=add('outcome',e.id+'-out',String(e.conclusion||'evaluated'),{date:e.completedAt?localDateOf(e.completedAt):null});
       link(ek,ok3,'concluded');
-      var kk=add('knowledge',e.id+'-k',(e.variable||'')+': '+String(e.conclusion||'').slice(0,60),{date:e.completedAt?String(e.completedAt).slice(0,10):null});
+      var kk=add('knowledge',e.id+'-k',(e.variable||'')+': '+String(e.conclusion||'').slice(0,60),{date:e.completedAt?localDateOf(e.completedAt):null});
       link(ok3,kk,'became');
     }
   });

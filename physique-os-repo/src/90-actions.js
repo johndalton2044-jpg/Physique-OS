@@ -143,7 +143,8 @@ function installScrollWatch(){
 }
 function makeDelegatedControlsFocusable(){document.querySelectorAll('[data-act]').forEach(function(el){var role=el.getAttribute('role');if(el.tagName==='BUTTON'||el.tagName==='A'||el.tagName==='INPUT'||el.tagName==='SELECT'||el.tagName==='TEXTAREA'||el.tagName==='SUMMARY'||role==='presentation'||role==='option')return;if(!el.hasAttribute('tabindex'))el.setAttribute('tabindex','0');if(!role)el.setAttribute('role','button');});}
 /* ---- navigation ---- */
-function switchTab(tab){
+function switchTab(tab){if(typeof applyRailInsets==='function'&&typeof requestAnimationFrame==='function')requestAnimationFrame(function(){try{applyRailInsets();}catch(e){}});   /* the visible cards change with the panel */
+
   if(typeof presentationViewGuard==='function'){var _pv=presentationViewGuard(tab);if(!_pv.ok)return;}
   if(!document.getElementById('view-'+tab))return;try{rememberScroll();}catch(e){}_TAB=tab;document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('active',v.id==='view-'+tab);});document.querySelectorAll('nav.primary .tab').forEach(function(b){var on=b.getAttribute('data-tab')===tab;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');if(on&&b.scrollIntoView)try{b.scrollIntoView({block:'nearest',inline:'center'});}catch(e){}});try{history.replaceState(null,'','#'+tab);}catch(e){}renderAll();
   /* returning to a view restores where the user was reading rather than resetting to the top */
@@ -1265,7 +1266,7 @@ function openCloud(){openSheet('edit',{form:'cloud',title:'Encrypted sync',desc:
 SHEETS.cloud=function(){var c=cloudState();
   return {body:uiRow('Status',esc(c.status),{sub:c.configured?('vault '+esc(String(c.vaultId).slice(0,10))+'\u2026'):'no vault on this device'})+
     uiRow('Server',esc(c.url),{sub:'run server/server.mjs, or point this at your own \u2014 it holds ciphertext only'})+
-    uiRow('Local events',fmtNum(c.localEvents,0),{sub:c.pushedCount+' already uploaded \u00b7 last sync '+(c.lastSyncAt?ageLabel(c.lastSyncAt.slice(0,10)):'never')})+
+    uiRow('Local events',fmtNum(c.localEvents,0),{sub:c.pushedCount+' already uploaded \u00b7 last sync '+(c.lastSyncAt?ageLabel(localDateOf(c.lastSyncAt)):'never')})+
     '<div class="btn-row">'+
       (c.configured?uiBtn('Sync now','cloud.sync',null,'btn-sm btn-primary'):uiBtn('Create a vault','cloud.create',null,'btn-sm btn-primary'))+
       uiBtn('Unlock an existing vault','cloud.unlock',null,'btn-sm btn-secondary')+
@@ -1391,7 +1392,7 @@ SHEETS.recent=function(){
   if(!r.length)return {body:uiEmpty('Nothing recorded yet','Entries appear here as you log them.',''),
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   return {body:r.map(function(x){return uiRow(esc(x.label),shortDate(x.date),
-    {sub:esc(x.kind)+' \u00b7 recorded '+(x.at?ageLabel(String(x.at).slice(0,10)):'\u2014'),
+    {sub:esc(x.kind)+' \u00b7 recorded '+(x.at?ageLabel(localDateOf(x.at)):'\u2014'),
      rsub:''});}).join(''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openJumps(){openSheet('edit',{form:'jumps',title:'Take me to\u2026',desc:'The places worth returning to, rather than a calendar.',buf:{}});}
 SHEETS.jumps=function(){
@@ -2385,7 +2386,7 @@ SHEETS.eventIntegrity=function(){
       {sub:fmtNum(ar.working,0)+' in the working window of '+fmtNum(ar.window,0)+
         (ar.archived?(' \u00b7 '+fmtNum(ar.archived,0)+' archived across '+ar.shards+' shard'+(ar.shards===1?'':'s')):' \u00b7 nothing archived yet'),
        rsub:es.types+' types',tone:ar.healthy?'good':'attention'})+
-    uiRow('Archive',esc(ar.note),{sub:ar.lastSnapshotAt?('last snapshot '+shortDate(String(ar.lastSnapshotAt).slice(0,10))):'no snapshot taken'})+
+    uiRow('Archive',esc(ar.note),{sub:ar.lastSnapshotAt?('last snapshot '+shortDate(localDateOf(ar.lastSnapshotAt))):'no snapshot taken'})+
     '<div class="btn-row">'+uiBtn('Verify history','events.verify',null,'btn-sm btn-primary')+uiBtn('Compact now','events.compact',null,'btn-sm btn-ghost')+'</div>';
   if(_EVENT_CHECK){
     var m=_EVENT_CHECK.projection;

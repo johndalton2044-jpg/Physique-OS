@@ -221,7 +221,7 @@ function profileHistory(){
         if(prev[k]!==undefined&&prev[k]!==p[k])changed.push({field:k,from:prev[k],to:p[k]});
         prev[k]=p[k];
       });
-      if(changed.length)out.push({at:e.at,date:String(e.at).slice(0,10),changed:changed,
+      if(changed.length)out.push({at:e.at,date:localDateOf(e.at),changed:changed,
         source:e.type==='record.snapshot'?'baseline':'edited'});
     });
   return out.sort(function(a,b){return a.at<b.at?1:-1;});
@@ -376,7 +376,7 @@ function tdeeEstimate(){
   });
 }
 function tdeeCalibration(){ // from scored TDEE-implied predictions: bias = mean signed error of weight forecasts converted to kcal
-  var scored=(DB.predictions||[]).filter(function(p){return p.subject==='weight14'&&p.status==='scored'&&p.error!=null&&p.madeAt.slice(0,10)<=asOf()&&(!p.scoredAt||p.scoredAt.slice(0,10)<=asOf());});
+  var scored=(DB.predictions||[]).filter(function(p){return p.subject==='weight14'&&p.status==='scored'&&p.error!=null&&localDateOf(p.madeAt)<=asOf()&&(!p.scoredAt||localDateOf(p.scoredAt)<=asOf());});
   if(scored.length<3)return {status:'insufficient',n:scored.length,need:[(3-scored.length)+' more scored 14-day forecasts']};
   var err=mean(scored.map(function(p){return p.error;})); // actual - predicted, lb over 14 days
   var biasKcal=err/14*tissueKcalPerLb(); // positive error → lost less than predicted → TDEE lower than assumed

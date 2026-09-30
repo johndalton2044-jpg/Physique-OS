@@ -48,6 +48,7 @@ const hashInput=(rel)=>{const abs=path.join(ROOT,rel);if(!fs.existsSync(abs))ret
 /* THE FOOD DATABASE (\u2248100 MB) is not produced by this build: scripts/food-build.mjs downloads and shards the USDA sources.
    A deployment built from the repository had none (every lookup 404ed on data/food/manifest.json). It is kept in the
    repository at data/food/ and copied here; without it the build warns, and in production mode it fails. */
+/* the food corpus is fetched by the npm prebuild step (scripts/food-fetch.mjs --if-missing): the build itself needs only Node */
 {const srcFood=path.join('data','food'),dstFood=path.join(DIST,'data','food');
   if(!fs.existsSync(path.join(dstFood,'manifest.json'))&&fs.existsSync(path.join(srcFood,'manifest.json'))){fs.mkdirSync(path.dirname(dstFood),{recursive:true});fs.cpSync(srcFood,dstFood,{recursive:true});console.log('food database copied from data/food');}
   /* Reproducibility: the corpus must be exactly the one data/food.lock.json declares, file by file. */
@@ -294,6 +295,28 @@ It needs a long-running Node process, persistent storage and HTTPS (for example 
     METEOSOURCE_API_KEY=<optional secret>  # only for the Meteosource provider; never put it in the app
 
     node server/server.mjs
+
+Connected services (optional; each needs a developer account with the provider):
+
+    CONNECT_TOKEN_KEY=<64 hex characters>   # encrypts stored sign-ins; without it connections are off
+    PHYSIQUE_PUBLIC_URL=https://YOUR-APP    # the provider sends people back to /api/sync/v1/ext/connect/callback
+    FITBIT_CLIENT_ID=... FITBIT_CLIENT_SECRET=...
+    WITHINGS_CLIENT_ID=... WITHINGS_CLIENT_SECRET=...
+    OURA_CLIENT_ID=... OURA_CLIENT_SECRET=...
+    STRAVA_CLIENT_ID=... STRAVA_CLIENT_SECRET=...   # strava.com/settings/api; set the Authorization Callback Domain to YOUR-APP's host
+    STRAVA_VERIFY_TOKEN=<any random string>        # for Strava's webhook handshake
+    STRAVA_SUBSCRIPTION_ID=<id returned when you subscribe, below>
+
+Strava webhooks (optional, for new workouts without pressing Sync) — subscribe once:
+
+    curl -X POST https://www.strava.com/api/v3/push_subscriptions \\
+      -F client_id=$STRAVA_CLIENT_ID -F client_secret=$STRAVA_CLIENT_SECRET \\
+      -F callback_url=https://YOUR-APP/api/sync/v1/ext/webhook?provider=strava -F verify_token=$STRAVA_VERIFY_TOKEN
+
+and set STRAVA_SUBSCRIPTION_ID to the id it returns. Events for any other subscription are refused.
+    FITBIT_SUBSCRIBER_VERIFY=...            # optional: Fitbit webhook verification code
+
+Register \`https://YOUR-APP/api/sync/v1/ext/connect/callback\` as the redirect URI with each provider.
 
 Check it: \`https://YOUR-SERVER/v1/health\` should answer \`{"ok":true,"service":"physique-os-sync",...}\`.
 

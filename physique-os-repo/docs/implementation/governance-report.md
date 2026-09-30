@@ -1,8 +1,8 @@
 # Governance report
 
-Build a75467fc29 · generated 2026-09-28T03:04:00.909Z
+Build e7bd36cfde · generated 2026-09-30T07:21:21.477Z
 
-**0 hard** (fail the build) · **0 soft** (tracked) · **23 passing**
+**0 hard** (fail the build) · **0 soft** (tracked) · **25 passing**
 
 ## Passing
 
@@ -11,6 +11,8 @@ Build a75467fc29 · generated 2026-09-28T03:04:00.909Z
 - **function-declared-twice** — every top-level function is declared once
 - **action-registered-twice** — every action is registered once
 - **chart-without-renderer** — every chart type a surface draws has a renderer (37 renderers)
+- **hard-coded-count** — release counts are derived from the registries
+- **system-authority** — every authority named in SYSTEM_AUTHORITY.md exists in the build (41)
 - **action-before-registry** — no file uses a registry before the file that defines it
 - **goal-ownership** — every goal read goes through canonicalGoal()
 - **sheet-defined-twice** — no sheet is silently redefined

@@ -36,7 +36,7 @@ function jumpTargets(){
   var lastPred=(DB.predictions||[]).filter(function(p){return p.status==='scored';})
     .sort(function(a,b){return String(a.scoredAt)<String(b.scoredAt)?1:-1;})[0];
   if(lastPred)t.push({id:'lastPrediction',label:'Last scored forecast',
-    detail:(lastPred.covered?'within range':'outside range')+' by '+fmtWeight(Math.abs(lastPred.error||0))+' \u00b7 '+ageLabel(String(lastPred.scoredAt).slice(0,10)),
+    detail:(lastPred.covered?'within range':'outside range')+' by '+fmtWeight(Math.abs(lastPred.error||0))+' \u00b7 '+ageLabel(localDateOf(lastPred.scoredAt)),
     date:String(lastPred.dueDate||'').slice(0,10),act:'nav.voi'});
   try{
     var q=attentionQueue();
@@ -68,7 +68,7 @@ function changedSince(days){
       date:o.date,act:'obs.inspect',arg:o.id});
   });
   try{whatChanged(Math.max(days,1)).items.forEach(function(i){
-    if(String(i.at).slice(0,10)<=since)return;
+    if(localDateOf(i.at)<=since)return;
     out.system.push({label:i.what,detail:i.reason,kind:i.kind});});}catch(e){_q(e,'P3');}
   out.nothing=!out.logged.length&&!out.system.length;
   out.note=out.nothing?('Nothing was recorded or decided in the last '+days+' day'+(days===1?'':'s')+'.'):
@@ -310,11 +310,14 @@ function applyRailInsets(){
   /* A VISIBLE card. querySelector('main .card') returned the first card in the document, often one in a hidden tab
      with a zero-size box, so the inset depended on which hidden card came first: 43/43 px in one state, 61/0 px in
      another — and a right inset of 0 puts the chart under the right rail. */
-  var card=null,cards=document.querySelectorAll('main .card');
-  for(var ci=0;ci<cards.length;ci++){if(cards[ci].offsetWidth>0&&cards[ci].getClientRects().length){card=cards[ci];break;}}
-  if(card){var cr=card.getBoundingClientRect(),ccs=getComputedStyle(card);
-    innerL=cr.left+(parseFloat(ccs.paddingLeft)||0)+(parseFloat(ccs.borderLeftWidth)||0);
-    innerR=cr.right-(parseFloat(ccs.paddingRight)||0)-(parseFloat(ccs.borderRightWidth)||0);}
+  /* The WORST case across every visible card: cards differ in padding, and measuring only the first one left charts
+     in a card with less padding a few pixels under the wider left rail (the previous/next pair). */
+  var cards=document.querySelectorAll('main .card'),seen=false,minL=Infinity,maxR=-Infinity;
+  for(var ci=0;ci<cards.length;ci++){var cd=cards[ci];if(!(cd.offsetWidth>0&&cd.getClientRects().length))continue;seen=true;
+    var cr=cd.getBoundingClientRect(),ccs=getComputedStyle(cd);
+    minL=Math.min(minL,cr.left+(parseFloat(ccs.paddingLeft)||0)+(parseFloat(ccs.borderLeftWidth)||0));
+    maxR=Math.max(maxR,cr.right-(parseFloat(ccs.paddingRight)||0)-(parseFloat(ccs.borderRightWidth)||0));}
+  if(seen){innerL=minL;innerR=maxR;}
   var insetL=L?Math.max(0,Math.ceil(L.right+gap-innerL)):0;
   var insetR=R?Math.max(0,Math.ceil(innerR-(R.left-gap))):0;
   var root=document.documentElement.style;

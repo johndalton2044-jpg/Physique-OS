@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "a75467fc29",
+ "build": "e7bd36cfde",
  "models": [
   {
    "id": "adherence",
@@ -559,6 +559,18 @@
    "level": "developer"
   },
   {
+   "id": "connect.revoke",
+   "level": "developer"
+  },
+  {
+   "id": "connect.start",
+   "level": "developer"
+  },
+  {
+   "id": "connect.sync",
+   "level": "developer"
+  },
+  {
    "id": "copy.decision",
    "level": "developer"
   },
@@ -724,6 +736,14 @@
   },
   {
    "id": "dictate",
+   "level": "developer"
+  },
+  {
+   "id": "dup.keepBoth",
+   "level": "developer"
+  },
+  {
+   "id": "dup.keepImported",
    "level": "developer"
   },
   {
@@ -2225,6 +2245,10 @@
   {
    "id": "voice.typed",
    "level": "casual"
+  },
+  {
+   "id": "weather.auto",
+   "level": "developer"
   },
   {
    "id": "weather.history",

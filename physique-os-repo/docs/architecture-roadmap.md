@@ -1,3 +1,7 @@
+> **This is a development history, not the current inventory.** Statements here ("still open", counts, "not yet gated")
+> describe the moment they were written. For what the system is now, see docs/SYSTEM_AUTHORITY.md and the generated
+> catalogue (docs/implementation/baseline.json).
+
 # Architecture roadmap
 
 This document answers a full architecture audit of Physique OS 1.0. The audit's central finding is correct
@@ -2929,3 +2933,76 @@ its entries like corrections (undoable, audited); derived food-log totals cannot
 Still open from the integration specification: live wearable and health-platform connections (OAuth token custody on
 the server, per-source cursors and backfill, webhooks). They need provider accounts and credentials; HealthKit and
 Health Connect need a native app.
+
+## From use: time zones, and panels that did not switch (build 78a18ced8b)
+
+**Time zones.** Timestamps are UTC; record dates are local. Visibility compared timestamp.slice(0,10) with a local date,
+so on a phone in US Eastern time anything logged after 8 pm counted as created "tomorrow" and was hidden from today
+until midnight — the reported self-test failures ("daily series sums intake streams" crashing, "correction supersedes
+without rewriting"). The release checks run in UTC, where the two always agree, so they never saw it. localDateOf()
+now converts every timestamp to its local date before comparing — about 80 places across visibility, corrections,
+retractions, supersession, projection, predictions, injuries, equipment, inventory, experiments and history —
+todayISO() always returns a local date, and a clock held at a date means local noon (noon UTC is already tomorrow east
+of UTC+12). tests/timezones.mjs runs the full self-test at 9:30 pm in New York, 1 am in Kiritimati (UTC+14) and 10:30 pm
+in Pago Pago (UTC−11); it passes in eight zones checked by hand.
+
+**Panels.** A rule written for the Today reorganisation, #view-today{display:flex}, outranked .view{display:none}, so
+Today stayed visible on every panel and the chosen panel rendered below it — the "random position" was Today's height.
+The split layout had the same fault (.view.split-capable{display:grid}). Both are scoped to .active. The browser gate
+now asserts, as a release blocker, that exactly one view is visible after every switch, at the top, in both layouts.
+Rendering panels at the top exposed charts a few pixels under the wider left rail: the rail inset is now measured
+against the worst case across visible cards and recomputed on every tab switch.
+
+## Connected services: OAuth, token custody, sync, webhooks, revocation (server + src/90-connections.js)
+
+The last open item of the integration specification, built and tested against a simulated provider since real
+providers need developer accounts. Server: OAuth 2 with state and PKCE (Fitbit) or client secrets (Withings, Oura); a
+provider is available only when its credentials are set; sign-in details are kept per vault, encrypted at rest with
+AES-256-GCM under CONNECT_TOKEN_KEY (without it connections are off), never sent to the app, and refreshed before they
+expire; syncs backfill 30 days, then run from a stored cursor with a one-day overlap for late data, within each
+provider's range limits; webhooks are verified against the exact request bytes (Fitbit's HMAC-SHA1 scheme, or
+HMAC-SHA256) and only mark "new data waiting"; disconnecting revokes at the provider where it can and deletes the stored
+details. The dispatcher gained redirects (the callback returns to the app) and raw bodies for signed webhooks. App: the
+provider's JSON goes through its existing adapter into importObservations — committed explicitly, since imports
+preview by default — so records carry their provider as the source, repeats are dropped by external id, and a day
+already recorded is not counted twice. tests/connect.mjs drives the whole flow over HTTP against a simulated Fitbit that
+checks the PKCE proof and bearer tokens, and checks that stored sign-ins never appear in plain text. The registry labels
+the three wearables integration-tested; production-validated needs real accounts, and HealthKit and Health Connect
+still need a native app.
+
+## Strava (server connections + adapter + ingestion)
+
+Strava is workouts, not daily totals, so it needed more than a fourth provider. Server: Strava OAuth (client secret,
+an absolute expiry, the athlete id kept for webhooks), activities by page within the window, per-second streams for
+the fifteen newest workouts of ten minutes or more (inside Strava's default 100 requests per 15 minutes; a 429 is
+reported with the usage header), deauthorisation on disconnect; webhooks by Strava's scheme — the subscription
+handshake echoes hub.challenge for the right verify token, and since Strava does not sign events, an event is accepted
+only for this server's subscription and a known athlete; creates and updates mark data waiting, deletions are queued
+for the app, and an athlete's deauthorisation removes the connection. App: endurance activities become cardio with
+modality, moving time, distance, heart rate and measured power; weight training, CrossFit, yoga and Pilates become
+sessions; deletions at Strava retract, edits supersede; a hand-logged workout within 20% of an imported one on the same
+day is flagged, with "keep the imported one" or "keep both". cardioSteadySegment() finds the steadiest ten minutes in
+the streams (moving ≥ 95%, speed CV < 8%, heart-rate drift < 8 bpm) and the fitness model prefers it to whole-workout
+averages that include the warm-up.
+
+Two import defects surfaced on the way and were fixed for every source: imports dropped each row's method and metadata
+(a workout would have arrived as bare minutes), and the day-total overlap rule would have discarded a second workout on
+the same day — records carrying their own activity id now bypass it. tests/strava.mjs (in the connect gate) covers all
+of it against a simulated Strava.
+
+## Weather: fast population and automatic updates
+
+A refresh asked for 21 days of hourly data across fifteen variables (504 rows), though the screens use hourly data
+only for today and the next day or two; the 14-day view comes from daily data. Open-Meteo's past_hours/forecast_hours
+limit hourly rows while daily ranges stay, so a refresh now asks for 24 hours back and 48 ahead hourly with 7 past and
+14 future days: the forecast response falls from 48.6 KB to 11.3 KB (77% smaller) and the saved copy with it. Air
+quality asks for a day back and three ahead, and is skipped when under an hour old. Requests end after 25 s.
+
+The saved forecast shows at once (within about a third of a second of opening, before any network answer) and is
+refreshed in the background when the app opens, comes back to the foreground or regains its connection, and every
+30 minutes while open — only when older than 30 minutes, never twice at once, never while hidden, silently; the card
+says "updating…". At launch the server is woken in parallel, so a sleeping free-tier server starts while the saved
+forecast is on screen. A switch in the Weather sheet turns automatic updates off.
+
+The auto-updater's interval held Node open in two scripts that relied on the event loop draining (the cloud end-to-end
+test and the baseline script); both now close their simulated windows and exit, and no other such script remains.

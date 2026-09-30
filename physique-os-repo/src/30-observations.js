@@ -17,8 +17,8 @@ function withAsOf(date,fn){var prev=_ASOF,prevNow=_NOW_OVERRIDE;_ASOF=date;_NOW_
    Outside replay (_ASOF unset) the flags win, because "now" is after every suppression. */
 function _suppressedBy(o,date){
   if(!o)return true;
-  if(o.retracted){var ra=o.retractedAt;if(!_ASOF||!ra||String(ra).slice(0,10)<=date)return true;}
-  if(o.correctedBy){var ca=o.correctedAt||_correctionDate(o);if(!_ASOF||!ca||String(ca).slice(0,10)<=date)return true;}
+  if(o.retracted){var ra=o.retractedAt;if(!_ASOF||!ra||localDateOf(ra)<=date)return true;}
+  if(o.correctedBy){var ca=o.correctedAt||_correctionDate(o);if(!_ASOF||!ca||localDateOf(ca)<=date)return true;}
   return false;
 }
 /* Fallback for records written before correctedAt was stored: find the superseding record and use its
@@ -32,16 +32,16 @@ function _correctionDate(o){
 function _visible(o,date){
   if(!o)return false;
   if(o.date>date)return false;
-  if(o.createdAt&&o.createdAt.slice(0,10)>date)return false;
+  if(o.createdAt&&localDateOf(o.createdAt)>date)return false;
   if(_suppressedBy(o,date))return false;
   return true;
 }
 /* knowledge-date rule: during replay an entity is visible only if it had been created by the as-of day.
    Effective dates (a phase's startDate, an intervention's date) say when something applied; creation dates say
    when the system learned of it. Replay must use the latter. Outside replay everything is visible. */
-function _knownBy(x,date){if(!_ASOF||!x)return true;var c=x.createdAt||x.at||null;if(!c)return true;return String(c).slice(0,10)<=date;}
+function _knownBy(x,date){if(!_ASOF||!x)return true;var c=x.createdAt||x.at||null;if(!c)return true;return localDateOf(c)<=date;}
 /* phaseAsOf: reconstruct a phase as it stood on `date` by reverting edits recorded after that day (updatePhase/endPhase keep a history of {at, before}). */
-function phaseAsOf(ph,date){if(!_ASOF||!ph||!ph.history||!ph.history.length)return ph;var later=ph.history.filter(function(h){return String(h.at).slice(0,10)>date;});if(!later.length)return ph;var copy=Object.assign({},ph);for(var i=later.length-1;i>=0;i--){var before=later[i].before||{};Object.keys(before).forEach(function(k){copy[k]=before[k];});}copy._reconstructed=date;return copy;}
+function phaseAsOf(ph,date){if(!_ASOF||!ph||!ph.history||!ph.history.length)return ph;var later=ph.history.filter(function(h){return localDateOf(h.at)>date;});if(!later.length)return ph;var copy=Object.assign({},ph);for(var i=later.length-1;i>=0;i--){var before=later[i].before||{};Object.keys(before).forEach(function(k){copy[k]=before[k];});}copy._reconstructed=date;return copy;}
 function activePhase(date){date=date||asOf();var ph=(DB.phases||[]).filter(function(p){return _knownBy(p,date);}).map(function(p){return phaseAsOf(p,date);}).filter(function(p){return p.status!=='archived'&&p.startDate<=date&&(!p.endDate||p.endDate>=date);});return ph.length?ph[ph.length-1]:null;}
 function phaseAt(date){var ph=(DB.phases||[]).filter(function(p){return p.startDate<=date&&(!p.endDate||p.endDate>=date);});return ph.length?ph[ph.length-1]:null;}
 function _phaseHistory(ph,patch){var before={};Object.keys(patch).forEach(function(k){before[k]=ph[k]===undefined?null:ph[k];});ph.history=ph.history||[];ph.history.push({at:nowISO(),before:before});Object.keys(patch).forEach(function(k){ph[k]=patch[k];});}
@@ -239,9 +239,9 @@ function retractSession(id){var s=DB.sessions.filter(function(x){return x.id===i
 function _sessionVisible(s,date){
   if(!s)return false;
   if(s.date>date)return false;
-  if(s.createdAt&&s.createdAt.slice(0,10)>date)return false;
-  if(s.retracted){var ra=s.retractedAt;if(!_ASOF||!ra||String(ra).slice(0,10)<=date)return false;}
-  if(s.supersededBy){var sa=s.supersededAt;if(!_ASOF||!sa||String(sa).slice(0,10)<=date)return false;}
+  if(s.createdAt&&localDateOf(s.createdAt)>date)return false;
+  if(s.retracted){var ra=s.retractedAt;if(!_ASOF||!ra||localDateOf(ra)<=date)return false;}
+  if(s.supersededBy){var sa=s.supersededAt;if(!_ASOF||!sa||localDateOf(sa)<=date)return false;}
   return true;
 }
 /* Editing a session supersedes it rather than overwriting it, exactly as a food-log edit does. A training

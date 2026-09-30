@@ -231,7 +231,7 @@ function programVersions(){
     out.push({at:String(e.at),key:e.data.key,kind:e.data.def===null?'reset':'edited',change:e.data.def===null?'Reset to the built-in plan':('Edited: '+(e.data.change||'changes')),source:'you'});});
   out.sort(function(a,b){return a.at<b.at?-1:1;});
   var sessions=(DB.sessions||[]).filter(function(s){return !s.retracted&&!s.supersededBy;});
-  out.forEach(function(v,i){v.version=i+1;v.from=v.at.slice(0,10);v.to=i<out.length-1?out[i+1].at.slice(0,10):null;
+  out.forEach(function(v,i){v.version=i+1;v.from=localDateOf(v.at);v.to=i<out.length-1?localDateOf(out[i+1].at):null;
     var under=sessions.filter(function(s){return s.date>=v.from&&(!v.to||s.date<v.to);});
     v.sessions=under.length;v.sets=under.reduce(function(a,s){return a+(s.sets||[]).length;},0);
     v.label=((PROGRAMS[v.key]||customPrograms()[v.key]||{}).label||v.key);});

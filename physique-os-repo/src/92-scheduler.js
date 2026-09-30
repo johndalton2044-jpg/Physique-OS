@@ -29,7 +29,7 @@ var JOBS=[
      return {ok:true,changed:0,text:'food database '+_foodManifest.databaseVersion+(DB.settings.foodDatabaseVersion===_foodManifest.databaseVersion?' (unchanged)':' (changed \u2014 a context tag was recorded)')};}}
 ];
 function jobState(id){return (DB.settings.jobs||{})[id]||null;}
-function jobDue(j){var st=jobState(j.id);if(!st||!st.at)return true;return daysBetween(st.at.slice(0,10),todayISO())>=j.everyDays;}
+function jobDue(j){var st=jobState(j.id);if(!st||!st.at)return true;return daysBetween(localDateOf(st.at),todayISO())>=j.everyDays;}
 function runJob(id,opts){
   opts=opts||{};var j=JOBS.filter(function(x){return x.id===id;})[0];if(!j)return null;
   var finish=function(res){
@@ -59,7 +59,7 @@ function backgroundJobs(){
   }).map(function(j){
     var st=jobState(j.id);
     return {id:j.id,label:j.label||j.id,every:j.every||j.everyDays||null,
-      lastRun:st&&st.at?String(st.at).slice(0,10):null,due:jobDue(j)};
+      lastRun:st&&st.at?localDateOf(st.at):null,due:jobDue(j)};
   });
 }
 function runBackgroundJobs(){

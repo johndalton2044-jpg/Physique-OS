@@ -316,6 +316,16 @@ for(const vp of VIEWPORTS){
     await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.dispatchAct('settings.detail','insightful');});
     if(!ok)add('P1','nav','nav.charts: the chart catalogue does not open from the palette with its charts drawn','');else good('nav','nav.charts: palette \u2192 chart catalogue, drawn from the record','nav.charts');
   }
+  /* NAVIGATION: after every switch exactly one view is visible, the active one, starting at the top — in the normal
+     and the split layout. Today stayed visible on every panel (an ID rule outranked the rule that hides views). */
+  { const f=[];
+    for(const layout of ['auto','split']){await page.evaluate(l=>{window.closeSheet&&window.closeSheet();document.documentElement.setAttribute('data-layout',l);},layout);
+      for(const t of ['log','plan','today','food','learn','tools','today']){await page.evaluate(x=>{window.scrollTo(0,1200);window.switchTab(x);},t);await page.waitForTimeout(250);
+        const st=await page.evaluate(()=>({tab:window._TAB,vis:[...document.querySelectorAll('[id^="view-"]')].filter(v=>getComputedStyle(v).display!=='none'&&v.offsetHeight>0).map(v=>v.id.replace('view-','')),top:(document.getElementById('view-'+window._TAB)||{getBoundingClientRect:()=>({top:9999})}).getBoundingClientRect().top}));
+        if(st.vis.length!==1||st.vis[0]!==t)f.push(layout+'/'+t+': visible '+st.vis.join('+'));
+        else if(st.top>400)f.push(layout+'/'+t+': the panel starts '+Math.round(st.top)+' px down');}}
+    await page.evaluate(()=>document.documentElement.setAttribute('data-layout',window.DB.settings.layout||'auto'));
+    if(f.length)add('P0','navigation',`switching panels shows the wrong views on ${vp.name}`,f.slice(0,4).join('; '));else good('navigation','one view at a time, at the top, in both layouts','panel switching');}
   /* SOURCES: from the palette; removing previews first, and cancelling removes nothing. */
   if(vp.name==='iPhone 15'){const f=[];
     await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.openCmdk();});await page.waitForTimeout(100);await page.fill('#cmdkInput','your data sources');await page.waitForTimeout(150);await page.keyboard.press('Enter');await page.waitForTimeout(300);

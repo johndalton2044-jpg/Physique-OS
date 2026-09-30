@@ -23,7 +23,8 @@ const run=(cmd)=>{const r=spawnSync(process.platform==='win32'?'npm.cmd':'npm',[
 console.log('running the gates \u2014 this takes several minutes');
 /* ---------------- gates, in order ---------------- */
 const G={};
-const GATES=['build','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','direction','server','perf','cloud:e2e','yields:gate','baseline','verify'];
+function manifestBuildId(){try{return JSON.parse(fs.readFileSync('dist/version.json','utf8')).build;}catch(e){return null;}}
+const GATES=['build','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','direction','server','timezones','connect','perf','cloud:e2e','yields:gate','baseline','verify'];
 /* --from-results: use gates recorded by tests/gate-record.mjs, ONLY if every one passed against the identical build now in
    dist/. Anything else — a missing gate, a failure, a different build — and the gates are run here as before. */
 let reused=false;
@@ -153,7 +154,10 @@ item(16,'Accessibility verification',G.browser.ok&&G.audit.ok,'browser gate: con
 item(17,'Responsive verification',G.browser.ok,'browser gate: 6 viewports \u00d7 12 tabs and every form sheet');
 item(18,'Visual regression verification',G.visual.ok,G.visual.summary);
 item(19,'Export/import round trips',!rt.__error&&Object.values(rt).every(v=>v==='ok'||v==='nothing to export'),JSON.stringify(rt));
-item(20,'Model reproducibility',G.visual.ok,'25 models, identical results and run identities across independent loads at a pinned time');
+/* the count comes from the live registry, via the baseline written for THIS build; a hand-written "25" drifted */
+const _bl=fs.existsSync('docs/implementation/baseline.json')?JSON.parse(fs.readFileSync('docs/implementation/baseline.json','utf8')):null;
+const _blOk=!!(_bl&&manifestBuildId()&&_bl.sourceBuildId===manifestBuildId());
+item(20,'Model reproducibility',G.visual.ok&&_blOk,(_bl?_bl.registries.models:'?')+' models (from the live registry'+(_blOk?'':', but the baseline is from another build')+'), identical results and run identities across independent loads at a pinned time');
 item(21,'Production build',G.build.ok&&G.verify.ok,G.verify.summary);
 const manifest=fs.existsSync('dist/BUILD-MANIFEST.json')?JSON.parse(fs.readFileSync('dist/BUILD-MANIFEST.json','utf8')):null;
 item(22,'Release manifest',!!manifest,manifest?('build '+manifest.build+', release '+manifest.release+', '+(manifest.inputs||[]).length+' hashed inputs'):'no manifest');

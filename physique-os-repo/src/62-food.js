@@ -43,7 +43,7 @@ function normalizeFood(f){
   if(!f.conversionConfidence)f.conversionConfidence=f.basis==='g'?'exact':(f.basis==='ml'?'volume-only':'serving-only');
   return f;
 }
-function localFoods(){var date=_ASOF;return seedFoods().concat((DB.foods||[]).filter(function(f){return !date||!f.createdAt||f.createdAt.slice(0,10)<=date;}).map(function(f){return normalizeFood(Object.assign({kind:'user',source:'USER'},f));}),(DB.recipes||[]).filter(function(r){return !date||!r.createdAt||r.createdAt.slice(0,10)<=date;}).map(function(r){return recipeAsFood(r);}));}
+function localFoods(){var date=_ASOF;return seedFoods().concat((DB.foods||[]).filter(function(f){return !date||!f.createdAt||localDateOf(f.createdAt)<=date;}).map(function(f){return normalizeFood(Object.assign({kind:'user',source:'USER'},f));}),(DB.recipes||[]).filter(function(r){return !date||!r.createdAt||localDateOf(r.createdAt)<=date;}).map(function(r){return recipeAsFood(r);}));}
 function foodSearchLocal(q,limit){
   var toks=foodTokens(q);if(!toks.length)return [];
   var res=[];localFoods().forEach(function(f){var name=f.name.toLowerCase();var nt=foodTokens(f.name+' '+(f.category||''));var head=foodTokens(f.name.split(',')[0]);var score=0;toks.forEach(function(t){if(head.indexOf(t)>=0)score+=5;else if(nt.indexOf(t)>=0)score+=3;else if(nt.some(function(x){return x.indexOf(t)===0;}))score+=2;else if(name.indexOf(t)>=0)score+=1;else score-=4;});if(score>0)res.push({f:f,score:score+(f.kind==='user'||f.kind==='recipe'?1:0)-name.length/200-(/,\s*(dried|dry|flour|powder)/i.test(f.name)?1.5:0)});});
@@ -183,9 +183,9 @@ function logFood(o){
    deleted — the record would be rewritten by the present. */
 function _foodLogVisible(l,date){
   if(!l)return false;
-  if(l.createdAt&&l.createdAt.slice(0,10)>date)return false;
-  if(l.retracted){var ra=l.retractedAt;if(!_ASOF||!ra||String(ra).slice(0,10)<=date)return false;}
-  if(l.supersededBy){var sa=l.supersededAt;if(!_ASOF||!sa||String(sa).slice(0,10)<=date)return false;}
+  if(l.createdAt&&localDateOf(l.createdAt)>date)return false;
+  if(l.retracted){var ra=l.retractedAt;if(!_ASOF||!ra||localDateOf(ra)<=date)return false;}
+  if(l.supersededBy){var sa=l.supersededAt;if(!_ASOF||!sa||localDateOf(sa)<=date)return false;}
   return true;
 }
 function removeFoodLog(id){

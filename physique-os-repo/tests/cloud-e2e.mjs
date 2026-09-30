@@ -30,7 +30,7 @@ function mk(name){
     }});
   return dom.window;
 }
-const A=mk('A'),B=mk('B');
+const A=mk('A'),B=mk('B');globalThis.__windows=(globalThis.__windows||[]).concat([A,B]);
 await new Promise(r=>setTimeout(r,600));
 for(const w of [A,B]){w.DB=w.emptyDB();w._EVENTS.length=0;w.DB.settings.cloud={url:URL_};w._memoInvalidate();}
 A.DB.settings.deviceId='device-A';B.DB.settings.deviceId='device-B';
@@ -102,4 +102,7 @@ console.log('deleted:',JSON.stringify(del),'| dir gone:',!fs.existsSync(DATA+'/v
 console.log('--- server log is incapable of carrying payloads ---');
 console.log('log mentions a weight or a value:',/221\.4|weight|ciphertext/.test(serverLog));
 console.log('log lines:',serverLog.trim().split('\n').length);
+/* close every simulated window: an app that keeps timers (the weather auto-updater) would otherwise hold Node open */
+for(const w of (globalThis.__windows||[])){try{w.close();}catch(e){}}
 stop();try{globalThis.__srv2&&globalThis.__srv2.kill();}catch(e){}
+setTimeout(()=>process.exit(0),200).unref();

@@ -380,10 +380,10 @@ body.sheet-open .fab,body.sheet-open .rail-right,body.sheet-open .rail-left{opac
    than leaving two half-columns with nothing readable in either. */
 html[data-layout="split"] .view{max-width:1180px;margin:0 auto}
 @media (min-width:1024px){
-  html[data-layout="split"] .view.split-capable{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+  html[data-layout="split"] .view.split-capable.active{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
   html[data-layout="split"] .view.split-capable > .split-aside{position:sticky;top:64px}
 }
-@media (max-width:1023px){html[data-layout="split"] .view.split-capable{display:block}}
+@media (max-width:1023px){html[data-layout="split"] .view.split-capable.active{display:block}}
 /* Both rails share one bottom offset, one inset and one z-index. They had 78px against 88px and 40 against
    60, which put the two sides of the screen at visibly different heights. */
 .rail-left{position:fixed;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center}
@@ -846,7 +846,8 @@ tr.wx-today td{font-weight:700}
 .feat{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)}.feat:first-child{border-top:0}.feat .ic{color:var(--accent);margin-top:2px}.feat-body{flex:1;min-width:0}
 #undoFab.is-empty{opacity:.45}
 /* Today: the summary first, then what to do, then the rest. */
-#view-today{display:flex;flex-direction:column}#decisionZone{order:1}#actionsZone{order:2}#attentionZone{order:3}#vitalsZone{order:4}#forecastZone{order:5}#dataQualityZone{order:6}#upcomingZone{order:7}#todayTechZone{order:8}
+/* scoped to .active: an ID rule outranks .view{display:none}, so Today showed on every panel with the others below it */
+#view-today.active{display:flex;flex-direction:column}#decisionZone{order:1}#actionsZone{order:2}#attentionZone{order:3}#vitalsZone{order:4}#forecastZone{order:5}#dataQualityZone{order:6}#upcomingZone{order:7}#todayTechZone{order:8}
 .today-hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 14px;align-items:center}.hero-photo{flex:none;border:0;padding:0;background:none;border-radius:14px;overflow:hidden;width:96px;height:96px}
 .hero-photo img{width:96px;height:96px;object-fit:cover;display:block;background:var(--surface-2)}.hero-main{flex:1;min-width:0}.hero-decision{margin:4px 0 8px;font-size:calc(15px*var(--ts,1))}
 .hero-nums{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}/* outlined, not filled: secondary text on the lighter fill fell to 4.19:1 (4.5 needed) */
@@ -860,9 +861,9 @@ tr.wx-today td{font-weight:700}
 .qa-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;font:inherit}
 .qa-chip .ic{color:var(--accent)}.qa-more{color:var(--text-2)}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-w6Pb0nX1fEIP+gHITEUlVNMDN+7TsGaK0ngV46ALef8='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="a75467fc29 2026-09-28T03:01:38.073Z">
-<meta name="physique-release" content="94c2f8489343">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AjPfrn4vRyqwOClXAds2G2BIkqDm4yXeuX/jC0AoiWk='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="e7bd36cfde 2026-09-30T07:19:07.070Z">
+<meta name="physique-release" content="9d3a2f8f6320">
 </head>
 <body>
 
@@ -1067,9 +1068,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='a75467fc29';        // hash of src/ — identifies the application code
-var RELEASE_ID='94c2f8489343';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-28T03:01:38.073Z';
+var BUILD_ID='e7bd36cfde';        // hash of src/ — identifies the application code
+var RELEASE_ID='9d3a2f8f6320';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-09-30T07:19:07.070Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -1092,12 +1093,18 @@ bySeverity:_SWALLOWED.bySeverity,critical:_SWALLOWED.critical.slice(-5),
 note:_SWALLOWED.count?(_SWALLOWED.count+' error'+(_SWALLOWED.count===1?'':'s')+' caught and contained'+(top.length?(' — most common: '+top[0].message):'')):'nothing has failed quietly'};
 }
 var _idSeq=0;
+var _LOCAL_DAY_CACHE={};
+function localDateOf(ts){if(ts==null||ts==='')return null;var s=String(ts);if(s.length===10)return s;var c=_LOCAL_DAY_CACHE[s];if(c)return c;
+var d=new Date(s);if(isNaN(d.getTime()))return s.slice(0,10);
+var out=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');_LOCAL_DAY_CACHE[s]=out;return out;}
 function uid(prefix){_idSeq++;return (prefix||'id')+'-'+Date.now().toString(36)+'-'+(_idSeq).toString(36)+'-'+Math.random().toString(36).slice(2,6);}
 function pad2(n){return String(n).padStart(2,'0');}
 function isoDate(d){d=d||new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
 var _NOW_OVERRIDE=null; // replay + tests can pin "today"
-function todayISO(){return _NOW_OVERRIDE||isoDate(new Date());}
-function nowISO(){return _NOW_OVERRIDE?(_NOW_OVERRIDE+'T12:00:00.000Z'):new Date().toISOString();}
+function todayISO(){return _NOW_OVERRIDE?localDateOf(_NOW_OVERRIDE):isoDate(new Date());}
+function nowISO(){if(!_NOW_OVERRIDE)return new Date().toISOString();var o=String(_NOW_OVERRIDE);
+if(!/^\d{4}-\d{2}-\d{2}$/.test(o)){var d=new Date(o);return isNaN(d.getTime())?o:d.toISOString();}   /* a full timestamp is used as given */
+var p=o.split('-');return new Date(+p[0],+p[1]-1,+p[2],12,0,0).toISOString();}
 function parseISO(s){if(!s)return null;var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));if(!m)return null;return new Date(+m[1],+m[2]-1,+m[3]);}
 function addDays(iso,n){var d=parseISO(iso);if(!d)return null;d.setDate(d.getDate()+n);return isoDate(d);}
 function daysBetween(a,b){var da=parseISO(a),db=parseISO(b);if(!da||!db)return null;return Math.round((db-da)/86400000);}
@@ -1846,7 +1853,7 @@ lastSnapshotAt:_archiveMeta.lastSnapshotAt,lastSnapshotSeq:_archiveMeta.lastSnap
 compacted:_archiveMeta.archived>0,
 healthy:_EVENTS.length<=EVENT_WINDOW,
 note:_archiveMeta.archived?
-('History before '+String(_archiveMeta.lastSnapshotAt).slice(0,10)+' is folded into a snapshot; the original events are kept in the archive and nothing was deleted.'):
+('History before '+localDateOf(_archiveMeta.lastSnapshotAt)+' is folded into a snapshot; the original events are kept in the archive and nothing was deleted.'):
 'The whole history fits in the working window; nothing has been compacted yet.'};
 }
 function compactEvents(force){
@@ -2059,14 +2066,14 @@ var sorted=_EVENTS.slice().sort(function(a,b){return String(a.at)<String(b.at)?-
 var firstSnap=sorted.filter(function(e){return e.type==='record.snapshot';})[0];
 var firstEvent=sorted[0];
 if(!firstSnap)
-return {date:String(firstEvent.at).slice(0,10),known:true,adopted:false,
+return {date:localDateOf(firstEvent.at),known:true,adopted:false,
 reason:'the event log starts here and nothing was adopted from outside it'};
 var earlierReal=sorted.filter(function(e){
 return e.type!=='record.snapshot'&&String(e.at)<String(firstSnap.at);})[0];
 if(earlierReal)
-return {date:String(earlierReal.at).slice(0,10),known:true,adopted:false,
+return {date:localDateOf(earlierReal.at),known:true,adopted:false,
 reason:'events predate the adoption snapshot, so history is reconstructable from there'};
-return {date:String(firstSnap.at).slice(0,10),known:true,adopted:true,
+return {date:localDateOf(firstSnap.at),known:true,adopted:true,
 reason:(firstSnap.data&&firstSnap.data.reason)||'this record was adopted into the event history on this date',
 note:'Observations before this date are in the record and remain visible. What cannot be reconstructed is the profile and settings as they stood then — the snapshot carries only their values at adoption.'};
 }
@@ -2092,7 +2099,7 @@ return (a.seq||0)-(b.seq||0);
 var applied=0,skipped=0;
 for(var i=0;i<list.length;i++){
 var e=list[i];
-if(opts.asOf&&e.type!=='record.snapshot'&&String(e.at).slice(0,10)>opts.asOf){skipped++;continue;}
+if(opts.asOf&&e.type!=='record.snapshot'&&localDateOf(e.at)>opts.asOf){skipped++;continue;}
 var t=EVENT_TYPES[e.type];
 if(!t){skipped++;continue;}
 try{t.apply(db,e);applied++;}catch(err){_q(err,'P1');skipped++;}
@@ -2108,8 +2115,8 @@ function _liveAt(db,date){
 var vis=function(x,supKey,supAtKey){
 if(!x)return false;
 if(x.date&&x.date>date)return false;
-if(x.createdAt&&String(x.createdAt).slice(0,10)>date)return false;
-if(x.retracted&&(!x.retractedAt||String(x.retractedAt).slice(0,10)<=date))return false;
+if(x.createdAt&&localDateOf(x.createdAt)>date)return false;
+if(x.retracted&&(!x.retractedAt||localDateOf(x.retractedAt)<=date))return false;
 if(supKey&&x[supKey]&&(!x[supAtKey]||String(x[supAtKey]).slice(0,10)<=date))return false;
 return true;
 };
@@ -2573,8 +2580,8 @@ function asOf(){return _ASOF||todayISO();}
 function withAsOf(date,fn){var prev=_ASOF,prevNow=_NOW_OVERRIDE;_ASOF=date;_NOW_OVERRIDE=date;_memoInvalidate();try{return fn();}finally{_ASOF=prev;_NOW_OVERRIDE=prevNow;_memoInvalidate();}}
 function _suppressedBy(o,date){
 if(!o)return true;
-if(o.retracted){var ra=o.retractedAt;if(!_ASOF||!ra||String(ra).slice(0,10)<=date)return true;}
-if(o.correctedBy){var ca=o.correctedAt||_correctionDate(o);if(!_ASOF||!ca||String(ca).slice(0,10)<=date)return true;}
+if(o.retracted){var ra=o.retractedAt;if(!_ASOF||!ra||localDateOf(ra)<=date)return true;}
+if(o.correctedBy){var ca=o.correctedAt||_correctionDate(o);if(!_ASOF||!ca||localDateOf(ca)<=date)return true;}
 return false;
 }
 function _correctionDate(o){
@@ -2586,12 +2593,12 @@ return (succ.correction&&succ.correction.at)||succ.createdAt||succ.at||null;
 function _visible(o,date){
 if(!o)return false;
 if(o.date>date)return false;
-if(o.createdAt&&o.createdAt.slice(0,10)>date)return false;
+if(o.createdAt&&localDateOf(o.createdAt)>date)return false;
 if(_suppressedBy(o,date))return false;
 return true;
 }
-function _knownBy(x,date){if(!_ASOF||!x)return true;var c=x.createdAt||x.at||null;if(!c)return true;return String(c).slice(0,10)<=date;}
-function phaseAsOf(ph,date){if(!_ASOF||!ph||!ph.history||!ph.history.length)return ph;var later=ph.history.filter(function(h){return String(h.at).slice(0,10)>date;});if(!later.length)return ph;var copy=Object.assign({},ph);for(var i=later.length-1;i>=0;i--){var before=later[i].before||{};Object.keys(before).forEach(function(k){copy[k]=before[k];});}copy._reconstructed=date;return copy;}
+function _knownBy(x,date){if(!_ASOF||!x)return true;var c=x.createdAt||x.at||null;if(!c)return true;return localDateOf(c)<=date;}
+function phaseAsOf(ph,date){if(!_ASOF||!ph||!ph.history||!ph.history.length)return ph;var later=ph.history.filter(function(h){return localDateOf(h.at)>date;});if(!later.length)return ph;var copy=Object.assign({},ph);for(var i=later.length-1;i>=0;i--){var before=later[i].before||{};Object.keys(before).forEach(function(k){copy[k]=before[k];});}copy._reconstructed=date;return copy;}
 function activePhase(date){date=date||asOf();var ph=(DB.phases||[]).filter(function(p){return _knownBy(p,date);}).map(function(p){return phaseAsOf(p,date);}).filter(function(p){return p.status!=='archived'&&p.startDate<=date&&(!p.endDate||p.endDate>=date);});return ph.length?ph[ph.length-1]:null;}
 function phaseAt(date){var ph=(DB.phases||[]).filter(function(p){return p.startDate<=date&&(!p.endDate||p.endDate>=date);});return ph.length?ph[ph.length-1]:null;}
 function _phaseHistory(ph,patch){var before={};Object.keys(patch).forEach(function(k){before[k]=ph[k]===undefined?null:ph[k];});ph.history=ph.history||[];ph.history.push({at:nowISO(),before:before});Object.keys(patch).forEach(function(k){ph[k]=patch[k];});}
@@ -2764,9 +2771,9 @@ function retractSession(id){var s=DB.sessions.filter(function(x){return x.id===i
 function _sessionVisible(s,date){
 if(!s)return false;
 if(s.date>date)return false;
-if(s.createdAt&&s.createdAt.slice(0,10)>date)return false;
-if(s.retracted){var ra=s.retractedAt;if(!_ASOF||!ra||String(ra).slice(0,10)<=date)return false;}
-if(s.supersededBy){var sa=s.supersededAt;if(!_ASOF||!sa||String(sa).slice(0,10)<=date)return false;}
+if(s.createdAt&&localDateOf(s.createdAt)>date)return false;
+if(s.retracted){var ra=s.retractedAt;if(!_ASOF||!ra||localDateOf(ra)<=date)return false;}
+if(s.supersededBy){var sa=s.supersededAt;if(!_ASOF||!sa||localDateOf(sa)<=date)return false;}
 return true;
 }
 function updateSession(id,patch){
@@ -2987,7 +2994,7 @@ if(typeof p[k]==='object')return;
 if(prev[k]!==undefined&&prev[k]!==p[k])changed.push({field:k,from:prev[k],to:p[k]});
 prev[k]=p[k];
 });
-if(changed.length)out.push({at:e.at,date:String(e.at).slice(0,10),changed:changed,
+if(changed.length)out.push({at:e.at,date:localDateOf(e.at),changed:changed,
 source:e.type==='record.snapshot'?'baseline':'edited'});
 });
 return out.sort(function(a,b){return a.at<b.at?1:-1;});
@@ -3120,7 +3127,7 @@ return insufficient('tdee_prior',['profile: age, sex, height, weight'],{empirica
 });
 }
 function tdeeCalibration(){ // from scored TDEE-implied predictions: bias = mean signed error of weight forecasts converted to kcal
-var scored=(DB.predictions||[]).filter(function(p){return p.subject==='weight14'&&p.status==='scored'&&p.error!=null&&p.madeAt.slice(0,10)<=asOf()&&(!p.scoredAt||p.scoredAt.slice(0,10)<=asOf());});
+var scored=(DB.predictions||[]).filter(function(p){return p.subject==='weight14'&&p.status==='scored'&&p.error!=null&&localDateOf(p.madeAt)<=asOf()&&(!p.scoredAt||localDateOf(p.scoredAt)<=asOf());});
 if(scored.length<3)return {status:'insufficient',n:scored.length,need:[(3-scored.length)+' more scored 14-day forecasts']};
 var err=mean(scored.map(function(p){return p.error;})); // actual - predicted, lb over 14 days
 var biasKcal=err/14*tissueKcalPerLb(); // positive error → lost less than predicted → TDEE lower than assumed
@@ -4091,7 +4098,7 @@ neck:{label:'Neck',patterns:['vertical push','carry'],muscles:['traps']}
 };
 function injuries(){return (DB.settings.injuries||[]).filter(function(i){return _knownBy(i,asOf());});}
 function activeInjuries(){
-return injuries().filter(function(i){return !i.resolvedAt||String(i.resolvedAt).slice(0,10)>asOf();});
+return injuries().filter(function(i){return !i.resolvedAt||localDateOf(i.resolvedAt)>asOf();});
 }
 function recordInjury(o){
 o=o||{};
@@ -4228,9 +4235,9 @@ burden:0.2,value:0.5,act:'injury.review',arg:l.injury.id};
 knowledge:function(st){
 return injuries().filter(function(i){return i.resolvedAt;}).slice(-6).map(function(i){
 return {kind:'injury',subject:(BODY_REGIONS[i.region]||{}).label||i.region,
-statement:'settled after '+daysBetween(i.since,String(i.resolvedAt).slice(0,10))+' days',
+statement:'settled after '+daysBetween(i.since,localDateOf(i.resolvedAt))+' days',
 confidence:'low',evidence:'one episode',context:'what you were doing at the time',
-lastValidated:String(i.resolvedAt).slice(0,10),
+lastValidated:localDateOf(i.resolvedAt),
 transfers:'one episode is a data point, not a pattern; a recurrence in the same region is the thing worth noticing'};
 });
 }
@@ -4560,8 +4567,8 @@ limits:'optimising a plan across cost as well as physiology',burden:0.4,value:0.
 function inventoryState(){
 var on=asOf();
 var inv=(DB.settings.inventory||[]).filter(function(i){
-if(i.createdAt&&String(i.createdAt).slice(0,10)>on)return false;
-return !i.removedAt||String(i.removedAt).slice(0,10)>on;
+if(i.createdAt&&localDateOf(i.createdAt)>on)return false;
+return !i.removedAt||localDateOf(i.removedAt)>on;
 });
 if(!inv.length)return {status:'insufficient',need:['items you want tracked'],
 headline:'nothing tracked',why:'Depletion is forecast from the rate you actually log, so an item needs to exist first.'};
@@ -4923,7 +4930,7 @@ var on=asOf();
 var cur=DB.settings.skills||{};
 var out={};
 Object.keys(cur).forEach(function(k){
-if(!cur[k].at||String(cur[k].at).slice(0,10)<=on)out[k]=cur[k];
+if(!cur[k].at||localDateOf(cur[k].at)<=on)out[k]=cur[k];
 });
 try{
 var proj=projectEvents(_EVENTS,{asOf:on}).db;
@@ -5042,7 +5049,7 @@ function movementLog(opts){
 opts=opts||{};
 return (DB.settings.movements||[]).filter(function(m){
 if(m.retracted)return false;
-if(m.createdAt&&String(m.createdAt).slice(0,10)>asOf())return false;
+if(m.createdAt&&localDateOf(m.createdAt)>asOf())return false;
 if(m.date>asOf())return false;
 if(opts.from&&m.date<opts.from)return false;
 if(opts.to&&m.date>opts.to)return false;
@@ -5393,7 +5400,7 @@ dec=Object.assign(base,{code:'INSUFFICIENT',verb:'Insufficient data',tone:'infer
 }
 else if(activeExperiments().length&&!(F('rapid')&&F('rapid').likelihood==='probable')){
 var ex=activeExperiments()[0];var left=daysBetween(asOf(),ex.recheckDate);var el=daysBetween(ex.startDate,asOf());
-dec=Object.assign(base,{code:'EXPERIMENT',verb:'Hold: experiment running',tone:'inferred',priority:'plateau',lede:'"'+(ex.intervention||ex.variable)+'" is on day '+el+' of '+ex.durationDays+'. Changing anything else now would make the outcome unattributable. The prediction stamped on '+shortDate(ex.createdAt.slice(0,10))+' is scored on '+shortDate(ex.recheckDate)+'.',why:['one major variable at a time','prediction: '+(ex.prediction||'—'),tr.status==='ok'?('trend so far '+fmtRate(tr.slopePerWeek)+(ex.baseline&&ex.baseline.trend!=null?(' vs '+fmtRate(ex.baseline.trend)+' at baseline'):'')):'trend not yet estimable'],evidence:[],action:actionsBase(),confidence:'medium',recheckDays:Math.max(0,left),reverseIf:['recovery becomes poor or strength falls with the rate past the band → the safety level overrides this hold','the experiment is evaluated or abandoned'],alternatives:['abandon the experiment and change a different variable'],experimentId:ex.id});
+dec=Object.assign(base,{code:'EXPERIMENT',verb:'Hold: experiment running',tone:'inferred',priority:'plateau',lede:'"'+(ex.intervention||ex.variable)+'" is on day '+el+' of '+ex.durationDays+'. Changing anything else now would make the outcome unattributable. The prediction stamped on '+shortDate(localDateOf(ex.createdAt))+' is scored on '+shortDate(ex.recheckDate)+'.',why:['one major variable at a time','prediction: '+(ex.prediction||'—'),tr.status==='ok'?('trend so far '+fmtRate(tr.slopePerWeek)+(ex.baseline&&ex.baseline.trend!=null?(' vs '+fmtRate(ex.baseline.trend)+' at baseline'):'')):'trend not yet estimable'],evidence:[],action:actionsBase(),confidence:'medium',recheckDays:Math.max(0,left),reverseIf:['recovery becomes poor or strength falls with the rate past the band → the safety level overrides this hold','the experiment is evaluated or abandoned'],alternatives:['abandon the experiment and change a different variable'],experimentId:ex.id});
 }
 else if(F('underlogging')||F('adherence')){
 var f=F('underlogging')||F('adherence');
@@ -5498,7 +5505,7 @@ function stampPredictions(){
 var today=todayISO();var made=[];
 [['weight7',7],['weight14',14],['weight28',28]].forEach(function(pair){
 var subject=pair[0],h=pair[1];
-if((DB.predictions||[]).some(function(p){return p.subject===subject&&p.madeAt.slice(0,10)===today;}))return;
+if((DB.predictions||[]).some(function(p){return p.subject===subject&&localDateOf(p.madeAt)===today;}))return;
 var f=weightForecast(h);if(f.status!=='ok')return;
 var rec={id:uid('pred'),madeAt:nowISO(),date:today,subject:subject,model:'weight_forecast',modelVersion:modelById('weight_forecast').version,horizonDays:h,dueDate:f.dueDate,point:round(f.point,2),lo:round(f.lo,2),hi:round(f.hi,2),confidence:f.confidence,unit:'lb',
 inputs:{base:round(f.base,2),slopePerWeek:round(f.trend.slopePerWeek,3),residSd:round(f.trend.residSd,2),n:f.trend.n},assumptions:f.assumptions,phaseId:(activePhase()||{}).id||null,context:predictionContext(),outcome:null,actual:null,error:null,absError:null,covered:null,status:'pending',scoredAt:null};
@@ -5509,7 +5516,7 @@ var F=forecastFamily();
 if(F.status==='ok')[7,14].forEach(function(h){
 var subject='weight'+h+'f',d=F.forecastDistribution[h];
 if(!d||d.status==='insufficient')return;
-if((DB.predictions||[]).some(function(p){return p.subject===subject&&p.madeAt.slice(0,10)===today;}))return;
+if((DB.predictions||[]).some(function(p){return p.subject===subject&&localDateOf(p.madeAt)===today;}))return;
 var rec={id:uid('pred'),madeAt:nowISO(),date:today,subject:subject,model:'weight_forecast_family',modelVersion:'1.0',horizonDays:h,
 dueDate:d.dueDate,point:d.point,lo:d.p10,hi:d.p90,level:d.level,confidence:'n/a',unit:'lb',reliable:d.reliable!==false,
 inputs:{method:F.selection[h].selected,weights:F.selection[h].weights},assumptions:['the recent regime continues','a single phase across the window'],
@@ -5531,7 +5538,7 @@ if(scored)save('predictions:score');return scored;
 }
 function forecastAccuracy(){
 var out={};['weight7','weight14','weight28'].forEach(function(sub){
-var list=(DB.predictions||[]).filter(function(p){return p.subject===sub&&p.status==='scored'&&p.scoredAt&&p.scoredAt.slice(0,10)<=asOf();});
+var list=(DB.predictions||[]).filter(function(p){return p.subject===sub&&p.status==='scored'&&p.scoredAt&&localDateOf(p.scoredAt)<=asOf();});
 if(list.length<3){out[sub]={status:'insufficient',n:list.length,need:(3-list.length)+' more scored forecasts'};return;}
 var errs=list.map(function(p){return p.error;});
 out[sub]={status:'ok',n:list.length,mae:mean(list.map(function(p){return p.absError;})),bias:mean(errs),coverage:Math.round(100*list.filter(function(p){return p.covered;}).length/list.length),nominal:80,verdict:function(){var b=mean(errs);var cov=list.filter(function(p){return p.covered;}).length/list.length;return (Math.abs(b)<0.4?'directionally accurate':(b>0?'losing less than predicted':'losing more than predicted'))+(cov<0.6?' \u00b7 intervals too narrow':(cov>0.95?' \u00b7 intervals wider than needed':' \u00b7 intervals calibrated'));}()};
@@ -5618,7 +5625,7 @@ save('experiment:evaluate');
 }
 return res;
 }
-function _experimentActiveOn(e,date){if(!_knownBy(e,date))return false;if(e.startDate>date)return false;if(!_ASOF)return e.status==='active';if(e.status==='active')return true;var done=e.completedAt||e.abandonedAt||null;return !!done&&String(done).slice(0,10)>date;}
+function _experimentActiveOn(e,date){if(!_knownBy(e,date))return false;if(e.startDate>date)return false;if(!_ASOF)return e.status==='active';if(e.status==='active')return true;var done=e.completedAt||e.abandonedAt||null;return !!done&&localDateOf(done)>date;}
 function experimentsDue(){var d=asOf();return (DB.experiments||[]).filter(function(e){return _experimentActiveOn(e,d)&&e.recheckDate<=d;});}
 function activeExperiments(){var d=asOf();return (DB.experiments||[]).filter(function(e){return _experimentActiveOn(e,d);});}
 function addNegative(n){
@@ -5679,9 +5686,9 @@ var adj=placeboDifference('cardio','hunger',0,42,true),pl=placeboDifference('car
 var verdict=(pl==null||adj==null)?'not checked':(Math.abs(adj)>=0.5&&Math.abs(pl)<=Math.abs(adj)/2?'passed':'failed');
 return {status:'ok',n:on.length+off.length,diff:diff,trendAdjusted:adj,placebo:pl,placeboVerdict:verdict,text:Math.abs(diff)<0.5?'Hunger is similar on cardio and non-cardio days':(diff>0?'Hunger runs '+fmtNum(diff,1)+' points higher on cardio days':'Hunger runs '+fmtNum(-diff,1)+' points lower on cardio days')};
 }
-function replayAt(date){return withAsOf(date,function(){var S=getCurrentState();var dec=decide();return {date:date,state:S,decision:dec,diagnosis:diagnose(),predictionsThen:(DB.predictions||[]).filter(function(p){return p.madeAt.slice(0,10)<=date;}).length,snapshot:(DB.snapshots||[]).filter(function(s){return s.date===date;})[0]||null};});}
+function replayAt(date){return withAsOf(date,function(){var S=getCurrentState();var dec=decide();return {date:date,state:S,decision:dec,diagnosis:diagnose(),predictionsThen:(DB.predictions||[]).filter(function(p){return localDateOf(p.madeAt)<=date;}).length,snapshot:(DB.snapshots||[]).filter(function(s){return s.date===date;})[0]||null};});}
 function replayLeakageCheck(dates){
-var leaks=[];(dates||[]).forEach(function(d){withAsOf(d,function(){getCurrentState();decide();Object.keys(_MEMO).forEach(function(k){if(k.indexOf('ds:')!==0)return;(_MEMO[k]||[]).forEach(function(day){if(day.date>d)leaks.push({asOf:d,key:k,date:day.date});(day.obs||[]).forEach(function(o){if(o.createdAt&&o.createdAt.slice(0,10)>d)leaks.push({asOf:d,key:k,createdAt:o.createdAt});});});});});});
+var leaks=[];(dates||[]).forEach(function(d){withAsOf(d,function(){getCurrentState();decide();Object.keys(_MEMO).forEach(function(k){if(k.indexOf('ds:')!==0)return;(_MEMO[k]||[]).forEach(function(day){if(day.date>d)leaks.push({asOf:d,key:k,date:day.date});(day.obs||[]).forEach(function(o){if(o.createdAt&&localDateOf(o.createdAt)>d)leaks.push({asOf:d,key:k,createdAt:o.createdAt});});});});});});
 return leaks;
 }
 function captureSnapshot(){
@@ -5761,7 +5768,7 @@ templates:{uA:[['Bench press',3,'6\u201310'],['Lat pulldown',3,'8\u201312'],['In
 function trainingProgram(){var key=DB.settings.program||'fullbody3';
 if(_ASOF&&Array.isArray(DB.settings.programHistory)&&DB.settings.programHistory.length){
 var H=DB.settings.programHistory;
-var hist=H.filter(function(h){return String(h.at).slice(0,10)<=_ASOF;});
+var hist=H.filter(function(h){return localDateOf(h.at)<=_ASOF;});
 key=hist.length?hist[hist.length-1].program:(H[0].from||H[0].program);
 }
 var p;
@@ -7936,8 +7943,11 @@ var out=[],plan=currentPlan();
 try{var u=(typeof unsavedAtClose==='function')?unsavedAtClose():null;
 if(u)out.push({id:'lost-saves',severity:'action',what:'Your last '+(u.missing===1?'change':u.missing+' changes')+' before the app closed may not have been saved',
 why:'Storage did not have them when the app reopened.',cando:'Check your latest entries',act:'nav.tab',arg:'log',tab:'log'});}catch(e){}
-try{var LR=(DB.settings.cloud||{}).lastReset;if(LR&&daysBetween(String(LR.at).slice(0,10),todayISO())<=7)out.push({id:'sync-reset:'+LR.at,severity:'review',
+try{var LR=(DB.settings.cloud||{}).lastReset;if(LR&&daysBetween(localDateOf(LR.at),todayISO())<=7)out.push({id:'sync-reset:'+LR.at,severity:'review',
 what:'The sync server lost its data and was refilled from this device',why:'It sent '+LR.resent+' changes again. Free hosting wipes files on restart; a persistent disk stops this. Other devices need re-adding from this one.',cando:'Sync settings',act:'nav.cloud',tab:'tools'});}catch(e){}
+try{if(typeof possibleDuplicateWorkouts==='function')possibleDuplicateWorkouts().slice(0,3).forEach(function(d){out.push({id:'dup:'+d.imported.id,severity:'review',
+what:'The same workout twice? '+d.imported.value+' min ('+sourceLabel(sourceKeyOf(d.imported))+') and '+d.manual.value+' min (logged by you) on '+shortDate(d.imported.date),
+why:'Counting both would double that day\u2019s cardio. Keep the imported one, or keep both if they were different workouts.',cando:'Keep the imported one',act:'dup.keepImported',arg:d.imported.id,tab:'today'});});}catch(e){}
 if(!plan)return out;
 var F=planFeasibility();
 if(F.status==='ok'&&!F.ok)out.push({id:'plan-fit',severity:'action',what:'Your plan does not fit your circumstances ('+F.conflicts.length+')',
@@ -8332,7 +8342,7 @@ decisionsOf().filter(function(d){return d.date===iv.date;}).forEach(function(d){
 link('decision:'+d.id,ik,'produced');
 });
 (DB.predictions||[]).filter(function(p){
-return p.madeAt&&String(p.madeAt).slice(0,10)===iv.date;}).forEach(function(p){
+return p.madeAt&&localDateOf(p.madeAt)===iv.date;}).forEach(function(p){
 var pk=add('hypothesis',p.id,(p.subject||'forecast')+' '+fmtNum(p.point,1),{date:iv.date});
 link(ik,pk,'predicted');
 if(p.status==='scored'){
@@ -8347,7 +8357,7 @@ var ek=add('experiment',e.id,(e.intervention||e.variable||'experiment'),{date:e.
 var metric=(e.metric&&OBS_TYPES[e.metric])?e.metric:
 (/waist/i.test(e.metric||'')?'waist':(/hunger/i.test(e.metric||'')?'hunger':
 (/fatigue/i.test(e.metric||'')?'fatigue':'weight')));
-var eEnd=e.completedAt?String(e.completedAt).slice(0,10):(e.recheckDate||(e.startDate&&e.durationDays?addDays(e.startDate,+e.durationDays):null));
+var eEnd=e.completedAt?localDateOf(e.completedAt):(e.recheckDate||(e.startDate&&e.durationDays?addDays(e.startDate,+e.durationDays):null));
 var window=obsOf(metric,{from:e.startDate}).filter(function(o){
 return !eEnd||o.date<=eEnd;}).slice(0,40);
 if(window.length){
@@ -8358,9 +8368,9 @@ link(ok1,ek,'measured by');
 (DB.interventions||[]).filter(function(iv){return iv.variable===e.variable&&Math.abs(daysBetween(iv.date,e.startDate))<=3;})
 .forEach(function(iv){link('intervention:'+iv.id,ek,'tested by');});
 if(e.status==='complete'){
-var ok3=add('outcome',e.id+'-out',String(e.conclusion||'evaluated'),{date:e.completedAt?String(e.completedAt).slice(0,10):null});
+var ok3=add('outcome',e.id+'-out',String(e.conclusion||'evaluated'),{date:e.completedAt?localDateOf(e.completedAt):null});
 link(ek,ok3,'concluded');
-var kk=add('knowledge',e.id+'-k',(e.variable||'')+': '+String(e.conclusion||'').slice(0,60),{date:e.completedAt?String(e.completedAt).slice(0,10):null});
+var kk=add('knowledge',e.id+'-k',(e.variable||'')+': '+String(e.conclusion||'').slice(0,60),{date:e.completedAt?localDateOf(e.completedAt):null});
 link(ok3,kk,'became');
 }
 });
@@ -8650,7 +8660,7 @@ pace:(meta.distance&&o.value)?round(o.value/num(meta.distance),2):null,
 paceUnit:'min per '+(meta.distanceUnit||'mi'),
 modalityData:CARDIO_MODALITIES[mod]||CARDIO_MODALITIES.other,
 zone:cardioZoneFor({zone:meta.zone,hr:meta.hr,grade:meta.grade!=null?+meta.grade:null,maxHr:(prof().maxHr||null),rpe:meta.rpe}),
-hr:meta.hr!=null?+meta.hr:null,rpe:meta.rpe!=null?+meta.rpe:null,grade:meta.grade!=null?+meta.grade:null};
+hr:meta.hr!=null?+meta.hr:null,rpe:meta.rpe!=null?+meta.rpe:null,grade:meta.grade!=null?+meta.grade:null,steady:meta.steady||null,externalId:meta.externalId||null};
 });
 if(!rows.length)return {status:'insufficient',need:['cardio sessions logged'],days:days};
 var minutes=rows.reduce(function(a,r){return a+(r.minutes||0);},0);
@@ -8782,7 +8792,7 @@ function _weekKey(date){
 var d=new Date(date+'T12:00:00Z');
 var day=d.getUTCDay();
 var monday=new Date(d);monday.setUTCDate(d.getUTCDate()-((day+6)%7));
-return monday.toISOString().slice(0,10);
+return localDateOf(monday.toISOString());
 }
 function cardioTiming(days){
 days=days||90;
@@ -8878,7 +8888,21 @@ if(!a.sex)m=(m+FRIEND_VO2.female.filter(function(r){return age<=r[0];})[0][1])/2
 function _modalityFamily(m){m=String(m||'').toLowerCase();if(/cycl|bike|spin/.test(m))return 'cycling';if(/walk|run|jog|hike|treadmill|incline|stair/.test(m))return 'weight-bearing';return null;}
 function _restingHr(){var r=obsOf('rhr').slice(-14).map(function(o){return o.value;});return r.length>=3?{value:_median(r),n:r.length}:null;}
 function _maxHr(){var s=DB.settings.hrMax||(prof()||{}).maxHr;if(s)return {value:+s,sd:3,basis:'measured'};var a=_ageSex();if(!a.age)return null;return {value:208-0.7*a.age,sd:10,basis:'age-predicted (Tanaka)'};}
+function cardioSteadySegment(st,unit){
+var T=st&&st.time&&st.time.data,V=st&&st.velocity_smooth&&st.velocity_smooth.data,H=st&&st.heartrate&&st.heartrate.data,G=st&&st.grade_smooth&&st.grade_smooth.data,M=st&&st.moving&&st.moving.data;
+if(!T||!V||!H||T.length<60)return null;var best=null,W=600;
+for(var i=0;i<T.length;i+=Math.max(1,Math.floor(T.length/300))){var j=i;while(j<T.length&&T[j]-T[i]<W)j++;if(j>=T.length)break;
+var idx=[];for(var k=i;k<j;k++)idx.push(k);var mov=M?idx.filter(function(k){return M[k];}).length/idx.length:1;if(mov<0.95)continue;
+var v=idx.map(function(k){return V[k];}),h=idx.map(function(k){return H[k];}).filter(function(x){return x>0;});if(h.length<idx.length*0.9)continue;
+var vm=mean(v);if(vm<0.5)continue;var cv=sd(v)/vm;if(cv>=0.08)continue;
+var q=Math.max(1,Math.floor(h.length/10)),drift=Math.abs(mean(h.slice(-q))-mean(h.slice(0,q)));if(drift>=8)continue;
+if(!best||cv<best.cv)best={cv:cv,i:i,j:j,v:vm,h:mean(h),g:G?mean(idx.map(function(k){return G[k]||0;})):null,drift:drift};}
+if(!best)return null;var perUnit=unit==='mi'?1609.34:1000;
+return {minutes:round((T[best.j]-T[best.i])/60,1),hr:Math.round(best.h),speedMs:round(best.v,2),pace:round(perUnit/best.v/60,2),paceUnit:'min per '+(unit==='mi'?'mi':'km'),
+grade:best.g!=null?round(best.g,1):null,speedCv:round(best.cv,3),hrDrift:round(best.drift,1),basis:'the steadiest 10 minutes of the workout, from per-second streams'};
+}
 function cardioFitnessObservation(r){
+if(r&&r.steady&&r.steady.hr&&r.steady.pace){r=Object.assign({},r,{hr:r.steady.hr,pace:r.steady.pace,distanceUnit:/mi/.test(r.steady.paceUnit)?'mi':'km',grade:r.steady.grade!=null?r.steady.grade:r.grade,minutes:Math.max(r.minutes||0,r.steady.minutes),_steady:true});}
 var fam=_modalityFamily(r.modality);if(!fam)return {use:false,why:(r.modality||'this modality')+': no validated equation from these inputs'};
 if(/interval|hiit|sprint/i.test(String(r.modality)+' '+String(r.zone&&r.zone.zone||'')))return {use:false,why:'intervals are not steady-state (they inform conditioning capacity)'};
 if((r.minutes||0)<10)return {use:false,why:'under 10 minutes'};
@@ -8890,7 +8914,7 @@ if(fam==='cycling'){if(r.watts==null||!kg)return {use:false,why:'cycling needs p
 else{if(r.pace==null)return {use:false,why:'needs pace (or distance)'};var mPerMin=(r.distanceUnit==='km'?1000:1609.34)/r.pace,g=(r.grade||0)/100,run=mPerMin>134;
 vo2=run?(3.5+0.2*mPerMin+0.9*mPerMin*g):(3.5+0.1*mPerMin+1.8*mPerMin*g);}
 var est=3.5+(vo2-3.5)/hrr,sd=Math.sqrt(Math.pow(0.15*est,2)+Math.pow(est*(mx.sd/(mx.value-rest.value)),2));
-return {use:true,family:fam,date:r.date,estimate:round(est,1),sd:round(sd,1),hrr:round(hrr,2),method:(fam==='cycling'?'ACSM cycling (power)':'ACSM '+(run?'running':'walking')+' (pace, grade)')+' + %HRR; max HR '+mx.basis};
+return {use:true,family:fam,date:r.date,estimate:round(est,1),sd:round(sd,1),hrr:round(hrr,2),method:(fam==='cycling'?'ACSM cycling (power)':'ACSM '+(run?'running':'walking')+' (pace, grade)')+' + %HRR; max HR '+mx.basis+(r._steady?'; the steadiest 10 minutes from streams':'')};
 }
 function cardioFitnessModel(){
 var cs=cardioSessions(84);var rows=cs&&cs.rows?cs.rows:[];var classes={known:0,proxy:0,unknown:0},excluded=[],obs={};
@@ -9034,7 +9058,7 @@ if(!f.portions)f.portions=[];
 if(!f.conversionConfidence)f.conversionConfidence=f.basis==='g'?'exact':(f.basis==='ml'?'volume-only':'serving-only');
 return f;
 }
-function localFoods(){var date=_ASOF;return seedFoods().concat((DB.foods||[]).filter(function(f){return !date||!f.createdAt||f.createdAt.slice(0,10)<=date;}).map(function(f){return normalizeFood(Object.assign({kind:'user',source:'USER'},f));}),(DB.recipes||[]).filter(function(r){return !date||!r.createdAt||r.createdAt.slice(0,10)<=date;}).map(function(r){return recipeAsFood(r);}));}
+function localFoods(){var date=_ASOF;return seedFoods().concat((DB.foods||[]).filter(function(f){return !date||!f.createdAt||localDateOf(f.createdAt)<=date;}).map(function(f){return normalizeFood(Object.assign({kind:'user',source:'USER'},f));}),(DB.recipes||[]).filter(function(r){return !date||!r.createdAt||localDateOf(r.createdAt)<=date;}).map(function(r){return recipeAsFood(r);}));}
 function foodSearchLocal(q,limit){
 var toks=foodTokens(q);if(!toks.length)return [];
 var res=[];localFoods().forEach(function(f){var name=f.name.toLowerCase();var nt=foodTokens(f.name+' '+(f.category||''));var head=foodTokens(f.name.split(',')[0]);var score=0;toks.forEach(function(t){if(head.indexOf(t)>=0)score+=5;else if(nt.indexOf(t)>=0)score+=3;else if(nt.some(function(x){return x.indexOf(t)===0;}))score+=2;else if(name.indexOf(t)>=0)score+=1;else score-=4;});if(score>0)res.push({f:f,score:score+(f.kind==='user'||f.kind==='recipe'?1:0)-name.length/200-(/,\s*(dried|dry|flour|powder)/i.test(f.name)?1.5:0)});});
@@ -9159,9 +9183,9 @@ DB.foodLogs.push(rec);emitEvent('food.logged',rec,{at:rec.createdAt});syncNutrit
 }
 function _foodLogVisible(l,date){
 if(!l)return false;
-if(l.createdAt&&l.createdAt.slice(0,10)>date)return false;
-if(l.retracted){var ra=l.retractedAt;if(!_ASOF||!ra||String(ra).slice(0,10)<=date)return false;}
-if(l.supersededBy){var sa=l.supersededAt;if(!_ASOF||!sa||String(sa).slice(0,10)<=date)return false;}
+if(l.createdAt&&localDateOf(l.createdAt)>date)return false;
+if(l.retracted){var ra=l.retractedAt;if(!_ASOF||!ra||localDateOf(ra)<=date)return false;}
+if(l.supersededBy){var sa=l.supersededAt;if(!_ASOF||!sa||localDateOf(sa)<=date)return false;}
 return true;
 }
 function removeFoodLog(id){
@@ -10148,6 +10172,7 @@ var t=OBS_TYPES[type];
 if(!t.text&&(value<t.min*0.5||value>t.max*2)){rejected.push({row:r,reason:'value far outside the plausible range for '+type});return;}
 out.push(canonicalObservation({type:type,date:r.date,value:round(value,2),unit:r.unit,at:r.at,
 source:sourceId,sourceDetail:r.sourceDetail||(IMPORT_SOURCES[sourceId]||{}).label,device:r.device,externalId:r.externalId}));
+out[out.length-1].method=r.method||null;out[out.length-1].rowMeta=r.meta||null;
 });
 return {observations:out,rejected:rejected,
 note:rejected.length?(rejected.length+' row(s) were refused rather than coerced'):'every row normalised cleanly'};
@@ -10304,6 +10329,7 @@ var dd=dedupeImported(norm.observations);
 var overlapSkipped=[];
 dd.fresh=dd.fresh.filter(function(c){
 if(!SUM_TYPES[c.type])return true;
+if(c.externalId&&/:activity:/.test(String(c.externalId)))return true;   /* one activity is not a day total: two workouts on a day both count */
 var ex=(DB.observations||[]).filter(function(o){return o.type===c.type&&o.date===c.date&&_visible(o,asOf());});
 if(ex.length){overlapSkipped.push({type:c.type,date:c.date,existing:ex.reduce(function(a,o){return a+(o.value||0);},0),incoming:c.value,
 existingSource:ex[0].source,note:'already recorded for that day; adding would count the day twice'});return false;}
@@ -10329,9 +10355,9 @@ pushUndo('import '+dd.fresh.length+' observations from '+((IMPORT_SOURCES[source
 var added=0;
 dd.fresh.forEach(function(c){
 try{
-var rec=makeObservation({type:c.type,date:c.date,value:c.value,source:'import',
+var rec=makeObservation({type:c.type,date:c.date,value:c.value,source:'import',method:c.method||undefined,
 note:(IMPORT_SOURCES[sourceId]||{}).label||sourceId,
-meta:{importSource:sourceId,device:c.device||null,externalId:c.externalId||null,trust:c.trust}});
+meta:Object.assign({},c.rowMeta||{},{importSource:sourceId,device:c.device||null,externalId:c.externalId||null,trust:c.trust})});
 rec.externalId=c.externalId||null;rec.trust=c.trust;
 DB.observations.push(rec);emitEvent('observation.added',rec,{at:rec.createdAt});added++;
 }catch(e){_q(e,'P1');}
@@ -10357,8 +10383,8 @@ function photoMeta(){
 var on=asOf();
 return (DB.settings.photos||[]).filter(function(p){
 if(p.date>on)return false;
-if(p.addedAt&&String(p.addedAt).slice(0,10)>on)return false;
-if(p.removedAt&&String(p.removedAt).slice(0,10)<=on)return false;
+if(p.addedAt&&localDateOf(p.addedAt)>on)return false;
+if(p.removedAt&&localDateOf(p.removedAt)<=on)return false;
 return true;
 }).slice().sort(function(a,b){return a.date<b.date?1:-1;});
 }
@@ -10722,7 +10748,7 @@ version:EXT_ADAPTER_VERSION,adapter:'adaptOpenFoodFacts'});
 function externalSources(){
 var out={};Object.keys(EXTERNAL_SOURCES).forEach(function(k){out[k]=EXTERNAL_SOURCES[k];});
 if(typeof IMPORT_SOURCES!=='undefined')Object.keys(IMPORT_SOURCES).forEach(function(k){if(k==='manual')return;out['file:'+k]={id:'file:'+k,name:IMPORT_SOURCES[k].label,category:'file import',status:'integration-tested',destinations:['observations'],capabilities:['file import'],authentication:{kind:'none',custody:'none'}};});
-if(typeof WEARABLE_PROVIDERS!=='undefined')Object.keys(WEARABLE_PROVIDERS).forEach(function(k){out['wearable:'+k]={id:'wearable:'+k,name:WEARABLE_PROVIDERS[k].label,category:'wearable',status:'fixture-tested',destinations:['observations'],capabilities:['api adapter'],authentication:{kind:WEARABLE_PROVIDERS[k].auth,custody:'server or native (not wired)'}};});
+if(typeof WEARABLE_PROVIDERS!=='undefined')Object.keys(WEARABLE_PROVIDERS).forEach(function(k){out['wearable:'+k]={id:'wearable:'+k,name:WEARABLE_PROVIDERS[k].label,category:'wearable',status:'integration-tested',statusNote:'tested end to end against a simulated provider; production needs real credentials',destinations:['observations'],capabilities:['oauth sign-in','30-day backfill','cursor sync','webhooks','revocation'],authentication:{kind:WEARABLE_PROVIDERS[k].auth,custody:'server, encrypted at rest (CONNECT_TOKEN_KEY)'}};});
 return out;
 }
 function externalSourceAudit(){
@@ -10746,7 +10772,8 @@ function extServerBase(){try{var c=cloudConfig();return c&&c.url?String(c.url).r
 var EXT_NO_SERVER_TEXT='Weather and online food lookups need the Physique OS server, and none is answering for this app.';
 function extRequest(pathQuery){
 var base=extServerBase();if(!base||typeof fetch!=='function')return Promise.resolve(extError('configuration_error','no Physique OS server is configured, so external sources are unavailable here',{stage:'configuration',text:EXT_NO_SERVER_TEXT}));
-return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
+var ctl=typeof AbortController==='function'?new AbortController():null,tmo=ctl?setTimeout(function(){ctl.abort();},25000):null;
+return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(r){if(tmo)clearTimeout(tmo);
 var ct=String((r.headers&&r.headers.get&&r.headers.get('content-type'))||'');
 if(!/json/i.test(ct)){
 if(r.status>=502&&r.status<=504)return extError('network_unavailable','the address '+base+' is forwarded, but the server behind it is not answering (HTTP '+r.status+')',{stage:'routing',http:r.status,text:'The Physique OS server is not answering right now.'});
@@ -10922,11 +10949,11 @@ function refreshEnvironment(opts){
 opts=opts||{};var L=weatherLocation();if(!L)return Promise.resolve(extError('configuration_error','set a place first; a location is never inferred'));
 var provider=opts.provider||(DB.settings.weatherProvider||'open-meteo'),tz=L.timezone||_deviceTz();
 var q='lat='+L.lat+'&lon='+L.lon+'&tz='+encodeURIComponent(tz);
-var jobs=[extRequest('/v1/ext/weather/forecast?'+q+'&provider='+provider+'&past_days=7&forecast_days=14').then(function(r){
+var jobs=[extRequest('/v1/ext/weather/forecast?'+q+'&provider='+provider+'&past_days=7&forecast_days=14&past_hours=24&forecast_hours=48').then(function(r){
 if(r.status!=='ok')return r;var a=provider==='meteosource'?adaptMeteosource(r.payload,{retrievedAt:r.retrievedAt,lat:L.lat,lon:L.lon,label:L.label}):
 adaptOpenMeteo(r.payload,{dataset:'forecast',retrievedAt:r.retrievedAt,label:L.label,requested:ENV_REQUESTED.filter(function(v){return ENV_VARIABLES[v].res.indexOf('daily')<0||true;})});
 if(a.status!=='ok')return a;a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id=a.batch.id.replace(/:[-0-9.]+,[-0-9.]+/,':'+L.lat+','+L.lon);return ingestEnvironmentBatch(a.batch);}),
-extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=7&forecast_days=5').then(function(r){
+(opts.air===false?Promise.resolve({status:'ok',skipped:true}):extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=1&forecast_days=3&past_hours=24&forecast_hours=48')).then(function(r){if(r.skipped)return r;
 if(r.status!=='ok')return r;var a=adaptOpenMeteo(r.payload,{dataset:'air-quality',retrievedAt:r.retrievedAt,label:L.label});if(a.status!=='ok')return a;
 a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:air-quality:'+L.lat+','+L.lon;return ingestEnvironmentBatch(a.batch);})];
 return Promise.all(jobs).then(function(rs){DB.settings.weatherSync={lastAttempt:nowISO(),lastSuccess:rs[0].status==='ok'?nowISO():((DB.settings.weatherSync||{}).lastSuccess||null),
@@ -10990,7 +11017,7 @@ var ENV_KIND_TEXT={current:'now',forecast:'forecast','recent past':'recent past 
 function renderWeatherCard(){
 var L=weatherLocation();if(!L)return '';
 var N=environmentNow(),D=environmentDaily();
-if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+esc(N.note)+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
+if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+(weatherUpdating()?'Fetching the weather\u2026':esc(N.note))+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
 var v=N.values,T=todayISO(),today=(D.days||[]).filter(function(d){return d.date===T;})[0],fc=(D.days||[]).filter(function(d){return d.date>=T;}).slice(0,14);
 var cond=weatherCondition(v,v.isDay);
 var top='<div class="wx-now">'+weatherIcon(v,v.isDay,44)+'<div><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="wx-cond">'+esc(cond?cond.label:'')+(cond&&cond.derived?' <span class="hint">(from cloud cover and rain)</span>':'')+'</div>'+
@@ -11006,9 +11033,27 @@ uiRow('UV index',fmtEnv('uvIndex',v.uvIndex))+(today?uiRow('Sun',fmtEnv('sunrise
 (v.usAqi!=null||v.europeanAqi!=null?uiRow('Air quality',v.usAqi!=null?('US AQI '+fmtEnv('usAqi',v.usAqi)):('European AQI '+fmtEnv('europeanAqi',v.europeanAqi)),{sub:'PM2.5 '+fmtEnv('pm2_5',v.pm2_5)}):'');
 var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b>'+weatherIcon(d.values,true,22)+'<span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
 '<span class="hint">'+(d.values.precipitationSum?fmtEnv('precipitationSum',d.values.precipitationSum):'\u00a0')+(d.values.precipitationProbabilityMax!=null?' '+Math.round(d.values.precipitationProbabilityMax)+'%':'')+'</span></div>';}).join('')+'</div>';
-return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(N.stale?' (out of date)':''),
+return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(weatherUpdating()?' \u00b7 updating\u2026':(N.stale?' (out of date)':'')),
 body:top+hourly+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
 }
+var WEATHER_AUTO={staleMinutes:30,airMinutes:60,checkEveryMs:5*60000};var _WX_INFLIGHT=null,_WX_STARTED=false;
+function weatherAutoEnabled(){return DB.settings.weatherAuto!==false;}
+function _ageMinutes(b){return b?(Date.now()-Date.parse(b.retrievedAt))/60000:Infinity;}
+function weatherNeedsRefresh(){return !!weatherLocation()&&_ageMinutes(_envBatches('forecast')[0])>=WEATHER_AUTO.staleMinutes;}
+function weatherUpdating(){return !!_WX_INFLIGHT;}
+function weatherAutoRefresh(reason){
+if(!weatherAutoEnabled()||_WX_INFLIGHT||!weatherNeedsRefresh())return null;
+if(typeof document!=='undefined'&&document.hidden)return null;
+var air=_ageMinutes(_envBatches('air-quality')[0])>=WEATHER_AUTO.airMinutes;
+_WX_INFLIGHT=refreshEnvironment({air:air,auto:true,reason:reason}).then(function(r){_WX_INFLIGHT=null;try{renderAll();}catch(e){}return r;},function(e){_WX_INFLIGHT=null;try{renderAll();}catch(x){}});
+try{renderAll();}catch(e){}return _WX_INFLIGHT;
+}
+function startWeatherAuto(){if(_WX_STARTED||typeof document==='undefined'||typeof window==='undefined')return;_WX_STARTED=true;
+if(weatherLocation()&&extServerBase())_rawGet('/v1/health');   /* wake a sleeping server while the saved forecast shows */
+document.addEventListener('visibilitychange',function(){if(!document.hidden)weatherAutoRefresh('visible');});
+window.addEventListener('online',function(){weatherAutoRefresh('online');});
+setInterval(function(){weatherAutoRefresh('timer');},WEATHER_AUTO.checkEveryMs);
+setTimeout(function(){weatherAutoRefresh('launch');},800);}
 /* ===== SOURCE: 67-program-edit.js ===== */
 var DAY_KEYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var DAY_KINDS={lift:'Lifting',cardio:'Cardio',walk:'Walk',rest:'Rest',mobility:'Mobility'};
@@ -11206,7 +11251,7 @@ out.push({at:String(h.at),key:h.program,kind:'switched',change:'Switched to '+((
 out.push({at:String(e.at),key:e.data.key,kind:e.data.def===null?'reset':'edited',change:e.data.def===null?'Reset to the built-in plan':('Edited: '+(e.data.change||'changes')),source:'you'});});
 out.sort(function(a,b){return a.at<b.at?-1:1;});
 var sessions=(DB.sessions||[]).filter(function(s){return !s.retracted&&!s.supersededBy;});
-out.forEach(function(v,i){v.version=i+1;v.from=v.at.slice(0,10);v.to=i<out.length-1?out[i+1].at.slice(0,10):null;
+out.forEach(function(v,i){v.version=i+1;v.from=localDateOf(v.at);v.to=i<out.length-1?localDateOf(out[i+1].at):null;
 var under=sessions.filter(function(s){return s.date>=v.from&&(!v.to||s.date<v.to);});
 v.sessions=under.length;v.sets=under.reduce(function(a,s){return a+(s.sets||[]).length;},0);
 v.label=((PROGRAMS[v.key]||customPrograms()[v.key]||{}).label||v.key);});
@@ -11434,7 +11479,7 @@ needs:['a client id and secret from the Withings developer portal'],
 adapt:function(json){
 var out=[];var groups=(json.body&&json.body.measuregrps)||[];
 groups.forEach(function(g){
-var date=new Date((g.date||0)*1000).toISOString().slice(0,10);
+var date=localDateOf(new Date((g.date||0)*1000).toISOString());
 (g.measures||[]).forEach(function(m){
 var value=m.value*Math.pow(10,m.unit);
 if(m.type===1)out.push({type:'weight',date:date,value:round(kgToLb(value),2),unit:'lb',externalId:'withings:'+g.grpid+':w'});
@@ -11478,6 +11523,19 @@ status:'adapter implemented; credentials are not shipped',
 why:'A client id and secret identify the DEPLOYMENT, not the user. They cannot be bundled into a public single-file app without publishing them, so they are supplied by whoever runs it.',
 alternative:'Until then, every one of these vendors exports a file, and file import is fully implemented.'};
 }
+var STRAVA_MODALITY={Run:'run',TrailRun:'run',VirtualRun:'run',Walk:'walk',Hike:'hike',Ride:'cycle',VirtualRide:'cycle',EBikeRide:'cycle',GravelRide:'cycle',MountainBikeRide:'cycle',
+Swim:'swim',Rowing:'row',VirtualRow:'row',Elliptical:'elliptical',StairStepper:'stairs',HighIntensityIntervalTraining:'intervals',Workout:'other',InlineSkate:'skate',NordicSki:'ski',AlpineSki:'ski',Snowshoe:'hike',Canoeing:'paddle',Kayaking:'paddle',StandUpPaddling:'paddle'};
+var STRAVA_SESSIONS={WeightTraining:'Weight training',Crossfit:'CrossFit',Yoga:'Yoga',Pilates:'Pilates'};
+WEARABLE_PROVIDERS.strava={label:'Strava',auth:'oauth2',authorizeUrl:'https://www.strava.com/oauth/authorize',tokenUrl:'https://www.strava.com/oauth/token',scopes:['read','activity:read_all'],
+needs:['a client id and secret from strava.com/settings/api','the callback domain set to this app'],
+adapt:function(json){return (json.activities||[]).filter(function(a){var t=a.sport_type||a.type;return !STRAVA_SESSIONS[t]&&a.moving_time>0;}).map(function(a){var t=a.sport_type||a.type,km=a.distance?round(a.distance/1000,2):null;
+var meta={modality:STRAVA_MODALITY[t]||'other',sportType:t,name:a.name||null,distance:km,distanceUnit:km!=null?'km':null,hr:a.average_heartrate!=null?Math.round(a.average_heartrate):null,
+maxHr:a.max_heartrate!=null?Math.round(a.max_heartrate):null,watts:a.device_watts&&a.average_watts!=null?Math.round(a.average_watts):null,elevationGain:a.total_elevation_gain!=null?a.total_elevation_gain:null,
+elapsedMin:a.elapsed_time?round(a.elapsed_time/60,1):null,kilojoules:a.kilojoules!=null?a.kilojoules:null,startTime:a.start_date||null,stravaId:String(a.id)};
+if(a._streams&&typeof cardioSteadySegment==='function'){var sg=cardioSteadySegment(a._streams,'km');if(sg)meta.steady=sg;}
+return {type:'cardio',date:String(a.start_date_local||a.start_date||'').slice(0,10),value:round(a.moving_time/60,1),unit:'min',method:meta.modality,meta:meta,externalId:'strava:activity:'+a.id};}).filter(function(x){return x.date;});},
+adaptSessions:function(json){return (json.activities||[]).filter(function(a){return STRAVA_SESSIONS[a.sport_type||a.type];}).map(function(a){
+return {date:String(a.start_date_local||a.start_date||'').slice(0,10),name:a.name||STRAVA_SESSIONS[a.sport_type||a.type],durationMin:Math.round((a.moving_time||a.elapsed_time||0)/60),externalId:'strava:activity:'+a.id,sets:[],source:'strava'};});}};
 /* ===== SOURCE: 69-nutrition.js ===== */
 var MEAL_ROLES={
 protein:{label:'Protein anchor',test:function(p){return p.kcal&&(p.protein*4/p.kcal)>=0.4;}},
@@ -13219,8 +13277,8 @@ retired:{label:'Retired',usable:false}
 function equipmentItems(){
 var on=asOf();
 return (DB.settings.equipmentItems||[]).filter(function(e){
-if(e.acquiredAt&&String(e.acquiredAt).slice(0,10)>on)return false;
-return !e.retiredAt||String(e.retiredAt).slice(0,10)>on;
+if(e.acquiredAt&&localDateOf(e.acquiredAt)>on)return false;
+return !e.retiredAt||localDateOf(e.retiredAt)>on;
 });
 }
 function addEquipment(o){
@@ -13263,9 +13321,9 @@ var items=equipmentItems();
 if(!items.length)return {status:'insufficient',need:['equipment recorded individually'],
 note:'The profile knows what kind of setup you train in; this tracks the individual items, which is what wears out and what limits a plan.'};
 var rows=items.map(function(e){
-var ageDays=daysBetween(String(e.acquiredAt).slice(0,10),asOf());
+var ageDays=daysBetween(localDateOf(e.acquiredAt),asOf());
 var serviceDue=(e.serviceEveryDays&&e.servicedAt)?
-daysBetween(String(e.servicedAt).slice(0,10),asOf())>=e.serviceEveryDays:
+daysBetween(localDateOf(e.servicedAt),asOf())>=e.serviceEveryDays:
 (e.serviceEveryDays?ageDays>=e.serviceEveryDays:false);
 var uses=0;
 if(e.implement){
@@ -13334,7 +13392,7 @@ var st=inventoryState();
 if(st.status!=='ok')return st;
 var rows=st.rows.map(function(r){
 var i=r.item;
-var expiresIn=i.expiresAt?daysBetween(asOf(),String(i.expiresAt).slice(0,10)):null;
+var expiresIn=i.expiresAt?daysBetween(asOf(),localDateOf(i.expiresAt)):null;
 var lead=num(i.leadTimeDays)!=null?num(i.leadTimeDays):3;
 var reorderIn=(r.daysLeft!=null)?r.daysLeft-lead:null;
 return Object.assign({},r,{
@@ -14204,7 +14262,7 @@ var voi=valueOfInformation();
 setHTML('dataQualityZone',uiFold('today-data','Data quality',S.trust.overall.level+' \u00b7 '+(voi.top?('next: '+voi.top.what):'nothing urgent'),renderTrust(S.trust)+(voi.items.length?'<div class="divider"></div><div class="card-title" style="font-size:14px">Most valuable next observation</div>'+voi.items.slice(0,3).map(function(v){return uiRow(v.what,uiPill(v.value+' value',v.value==='high'?'attention':'neutral'),{sub:v.why});}).join(''):''),{tone:S.trust.overall.level==='low'||S.trust.overall.level==='insufficient'?'attention':''}));
 var up=upcoming();
 setHTML('upcomingZone',uiFold('today-upcoming','Upcoming',up.length?(up.slice(0,3).map(function(u){return shortDate(u.date)+' '+u.label;}).join(' \u00b7 ')):'nothing scheduled',up.length?up.map(function(u){return uiRow(u.label,'<strong>'+(u.date===today?'today':shortDate(u.date))+'</strong>',{sub:u.kind,rsub:dowShort(u.date)});}).join(''):'<div class="muted">Set a phase and a program to populate the schedule.</div>'));
-setHTML('todayTechZone',uiFold('today-tech','Technical detail','rules v'+DECISION_RULES_VERSION+' \u00b7 '+MODELS.length+' models \u00b7 as of '+today,renderTrace(dec.trace)+'<div class="divider"></div>'+kv([['assumptions',(dec.assumptions||[]).join('; ')],['alternatives',(dec.alternatives||[]).join('; ')||'\u2014'],['missing',(dec.missing||[]).join('; ')||'\u2014'],['negative knowledge consulted',(dec.negatives||[]).length?dec.negatives.map(function(n){return n.intervention;}).join('; '):'none applicable'],['storage',idbStatus().durable],['saves',DB.ledger.saves+' \u00b7 last '+(DB.ledger.lastSaveAt?ageLabel(DB.ledger.lastSaveAt.slice(0,10)):'never')]])));
+setHTML('todayTechZone',uiFold('today-tech','Technical detail','rules v'+DECISION_RULES_VERSION+' \u00b7 '+MODELS.length+' models \u00b7 as of '+today,renderTrace(dec.trace)+'<div class="divider"></div>'+kv([['assumptions',(dec.assumptions||[]).join('; ')],['alternatives',(dec.alternatives||[]).join('; ')||'\u2014'],['missing',(dec.missing||[]).join('; ')||'\u2014'],['negative knowledge consulted',(dec.negatives||[]).length?dec.negatives.map(function(n){return n.intervention;}).join('; '):'none applicable'],['storage',idbStatus().durable],['saves',DB.ledger.saves+' \u00b7 last '+(DB.ledger.lastSaveAt?ageLabel(localDateOf(DB.ledger.lastSaveAt)):'never')]])));
 };
 function renderDecisionCard(dec,S){
 var tone={good:'var(--good)',attention:'var(--attention)',negative:'var(--negative)',inferred:'var(--inferred)',neutral:'var(--neutral)'}[dec.tone]||'var(--neutral)';
@@ -14804,7 +14862,7 @@ setHTML('diagnoseZone',out);
 RENDERERS.experiments=function(){
 var today=asOf();var out='';var act=activeExperiments();var done=(DB.experiments||[]).filter(function(e){return e.status==='complete';}).sort(function(a,b){return a.recheckDate<b.recheckDate?1:-1;});
 out+='<div class="btn-row" style="margin-top:0">'+uiBtn('New experiment','exp.new',null,'btn-primary')+uiBtn('Apply today\u2019s decision as an experiment','decision.apply',null,'btn-secondary')+'</div>';
-if(act.length)out+=sectionH('Active',act.length)+act.map(function(e){var el=daysBetween(e.startDate,today),pct=Math.round(100*clamp(el/e.durationDays,0,1));var dry=el>=3?evaluateExperiment(e.id,{dryRun:true,asOf:today}):null;return uiCard({accent:'inferred',title:esc(e.intervention||e.variable)+' \u00b7 day '+el+' of '+e.durationDays,sub:esc(e.question),body:progressBar(pct,'inferred')+kv([['variable',esc(e.variable)+' '+(e.baselineValue!=null?esc(String(e.baselineValue))+' \u2192 ':'')+(e.interventionValue!=null?esc(String(e.interventionValue)):'')],['prediction (stamped '+shortDate(e.createdAt.slice(0,10))+')',esc(e.prediction||'\u2014')+(e.predLo!=null?(' \u00b7 '+fmtRateRange(Math.min(e.predLo,e.predHi),Math.max(e.predLo,e.predHi))):'')],['baseline',e.baseline?('trend '+(e.baseline.trend!=null?fmtRate(e.baseline.trend):'\u2014')+' \u00b7 avg7 '+(e.baseline.avg7!=null?fmtWeight(e.baseline.avg7):'\u2014')+' \u00b7 steps '+(e.baseline.steps!=null?fmtNum(e.baseline.steps,0):'\u2014')+' \u00b7 kcal '+(e.baseline.calories!=null?fmtNum(e.baseline.calories,0):'\u2014')):'\u2014'],['recheck',shortDate(e.recheckDate)+(e.recheckDate<=today?' \u00b7 due':'')],['interim read',dry?(esc(dry.summary)+' (not final)'):'too early']])+'<div class="btn-row">'+(e.recheckDate<=today?uiBtn('Evaluate now','exp.evaluate',e.id,'btn-primary btn-sm'):uiBtn('Evaluate early','exp.evaluate',e.id,'btn-secondary btn-sm'))+uiBtn('Abandon','exp.abandon',e.id,'btn-ghost btn-sm')+'</div>'});}).join('');
+if(act.length)out+=sectionH('Active',act.length)+act.map(function(e){var el=daysBetween(e.startDate,today),pct=Math.round(100*clamp(el/e.durationDays,0,1));var dry=el>=3?evaluateExperiment(e.id,{dryRun:true,asOf:today}):null;return uiCard({accent:'inferred',title:esc(e.intervention||e.variable)+' \u00b7 day '+el+' of '+e.durationDays,sub:esc(e.question),body:progressBar(pct,'inferred')+kv([['variable',esc(e.variable)+' '+(e.baselineValue!=null?esc(String(e.baselineValue))+' \u2192 ':'')+(e.interventionValue!=null?esc(String(e.interventionValue)):'')],['prediction (stamped '+shortDate(localDateOf(e.createdAt))+')',esc(e.prediction||'\u2014')+(e.predLo!=null?(' \u00b7 '+fmtRateRange(Math.min(e.predLo,e.predHi),Math.max(e.predLo,e.predHi))):'')],['baseline',e.baseline?('trend '+(e.baseline.trend!=null?fmtRate(e.baseline.trend):'\u2014')+' \u00b7 avg7 '+(e.baseline.avg7!=null?fmtWeight(e.baseline.avg7):'\u2014')+' \u00b7 steps '+(e.baseline.steps!=null?fmtNum(e.baseline.steps,0):'\u2014')+' \u00b7 kcal '+(e.baseline.calories!=null?fmtNum(e.baseline.calories,0):'\u2014')):'\u2014'],['recheck',shortDate(e.recheckDate)+(e.recheckDate<=today?' \u00b7 due':'')],['interim read',dry?(esc(dry.summary)+' (not final)'):'too early']])+'<div class="btn-row">'+(e.recheckDate<=today?uiBtn('Evaluate now','exp.evaluate',e.id,'btn-primary btn-sm'):uiBtn('Evaluate early','exp.evaluate',e.id,'btn-secondary btn-sm'))+uiBtn('Abandon','exp.abandon',e.id,'btn-ghost btn-sm')+'</div>'});}).join('');
 else out+=uiEmpty('No active experiment','An experiment is one variable, one prediction stamped before the outcome, one recheck date. The decision engine creates one when you apply an intervention.','');
 if(done.length)out+=sectionH('Completed',done.length)+done.map(function(e){var tone=e.conclusion==='supported'?'good':(e.conclusion==='unsupported'?'negative':'neutral');return uiCard({accent:tone,title:esc(e.intervention||e.variable)+' \u00b7 '+uiPill(e.conclusion,tone),sub:shortDate(e.startDate)+' \u2192 '+shortDate(e.recheckDate)+' \u00b7 conf '+e.confidence,body:'<div class="lead" style="font-size:13px">'+esc(e.outcome&&e.outcome.summary||'')+'</div>'+kv([['predicted',esc(e.prediction||'\u2014')],['observed',e.outcome&&e.outcome.observed!=null?(fmtRate(e.outcome.observed)+' change in trend ('+fmtRate(e.outcome.before)+' \u2192 '+fmtRate(e.outcome.after)+')'):'\u2014'],['confounders',(e.confounders||[]).map(esc).join('; ')||'none detected']])});}).join('');
 var negs=getNegativeKnowledge();
@@ -14856,9 +14914,9 @@ uiBtn('Jump to a moment','replay.waypoints',null,'btn-sm btn-secondary')+uiBtn('
 '<div class="prov">Replay renders every view as of the chosen day. A banner stays on screen the whole time, because historical output read as current advice is the one serious hazard of looking backwards.</div>'});
 out+=uiCard({title:'Replay a single day',sub:'what the system knew and would have decided on a past day \u2014 nothing after that day is visible to it',body:'<div class="form-pair"><div class="form-row"><label for="replayDate">Day</label><input id="replayDate" type="date" min="'+min+'" max="'+today+'" value="'+(_REPLAY_DATE||addDays(today,-14))+'"></div><div class="form-row"><label>&nbsp;</label>'+uiBtn('Replay','replay.run',null,'btn-primary')+'</div></div>'+(_REPLAY?renderReplay(_REPLAY):'<div class="muted">Pick a date and replay. The recorded decision from that day, if any, is shown beside the replayed one so drift in the rules is visible.</div>')});
 var arc=(DB.archive||[]).slice().reverse();
-out+=sectionH('Archive',arc.length)+(arc.length?arc.map(function(a){var r=a.record||{};if(a.kind==='phase'){var s=r.summary||{};return uiCard({title:esc(a.summary),sub:'archived '+shortDate(a.archivedAt.slice(0,10))+' \u00b7 rules v'+(r.rulesVersion||'?'),body:kv([['weight',(s.startWeight!=null?fmtWeight(s.startWeight):'\u2014')+' \u2192 '+(s.endWeight!=null?fmtWeight(s.endWeight):'\u2014')],['observed rate',s.observedRate!=null?fmtRate(s.observedRate):'\u2014'],['avg intake / protein',(s.avgIntake!=null?fmtKcal(s.avgIntake):'\u2014')+' / '+(s.avgProtein!=null?fmtG(s.avgProtein,0):'\u2014')],['training',s.trainingSessions+' sessions ('+(s.trainingPerWeek!=null?fmtNum(s.trainingPerWeek,1):'\u2014')+'/wk)'],['experiments',s.experiments+' \u00b7 '+s.supported+' supported \u00b7 '+s.unsupported+' unsupported'],['lessons',(s.lessons||[]).map(esc).join('; ')||'\u2014'],['outcome',esc(s.outcome||'\u2014')],['models',(r.modelVersions||[]).join(', ')]])});}return uiCard({title:'Experiment: '+esc(a.summary),sub:'archived '+shortDate(a.archivedAt.slice(0,10)),body:kv([['conclusion',esc(r.conclusion||'')],['summary',esc(r.outcome&&r.outcome.summary||'')]])});}).join(''):uiEmpty('Nothing archived','Ended phases and completed experiments are frozen here with the model versions that produced them.',''));
+out+=sectionH('Archive',arc.length)+(arc.length?arc.map(function(a){var r=a.record||{};if(a.kind==='phase'){var s=r.summary||{};return uiCard({title:esc(a.summary),sub:'archived '+shortDate(localDateOf(a.archivedAt))+' \u00b7 rules v'+(r.rulesVersion||'?'),body:kv([['weight',(s.startWeight!=null?fmtWeight(s.startWeight):'\u2014')+' \u2192 '+(s.endWeight!=null?fmtWeight(s.endWeight):'\u2014')],['observed rate',s.observedRate!=null?fmtRate(s.observedRate):'\u2014'],['avg intake / protein',(s.avgIntake!=null?fmtKcal(s.avgIntake):'\u2014')+' / '+(s.avgProtein!=null?fmtG(s.avgProtein,0):'\u2014')],['training',s.trainingSessions+' sessions ('+(s.trainingPerWeek!=null?fmtNum(s.trainingPerWeek,1):'\u2014')+'/wk)'],['experiments',s.experiments+' \u00b7 '+s.supported+' supported \u00b7 '+s.unsupported+' unsupported'],['lessons',(s.lessons||[]).map(esc).join('; ')||'\u2014'],['outcome',esc(s.outcome||'\u2014')],['models',(r.modelVersions||[]).join(', ')]])});}return uiCard({title:'Experiment: '+esc(a.summary),sub:'archived '+shortDate(localDateOf(a.archivedAt)),body:kv([['conclusion',esc(r.conclusion||'')],['summary',esc(r.outcome&&r.outcome.summary||'')]])});}).join(''):uiEmpty('Nothing archived','Ended phases and completed experiments are frozen here with the model versions that produced them.',''));
 var preds=(DB.predictions||[]).slice().reverse().slice(0,40);
-out+=uiFold('arch-ledger','Prediction ledger',(DB.predictions||[]).length+' stamped \u00b7 '+(DB.predictions||[]).filter(function(p){return p.status==='scored';}).length+' scored','<div class="table-wrap"><table class="data"><thead><tr><th>made</th><th>subject</th><th>due</th><th class="num">point</th><th class="num">interval</th><th class="num">actual</th><th class="num">error</th><th>status</th></tr></thead><tbody>'+(preds.map(function(p){return '<tr><td>'+shortDate(p.madeAt.slice(0,10))+'</td><td>'+esc(p.subject)+'</td><td>'+shortDate(p.dueDate)+'</td><td class="num">'+fmtWeight(p.point,{bare:true})+'</td><td class="num">'+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi,{bare:true})+'</td><td class="num">'+(p.actual!=null?fmtWeight(p.actual,{bare:true}):'\u2014')+'</td><td class="num">'+(p.error!=null?fmtSigned(p.error,2):'\u2014')+'</td><td>'+esc(p.status)+(p.covered===false?' \u00b7 outside':'')+'</td></tr>';}).join('')||'<tr><td colspan="8" class="muted">no predictions yet</td></tr>')+'</tbody></table></div><div class="prov">Predictions are written before outcomes exist and never edited. Expired = no weigh-in within 5 days of the due date.</div>');
+out+=uiFold('arch-ledger','Prediction ledger',(DB.predictions||[]).length+' stamped \u00b7 '+(DB.predictions||[]).filter(function(p){return p.status==='scored';}).length+' scored','<div class="table-wrap"><table class="data"><thead><tr><th>made</th><th>subject</th><th>due</th><th class="num">point</th><th class="num">interval</th><th class="num">actual</th><th class="num">error</th><th>status</th></tr></thead><tbody>'+(preds.map(function(p){return '<tr><td>'+shortDate(localDateOf(p.madeAt))+'</td><td>'+esc(p.subject)+'</td><td>'+shortDate(p.dueDate)+'</td><td class="num">'+fmtWeight(p.point,{bare:true})+'</td><td class="num">'+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi,{bare:true})+'</td><td class="num">'+(p.actual!=null?fmtWeight(p.actual,{bare:true}):'\u2014')+'</td><td class="num">'+(p.error!=null?fmtSigned(p.error,2):'\u2014')+'</td><td>'+esc(p.status)+(p.covered===false?' \u00b7 outside':'')+'</td></tr>';}).join('')||'<tr><td colspan="8" class="muted">no predictions yet</td></tr>')+'</tbody></table></div><div class="prov">Predictions are written before outcomes exist and never edited. Expired = no weigh-in within 5 days of the due date.</div>');
 setHTML('archiveZone',out);
 };
 function renderReplay(R){var recorded=(DB.decisions||[]).filter(function(d){return d.source==='system'&&d.date<=R.date;}).slice(-1)[0];var S=R.state;return '<div class="divider"></div>'+kv([['as of',longDate(R.date)],['weight / avg7',(S.weight.value!=null?fmtWeight(S.weight.value):'\u2014')+' / '+(S.averages.avg7!=null?fmtWeight(S.averages.avg7):'\u2014')],['trend',S.trend.status==='ok'?fmtRate(S.trend.slopePerWeek)+' ('+S.trend.confidence+')':'insufficient'],['TDEE',S.tdee.status==='ok'?fmtKcal(S.tdee.value,{estimate:true})+' '+S.tdee.cls:'\u2014'],['data trust',S.trust.overall.level],['predictions existing then',R.predictionsThen]])+'<div class="divider"></div><div class="card-title" style="font-size:14px">Replayed decision (rules v'+DECISION_RULES_VERSION+')</div><div class="lead" style="font-size:13px"><b>'+esc(R.decision.verb)+'</b> \u2014 '+esc(R.decision.lede)+' '+confPill(R.decision.confidence)+'</div>'+(recorded?'<div class="card-title" style="font-size:14px;margin-top:10px">Recorded at the time ('+shortDate(recorded.date)+', rules v'+(recorded.rulesVersion||'?')+')</div><div class="lead" style="font-size:13px"><b>'+esc(recorded.verb)+'</b> \u2014 '+esc(recorded.lede||'')+'</div>'+(recorded.code!==R.decision.code?'<div class="banner attention" style="margin-top:8px">The replayed decision differs from the recorded one: either the rules changed or observations were added later for that period.</div>':''):'<div class="muted" style="margin-top:8px">No decision was recorded on or before that day.</div>');}
@@ -14918,7 +14976,7 @@ jobs.map(function(j){return uiRow(esc(j.label),j.lastRun?ageLabel(j.lastRun.slic
 '<div class="btn-row">'+uiBtn('Run all due checks now','jobs.run',null,'btn-secondary btn-sm')+uiBtn('Verify the latest backup','jobs.runOne','backup-verify','btn-ghost btn-sm')+'</div>'});
 var dev=deviceTestState();var untested=dev.filter(function(t){return t.status==='untested';}).length;
 out+=uiFold('tools-device','Device test checklist',(dev.length-untested)+' of '+dev.length+' recorded',
-dev.map(function(t){return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(t.label)+'</div><div class="li-meta">'+uiPill(t.status,t.status==='pass'?'good':(t.status==='fail'?'negative':'neutral'))+'</div></div><div class="li-body">'+esc(t.why)+(t.at?'<br><span class="muted">recorded '+shortDate(t.at.slice(0,10))+'</span>':'')+'<div class="btn-row">'+uiBtn('Pass','device.test',t.id+'|pass','btn-sm btn-ghost')+uiBtn('Fail','device.test',t.id+'|fail','btn-sm btn-ghost')+'</div></div></div>';}).join('')+
+dev.map(function(t){return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(t.label)+'</div><div class="li-meta">'+uiPill(t.status,t.status==='pass'?'good':(t.status==='fail'?'negative':'neutral'))+'</div></div><div class="li-body">'+esc(t.why)+(t.at?'<br><span class="muted">recorded '+shortDate(localDateOf(t.at))+'</span>':'')+'<div class="btn-row">'+uiBtn('Pass','device.test',t.id+'|pass','btn-sm btn-ghost')+uiBtn('Fail','device.test',t.id+'|fail','btn-sm btn-ghost')+'</div></div></div>';}).join('')+
 '<div class="prov">A jsdom gate cannot prove any of these. They are the checks that need a physical device, and the record keeps what you found.</div>',
 {hideable:untested===0,hideLabel:'All recorded \u2014 hide'});   /* hideable only once finished: hiding it earlier would hide work still to do */
 var dg=dependencyGraph();
@@ -16770,7 +16828,7 @@ p.then(function(list){if(target._seq!==seq)return;set({branded:list.map(catalogF
 if(target===_FOODSHEET){var el=document.getElementById('fs_results');if(el)el.innerHTML=renderFoodSheetResults();}else{var el2=document.getElementById('foodResults');if(el2)el2.innerHTML=renderFoodResults(_FOOD_DAY||todayISO());}
 }
 function saveFoodSheet(){var b=_SHEET.buf;var f=normalizeFood(_FOODSHEET.picked);var res=portionResolve(f,b.amount,b.unit);if(!res||!res.qty){toast(f.basis==='ml'?'Log this product in mL, fl oz or servings; grams need a density':'Portion does not resolve to a quantity',{tone:'negative'});return;}var label=res.label;if(b.unit.indexOf('portion:')===0||b.unit==='serving'){label=(num(b.amount)===1?'':fmtNum(num(b.amount),num(b.amount)%1?2:0)+' \u00d7 ')+(b.unit.indexOf('portion:')===0?b.unit.slice(8):'serving')+' ('+_qtyLabel(res.qty,res.basis)+')';}logFood({date:b.date,meal:b.meal,food:f,amount:b.amount,unit:b.unit,portionLabel:label});_memoInvalidate();closeSheet();_FOOD_DAY=b.date;renderAll();toast('Logged '+esc(f.name),{undo:true});}
-SHEETS.foodEdit=function(b){var l=b.log;var basis=l.basis||'g';var qlabel=basis==='ml'?'Millilitres':(basis==='serving'?'Servings':'Grams');return {body:'<div class="card" style="padding:12px"><div class="card-title">'+esc(l.food.name)+'</div><div class="prov">'+esc(l.food.source)+' '+esc(String(l.food.version||''))+' \u00b7 logged '+esc(l.createdAt.slice(0,10))+' \u00b7 basis '+esc(basis)+'</div></div><div class="form-pair">'+fld('quantity',qlabel,{type:'number'})+fld('meal','Meal',{type:'select',options:MEALS.map(function(m){return [m,m];})})+'</div><div class="hint">Editing recalculates from the stored nutrient snapshot; the source version stays.</div>',foot:'<button class="btn btn-danger" data-act="food.remove" data-arg="'+l.id+'">Remove</button><button class="btn btn-primary" data-act="food.editSave">Save</button>'};};
+SHEETS.foodEdit=function(b){var l=b.log;var basis=l.basis||'g';var qlabel=basis==='ml'?'Millilitres':(basis==='serving'?'Servings':'Grams');return {body:'<div class="card" style="padding:12px"><div class="card-title">'+esc(l.food.name)+'</div><div class="prov">'+esc(l.food.source)+' '+esc(String(l.food.version||''))+' \u00b7 logged '+esc(localDateOf(l.createdAt))+' \u00b7 basis '+esc(basis)+'</div></div><div class="form-pair">'+fld('quantity',qlabel,{type:'number'})+fld('meal','Meal',{type:'select',options:MEALS.map(function(m){return [m,m];})})+'</div><div class="hint">Editing recalculates from the stored nutrient snapshot; the source version stays.</div>',foot:'<button class="btn btn-danger" data-act="food.remove" data-arg="'+l.id+'">Remove</button><button class="btn btn-primary" data-act="food.editSave">Save</button>'};};
 var _RCP={ingSearch:'',local:[],branded:[],state:'idle'};
 function openRecipe(id){var r=id?DB.recipes.filter(function(x){return x.id===id;})[0]:null;_RCP={ingSearch:'',local:[],branded:[],state:'idle'};openSheet('edit',{form:'recipe',title:r?'Edit recipe':'New recipe',desc:'Each ingredient is measured in its own basis (g, mL or servings); totals divide by servings. Logging a serving stores a snapshot.',buf:{id:r?r.id:null,name:r?r.name:'',servings:r?r.servings:4,ingredients:r?r.ingredients.map(function(i){var q=_ingQty(i);return {food:normalizeFood(i.food),quantity:q.qty,basis:q.basis,grams:q.basis==='g'?q.qty:null};}):[]}});}
 SHEETS.recipe=function(b){var t=recipeTotals(b);var body='<div class="form-pair">'+fld('name','Recipe name')+fld('servings','Servings',{type:'number',integer:true})+'</div>'+(b.ingredients.length?b.ingredients.map(function(i,idx){var q=_ingQty(i);return '<div class="set-grid" style="grid-template-columns:3fr 1fr auto"><span style="font-size:13px">'+esc(i.food.name)+' <span class="muted">'+(q.basis==='ml'?'mL':(q.basis==='serving'?'servings':'g'))+'</span></span><input type="text" inputmode="decimal" value="'+q.qty+'" aria-label="quantity in '+(q.basis==='ml'?'millilitres':(q.basis==='serving'?'servings':'grams'))+'" data-act="sheet.ing" data-arg="'+idx+'" data-ev="input"><button type="button" class="btn btn-ghost btn-sm" data-act="sheet.ingDel" data-arg="'+idx+'" aria-label="remove">\u2715</button></div>';}).join(''):'<div class="muted">No ingredients yet.</div>')+'<div class="row"><div class="l">Per serving</div><div class="r"><strong>'+fmtNum(t.perServing.kcal,0)+' kcal</strong><small>P '+fmtNum(t.perServing.protein,0)+' \u00b7 C '+fmtNum(t.perServing.carbs,0)+' \u00b7 F '+fmtNum(t.perServing.fat,0)+' \u00b7 '+(t.massKnown?fmtNum(t.gramsPerServing,0)+' g':'mass unknown (volume ingredients)')+'</small></div></div><div class="form-row"><label for="rcp_q">Add ingredient</label><input id="rcp_q" type="search" value="'+attrEsc(_RCP.q||'')+'" placeholder="search" data-act="recipe.search" data-ev="input" autocomplete="off"></div><div id="rcp_results">'+renderRecipeResults()+'</div>';return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Cancel</button><button class="btn btn-primary" data-act="recipe.save">Save recipe</button>'};};
@@ -19260,7 +19318,7 @@ if(pending)return;pending=true;
 setTimeout(function(){pending=false;rememberScroll();updateRail();},120);},{passive:true});
 }
 function makeDelegatedControlsFocusable(){document.querySelectorAll('[data-act]').forEach(function(el){var role=el.getAttribute('role');if(el.tagName==='BUTTON'||el.tagName==='A'||el.tagName==='INPUT'||el.tagName==='SELECT'||el.tagName==='TEXTAREA'||el.tagName==='SUMMARY'||role==='presentation'||role==='option')return;if(!el.hasAttribute('tabindex'))el.setAttribute('tabindex','0');if(!role)el.setAttribute('role','button');});}
-function switchTab(tab){
+function switchTab(tab){if(typeof applyRailInsets==='function'&&typeof requestAnimationFrame==='function')requestAnimationFrame(function(){try{applyRailInsets();}catch(e){}});   /* the visible cards change with the panel */
 if(typeof presentationViewGuard==='function'){var _pv=presentationViewGuard(tab);if(!_pv.ok)return;}
 if(!document.getElementById('view-'+tab))return;try{rememberScroll();}catch(e){}_TAB=tab;document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('active',v.id==='view-'+tab);});document.querySelectorAll('nav.primary .tab').forEach(function(b){var on=b.getAttribute('data-tab')===tab;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');if(on&&b.scrollIntoView)try{b.scrollIntoView({block:'nearest',inline:'center'});}catch(e){}});try{history.replaceState(null,'','#'+tab);}catch(e){}renderAll();
 try{if(!_NAV_SUPPRESS){restoreScroll(_SCROLL[tab]||0);navPush();}}catch(e){_q(e);}
@@ -20300,7 +20358,7 @@ function openCloud(){openSheet('edit',{form:'cloud',title:'Encrypted sync',desc:
 SHEETS.cloud=function(){var c=cloudState();
 return {body:uiRow('Status',esc(c.status),{sub:c.configured?('vault '+esc(String(c.vaultId).slice(0,10))+'\u2026'):'no vault on this device'})+
 uiRow('Server',esc(c.url),{sub:'run server/server.mjs, or point this at your own \u2014 it holds ciphertext only'})+
-uiRow('Local events',fmtNum(c.localEvents,0),{sub:c.pushedCount+' already uploaded \u00b7 last sync '+(c.lastSyncAt?ageLabel(c.lastSyncAt.slice(0,10)):'never')})+
+uiRow('Local events',fmtNum(c.localEvents,0),{sub:c.pushedCount+' already uploaded \u00b7 last sync '+(c.lastSyncAt?ageLabel(localDateOf(c.lastSyncAt)):'never')})+
 '<div class="btn-row">'+
 (c.configured?uiBtn('Sync now','cloud.sync',null,'btn-sm btn-primary'):uiBtn('Create a vault','cloud.create',null,'btn-sm btn-primary'))+
 uiBtn('Unlock an existing vault','cloud.unlock',null,'btn-sm btn-secondary')+
@@ -20424,7 +20482,7 @@ var r=recentRecords(15);
 if(!r.length)return {body:uiEmpty('Nothing recorded yet','Entries appear here as you log them.',''),
 foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 return {body:r.map(function(x){return uiRow(esc(x.label),shortDate(x.date),
-{sub:esc(x.kind)+' \u00b7 recorded '+(x.at?ageLabel(String(x.at).slice(0,10)):'\u2014'),
+{sub:esc(x.kind)+' \u00b7 recorded '+(x.at?ageLabel(localDateOf(x.at)):'\u2014'),
 rsub:''});}).join(''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openJumps(){openSheet('edit',{form:'jumps',title:'Take me to\u2026',desc:'The places worth returning to, rather than a calendar.',buf:{}});}
 SHEETS.jumps=function(){
@@ -21412,7 +21470,7 @@ var body=uiRow('Events','<strong>'+fmtNum(ar.total,0)+'</strong>',
 {sub:fmtNum(ar.working,0)+' in the working window of '+fmtNum(ar.window,0)+
 (ar.archived?(' \u00b7 '+fmtNum(ar.archived,0)+' archived across '+ar.shards+' shard'+(ar.shards===1?'':'s')):' \u00b7 nothing archived yet'),
 rsub:es.types+' types',tone:ar.healthy?'good':'attention'})+
-uiRow('Archive',esc(ar.note),{sub:ar.lastSnapshotAt?('last snapshot '+shortDate(String(ar.lastSnapshotAt).slice(0,10))):'no snapshot taken'})+
+uiRow('Archive',esc(ar.note),{sub:ar.lastSnapshotAt?('last snapshot '+shortDate(localDateOf(ar.lastSnapshotAt))):'no snapshot taken'})+
 '<div class="btn-row">'+uiBtn('Verify history','events.verify',null,'btn-sm btn-primary')+uiBtn('Compact now','events.compact',null,'btn-sm btn-ghost')+'</div>';
 if(_EVENT_CHECK){
 var m=_EVENT_CHECK.projection;
@@ -22057,6 +22115,53 @@ AUTOMATION_PRESETS.map(function(p){var on=R.some(function(r){return r.id===_rule
 out+='<div class="card-title" style="margin-top:10px">Smart defaults</div><div class="hint">Forms start from your own recent entries (last weight, usual sleep, usual cardio), labelled as suggestions to edit. Food intake is never guessed.</div>';
 return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 };
+/* ===== SOURCE: 90-connections.js ===== */
+function ingestConnectedPayload(p,payload,meta){var W=typeof WEARABLE_PROVIDERS!=='undefined'?WEARABLE_PROVIDERS[p]:null;if(!W)return {status:'refused',note:'no adapter for '+p};
+var rows;try{rows=W.adapt(payload||{});}catch(e){return {status:'error',error:{category:'malformed_payload',detail:String(e&&e.message)}};}
+var extra={retracted:0,superseded:0,sessions:0,possibleDuplicates:0};
+var byExt=function(ext){return (DB.observations||[]).filter(function(o){return !o.retracted&&!o.correctedBy&&o.meta&&o.meta.externalId===ext;})[0];};
+((payload&&payload.deleted)||[]).forEach(function(id){var ext=p+':activity:'+id,o=byExt(ext);if(o){retractObservation(o.id,'deleted at '+W.label);extra.retracted++;}
+(DB.sessions||[]).filter(function(x){return x.externalId===ext&&!x.retracted;}).forEach(function(x){retractSession(x.id);extra.retracted++;});});
+rows.forEach(function(r){var o=r.externalId&&byExt(r.externalId);if(!o)return;var m=o.meta||{};
+if(o.value!==r.value||o.method!==(r.method||o.method)||(r.meta&&(m.hr!==r.meta.hr||m.distance!==r.meta.distance||m.sportType!==r.meta.sportType))){retractObservation(o.id,'updated at '+W.label);extra.superseded++;}});
+if(W.adaptSessions){W.adaptSessions(payload||{}).forEach(function(x){if((DB.sessions||[]).some(function(s){return s.externalId===x.externalId&&!s.retracted;}))return;var rec=addSession(x);if(rec){rec.externalId=x.externalId;extra.sessions++;}});}
+var r=importObservations(rows,p,{dryRun:false})||{};meta=meta||{};
+rows.forEach(function(row){if(row.type!=='cardio')return;var o=byExt(row.externalId);if(!o)return;
+var manual=(DB.observations||[]).filter(function(x){return x.type==='cardio'&&x.date===o.date&&!x.retracted&&!x.correctedBy&&x.source==='manual'&&Math.abs(x.value-o.value)<=0.2*Math.max(x.value,o.value);})[0];
+if(manual&&!(o.meta&&o.meta.possibleDuplicateOf)){o.meta=Object.assign({},o.meta,{possibleDuplicateOf:manual.id});extra.possibleDuplicates++;}});
+if(extra.possibleDuplicates)save('connect:duplicates');   /* imports preview by default; a sync the person started writes */
+DB.settings.sourceSync=Object.assign({},DB.settings.sourceSync||{});DB.settings.sourceSync[p]={lastSuccess:meta.retrievedAt||nowISO(),window:meta.window||null,rows:rows.length,added:r.added!=null?r.added:(r.imported||0)};save('settings');
+return Object.assign({status:'ok',rows:rows.length,added:r.added!=null?r.added:(r.imported!=null?r.imported:0),skipped:r.duplicates||r.skipped||0,overlap:(r.overlapSkipped||[]).length},extra);}
+function possibleDuplicateWorkouts(){return (DB.observations||[]).filter(function(o){return o.type==='cardio'&&!o.retracted&&!o.correctedBy&&o.meta&&o.meta.possibleDuplicateOf;}).map(function(o){
+var m=(DB.observations||[]).filter(function(x){return x.id===o.meta.possibleDuplicateOf&&!x.retracted&&!x.correctedBy;})[0];return m?{imported:o,manual:m}:null;}).filter(Boolean);}
+registerAction('dup.keepImported',function(id){var d=possibleDuplicateWorkouts().filter(function(x){return x.imported.id===id;})[0];if(!d)return;retractObservation(d.manual.id,'duplicate of an imported workout');d.imported.meta=Object.assign({},d.imported.meta,{possibleDuplicateOf:null});save('dup');renderAll();toast('Kept the '+(sourceLabel(sourceKeyOf(d.imported)))+' workout',{undo:true});});
+registerAction('dup.keepBoth',function(id){var o=(DB.observations||[]).filter(function(x){return x.id===id;})[0];if(!o)return;o.meta=Object.assign({},o.meta,{possibleDuplicateOf:null,confirmedDistinct:true});save('dup');renderAll();toast('Kept both: they were different workouts');});
+function _connectReady(){var c=typeof cloudConfig==='function'?cloudConfig():{};return !!(c&&c.enabled&&c.vaultId);}
+function loadConnectedServices(){if(!_SHEET||!_SHEET.buf)return;var buf=_SHEET.buf;if(!_connectReady()){buf.services={status:'no-vault'};renderSheet();return;}
+buf.services={status:'loading'};cloudAuthenticate().then(function(){return _api('/v1/ext/connect/providers');}).then(function(r){buf.services=r;if(_SHEET&&_SHEET.buf===buf)renderSheet();},function(e){buf.services={status:'error',text:String(e&&e.message||e)};if(_SHEET&&_SHEET.buf===buf)renderSheet();});}
+function renderConnectedServices(b){var S=b.services,out='<div class="card-title" style="margin-top:12px">Connected services</div>';
+if(!S||S.status==='loading')return out+'<div class="hint">Checking the server\u2026</div>';
+if(S.status==='no-vault')return out+'<div class="hint">Connections belong to your encrypted vault, so the server can keep each service\u2019s sign-in for you. Set up sync first (Tools \u2192 Cloud sync).</div>';
+if(S.status==='error')return out+'<div class="hint">'+esc(S.text)+'</div>';
+if(!S.tokenCustody)out+='<div class="hint">The server has no CONNECT_TOKEN_KEY, so it cannot keep sign-ins safely: connections are off.</div>';
+return out+S.providers.map(function(p){var sync=(DB.settings.sourceSync||{})[p.id];return '<div class="feat">'+uiIcon(p.id==='oura'?'heart':(p.id==='withings'?'scale':(p.id==='strava'?'run':'stopwatch')),{size:20})+'<div class="feat-body"><b>'+esc(p.label)+'</b> '+
+uiPill(p.connected?(p.pending?'new data waiting':'connected'):(p.configured?'not connected':'not available'),p.connected?'good':'neutral')+
+'<div class="hint">'+(p.connected?('last synced '+esc(p.lastSync?String(p.lastSync).replace('T',' ').slice(0,16):'never')+(sync?' \u00b7 '+sync.added+' new of '+sync.rows:'')):(p.configured?'Sign in at '+esc(p.label)+' to connect.':'Needs '+esc(p.needs||'setting up on the server')+'.'))+'</div></div>'+
+(p.connected?uiBtn('Sync','connect.sync',p.id,'btn-sm btn-secondary')+uiBtn('Disconnect','connect.revoke',p.id,'btn-sm btn-ghost'):(p.configured?uiBtn('Connect','connect.start',p.id,'btn-sm btn-primary'):''))+'</div>';}).join('');}
+registerAction('connect.start',function(p){cloudAuthenticate().then(function(){return _api('/v1/ext/connect/start',{method:'POST',body:{provider:p,returnTo:window.location.pathname}});})
+.then(function(r){if(r&&r.authorizeUrl)window.location.href=r.authorizeUrl;else toast('Could not start the sign-in');},function(e){toast(String(e&&e.message||e),{tone:'attention',ms:8000});});});
+function connectSync(p){toast('Syncing '+(WEARABLE_PROVIDERS[p]||{label:p}).label+'\u2026');
+return cloudAuthenticate().then(function(){return _api('/v1/ext/connect/sync',{method:'POST',body:{provider:p}});}).then(function(r){
+var res=ingestConnectedPayload(p,r.payload,{retrievedAt:r.retrievedAt,window:r.window});if(res.possibleDuplicates)toast(res.possibleDuplicates+' workout'+(res.possibleDuplicates===1?'':'s')+' may duplicate one you logged: see Today',{tone:'attention',ms:7000});renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='sources')loadConnectedServices();
+toast(res.status==='ok'?((WEARABLE_PROVIDERS[p]||{label:p}).label+': '+res.added+' new entr'+(res.added===1?'y':'ies')+(r.backfill?' (the last 30 days)':'')):'The sync could not be read',{tone:res.status==='ok'?null:'attention'});return res;},
+function(e){toast(String(e&&e.message||e),{tone:'attention',ms:8000});});}
+registerAction('connect.sync',function(p){connectSync(p);});
+registerAction('connect.revoke',function(p){if(!_SHEET||!_SHEET.buf)return;_SHEET.buf.revoking=p;cloudAuthenticate().then(function(){return _api('/v1/ext/connect/revoke',{method:'POST',body:{provider:p}});}).then(function(){
+loadConnectedServices();toast((WEARABLE_PROVIDERS[p]||{label:p}).label+' disconnected. Its data stays unless you remove it below.');},function(e){toast(String(e&&e.message||e),{tone:'attention'});});});
+function handleConnectReturn(){try{var q=window.location.search||'',m=/[?&]connected=([a-z]+)/.exec(q),e=/[?&]connect_error=([a-z_]+)/.exec(q);if(!m&&!e)return;
+if(window.history&&window.history.replaceState)window.history.replaceState(null,'',window.location.pathname+window.location.hash);
+if(m){toast((WEARABLE_PROVIDERS[m[1]]||{label:m[1]}).label+' connected. Fetching the last 30 days\u2026');connectSync(m[1]);}
+else toast('The connection did not complete: '+e[1].replace(/_/g,' '),{tone:'attention',ms:8000});}catch(err){_q(err,'P2');}}
 /* ===== SOURCE: 90-sources.js ===== */
 var DEVICE_TOTAL_TYPES={steps:1,sleep:1};
 function sourceKeyOf(o){var m=o&&o.meta||{};if(m.importSource)return 'import:'+m.importSource;if(m.provider)return 'provider:'+m.provider;if(m.device)return 'device:'+m.device;return (o&&o.source)||'unknown';}
@@ -22064,7 +22169,10 @@ var PROVIDER_NAMES={'apple-health':'Apple Health',applehealth:'Apple Health',fit
 function _prettyId(id){return PROVIDER_NAMES[id]||String(id).replace(/[-_]+/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
 function sourceLabel(key){var k=String(key);if(k.indexOf('import:')===0){var id=k.slice(7);return ((typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[id])||{}).label||_prettyId(id);}
 if(k.indexOf('provider:')===0||k.indexOf('device:')===0)return _prettyId(k.split(':').slice(1).join(':'));
-return {manual:'You (typed in)',demo:'Demo record','food-log':'Food log (totals)',test:'Test',import:'An import'}[k]||k;}
+var fixed={manual:'You (typed in)',demo:'Demo record','food-log':'Food log (totals)',test:'Test',import:'An import'}[k];if(fixed)return fixed;
+if(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]&&IMPORT_SOURCES[k].label)return IMPORT_SOURCES[k].label;
+if(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])return WEARABLE_PROVIDERS[k].label;
+return PROVIDER_NAMES[k]||k;}
 function sourcePreference(type){return (DB.settings.sourcePreference||{})[type]||null;}
 function setSourcePreference(type,key){DB.settings.sourcePreference=Object.assign({},DB.settings.sourcePreference||{});if(key)DB.settings.sourcePreference[type]=key;else delete DB.settings.sourcePreference[type];_memoInvalidate();save('settings');return {status:'ok'};}
 function pickDayTotal(type,obs){
@@ -22080,7 +22188,7 @@ s.count++;s.types[o.type]=(s.types[o.type]||0)+1;if(o.date<s.first)s.first=o.dat
 Object.keys(S).forEach(function(k){var s=S[k],agree=[];Object.keys(s.types).forEach(function(t){var byDay={};(DB.observations||[]).forEach(function(o){if(o.type!==t||o.retracted||o.correctedBy)return;var kk=sourceKeyOf(o);(byDay[o.date]=byDay[o.date]||{})[kk]=((byDay[o.date]||{})[kk]||0)+o.value;});
 var diffs=[];Object.keys(byDay).forEach(function(d){var row=byDay[d];if(row[k]==null)return;Object.keys(row).forEach(function(o2){if(o2!==k&&row[o2])diffs.push(Math.abs(row[k]-row[o2])/Math.max(1e-9,Math.abs(row[o2])));});});
 if(diffs.length>=3)agree.push({type:t,days:diffs.length,medianDifferencePct:round(100*_medianOf(diffs),1)});});
-s.agreement=agree;s.kind=k.indexOf('import:')===0?'import':(k==='manual'?'you':(k==='food-log'?'derived':(k==='demo'?'demo':'other')));
+s.agreement=agree;s.kind=(k.indexOf('import:')===0||(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])||(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]))?'import':(k==='manual'?'you':(k==='food-log'?'derived':(k==='demo'?'demo':'other')));
 s.deletable=s.kind!=='derived';});
 var ext=[];try{var ws=DB.settings.weatherSync;if(ws)ext.push({key:'open-meteo',label:'Weather ('+((EXTERNAL_SOURCES[DB.settings.weatherProvider||'open-meteo']||{}).name||'Open-Meteo')+')',kind:'connected',lastAt:ws.lastSuccess,state:ws.state,error:ws.error&&ws.error.text,manage:'weather.open'});
 var c=DB.settings.cloud||{};if(c.enabled)ext.push({key:'cloud',label:'Sync server',kind:'connected',lastAt:c.lastSyncAt,state:'enabled',manage:'nav.cloud'});}catch(e){}
@@ -22095,7 +22203,7 @@ pushUndo('delete data from '+sourceLabel(key));list.forEach(function(o){retractO
 if(DB.settings.sourcePreference){Object.keys(DB.settings.sourcePreference).forEach(function(t){if(DB.settings.sourcePreference[t]===key)delete DB.settings.sourcePreference[t];});}
 if(typeof auditAppend==='function')auditAppend('source.deleted',{source:key,count:list.length});_memoInvalidate();save('source:delete');
 return {status:'ok',count:list.length,byType:byType,label:sourceLabel(key)};}
-registerAction('sources.open',function(){openSheet('edit',{form:'sources',title:'Your data sources',desc:'',buf:{}});});
+registerAction('sources.open',function(){openSheet('edit',{form:'sources',title:'Your data sources',desc:'',buf:{}});if(typeof loadConnectedServices==='function')loadConnectedServices();});
 registerAction('sources.prefer',function(arg){var q=String(arg).split('|');setSourcePreference(q[0],q[1]==='auto'?null:q[1]);renderSheet();renderAll();});
 registerAction('sources.deletePreview',function(key){_SHEET.buf.confirmDelete=deleteSourceData(key,{preview:true});_SHEET.buf.confirmKey=key;renderSheet();});
 registerAction('sources.deleteConfirm',function(key){var r=deleteSourceData(key);_SHEET.buf.confirmDelete=null;renderSheet();renderAll();toast(r.status==='ok'?('Removed '+r.count+' entries from '+r.label):(r.note||'Nothing to remove'),{undo:r.status==='ok'});});
@@ -22107,6 +22215,7 @@ out+='<div class="card-title">Where your record comes from</div>'+O.sources.map(
 '<div class="hint">'+s.count+' entries \u00b7 '+esc(Object.keys(s.types).slice(0,5).map(function(t){return t+' '+s.types[t];}).join(', '))+(Object.keys(s.types).length>5?'\u2026':'')+' \u00b7 '+esc(shortDate(s.first))+' \u2013 '+esc(shortDate(s.last))+'</div>'+
 (s.agreement.length?'<div class="hint">Agreement with other sources: '+esc(s.agreement.map(function(a){return a.type+' typically '+a.medianDifferencePct+'% apart over '+a.days+' shared days';}).join('; '))+'</div>':'')+'</div>'+
 (s.deletable?uiBtn('Remove its data','sources.deletePreview',s.key,'btn-sm btn-ghost'):'')+'</div>';}).join('');
+try{out+=renderConnectedServices(b);}catch(e){_q(e,'P2');}
 if(O.connections.length)out+='<div class="card-title" style="margin-top:12px">Connections</div>'+O.connections.map(function(c){return uiRow(esc(c.label),esc(c.state||''),{sub:(c.lastAt?'last updated '+esc(String(c.lastAt).replace('T',' ').slice(0,16)):'')+(c.error?' \u00b7 '+esc(c.error):'')})+'<div class="btn-row">'+uiBtn('Manage',c.manage,null,'btn-sm btn-ghost')+'</div>';}).join('');
 out+='<div class="card-title" style="margin-top:12px">When two sources measure the same day</div><div class="hint">Steps and sleep from two devices are one quantity measured twice: one source is used. Choose which, or leave it to the most complete record.</div>'+
 Object.keys(DEVICE_TOTAL_TYPES).map(function(t){var keys=O.sources.filter(function(s){return s.types[t];}).map(function(s){return s.key;}),cur=O.preferences[t]||'auto';
@@ -22309,7 +22418,8 @@ if(D.status==='ok'){out+='<div class="card-title" style="margin-top:12px">Day by
 D.days.map(function(d){var x=d.values;return '<tr'+(d.date===T?' class="wx-today"':'')+'><td>'+esc(shortDate(d.date))+'</td><td>'+esc(d.kind==='recent past'?'past':(d.kind==='historical'?'history':'forecast'))+'</td><td>'+weatherIcon(x,true,18)+'</td><td>'+fmtEnv('temperatureMin',x.temperatureMin)+'\u2013'+fmtEnv('temperatureMax',x.temperatureMax)+'</td>'+
 '<td>'+fmtEnv('apparentTemperatureMin',x.apparentTemperatureMin)+'\u2013'+fmtEnv('apparentTemperatureMax',x.apparentTemperatureMax)+'</td><td>'+fmtEnv('precipitationSum',x.precipitationSum)+(x.precipitationProbabilityMax!=null?' ('+Math.round(x.precipitationProbabilityMax)+'%)':'')+'</td>'+
 '<td>'+fmtEnv('et0Sum',x.et0Sum)+'</td><td>'+fmtEnv('uvIndexMax',x.uvIndexMax)+'</td><td>'+fmtEnv('windSpeedMax',x.windSpeedMax)+' / '+fmtEnv('windGustsMax',x.windGustsMax)+'</td><td>'+esc((x.sunrise||'')+'\u2013'+(x.sunset||''))+(x.daylightHours!=null?' \u00b7 '+fmtEnv('daylightHours',x.daylightHours):'')+'</td></tr>';}).join('')+'</tbody></table></div>';}
-out+='<div class="btn-row">'+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Load the last 30 days of history','weather.history',null,'btn-sm btn-secondary')+'</div>';
+out+='<div class="btn-row">'+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Load the last 30 days of history','weather.history',null,'btn-sm btn-secondary')+'</div>'+
+uiRow('Update automatically',weatherAutoEnabled()?'on':'off',{sub:'when the app opens or comes back, and every 30 minutes while open'})+'<div class="btn-row">'+uiBtn(weatherAutoEnabled()?'Turn off':'Turn on','weather.auto',null,'btn-sm btn-ghost')+'</div>';
 var ws=DB.settings.weatherSync||{};
 out+='<div class="card-title" style="margin-top:12px">Where this comes from</div>'+(N.status==='ok'?uiRow('Source',esc(EXTERNAL_SOURCES[N.source].name),{sub:'retrieved '+esc(String(N.retrievedAt).replace('T',' ').slice(0,16))+' UTC'+(ws.state?' \u00b7 last refresh '+esc(ws.state):'')}):'')+
 '<div class="hint">'+Object.keys(ENV_KIND_TEXT).map(function(k){return '<b>'+esc(k)+'</b>: '+esc(ENV_KIND_TEXT[k]);}).join(' \u00b7 ')+'</div>'+
@@ -22418,6 +22528,7 @@ var extra=(rv.rows||[]).filter(function(x){var r=resolveSupplement(x.name);retur
 if(extra.length)out+='<div class="card-title" style="margin-top:12px">Also logged</div>'+extra.map(function(x){return uiRow(esc(x.name),x.personallyTested?uiPill('you tested it','good'):(x.evidence?uiPill('general evidence','neutral'):uiPill('no evidence entry','attention')),{sub:esc(x.standing||'')});}).join('');}catch(e){_q(e,'P2');}
 if(eff.status==='ok')out+='<div class="card-title" style="margin-top:12px">Does it work for you?</div>'+eff.supplements.map(function(x){return uiRow(esc(x.name),esc(x.verdict||x.status),{sub:esc(x.why||x.outcome||(x.need||''))});}).join('');
 return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+registerAction('weather.auto',function(){DB.settings.weatherAuto=!weatherAutoEnabled();save('settings');if(_SHEET)renderSheet();if(weatherAutoEnabled())weatherAutoRefresh('switched on');toast(weatherAutoEnabled()?'Weather updates automatically':'Weather updates only when you refresh');});
 /* ===== SOURCE: 91-inference.js ===== */
 function _pFromT(t,n){
 if(t==null||!isFinite(t))return null;
@@ -22936,7 +23047,7 @@ run:function(){if(!_foodManifest)return {ok:false,text:'food database has not be
 return {ok:true,changed:0,text:'food database '+_foodManifest.databaseVersion+(DB.settings.foodDatabaseVersion===_foodManifest.databaseVersion?' (unchanged)':' (changed \u2014 a context tag was recorded)')};}}
 ];
 function jobState(id){return (DB.settings.jobs||{})[id]||null;}
-function jobDue(j){var st=jobState(j.id);if(!st||!st.at)return true;return daysBetween(st.at.slice(0,10),todayISO())>=j.everyDays;}
+function jobDue(j){var st=jobState(j.id);if(!st||!st.at)return true;return daysBetween(localDateOf(st.at),todayISO())>=j.everyDays;}
 function runJob(id,opts){
 opts=opts||{};var j=JOBS.filter(function(x){return x.id===id;})[0];if(!j)return null;
 var finish=function(res){
@@ -22962,7 +23073,7 @@ return BACKGROUND_ELIGIBLE.some(function(k){return String(j.id).indexOf(k)>=0;})
 }).map(function(j){
 var st=jobState(j.id);
 return {id:j.id,label:j.label||j.id,every:j.every||j.everyDays||null,
-lastRun:st&&st.at?String(st.at).slice(0,10):null,due:jobDue(j)};
+lastRun:st&&st.at?localDateOf(st.at):null,due:jobDue(j)};
 });
 }
 function runBackgroundJobs(){
@@ -23804,12 +23915,12 @@ if(e.startDate>=from)ev.push({at:e.createdAt||e.startDate+'T12:00:00.000Z',date:
 var done=e.completedAt||e.abandonedAt;
 if(done&&done.slice(0,10)>=from)ev.push({at:done,date:done.slice(0,10),kind:'outcome',label:'Experiment '+(e.conclusion||e.status),detail:e.summary||'',id:e.id,act:'exp.open',arg:e.id});});
 (DB.predictions||[]).forEach(function(p){if(!p.madeAt)return;
-if(p.madeAt.slice(0,10)>=from)ev.push({at:p.madeAt,date:p.madeAt.slice(0,10),kind:'prediction',label:'Forecast stamped',detail:p.subject+(p.lo!=null?(' '+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi)):''),id:p.id});
-if(p.status==='scored'&&p.scoredAt&&p.scoredAt.slice(0,10)>=from)ev.push({at:p.scoredAt,date:p.scoredAt.slice(0,10),kind:'calibration',label:'Forecast scored',detail:(p.covered?'inside':'outside')+' the stated range'+(p.error!=null?(', error '+fmtSigned(p.error,2)):''),id:p.id});});
+if(localDateOf(p.madeAt)>=from)ev.push({at:p.madeAt,date:localDateOf(p.madeAt),kind:'prediction',label:'Forecast stamped',detail:p.subject+(p.lo!=null?(' '+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi)):''),id:p.id});
+if(p.status==='scored'&&p.scoredAt&&localDateOf(p.scoredAt)>=from)ev.push({at:p.scoredAt,date:localDateOf(p.scoredAt),kind:'calibration',label:'Forecast scored',detail:(p.covered?'inside':'outside')+' the stated range'+(p.error!=null?(', error '+fmtSigned(p.error,2)):''),id:p.id});});
 (DB.phases||[]).forEach(function(p){if(!_knownBy(p,asOf()))return;
 if(p.startDate>=from)ev.push({at:p.createdAt||p.startDate+'T00:00:00.000Z',date:p.startDate,kind:'phase',label:phaseLabel(p)+' started',detail:'',id:p.id,act:'phase.edit',arg:p.id});
-(p.history||[]).forEach(function(h){if(h.at.slice(0,10)<from)return;
-var keys=Object.keys(h.before||{});ev.push({at:h.at,date:h.at.slice(0,10),kind:'target',label:'Targets edited',detail:keys.join(', '),id:p.id,act:'phase.edit',arg:p.id});});});
+(p.history||[]).forEach(function(h){if(localDateOf(h.at)<from)return;
+var keys=Object.keys(h.before||{});ev.push({at:h.at,date:localDateOf(h.at),kind:'target',label:'Targets edited',detail:keys.join(', '),id:p.id,act:'phase.edit',arg:p.id});});});
 obsOf('context',{from:from}).forEach(function(o){ev.push({at:o.createdAt||o.at,date:o.date,kind:'context',label:o.value,detail:'',id:o.id,act:'nav.day',arg:o.date});});
 (DB.negatives||[]).forEach(function(n){if(n.date<from||!_knownBy(n,asOf()))return;
 ev.push({at:n.createdAt||n.at,date:n.date,kind:'negative',label:'Recorded as ineffective: '+n.intervention,detail:String(n.observed||'').slice(0,120),id:n.id});});
@@ -23828,7 +23939,7 @@ renderAll();
 }
 function undoHistory(){
 var stack=(typeof _undoStack!=='undefined'&&_undoStack)?_undoStack:[];
-return stack.slice().reverse().map(function(u,i){return {steps:i+1,label:u.label||'change',at:u.at||null,age:u.at?ageLabel(u.at.slice(0,10)):''};});
+return stack.slice().reverse().map(function(u,i){return {steps:i+1,label:u.label||'change',at:u.at||null,age:u.at?ageLabel(localDateOf(u.at)):''};});
 }
 var SEARCH_DOMAINS=[
 {id:'food',label:'Food',prefix:'food:',run:function(q){return foodSearchLocal(q,12).map(function(f){return {kind:'food',label:f.name,detail:foodKcalLabel(f)+' \u00b7 '+(f.category||f.source),act:'food.pick',arg:f.id};});}},
@@ -23875,7 +23986,7 @@ var KEYMAP=[
 {keys:'Tab / Shift+Tab',label:'Move through controls; inside a sheet focus stays in the sheet',group:'navigation'},
 {keys:'Enter / Space',label:'Activate the focused control',group:'navigation'}
 ];
-var REQUIRES_SUBJECT=/^(welcome\.|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
 'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -24079,7 +24190,7 @@ DB.settings.commandUse=u;
 function commandUseScore(id){
 var u=(DB.settings&&DB.settings.commandUse)||{};
 var e=u[id];if(!e)return 0;
-var ageDays=e.at?daysBetween(String(e.at).slice(0,10),todayISO()):999;
+var ageDays=e.at?daysBetween(localDateOf(e.at),todayISO()):999;
 return e.n*Math.pow(0.5,ageDays/21);   // frequency, halving every three weeks
 }
 function commandRegister(){
@@ -24281,15 +24392,15 @@ days=days||14;var from=addDays(asOf(),-days);var items=[];
 items.push({at:i.createdAt||i.date,date:i.date,what:i.variable+(i.from!=null&&i.to!=null?(' '+i.from+' \u2192 '+i.to):' changed'),
 reason:i.expected||i.note||'recorded without a stated expectation',
 confidence:null,expected:i.expected||null,recheck:i.recheckDate||null,kind:'intervention',id:i.id});});
-(DB.phases||[]).forEach(function(p){(p.history||[]).forEach(function(h){if(h.at.slice(0,10)<from)return;
+(DB.phases||[]).forEach(function(p){(p.history||[]).forEach(function(h){if(localDateOf(h.at)<from)return;
 Object.keys(h.before||{}).forEach(function(k){
-items.push({at:h.at,date:h.at.slice(0,10),what:k+' '+String(h.before[k])+' \u2192 '+String(p[k]),
+items.push({at:h.at,date:localDateOf(h.at),what:k+' '+String(h.before[k])+' \u2192 '+String(p[k]),
 reason:'phase targets edited',confidence:null,kind:'target',id:p.id});});});});
 decisionsOf().forEach(function(d){if(d.date<from)return;
 items.push({at:d.at||d.date,date:d.date,what:d.verb||d.code,reason:d.lede||'',confidence:d.confidence||null,
 recheck:d.recheckDays?addDays(d.date,d.recheckDays):null,kind:'decision',id:d.id});});
-(DB.settings.programHistory||[]).forEach(function(h){if(String(h.at).slice(0,10)<from)return;
-items.push({at:h.at,date:h.at.slice(0,10),what:'training program '+(h.from?h.from+' \u2192 ':'set to ')+h.program,
+(DB.settings.programHistory||[]).forEach(function(h){if(localDateOf(h.at)<from)return;
+items.push({at:h.at,date:localDateOf(h.at),what:'training program '+(h.from?h.from+' \u2192 ':'set to ')+h.program,
 reason:'program change \u2014 strength history restarts for exercises that are new to the plan',kind:'program',id:h.program});});
 items.sort(function(a,b){return String(a.at)<String(b.at)?1:-1;});
 return {items:items,days:days,empty:!items.length};
@@ -28855,7 +28966,7 @@ date:lastIv.date,act:'nav.day',arg:lastIv.date});
 var lastPred=(DB.predictions||[]).filter(function(p){return p.status==='scored';})
 .sort(function(a,b){return String(a.scoredAt)<String(b.scoredAt)?1:-1;})[0];
 if(lastPred)t.push({id:'lastPrediction',label:'Last scored forecast',
-detail:(lastPred.covered?'within range':'outside range')+' by '+fmtWeight(Math.abs(lastPred.error||0))+' \u00b7 '+ageLabel(String(lastPred.scoredAt).slice(0,10)),
+detail:(lastPred.covered?'within range':'outside range')+' by '+fmtWeight(Math.abs(lastPred.error||0))+' \u00b7 '+ageLabel(localDateOf(lastPred.scoredAt)),
 date:String(lastPred.dueDate||'').slice(0,10),act:'nav.voi'});
 try{
 var q=attentionQueue();
@@ -28886,7 +28997,7 @@ out.logged.push({label:((OBS_TYPES[o.type]||{}).label||o.type)+' '+(o.value!=nul
 date:o.date,act:'obs.inspect',arg:o.id});
 });
 try{whatChanged(Math.max(days,1)).items.forEach(function(i){
-if(String(i.at).slice(0,10)<=since)return;
+if(localDateOf(i.at)<=since)return;
 out.system.push({label:i.what,detail:i.reason,kind:i.kind});});}catch(e){_q(e,'P3');}
 out.nothing=!out.logged.length&&!out.system.length;
 out.note=out.nothing?('Nothing was recorded or decided in the last '+days+' day'+(days===1?'':'s')+'.'):
@@ -29097,11 +29208,12 @@ var rail=function(id){var el=document.getElementById(id);if(!el)return null;var 
 if(s.display==='none'||s.visibility==='hidden')return null;
 var w=el.offsetWidth;if(!w)return null;var l=el.offsetLeft;return {left:l,right:l+w,width:w};};
 var L=rail('railLeft'),R=rail('railRight'),gap=6;
-var card=null,cards=document.querySelectorAll('main .card');
-for(var ci=0;ci<cards.length;ci++){if(cards[ci].offsetWidth>0&&cards[ci].getClientRects().length){card=cards[ci];break;}}
-if(card){var cr=card.getBoundingClientRect(),ccs=getComputedStyle(card);
-innerL=cr.left+(parseFloat(ccs.paddingLeft)||0)+(parseFloat(ccs.borderLeftWidth)||0);
-innerR=cr.right-(parseFloat(ccs.paddingRight)||0)-(parseFloat(ccs.borderRightWidth)||0);}
+var cards=document.querySelectorAll('main .card'),seen=false,minL=Infinity,maxR=-Infinity;
+for(var ci=0;ci<cards.length;ci++){var cd=cards[ci];if(!(cd.offsetWidth>0&&cd.getClientRects().length))continue;seen=true;
+var cr=cd.getBoundingClientRect(),ccs=getComputedStyle(cd);
+minL=Math.min(minL,cr.left+(parseFloat(ccs.paddingLeft)||0)+(parseFloat(ccs.borderLeftWidth)||0));
+maxR=Math.max(maxR,cr.right-(parseFloat(ccs.paddingRight)||0)-(parseFloat(ccs.borderRightWidth)||0));}
+if(seen){innerL=minL;innerR=maxR;}
 var insetL=L?Math.max(0,Math.ceil(L.right+gap-innerL)):0;
 var insetR=R?Math.max(0,Math.ceil(innerR-(R.left-gap))):0;
 var root=document.documentElement.style;
@@ -30333,7 +30445,7 @@ var today=todayISO();var last=DB.settings.lastDailyJobs;
 try{runDueJobs();}catch(e){_q(e);}
 if(last===today)return;
 captureSnapshot();DB.settings.lastDailyJobs=today;save('daily');
-if(!DB.settings.lastAutoBackupAt||DB.settings.lastAutoBackupAt.slice(0,10)!==today){writeAutoBackup();DB.settings.lastAutoBackupAt=nowISO();}
+if(!DB.settings.lastAutoBackupAt||localDateOf(DB.settings.lastAutoBackupAt)!==today){writeAutoBackup();DB.settings.lastAutoBackupAt=nowISO();}
 }catch(e){_q(e);}}
 function _ensurePlanAfterBoot(){if(typeof ensurePlan==='function'){try{var had=(DB.plans||[]).length;var p=ensurePlan();if(p&&!had){_memoInvalidate();renderAll();}}catch(e){_q(e,'P1');}}}
 function firstRun(){_ensurePlanAfterBoot();if(DB.settings.onboarded||DB.observations.length||DB.phases.length)return;setTimeout(function(){
@@ -30391,7 +30503,9 @@ try{if(typeof watchPanelLevels==='function')watchPanelLevels();}catch(e){_q(e,'P
 try{applyLayout();window.addEventListener('resize',function(){applyLayout();},{passive:true});}catch(e){_q(e,'P3');}
 window.addEventListener('hashchange',function(){var t=location.hash.replace('#','');if(t&&document.getElementById('view-'+t)&&t!==_TAB)switchTab(t);});
 var start=location.hash.replace('#','');switchTab(document.getElementById('view-'+start)?start:'today');
-if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);   /* home-screen shortcuts: ?do=weigh-in and friends */
+if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);
+if(typeof handleConnectReturn==='function')setTimeout(handleConnectReturn,400);
+if(typeof startWeatherAuto==='function')startWeatherAuto();   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
 makeDelegatedControlsFocusable();
 onSave(function(){_memoInvalidate();});
 initDurableStorage().then(function(){return _RECONCILED;}).then(function(){

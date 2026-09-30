@@ -74,7 +74,7 @@ function cardioSessions(days){
       modalityData:CARDIO_MODALITIES[mod]||CARDIO_MODALITIES.other,
       zone:cardioZoneFor({zone:meta.zone,hr:meta.hr,grade:meta.grade!=null?+meta.grade:null,maxHr:(prof().maxHr||null),rpe:meta.rpe}),
       /* the measurements themselves, not only the zone they imply: the fitness model needs them */
-      hr:meta.hr!=null?+meta.hr:null,rpe:meta.rpe!=null?+meta.rpe:null,grade:meta.grade!=null?+meta.grade:null};
+      hr:meta.hr!=null?+meta.hr:null,rpe:meta.rpe!=null?+meta.rpe:null,grade:meta.grade!=null?+meta.grade:null,steady:meta.steady||null,externalId:meta.externalId||null};
   });
   if(!rows.length)return {status:'insufficient',need:['cardio sessions logged'],days:days};
   var minutes=rows.reduce(function(a,r){return a+(r.minutes||0);},0);
@@ -217,7 +217,7 @@ function _weekKey(date){
   var d=new Date(date+'T12:00:00Z');
   var day=d.getUTCDay();
   var monday=new Date(d);monday.setUTCDate(d.getUTCDate()-((day+6)%7));
-  return monday.toISOString().slice(0,10);
+  return localDateOf(monday.toISOString());
 }
 /* Timing: same-day cardio and lifting is the arrangement most likely to interfere, and it is checkable. */
 function cardioTiming(days){

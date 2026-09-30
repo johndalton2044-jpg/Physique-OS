@@ -185,7 +185,7 @@ function skillStates(){
      in both cases. */
   var out={};
   Object.keys(cur).forEach(function(k){
-    if(!cur[k].at||String(cur[k].at).slice(0,10)<=on)out[k]=cur[k];
+    if(!cur[k].at||localDateOf(cur[k].at)<=on)out[k]=cur[k];
   });
   /* Anything changed after the replay date is reconstructed from the log rather than dropped outright. */
   try{
@@ -317,7 +317,7 @@ function movementLog(opts){
   opts=opts||{};
   return (DB.settings.movements||[]).filter(function(m){
     if(m.retracted)return false;
-    if(m.createdAt&&String(m.createdAt).slice(0,10)>asOf())return false;
+    if(m.createdAt&&localDateOf(m.createdAt)>asOf())return false;
     if(m.date>asOf())return false;
     if(opts.from&&m.date<opts.from)return false;
     if(opts.to&&m.date>opts.to)return false;

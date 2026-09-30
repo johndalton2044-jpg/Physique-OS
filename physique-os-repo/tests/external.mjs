@@ -46,6 +46,24 @@ line(E.air===8,'air quality is ingested (PM2.5, PM10, ozone, NO\u2082, SO\u2082,
 await S(()=>{window.closeSheet&&window.closeSheet();window.switchTab('today');});await p.waitForTimeout(300);
 const C=await S(()=>{const c=[...document.querySelectorAll('#view-today .card')].find(x=>window.panelTitle(x)==='Weather');return c?{t:c.textContent.replace(/\s+/g,' '),days:c.querySelectorAll('.wx-day').length}:null;});
 line(!!C&&/feels like/.test(C.t)&&/Humidity/.test(C.t)&&/gusts/.test(C.t)&&/UV index/.test(C.t)&&/daylight/.test(C.t)&&/AQI/.test(C.t)&&C.days>=12,'Today shows current weather, wind with gusts, UV, sun and daylight, air quality and the next 14 days',C&&C.t.slice(0,200));
+/* AUTO-UPDATING: a small request, a silent refresh when stale, none when fresh or switched off, and one on launch */
+await S(()=>{window.__urls=[];const f=window.fetch;window.fetch=function(u,o){window.__urls.push(String(u));return f.apply(this,arguments);};});
+const age=m=>S(mm=>{window.DB.environment.forEach(b=>{b.retrievedAt=new Date(Date.now()-mm*60000).toISOString();});window._memoInvalidate&&window._memoInvalidate();},m);
+const nudge=()=>S(()=>{document.dispatchEvent(new Event('visibilitychange'));});
+await age(40);await S(()=>document.querySelectorAll('.toast').forEach(t=>t.remove()));const before=await S(()=>window.DB.environment.find(b=>b.dataset==='forecast').retrievedAt);await nudge();await p.waitForTimeout(1500);
+const A=await S(()=>({urls:window.__urls.filter(u=>/weather\/forecast/.test(u)),after:window.DB.environment.find(b=>b.dataset==='forecast').retrievedAt,toast:[...document.querySelectorAll('.toast')].map(t=>t.textContent).join(' | ')}));
+line(A.urls.length===1&&/past_hours=24/.test(A.urls[0])&&/forecast_hours=48/.test(A.urls[0])&&/forecast_days=14/.test(A.urls[0]),'refreshes ask for 24 h back and 48 h ahead hourly, and 14 days daily',JSON.stringify(A.urls));
+line(A.after!==before&&!/Weather updated/.test(A.toast),'a forecast over 30 minutes old refreshes by itself when the app comes back, without a toast',JSON.stringify({before,after:A.after,toast:A.toast}));
+await S(()=>{window.__urls=[];});await nudge();await p.waitForTimeout(800);line(await S(()=>window.__urls.length===0),'a fresh forecast is not fetched again');
+await S(()=>{window.DB.settings.weatherAuto=false;window.__urls=[];});await age(40);await nudge();await p.waitForTimeout(800);
+line(await S(()=>window.__urls.length===0),'with automatic updates off, nothing refreshes by itself');await S(()=>{window.DB.settings.weatherAuto=true;window.save&&window.save('settings');});
+/* a new launch with a stale saved forecast: it shows at once and refreshes in the background */
+await age(45);await S(()=>window.save&&window.save('environment'));await p.waitForTimeout(300);const t0=Date.now();await p.reload();
+let shownAt=null;for(let i=0;i<60&&shownAt==null;i++){if(await S(()=>!!document.querySelector('#view-today .wx-now')))shownAt=Date.now()-t0;else await p.waitForTimeout(50);}
+const L0={shown:shownAt!=null,ms:shownAt};
+await p.waitForTimeout(2200);const L1=await S(()=>window.DB.environment.find(b=>b.dataset==='forecast').retrievedAt);
+line(L0.shown&&L0.ms<2500,'on launch the saved forecast shows at once (within '+L0.ms+' ms of reloading, before any network answer)',JSON.stringify(L0));
+line(Date.now()-Date.parse(L1)<60000,'and a stale one is refreshed in the background right after launch',L1);
 /* units follow the person's setting */
 const U=await S(()=>{const a=window.fmtEnv('temperature',20),b=window.fmtEnv('windSpeed',10);window.DB.profile.units='metric';window.DB.settings.units='metric';const c=window.fmtEnv('temperature',20),d=window.fmtEnv('windSpeed',10);return [a,b,c,d];});
 line(U.some(x=>/\u00b0F|mph/.test(x))&&U.some(x=>/\u00b0C|km\/h/.test(x)),'units follow the setting (\u00b0F and mph, or \u00b0C and km/h)',JSON.stringify(U));

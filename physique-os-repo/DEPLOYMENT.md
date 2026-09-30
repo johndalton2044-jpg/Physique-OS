@@ -17,6 +17,28 @@ It needs a long-running Node process, persistent storage and HTTPS (for example 
 
     node server/server.mjs
 
+Connected services (optional; each needs a developer account with the provider):
+
+    CONNECT_TOKEN_KEY=<64 hex characters>   # encrypts stored sign-ins; without it connections are off
+    PHYSIQUE_PUBLIC_URL=https://YOUR-APP    # the provider sends people back to /api/sync/v1/ext/connect/callback
+    FITBIT_CLIENT_ID=... FITBIT_CLIENT_SECRET=...
+    WITHINGS_CLIENT_ID=... WITHINGS_CLIENT_SECRET=...
+    OURA_CLIENT_ID=... OURA_CLIENT_SECRET=...
+    STRAVA_CLIENT_ID=... STRAVA_CLIENT_SECRET=...   # strava.com/settings/api; set the Authorization Callback Domain to YOUR-APP's host
+    STRAVA_VERIFY_TOKEN=<any random string>        # for Strava's webhook handshake
+    STRAVA_SUBSCRIPTION_ID=<id returned when you subscribe, below>
+
+Strava webhooks (optional, for new workouts without pressing Sync) — subscribe once:
+
+    curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+      -F client_id=$STRAVA_CLIENT_ID -F client_secret=$STRAVA_CLIENT_SECRET \
+      -F callback_url=https://YOUR-APP/api/sync/v1/ext/webhook?provider=strava -F verify_token=$STRAVA_VERIFY_TOKEN
+
+and set STRAVA_SUBSCRIPTION_ID to the id it returns. Events for any other subscription are refused.
+    FITBIT_SUBSCRIBER_VERIFY=...            # optional: Fitbit webhook verification code
+
+Register `https://YOUR-APP/api/sync/v1/ext/connect/callback` as the redirect URI with each provider.
+
 Check it: `https://YOUR-SERVER/v1/health` should answer `{"ok":true,"service":"physique-os-sync",...}`.
 
 ## 2. Forward /api/sync to it

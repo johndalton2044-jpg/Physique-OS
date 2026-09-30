@@ -7,7 +7,7 @@ Produced from the running registries on every governance run. Do not edit by han
 | models | 33 |
 | capabilities | 22 |
 | entity contracts | 11 |
-| commands | 480 |
+| commands | 486 |
 | sheets | 113 |
 | event types | 44 |
 | observation types | 32 |

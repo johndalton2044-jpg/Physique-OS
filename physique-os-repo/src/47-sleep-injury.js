@@ -168,7 +168,7 @@ var BODY_REGIONS={
 };
 function injuries(){return (DB.settings.injuries||[]).filter(function(i){return _knownBy(i,asOf());});}
 function activeInjuries(){
-  return injuries().filter(function(i){return !i.resolvedAt||String(i.resolvedAt).slice(0,10)>asOf();});
+  return injuries().filter(function(i){return !i.resolvedAt||localDateOf(i.resolvedAt)>asOf();});
 }
 /* The mutation primitive. Domains propose; this is the registered path a user's confirmation runs through. */
 function recordInjury(o){
@@ -310,9 +310,9 @@ registerDomain({
   knowledge:function(st){
     return injuries().filter(function(i){return i.resolvedAt;}).slice(-6).map(function(i){
       return {kind:'injury',subject:(BODY_REGIONS[i.region]||{}).label||i.region,
-        statement:'settled after '+daysBetween(i.since,String(i.resolvedAt).slice(0,10))+' days',
+        statement:'settled after '+daysBetween(i.since,localDateOf(i.resolvedAt))+' days',
         confidence:'low',evidence:'one episode',context:'what you were doing at the time',
-        lastValidated:String(i.resolvedAt).slice(0,10),
+        lastValidated:localDateOf(i.resolvedAt),
         transfers:'one episode is a data point, not a pattern; a recurrence in the same region is the thing worth noticing'};
     });
   }

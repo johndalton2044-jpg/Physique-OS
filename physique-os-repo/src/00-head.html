@@ -365,10 +365,10 @@ body.sheet-open .fab,body.sheet-open .rail-right,body.sheet-open .rail-left{opac
    than leaving two half-columns with nothing readable in either. */
 html[data-layout="split"] .view{max-width:1180px;margin:0 auto}
 @media (min-width:1024px){
-  html[data-layout="split"] .view.split-capable{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+  html[data-layout="split"] .view.split-capable.active{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
   html[data-layout="split"] .view.split-capable > .split-aside{position:sticky;top:64px}
 }
-@media (max-width:1023px){html[data-layout="split"] .view.split-capable{display:block}}
+@media (max-width:1023px){html[data-layout="split"] .view.split-capable.active{display:block}}
 /* Both rails share one bottom offset, one inset and one z-index. They had 78px against 88px and 40 against
    60, which put the two sides of the screen at visibly different heights. */
 .rail-left{position:fixed;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center}
@@ -831,7 +831,8 @@ tr.wx-today td{font-weight:700}
 .feat{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)}.feat:first-child{border-top:0}.feat .ic{color:var(--accent);margin-top:2px}.feat-body{flex:1;min-width:0}
 #undoFab.is-empty{opacity:.45}
 /* Today: the summary first, then what to do, then the rest. */
-#view-today{display:flex;flex-direction:column}#decisionZone{order:1}#actionsZone{order:2}#attentionZone{order:3}#vitalsZone{order:4}#forecastZone{order:5}#dataQualityZone{order:6}#upcomingZone{order:7}#todayTechZone{order:8}
+/* scoped to .active: an ID rule outranks .view{display:none}, so Today showed on every panel with the others below it */
+#view-today.active{display:flex;flex-direction:column}#decisionZone{order:1}#actionsZone{order:2}#attentionZone{order:3}#vitalsZone{order:4}#forecastZone{order:5}#dataQualityZone{order:6}#upcomingZone{order:7}#todayTechZone{order:8}
 .today-hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 14px;align-items:center}.hero-photo{flex:none;border:0;padding:0;background:none;border-radius:14px;overflow:hidden;width:96px;height:96px}
 .hero-photo img{width:96px;height:96px;object-fit:cover;display:block;background:var(--surface-2)}.hero-main{flex:1;min-width:0}.hero-decision{margin:4px 0 8px;font-size:calc(15px*var(--ts,1))}
 .hero-nums{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}/* outlined, not filled: secondary text on the lighter fill fell to 4.19:1 (4.5 needed) */

@@ -47,7 +47,7 @@ registerExternalSource({id:'open-food-facts',name:'Open Food Facts',category:'fo
 function externalSources(){
   var out={};Object.keys(EXTERNAL_SOURCES).forEach(function(k){out[k]=EXTERNAL_SOURCES[k];});
   if(typeof IMPORT_SOURCES!=='undefined')Object.keys(IMPORT_SOURCES).forEach(function(k){if(k==='manual')return;out['file:'+k]={id:'file:'+k,name:IMPORT_SOURCES[k].label,category:'file import',status:'integration-tested',destinations:['observations'],capabilities:['file import'],authentication:{kind:'none',custody:'none'}};});
-  if(typeof WEARABLE_PROVIDERS!=='undefined')Object.keys(WEARABLE_PROVIDERS).forEach(function(k){out['wearable:'+k]={id:'wearable:'+k,name:WEARABLE_PROVIDERS[k].label,category:'wearable',status:'fixture-tested',destinations:['observations'],capabilities:['api adapter'],authentication:{kind:WEARABLE_PROVIDERS[k].auth,custody:'server or native (not wired)'}};});
+  if(typeof WEARABLE_PROVIDERS!=='undefined')Object.keys(WEARABLE_PROVIDERS).forEach(function(k){out['wearable:'+k]={id:'wearable:'+k,name:WEARABLE_PROVIDERS[k].label,category:'wearable',status:'integration-tested',statusNote:'tested end to end against a simulated provider; production needs real credentials',destinations:['observations'],capabilities:['oauth sign-in','30-day backfill','cursor sync','webhooks','revocation'],authentication:{kind:WEARABLE_PROVIDERS[k].auth,custody:'server, encrypted at rest (CONNECT_TOKEN_KEY)'}};});
   return out;
 }
 function externalSourceAudit(){
@@ -83,7 +83,9 @@ function extServerBase(){try{var c=cloudConfig();return c&&c.url?String(c.url).r
 var EXT_NO_SERVER_TEXT='Weather and online food lookups need the Physique OS server, and none is answering for this app.';
 function extRequest(pathQuery){
   var base=extServerBase();if(!base||typeof fetch!=='function')return Promise.resolve(extError('configuration_error','no Physique OS server is configured, so external sources are unavailable here',{stage:'configuration',text:EXT_NO_SERVER_TEXT}));
-  return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
+  /* a request that hangs (a sleeping server, a dead connection) ends after 25 s as network_unavailable */
+  var ctl=typeof AbortController==='function'?new AbortController():null,tmo=ctl?setTimeout(function(){ctl.abort();},25000):null;
+  return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(r){if(tmo)clearTimeout(tmo);
     var ct=String((r.headers&&r.headers.get&&r.headers.get('content-type'))||'');
     if(!/json/i.test(ct)){
       if(r.status>=502&&r.status<=504)return extError('network_unavailable','the address '+base+' is forwarded, but the server behind it is not answering (HTTP '+r.status+')',{stage:'routing',http:r.status,text:'The Physique OS server is not answering right now.'});
@@ -278,11 +280,12 @@ function refreshEnvironment(opts){
   opts=opts||{};var L=weatherLocation();if(!L)return Promise.resolve(extError('configuration_error','set a place first; a location is never inferred'));
   var provider=opts.provider||(DB.settings.weatherProvider||'open-meteo'),tz=L.timezone||_deviceTz();
   var q='lat='+L.lat+'&lon='+L.lon+'&tz='+encodeURIComponent(tz);
-  var jobs=[extRequest('/v1/ext/weather/forecast?'+q+'&provider='+provider+'&past_days=7&forecast_days=14').then(function(r){
+  /* hourly for 24 h back and 48 ahead (what the screens use); daily for 7 back and 14 ahead: ~7x less than full hourly */
+  var jobs=[extRequest('/v1/ext/weather/forecast?'+q+'&provider='+provider+'&past_days=7&forecast_days=14&past_hours=24&forecast_hours=48').then(function(r){
       if(r.status!=='ok')return r;var a=provider==='meteosource'?adaptMeteosource(r.payload,{retrievedAt:r.retrievedAt,lat:L.lat,lon:L.lon,label:L.label}):
         adaptOpenMeteo(r.payload,{dataset:'forecast',retrievedAt:r.retrievedAt,label:L.label,requested:ENV_REQUESTED.filter(function(v){return ENV_VARIABLES[v].res.indexOf('daily')<0||true;})});
       if(a.status!=='ok')return a;a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id=a.batch.id.replace(/:[-0-9.]+,[-0-9.]+/,':'+L.lat+','+L.lon);return ingestEnvironmentBatch(a.batch);}),
-    extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=7&forecast_days=5').then(function(r){
+    (opts.air===false?Promise.resolve({status:'ok',skipped:true}):extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=1&forecast_days=3&past_hours=24&forecast_hours=48')).then(function(r){if(r.skipped)return r;
       if(r.status!=='ok')return r;var a=adaptOpenMeteo(r.payload,{dataset:'air-quality',retrievedAt:r.retrievedAt,label:L.label});if(a.status!=='ok')return a;
       a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:air-quality:'+L.lat+','+L.lon;return ingestEnvironmentBatch(a.batch);})];
   return Promise.all(jobs).then(function(rs){DB.settings.weatherSync={lastAttempt:nowISO(),lastSuccess:rs[0].status==='ok'?nowISO():((DB.settings.weatherSync||{}).lastSuccess||null),
@@ -360,7 +363,7 @@ var ENV_KIND_TEXT={current:'now',forecast:'forecast','recent past':'recent past 
 function renderWeatherCard(){
   var L=weatherLocation();if(!L)return '';
   var N=environmentNow(),D=environmentDaily();
-  if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+esc(N.note)+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
+  if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+(weatherUpdating()?'Fetching the weather\u2026':esc(N.note))+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
   var v=N.values,T=todayISO(),today=(D.days||[]).filter(function(d){return d.date===T;})[0],fc=(D.days||[]).filter(function(d){return d.date>=T;}).slice(0,14);
   var cond=weatherCondition(v,v.isDay);
   var top='<div class="wx-now">'+weatherIcon(v,v.isDay,44)+'<div><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="wx-cond">'+esc(cond?cond.label:'')+(cond&&cond.derived?' <span class="hint">(from cloud cover and rain)</span>':'')+'</div>'+
@@ -376,8 +379,33 @@ function renderWeatherCard(){
     (v.usAqi!=null||v.europeanAqi!=null?uiRow('Air quality',v.usAqi!=null?('US AQI '+fmtEnv('usAqi',v.usAqi)):('European AQI '+fmtEnv('europeanAqi',v.europeanAqi)),{sub:'PM2.5 '+fmtEnv('pm2_5',v.pm2_5)}):'');
   var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b>'+weatherIcon(d.values,true,22)+'<span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
     '<span class="hint">'+(d.values.precipitationSum?fmtEnv('precipitationSum',d.values.precipitationSum):'\u00a0')+(d.values.precipitationProbabilityMax!=null?' '+Math.round(d.values.precipitationProbabilityMax)+'%':'')+'</span></div>';}).join('')+'</div>';
-  return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(N.stale?' (out of date)':''),
+  return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(weatherUpdating()?' \u00b7 updating\u2026':(N.stale?' (out of date)':'')),
     body:top+hourly+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
 }
 /* SHEETS.weather lives in 90-workout.js: SHEETS is defined in 85-log-sheet.js, after this file, and assigning to it here
    threw at load — the load-order trap, a third time. Governance now fails any top-level use of a registry before its definition. */
+
+/* ============================================================================
+   AUTO-UPDATING WEATHER. The saved forecast shows at once; a refresh runs in the background when the app opens, comes
+   back to the foreground, or gets its connection back, and every 30 minutes while open \u2014 only when the forecast is
+   more than 30 minutes old, never twice at once, never while hidden, and silently. Air quality refreshes hourly. At
+   launch the server is woken in parallel, so a sleeping free-tier server starts while the saved forecast is shown.
+   ============================================================================ */
+var WEATHER_AUTO={staleMinutes:30,airMinutes:60,checkEveryMs:5*60000};var _WX_INFLIGHT=null,_WX_STARTED=false;
+function weatherAutoEnabled(){return DB.settings.weatherAuto!==false;}
+function _ageMinutes(b){return b?(Date.now()-Date.parse(b.retrievedAt))/60000:Infinity;}
+function weatherNeedsRefresh(){return !!weatherLocation()&&_ageMinutes(_envBatches('forecast')[0])>=WEATHER_AUTO.staleMinutes;}
+function weatherUpdating(){return !!_WX_INFLIGHT;}
+function weatherAutoRefresh(reason){
+  if(!weatherAutoEnabled()||_WX_INFLIGHT||!weatherNeedsRefresh())return null;
+  if(typeof document!=='undefined'&&document.hidden)return null;
+  var air=_ageMinutes(_envBatches('air-quality')[0])>=WEATHER_AUTO.airMinutes;
+  _WX_INFLIGHT=refreshEnvironment({air:air,auto:true,reason:reason}).then(function(r){_WX_INFLIGHT=null;try{renderAll();}catch(e){}return r;},function(e){_WX_INFLIGHT=null;try{renderAll();}catch(x){}});
+  try{renderAll();}catch(e){}return _WX_INFLIGHT;
+}
+function startWeatherAuto(){if(_WX_STARTED||typeof document==='undefined'||typeof window==='undefined')return;_WX_STARTED=true;
+  if(weatherLocation()&&extServerBase())_rawGet('/v1/health');   /* wake a sleeping server while the saved forecast shows */
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)weatherAutoRefresh('visible');});
+  window.addEventListener('online',function(){weatherAutoRefresh('online');});
+  setInterval(function(){weatherAutoRefresh('timer');},WEATHER_AUTO.checkEveryMs);
+  setTimeout(function(){weatherAutoRefresh('launch');},800);}

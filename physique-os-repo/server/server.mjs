@@ -30,6 +30,8 @@ import https from 'node:https';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import os from 'node:os';
 
 const args=Object.fromEntries(process.argv.slice(2).reduce((a,v,i,arr)=>(v.startsWith('--')?[...a,[v.slice(2),arr[i+1]]]:a),[]));
 const PORT=+(args.port||process.env.PORT||8787);
@@ -305,6 +307,186 @@ async function extCall(provider,fixtureName,urlStr,headers,ttlMs){
   EXT_CACHE.set(cacheKey,{at:Date.now(),retrievedAt,payload});
   return {status:'ok',provider,retrievedAt,cached:false,payload};
 }
+
+/* ============================================================================
+   CONNECTIONS: wearables and health platforms over OAuth (integration spec: token custody, cursors, backfill,
+   revocation, webhooks). Sign-in details never reach the app: they are kept here, encrypted at rest (AES-256-GCM with
+   CONNECT_TOKEN_KEY), per vault, and refreshed when they expire. A provider is available only when its credentials are
+   set (FITBIT_CLIENT_ID, WITHINGS_CLIENT_ID and _SECRET, OURA_CLIENT_ID and _SECRET). The server fetches the provider's
+   JSON for a date window and returns it; the app's adapters normalise it (providers terminate at the adapter
+   boundary). PHYSIQUE_CONNECT_MOCK=<origin> points every provider address at a local simulated provider for tests.
+   ============================================================================ */
+const CONNECT_KEY=(()=>{const k=process.env.CONNECT_TOKEN_KEY;if(!k)return null;const b=/^[0-9a-f]{64}$/i.test(k)?Buffer.from(k,'hex'):Buffer.from(k,'base64');
+  if(b.length!==32){console.error('CONNECTIONS: CONNECT_TOKEN_KEY must be 32 bytes (64 hex characters or base64)');process.exit(1);}return b;})();
+const CONNECT_MOCK=process.env.PHYSIQUE_CONNECT_MOCK||null;
+const PUBLIC_URL=(process.env.PHYSIQUE_PUBLIC_URL||'').replace(/\/$/,'');
+function _pUrl(u){if(!CONNECT_MOCK)return u;const x=new URL(u);return CONNECT_MOCK.replace(/\/$/,'')+x.pathname+x.search;}
+const CONNECT_PROVIDERS={
+  fitbit:{label:'Fitbit',pkce:true,authorize:'https://www.fitbit.com/oauth2/authorize',token:'https://api.fitbit.com/oauth2/token',revoke:'https://api.fitbit.com/oauth2/revoke',
+    scopes:'weight activity sleep',id:'FITBIT_CLIENT_ID',secret:'FITBIT_CLIENT_SECRET',maxDays:31},
+  withings:{label:'Withings',pkce:false,authorize:'https://account.withings.com/oauth2_user/authorize2',token:'https://wbsapi.withings.net/v2/oauth2',
+    scopes:'user.metrics',id:'WITHINGS_CLIENT_ID',secret:'WITHINGS_CLIENT_SECRET',secretRequired:true,maxDays:90},
+  strava:{label:'Strava',pkce:false,authorize:'https://www.strava.com/oauth/authorize',token:'https://www.strava.com/oauth/token',deauthorize:'https://www.strava.com/oauth/deauthorize',
+    scopes:'read,activity:read_all',id:'STRAVA_CLIENT_ID',secret:'STRAVA_CLIENT_SECRET',secretRequired:true,maxDays:3650,streamsPerSync:15},
+  oura:{label:'Oura',pkce:false,authorize:'https://cloud.ouraring.com/oauth/authorize',token:'https://api.ouraring.com/oauth/token',
+    scopes:'daily',id:'OURA_CLIENT_ID',secret:'OURA_CLIENT_SECRET',secretRequired:true,maxDays:90}
+};
+function connectConfigured(p){const c=CONNECT_PROVIDERS[p];return !!(c&&CONNECT_KEY&&process.env[c.id]&&(!c.secretRequired||process.env[c.secret]));}
+function _seal(obj){const iv=crypto.randomBytes(12),c=crypto.createCipheriv('aes-256-gcm',CONNECT_KEY,iv);const data=Buffer.concat([c.update(JSON.stringify(obj),'utf8'),c.final()]);
+  return {iv:iv.toString('base64'),tag:c.getAuthTag().toString('base64'),data:data.toString('base64')};}
+/* ROTATION: with CONNECT_TOKEN_KEY_PREVIOUS set, a sign-in sealed under the old key still opens; it is re-sealed under the
+   new key when next used, or all at once through POST /v1/admin/rotate-connect-key. Remove the old key afterwards. */
+const CONNECT_KEY_PREV=(()=>{const k=process.env.CONNECT_TOKEN_KEY_PREVIOUS;if(!k)return null;const b=/^[0-9a-f]{64}$/i.test(k)?Buffer.from(k,'hex'):Buffer.from(k,'base64');return b.length===32?b:null;})();
+function _openWith(key,e){const d=crypto.createDecipheriv('aes-256-gcm',key,Buffer.from(e.iv,'base64'));d.setAuthTag(Buffer.from(e.tag,'base64'));return JSON.parse(Buffer.concat([d.update(Buffer.from(e.data,'base64')),d.final()]).toString('utf8'));}
+function _open(e){try{return _openWith(CONNECT_KEY,e);}catch(err){if(CONNECT_KEY_PREV){const v=_openWith(CONNECT_KEY_PREV,e);Object.defineProperty(v,'__oldKey',{value:true});return v;}throw err;}}
+function rotateConnectKeys(){let resealed=0,failed=0;const vd=path.join(DATA,'vaults');if(!fs.existsSync(vd))return {resealed,failed};
+  for(const id of fs.readdirSync(vd)){const conns=readConns(id);let changed=false;for(const p of Object.keys(conns)){const c=conns[p];if(!c||!c.sealed)continue;
+    try{const t=_open(c.sealed);if(t.__oldKey){c.sealed=_seal({access:t.access,refresh:t.refresh,expiresAt:t.expiresAt});changed=true;resealed++;}}catch(e){failed++;}}
+    if(changed)writeConns(id,conns);}
+  return {resealed,failed};}
+const connPath=id=>path.join(vaultDir(id),'connections.json'),CONN_INDEX=path.join(DATA,'connect-index.json');
+function readConns(id){try{return JSON.parse(fs.readFileSync(connPath(id),'utf8'));}catch(e){return {};}}
+function writeConns(id,c){fs.mkdirSync(vaultDir(id),{recursive:true});fs.writeFileSync(connPath(id)+'.tmp',JSON.stringify(c));fs.renameSync(connPath(id)+'.tmp',connPath(id));}
+function readConnIndex(){try{return JSON.parse(fs.readFileSync(CONN_INDEX,'utf8'));}catch(e){return {};}}
+function writeConnIndex(x){fs.writeFileSync(CONN_INDEX+'.tmp',JSON.stringify(x));fs.renameSync(CONN_INDEX+'.tmp',CONN_INDEX);}
+const PENDING_AUTH=new Map();   /* state \u2192 {vaultId, provider, verifier, returnTo, at}; ten minutes */
+function _form(o){return Object.keys(o).filter(k=>o[k]!=null).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(o[k])).join('&');}
+async function _post(url,form,headers){const r=await fetch(_pUrl(url),{method:'POST',headers:Object.assign({'content-type':'application/x-www-form-urlencoded','accept':'application/json','user-agent':EXT_UA},headers||{}),body:_form(form)});
+  let j=null;try{j=await r.json();}catch(e){}return {status:r.status,json:j};}
+function _basic(p){const c=CONNECT_PROVIDERS[p],sec=process.env[c.secret];return sec?{authorization:'Basic '+Buffer.from(process.env[c.id]+':'+sec).toString('base64')}:{};}
+function _redirectUri(){return (PUBLIC_URL||'')+'/api/sync/v1/ext/connect/callback';}
+async function _exchange(p,params){const c=CONNECT_PROVIDERS[p];
+  if(p==='withings'){const r=await _post(c.token,Object.assign({action:'requesttoken',client_id:process.env[c.id],client_secret:process.env[c.secret]},params));
+    const b=r.json&&r.json.body;if(!b||r.json.status!==0)return {error:'provider_unavailable',detail:'Withings token request failed'};return {access_token:b.access_token,refresh_token:b.refresh_token,expires_in:b.expires_in,user_id:String(b.userid||'')};}
+  if(p==='strava'){const r=await _post(c.token,Object.assign({client_id:process.env[c.id],client_secret:process.env[c.secret]},params));
+    if(r.status===400||r.status===401)return {error:'authorization_denied',detail:(r.json&&r.json.message)||('HTTP '+r.status)};if(!r.json||!r.json.access_token)return {error:'provider_unavailable',detail:'no token in the response'};
+    /* Strava gives an absolute expiry (expires_at) and the athlete: the athlete id links webhooks to this vault */
+    return {access_token:r.json.access_token,refresh_token:r.json.refresh_token,expires_in:r.json.expires_at?Math.max(0,r.json.expires_at-Math.floor(Date.now()/1000)):r.json.expires_in,user_id:r.json.athlete&&r.json.athlete.id!=null?String(r.json.athlete.id):null};}
+  const r=await _post(c.token,Object.assign({client_id:process.env[c.id]},p==='oura'?{client_secret:process.env[c.secret]}:{},params),p==='fitbit'?_basic(p):{});
+  if(r.status===401||r.status===400)return {error:'authorization_denied',detail:(r.json&&(r.json.error||r.json.errors&&r.json.errors[0]&&r.json.errors[0].errorType))||('HTTP '+r.status)};
+  if(!r.json||!r.json.access_token)return {error:'provider_unavailable',detail:'no token in the response'};return r.json;}
+function _store(vaultId,p,tok){const conns=readConns(vaultId),prev=conns[p]||{};
+  const rec={access:tok.access_token,refresh:tok.refresh_token||(prev.sealed?_open(prev.sealed).refresh:null),expiresAt:Date.now()+1000*(+tok.expires_in||3600)};
+  conns[p]=Object.assign({},prev,{sealed:_seal(rec),userId:tok.user_id||prev.userId||null,connectedAt:prev.connectedAt||new Date().toISOString(),refreshedAt:new Date().toISOString(),pending:prev.pending||false});
+  writeConns(vaultId,conns);if(conns[p].userId){const ix=readConnIndex();ix[p+':'+conns[p].userId]=vaultId;writeConnIndex(ix);}return conns[p];}
+async function _accessToken(vaultId,p){const conns=readConns(vaultId),c=conns[p];if(!c||!c.sealed)return {error:'authentication_required',detail:'not connected'};
+  let t=_open(c.sealed);if(t.__oldKey){c.sealed=_seal({access:t.access,refresh:t.refresh,expiresAt:t.expiresAt});writeConns(vaultId,conns);}   /* re-sealed under the new key */
+  if(t.expiresAt-60000>Date.now())return {token:t.access};
+  if(!t.refresh)return {error:'authentication_required',detail:'the sign-in expired; connect again'};
+  const nt=await _exchange(p,{grant_type:'refresh_token',refresh_token:t.refresh});if(nt.error)return nt;_store(vaultId,p,nt);return {token:nt.access_token,refreshed:true};}
+function _day(d){return d.toISOString().slice(0,10);}
+async function _get(url,token){const r=await fetch(_pUrl(url),{headers:{authorization:'Bearer '+token,accept:'application/json','user-agent':EXT_UA}});let j=null;try{j=await r.json();}catch(e){}return {status:r.status,json:j};}
+async function _fetchWindow(p,token,start,end){
+  if(p==='fitbit'){const out={weight:[],'activities-steps':[],sleep:[]};let s=new Date(start+'T00:00:00Z');const e=new Date(end+'T00:00:00Z');
+    while(s<=e){const t=new Date(Math.min(e.getTime(),s.getTime()+30*86400000)),a=_day(s),b=_day(t);
+      const w=await _get('https://api.fitbit.com/1/user/-/body/log/weight/date/'+a+'/'+b+'.json',token),st=await _get('https://api.fitbit.com/1/user/-/activities/steps/date/'+a+'/'+b+'.json',token),sl=await _get('https://api.fitbit.com/1.2/user/-/sleep/date/'+a+'/'+b+'.json',token);
+      for(const r of [w,st,sl])if(r.status===401)return {error:'authentication_required'};else if(r.status===429)return {error:'rate_limited'};else if(r.status>=500)return {error:'provider_unavailable'};
+      out.weight=out.weight.concat((w.json&&w.json.weight)||[]);out['activities-steps']=out['activities-steps'].concat((st.json&&st.json['activities-steps'])||[]);out.sleep=out.sleep.concat((sl.json&&sl.json.sleep)||[]);s=new Date(t.getTime()+86400000);}
+    return {payload:out};}
+  if(p==='withings'){const r=await _post('https://wbsapi.withings.net/measure',{action:'getmeas',meastypes:'1,6',category:1,startdate:Math.floor(Date.parse(start+'T00:00:00Z')/1000),enddate:Math.floor(Date.parse(end+'T23:59:59Z')/1000)},{authorization:'Bearer '+token});
+    if(!r.json||r.json.status!==0)return {error:r.json&&r.json.status===401?'authentication_required':'provider_unavailable'};return {payload:{body:{measuregrps:(r.json.body&&r.json.body.measuregrps)||[]}}};}
+  if(p==='oura'){const q='?start_date='+start+'&end_date='+end,a=await _get('https://api.ouraring.com/v2/usercollection/daily_activity'+q,token),sl=await _get('https://api.ouraring.com/v2/usercollection/sleep'+q,token);
+    for(const r of [a,sl])if(r.status===401)return {error:'authentication_required'};else if(r.status>=400)return {error:r.status===429?'rate_limited':'provider_unavailable'};
+    return {payload:{data:((a.json&&a.json.data)||[]).concat((sl.json&&sl.json.data)||[])}};}
+  if(p==='strava'){
+    /* Activities in the window, page by page; per-second streams for the newest few (rate limits: ~100 requests per 15
+       minutes by default). Pending deletions from webhooks are handed back so the app can retract them. */
+    const after=Math.floor(Date.parse(start+'T00:00:00Z')/1000),before=Math.floor(Date.parse(end+'T23:59:59Z')/1000)+86400;let acts=[],usage=null;
+    for(let page=1;page<=5;page++){const r=await fetch(_pUrl('https://www.strava.com/api/v3/athlete/activities?after='+after+'&before='+before+'&per_page=100&page='+page),{headers:{authorization:'Bearer '+token,accept:'application/json','user-agent':EXT_UA}});
+      usage=r.headers.get('x-ratelimit-usage')||usage;if(r.status===401)return {error:'authentication_required'};if(r.status===429)return {error:'rate_limited',detail:'Strava rate limit reached (usage '+(usage||'?')+'); try again in 15 minutes'};if(r.status>=400)return {error:'provider_unavailable'};
+      const j=await r.json();if(!Array.isArray(j)||!j.length)break;acts=acts.concat(j);if(j.length<100)break;}
+    const budget=CONNECT_PROVIDERS.strava.streamsPerSync;acts.sort((a,b)=>String(b.start_date).localeCompare(String(a.start_date)));
+    for(const a of acts.slice(0,budget)){if(!(a.moving_time>=600))continue;
+      const r=await fetch(_pUrl('https://www.strava.com/api/v3/activities/'+a.id+'/streams?keys=time,heartrate,velocity_smooth,grade_smooth,watts,moving&key_by_type=true'),{headers:{authorization:'Bearer '+token,accept:'application/json','user-agent':EXT_UA}});
+      if(r.status===429)break;if(r.ok){try{a._streams=await r.json();}catch(e){}}}
+    return {payload:{activities:acts,rateLimitUsage:usage}};}
+  return {error:'unsupported_record'};
+}
+/* ============================================================================
+   OPERATIONS (audit §63\u2013§69, §111 phase 3): storage verified, metrics, backup, key rotation.
+   ============================================================================ */
+const METRICS={startedAt:Date.now(),requests:{},errors:0,rateLimited:0,push:{sent:0,failed:0,removed:0}};
+function _dirBytes(d){let n=0;try{for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,f.name);n+=f.isDirectory()?_dirBytes(p):fs.statSync(p).size;}}catch(e){}return n;}
+function storageStatus(){let free=null,total=null,writable=false;try{const st=fs.statfsSync(DATA);free=st.bavail*st.bsize;total=st.blocks*st.bsize;}catch(e){}
+  try{const f=path.join(DATA,'.probe-'+process.pid);fs.writeFileSync(f,'ok');writable=fs.readFileSync(f,'utf8')==='ok';fs.unlinkSync(f);}catch(e){}
+  const warnings=[];if(!writable)warnings.push('the data folder cannot be written');
+  /* absolute first: a percentage of a large disk flagged 7.8 GB free as low for a server holding megabytes */
+  if(free!=null&&(free<200*1048576||(free<1024*1048576&&total&&free/total<0.1)))warnings.push('disk space low: '+Math.round(free/1048576)+' MB free');
+  let near=0;try{for(const id of fs.readdirSync(path.join(DATA,'vaults'))){const v=readVault(id);if(v&&(v.eventCount||0)>0.9*MAX_EVENTS_PER_VAULT)near++;}}catch(e){}
+  if(near)warnings.push(near+' vault(s) above 90% of the event limit');
+  if(/NOT persistent/.test(STORAGE_NOTE))warnings.push('storage is probably not persistent (a free Render instance loses its files on restart)');
+  return {writable,freeBytes:free,totalBytes:total,persistence:STORAGE_NOTE,epoch:DATA_EPOCH,warnings};}
+function _bearerIs(req,envName){const want=process.env[envName];if(!want)return false;const got=(/^Bearer\s+(.+)$/.exec(req.headers['authorization']||'')||[])[1]||'';
+  const a=Buffer.from(got),b=Buffer.from(want);return a.length===b.length&&crypto.timingSafeEqual(a,b);}
+const opsRoutes={
+  'GET /v1/metrics':async(req)=>{if(!process.env.METRICS_TOKEN)return {code:404,body:{error:'metrics are off (set METRICS_TOKEN)'}};if(!_bearerIs(req,'METRICS_TOKEN'))return {code:401,body:{error:'unauthorized'}};
+    let vaults=0,events=0;try{for(const id of fs.readdirSync(path.join(DATA,'vaults'))){const v=readVault(id);if(v){vaults++;events+=v.eventCount||0;}}}catch(e){}
+    return {service:'physique-os-sync',uptimeSeconds:Math.round((Date.now()-METRICS.startedAt)/1000),epoch:DATA_EPOCH,requests:METRICS.requests,errors:METRICS.errors,rateLimited:METRICS.rateLimited,
+      push:METRICS.push,vaults,events,dataBytes:_dirBytes(DATA),storage:storageStatus()};},
+  'GET /v1/admin/backup':async(req)=>{if(!process.env.ADMIN_TOKEN)return {code:404,body:{error:'admin is off (set ADMIN_TOKEN)'}};if(!_bearerIs(req,'ADMIN_TOKEN'))return {code:401,body:{error:'unauthorized'}};
+    const f=path.join(os.tmpdir(),'physique-backup-'+DATA_EPOCH+'-'+Date.now()+'.tar.gz');execFileSync('tar',['-czf',f,'-C',DATA,'--exclude=./.probe-*','.']);
+    log('info','backup taken',{bytes:fs.statSync(f).size});return {file:f,type:'application/gzip',name:'physique-backup-'+new Date().toISOString().slice(0,10)+'-'+DATA_EPOCH+'.tar.gz'};},
+  'POST /v1/admin/rotate-connect-key':async(req)=>{if(!process.env.ADMIN_TOKEN)return {code:404,body:{error:'admin is off'}};if(!_bearerIs(req,'ADMIN_TOKEN'))return {code:401,body:{error:'unauthorized'}};
+    if(!CONNECT_KEY)return extErr(503,'configuration_error','no CONNECT_TOKEN_KEY');const r=rotateConnectKeys();log('info','connection keys rotated',r);return Object.assign({status:'ok'},r);}
+};
+const connectRoutes={
+  'GET /v1/ext/connect/providers':async(req)=>{const auth=authFor(req);const conns=auth?readConns(auth.vaultId):{};
+    return {status:'ok',tokenCustody:!!CONNECT_KEY,providers:Object.keys(CONNECT_PROVIDERS).map(p=>({id:p,label:CONNECT_PROVIDERS[p].label,configured:connectConfigured(p),connected:!!(conns[p]&&conns[p].sealed),
+      lastSync:conns[p]&&conns[p].lastSync||null,cursor:conns[p]&&conns[p].cursor||null,pending:!!(conns[p]&&conns[p].pending),
+      needs:connectConfigured(p)?null:(!CONNECT_KEY?'CONNECT_TOKEN_KEY on the server':CONNECT_PROVIDERS[p].id+(CONNECT_PROVIDERS[p].secretRequired?' and '+CONNECT_PROVIDERS[p].secret:'')+' on the server')}))};},
+  'POST /v1/ext/connect/start':async(req,body)=>{const auth=authFor(req);if(!auth)return {code:401,body:{status:'error',error:{category:'authentication_required',detail:'unlock your vault first'}}};
+    const p=body&&body.provider,c=CONNECT_PROVIDERS[p];if(!c)return extErr(400,'configuration_error','unknown provider');if(!connectConfigured(p))return extErr(503,'configuration_error',p+' is not configured on this server');
+    const state=crypto.randomBytes(18).toString('base64url'),verifier=c.pkce?crypto.randomBytes(32).toString('base64url'):null;
+    const rt=String(body.returnTo||'/');PENDING_AUTH.set(state,{vaultId:auth.vaultId,provider:p,verifier,returnTo:rt.charAt(0)==='/'?rt:'/',at:Date.now()});
+    for(const [k,v] of PENDING_AUTH)if(Date.now()-v.at>600000)PENDING_AUTH.delete(k);
+    const q={response_type:'code',client_id:process.env[c.id],redirect_uri:_redirectUri(),scope:c.scopes,state};
+    if(verifier){q.code_challenge=crypto.createHash('sha256').update(verifier).digest('base64url');q.code_challenge_method='S256';}
+    return {status:'ok',authorizeUrl:_pUrl(c.authorize)+'?'+_form(q)};},
+  'GET /v1/ext/connect/callback':async(req,body,url)=>{const st=PENDING_AUTH.get(url.searchParams.get('state')||'');
+    if(!st)return {redirect:'/?connect_error=expired'};PENDING_AUTH.delete(url.searchParams.get('state'));
+    if(url.searchParams.get('error'))return {redirect:st.returnTo+'?connect_error='+encodeURIComponent(url.searchParams.get('error'))};
+    const tok=await _exchange(st.provider,{grant_type:'authorization_code',code:url.searchParams.get('code')||'',redirect_uri:_redirectUri(),code_verifier:st.verifier||undefined});
+    if(tok.error)return {redirect:st.returnTo+'?connect_error='+tok.error};_store(st.vaultId,st.provider,tok);log('info','provider connected',{provider:st.provider});
+    return {redirect:st.returnTo+'?connected='+st.provider};},
+  'POST /v1/ext/connect/sync':async(req,body)=>{const auth=authFor(req);if(!auth)return {code:401,body:{status:'error',error:{category:'authentication_required',detail:'unlock your vault first'}}};
+    const p=body&&body.provider;if(!CONNECT_PROVIDERS[p])return extErr(400,'configuration_error','unknown provider');
+    const at=await _accessToken(auth.vaultId,p);if(at.error)return extErr(at.error==='authentication_required'?401:502,at.error,at.detail||'');
+    const conns=readConns(auth.vaultId),c=conns[p],today=_day(new Date()),cur=c.cursor;
+    const start=cur?_day(new Date(Date.parse(cur+'T00:00:00Z')-86400000)):_day(new Date(Date.now()-29*86400000));   /* backfill 30 days, then a one-day overlap for late data */
+    const w=await _fetchWindow(p,at.token,start,today);if(w.error)return extErr(w.error==='authentication_required'?401:502,w.error,'');
+    if(p==='strava'){w.payload.deleted=(c.deleted||[]).slice();c.deleted=[];}
+    c.cursor=today;c.lastSync=new Date().toISOString();c.pending=false;writeConns(auth.vaultId,conns);
+    return {status:'ok',provider:p,window:{start,end:today},backfill:!cur,refreshed:!!at.refreshed,retrievedAt:c.lastSync,payload:w.payload};},
+  'POST /v1/ext/connect/revoke':async(req,body)=>{const auth=authFor(req);if(!auth)return {code:401,body:{status:'error',error:{category:'authentication_required'}}};
+    const p=body&&body.provider,conns=readConns(auth.vaultId),c=conns[p];if(!c)return {status:'ok',revoked:false,note:'not connected'};
+    let atProvider=false;try{if(c.sealed){const t=_open(c.sealed);if(CONNECT_PROVIDERS[p].revoke){const r=await _post(CONNECT_PROVIDERS[p].revoke,{token:t.access},_basic(p));atProvider=r.status<300;}
+      else if(CONNECT_PROVIDERS[p].deauthorize){const r=await _post(CONNECT_PROVIDERS[p].deauthorize,{access_token:t.access});atProvider=r.status<300;}}}catch(e){}
+    if(c.userId){const ix=readConnIndex();delete ix[p+':'+c.userId];writeConnIndex(ix);}delete conns[p];writeConns(auth.vaultId,conns);log('info','provider disconnected',{provider:p});
+    return {status:'ok',revoked:true,atProvider};},
+  /* Providers announce new data; only a verified notification marks "new data waiting". No data arrives this way. */
+  'GET /v1/ext/webhook':async(req,body,url)=>{
+    /* Strava's subscription handshake: echo the challenge when the verify token matches */
+    if(url.searchParams.get('provider')==='strava'||url.searchParams.get('hub.mode')){const t=url.searchParams.get('hub.verify_token');
+      if(url.searchParams.get('hub.mode')==='subscribe'&&process.env.STRAVA_VERIFY_TOKEN&&t===process.env.STRAVA_VERIFY_TOKEN)return {code:200,body:{'hub.challenge':url.searchParams.get('hub.challenge')}};
+      return {code:403,body:{error:'verify token does not match'}};}
+    const v=url.searchParams.get('verify');if(v&&process.env.FITBIT_SUBSCRIBER_VERIFY&&v===process.env.FITBIT_SUBSCRIBER_VERIFY)return {code:204,body:''};return {code:404,body:{error:'not verified'}};},
+  'POST /v1/ext/webhook':async(req,body,url)=>{const p=url.searchParams.get('provider'),raw=body&&body.__raw||'';if(!CONNECT_PROVIDERS[p])return {code:404,body:{error:'unknown provider'}};
+    if(p==='strava'){
+      /* Strava does not sign events: an event is accepted only for this server's subscription and a known athlete */
+      let ev;try{ev=JSON.parse(raw);}catch(e){return {code:400,body:{error:'bad payload'}};}
+      if(!process.env.STRAVA_SUBSCRIPTION_ID||String(ev.subscription_id)!==String(process.env.STRAVA_SUBSCRIPTION_ID)){log('warn','strava event for another subscription rejected');return {code:401,body:{error:'unknown subscription'}};}
+      const ix=readConnIndex(),vid=ix['strava:'+String(ev.owner_id)];if(!vid)return {code:200,body:{ok:true,ignored:'unknown athlete'}};
+      const conns=readConns(vid),c=conns.strava;if(!c)return {code:200,body:{ok:true}};
+      if(ev.object_type==='athlete'&&ev.updates&&String(ev.updates.authorized)==='false'){delete conns.strava;delete ix['strava:'+String(ev.owner_id)];writeConns(vid,conns);writeConnIndex(ix);log('info','strava deauthorised by the athlete');return {code:200,body:{ok:true}};}
+      if(ev.object_type==='activity'){if(ev.aspect_type==='delete'){c.deleted=(c.deleted||[]).concat([String(ev.object_id)]).slice(-500);}else{c.pending=true;if(ev.aspect_type==='update')c.cursor=null;}writeConns(vid,conns);}
+      return {code:200,body:{ok:true}};}
+    let ok=false;if(p==='fitbit'&&process.env.FITBIT_CLIENT_SECRET){const sig=crypto.createHmac('sha1',process.env.FITBIT_CLIENT_SECRET+'&').update(raw).digest('base64');ok=sig===req.headers['x-fitbit-signature'];}
+    else if(process.env.CONNECT_WEBHOOK_SECRET){const sig=crypto.createHmac('sha256',process.env.CONNECT_WEBHOOK_SECRET).update(raw).digest('hex');ok=sig===req.headers['x-physique-signature'];}
+    if(!ok){log('warn','webhook signature rejected',{provider:p});return {code:401,body:{error:'bad signature'}};}
+    let items=[];try{const j=JSON.parse(raw);items=Array.isArray(j)?j:[j];}catch(e){return {code:400,body:{error:'bad payload'}};}
+    const ix=readConnIndex();let marked=0;items.forEach(n=>{const uid=String(n.ownerId||n.userid||n.user_id||'');const vid=ix[p+':'+uid];if(!vid)return;const conns=readConns(vid);if(conns[p]){conns[p].pending=true;writeConns(vid,conns);marked++;}});
+    return {code:204,body:''};}
+};
 const extRoutes={
   'GET /v1/ext/sources':async()=>({status:'ok',adapterVersion:EXT_VERSION,fixtures:!!EXT_FIX,sources:{
     'open-meteo':{live:true,capabilities:['current','hourly','daily','forecast-16d','past-92d','historical','air-quality','geocoding'],auth:'none',terms:'free API for non-commercial use; commercial use needs an Open-Meteo subscription'},
@@ -318,8 +500,10 @@ const extRoutes={
       const u='https://www.meteosource.com/api/v1/'+tier+'/point?lat='+c.lat+'&lon='+c.lon+'&sections=current,hourly,daily&timezone=UTC&language=en&units=metric';
       return extCall('meteosource','meteosource-point',u,{'x-api-key':key||''},15*60000);}
     const past=extClamp(url.searchParams.get('past_days'),0,92,7),days=extClamp(url.searchParams.get('forecast_days'),1,16,14);
+    /* hourly rows can be limited while daily ranges stay (Open-Meteo past_hours/forecast_hours): ~7x smaller refreshes */
+    const hrs=(url.searchParams.has('past_hours')?'&past_hours='+extClamp(url.searchParams.get('past_hours'),0,2208,24):'')+(url.searchParams.has('forecast_hours')?'&forecast_hours='+extClamp(url.searchParams.get('forecast_hours'),1,384,48):'');
     const u='https://api.open-meteo.com/v1/forecast?latitude='+c.lat+'&longitude='+c.lon+'&current='+OM_CURRENT.join(',')+'&hourly='+OM_HOURLY.join(',')+'&daily='+OM_DAILY.join(',')+
-      '&past_days='+past+'&forecast_days='+days+'&timezone='+encodeURIComponent(tz)+'&wind_speed_unit=ms&timeformat=iso8601';
+      '&past_days='+past+'&forecast_days='+days+hrs+'&timezone='+encodeURIComponent(tz)+'&wind_speed_unit=ms&timeformat=iso8601';
     return extCall('open-meteo','open-meteo-forecast',u,null,15*60000);},
   'GET /v1/ext/weather/archive':async(req,body,url)=>{const c=extCoords(url);if(c.err)return c.err;
     const s=url.searchParams.get('start'),e=url.searchParams.get('end'),tz=extTz(url);
@@ -329,7 +513,8 @@ const extRoutes={
     return extCall('open-meteo','open-meteo-archive',u,null,24*3600000);},
   'GET /v1/ext/weather/air-quality':async(req,body,url)=>{const c=extCoords(url);if(c.err)return c.err;
     const past=extClamp(url.searchParams.get('past_days'),0,92,7),days=extClamp(url.searchParams.get('forecast_days'),1,7,5),tz=extTz(url);
-    const u='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat+'&longitude='+c.lon+'&current='+OM_AQ.join(',')+'&hourly='+OM_AQ.join(',')+'&past_days='+past+'&forecast_days='+days+'&timezone='+encodeURIComponent(tz);
+    const hrs=(url.searchParams.has('past_hours')?'&past_hours='+extClamp(url.searchParams.get('past_hours'),0,2208,24):'')+(url.searchParams.has('forecast_hours')?'&forecast_hours='+extClamp(url.searchParams.get('forecast_hours'),1,168,48):'');
+    const u='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat+'&longitude='+c.lon+'&current='+OM_AQ.join(',')+'&hourly='+OM_AQ.join(',')+'&past_days='+past+'&forecast_days='+days+hrs+'&timezone='+encodeURIComponent(tz);
     return extCall('open-meteo','open-meteo-air-quality',u,null,30*60000);},
   'GET /v1/ext/geocode':async(req,body,url)=>{const q=String(url.searchParams.get('name')||'').trim();if(q.length<2||q.length>80)return extErr(400,'configuration_error','a place name of 2 to 80 characters');
     return extCall('open-meteo','geocode','https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language=en&format=json',null,7*24*3600000);},
@@ -341,10 +526,12 @@ const extRoutes={
 
 const routes={
   ...extRoutes,
+  ...connectRoutes,
+  ...opsRoutes,
   /* The base address answers with an index, not "no such endpoint": people open it to check the server. */
   'GET /':async()=>({ok:true,service:'physique-os-sync',health:'/v1/health',note:'This is the Physique OS server. The app talks to it; there is nothing to see here.'}),
   'GET /v1':async()=>({ok:true,service:'physique-os-sync',health:'/v1/health'}),
-  'GET /v1/health':async()=>({ok:true,service:'physique-os-sync',version:1,ext:EXT_VERSION,epoch:DATA_EPOCH,startedAt:STARTED_AT,storage:STORAGE_NOTE,
+  'GET /v1/health':async()=>({ok:true,service:'physique-os-sync',version:1,ext:EXT_VERSION,epoch:DATA_EPOCH,startedAt:STARTED_AT,storage:STORAGE_NOTE,storageCheck:storageStatus(),
     vaults:fs.readdirSync(path.join(DATA,'vaults')).length,
     vapidPublicKey:VAPID.publicKey,
     note:'this server stores ciphertext it cannot read'}),
@@ -465,6 +652,7 @@ const routes={
     /* A subscription the push service says is gone (404, 410) is removed; others are retired after 5 failures in a row. */
     const removed=retireSubscriptions(v,subs,results);
     if(subs.length)writeVault(v);
+    METRICS.push.sent+=results.filter(r=>r.ok).length;METRICS.push.failed+=results.filter(r=>!r.ok).length;METRICS.push.removed+=(+removed||0);
     return {code:200,body:{ok:true,sent:results.filter(r=>r.ok).length,attempted:results.length,removed}};
   },
 
@@ -492,17 +680,24 @@ const server=http.createServer(async(req,res)=>{
      X-Forwarded-For can only share out one socket's allowance, never escape the limit. */
   if(fwd&&!rateOk('sock:'+sock,RATE_MAX*(+process.env.PROXY_RATE_FACTOR||20)))return json(res,429,{error:'too many requests'});
   if(req.method==='OPTIONS')return json(res,204,{});
-  if(!rateOk(ip))return json(res,429,{error:'too many requests'});
+  if(!rateOk(ip)){METRICS.rateLimited++;return json(res,429,{error:'too many requests'});}
   let url;try{url=new URL(req.url,'http://'+(req.headers.host||'localhost'));}catch(e){return json(res,400,{error:'bad url'});}
   const key=req.method+' '+url.pathname;
   const handler=routes[key];
+  res.on('finish',()=>{const k=(handler?key:'unknown')+' '+res.statusCode;METRICS.requests[k]=(METRICS.requests[k]||0)+1;if(res.statusCode>=500)METRICS.errors++;});
   if(!handler)return json(res,404,{error:'no such endpoint',endpoints:Object.keys(routes)});
   let body={};
-  if(req.method==='POST'){
+  if(key==='POST /v1/ext/webhook'){   /* signatures cover the exact bytes: the raw body is kept */
+    const chunks=[];let size=0;await new Promise((ok,no)=>{req.on('data',c=>{size+=c.length;if(size<=MAX_BODY)chunks.push(c);});req.on('end',ok);req.on('error',no);});body={__raw:Buffer.concat(chunks).toString('utf8')};
+  }else if(req.method==='POST'){
     try{body=await readBody(req);}catch(e){return json(res,413,{error:String(e.message)});}
   }
   try{
     const out=await handler(req,body,url);
+    if(out&&out.file){res.writeHead(200,{'content-type':out.type||'application/octet-stream','content-disposition':'attachment; filename="'+(out.name||'download')+'"','cache-control':'no-store'});
+      const rs=fs.createReadStream(out.file);rs.pipe(res);rs.on('close',()=>{try{fs.unlinkSync(out.file);}catch(e){}});return;}
+    if(out&&out.redirect){res.writeHead(302,{location:out.redirect,'cache-control':'no-store'});return res.end();}   /* the sign-in callback returns to the app */
+    if(out&&out.code===204){res.writeHead(204);return res.end();}
     if(out&&out.code)return json(res,out.code,out.body);
     return json(res,200,out);
   }catch(e){
@@ -517,4 +712,5 @@ if(process.env.PHYSIQUE_SERVER_TEST!=='1')server.listen(PORT,HOST,()=>{
 });
 export {server};
 /* for tests: load with PHYSIQUE_SERVER_TEST=1 (nothing listens) */
-export {sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,rateOk};
+export {sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,rateOk,tokens,readConns,writeConns,storageStatus,rotateConnectKeys};
+export const _sealForDrill=o=>_seal(o),_openForDrill=e=>_open(e);

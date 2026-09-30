@@ -34,7 +34,25 @@ function _vo2Prior(family){var a=_ageSex(),age=a.age||40,tab=FRIEND_VO2[a.sex||'
 function _modalityFamily(m){m=String(m||'').toLowerCase();if(/cycl|bike|spin/.test(m))return 'cycling';if(/walk|run|jog|hike|treadmill|incline|stair/.test(m))return 'weight-bearing';return null;}
 function _restingHr(){var r=obsOf('rhr').slice(-14).map(function(o){return o.value;});return r.length>=3?{value:_median(r),n:r.length}:null;}
 function _maxHr(){var s=DB.settings.hrMax||(prof()||{}).maxHr;if(s)return {value:+s,sd:3,basis:'measured'};var a=_ageSex();if(!a.age)return null;return {value:208-0.7*a.age,sd:10,basis:'age-predicted (Tanaka)'};}
+/* THE STEADIEST 10 MINUTES of a workout, from per-second streams: whole-activity averages mix warm-up, stops and the
+   cool-down into "average heart rate". Accepted when moving ≥ 95% of the window, speed varies < 8%, heart rate is
+   present, and it drifts < 8 bpm across the window. A domain function: the adapter only translates. */
+function cardioSteadySegment(st,unit){
+  var T=st&&st.time&&st.time.data,V=st&&st.velocity_smooth&&st.velocity_smooth.data,H=st&&st.heartrate&&st.heartrate.data,G=st&&st.grade_smooth&&st.grade_smooth.data,M=st&&st.moving&&st.moving.data;
+  if(!T||!V||!H||T.length<60)return null;var best=null,W=600;
+  for(var i=0;i<T.length;i+=Math.max(1,Math.floor(T.length/300))){var j=i;while(j<T.length&&T[j]-T[i]<W)j++;if(j>=T.length)break;
+    var idx=[];for(var k=i;k<j;k++)idx.push(k);var mov=M?idx.filter(function(k){return M[k];}).length/idx.length:1;if(mov<0.95)continue;
+    var v=idx.map(function(k){return V[k];}),h=idx.map(function(k){return H[k];}).filter(function(x){return x>0;});if(h.length<idx.length*0.9)continue;
+    var vm=mean(v);if(vm<0.5)continue;var cv=sd(v)/vm;if(cv>=0.08)continue;
+    var q=Math.max(1,Math.floor(h.length/10)),drift=Math.abs(mean(h.slice(-q))-mean(h.slice(0,q)));if(drift>=8)continue;
+    if(!best||cv<best.cv)best={cv:cv,i:i,j:j,v:vm,h:mean(h),g:G?mean(idx.map(function(k){return G[k]||0;})):null,drift:drift};}
+  if(!best)return null;var perUnit=unit==='mi'?1609.34:1000;
+  return {minutes:round((T[best.j]-T[best.i])/60,1),hr:Math.round(best.h),speedMs:round(best.v,2),pace:round(perUnit/best.v/60,2),paceUnit:'min per '+(unit==='mi'?'mi':'km'),
+    grade:best.g!=null?round(best.g,1):null,speedCv:round(best.cv,3),hrDrift:round(best.drift,1),basis:'the steadiest 10 minutes of the workout, from per-second streams'};
+}
 function cardioFitnessObservation(r){
+  /* a steady stretch from streams is a cleaner reading than the whole workout's averages */
+  if(r&&r.steady&&r.steady.hr&&r.steady.pace){r=Object.assign({},r,{hr:r.steady.hr,pace:r.steady.pace,distanceUnit:/mi/.test(r.steady.paceUnit)?'mi':'km',grade:r.steady.grade!=null?r.steady.grade:r.grade,minutes:Math.max(r.minutes||0,r.steady.minutes),_steady:true});}
   var fam=_modalityFamily(r.modality);if(!fam)return {use:false,why:(r.modality||'this modality')+': no validated equation from these inputs'};
   if(/interval|hiit|sprint/i.test(String(r.modality)+' '+String(r.zone&&r.zone.zone||'')))return {use:false,why:'intervals are not steady-state (they inform conditioning capacity)'};
   if((r.minutes||0)<10)return {use:false,why:'under 10 minutes'};
@@ -46,7 +64,7 @@ function cardioFitnessObservation(r){
   else{if(r.pace==null)return {use:false,why:'needs pace (or distance)'};var mPerMin=(r.distanceUnit==='km'?1000:1609.34)/r.pace,g=(r.grade||0)/100,run=mPerMin>134;
     vo2=run?(3.5+0.2*mPerMin+0.9*mPerMin*g):(3.5+0.1*mPerMin+1.8*mPerMin*g);}
   var est=3.5+(vo2-3.5)/hrr,sd=Math.sqrt(Math.pow(0.15*est,2)+Math.pow(est*(mx.sd/(mx.value-rest.value)),2));
-  return {use:true,family:fam,date:r.date,estimate:round(est,1),sd:round(sd,1),hrr:round(hrr,2),method:(fam==='cycling'?'ACSM cycling (power)':'ACSM '+(run?'running':'walking')+' (pace, grade)')+' + %HRR; max HR '+mx.basis};
+  return {use:true,family:fam,date:r.date,estimate:round(est,1),sd:round(sd,1),hrr:round(hrr,2),method:(fam==='cycling'?'ACSM cycling (power)':'ACSM '+(run?'running':'walking')+' (pace, grade)')+' + %HRR; max HR '+mx.basis+(r._steady?'; the steadiest 10 minutes from streams':'')};
 }
 function cardioFitnessModel(){
   var cs=cardioSessions(84);var rows=cs&&cs.rows?cs.rows:[];var classes={known:0,proxy:0,unknown:0},excluded=[],obs={};

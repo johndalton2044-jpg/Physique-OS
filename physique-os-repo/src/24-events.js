@@ -36,7 +36,7 @@ function eventArchiveState(){
     compacted:_archiveMeta.archived>0,
     healthy:_EVENTS.length<=EVENT_WINDOW,
     note:_archiveMeta.archived?
-      ('History before '+String(_archiveMeta.lastSnapshotAt).slice(0,10)+' is folded into a snapshot; the original events are kept in the archive and nothing was deleted.'):
+      ('History before '+localDateOf(_archiveMeta.lastSnapshotAt)+' is folded into a snapshot; the original events are kept in the archive and nothing was deleted.'):
       'The whole history fits in the working window; nothing has been compacted yet.'};
 }
 /* Fold the oldest events into a snapshot and move the originals to the archive. */
@@ -288,15 +288,15 @@ function recordBaseline(){
   var firstSnap=sorted.filter(function(e){return e.type==='record.snapshot';})[0];
   var firstEvent=sorted[0];
   if(!firstSnap)
-    return {date:String(firstEvent.at).slice(0,10),known:true,adopted:false,
+    return {date:localDateOf(firstEvent.at),known:true,adopted:false,
       reason:'the event log starts here and nothing was adopted from outside it'};
   /* If ordinary events predate the snapshot, the log genuinely covers that earlier ground. */
   var earlierReal=sorted.filter(function(e){
     return e.type!=='record.snapshot'&&String(e.at)<String(firstSnap.at);})[0];
   if(earlierReal)
-    return {date:String(earlierReal.at).slice(0,10),known:true,adopted:false,
+    return {date:localDateOf(earlierReal.at),known:true,adopted:false,
       reason:'events predate the adoption snapshot, so history is reconstructable from there'};
-  return {date:String(firstSnap.at).slice(0,10),known:true,adopted:true,
+  return {date:localDateOf(firstSnap.at),known:true,adopted:true,
     reason:(firstSnap.data&&firstSnap.data.reason)||'this record was adopted into the event history on this date',
     note:'Observations before this date are in the record and remain visible. What cannot be reconstructed is the profile and settings as they stood then — the snapshot carries only their values at adoption.'};
 }
@@ -340,7 +340,7 @@ function projectEvents(events,opts){
        own dates, which is where it belongs. */
     /* Replay still uses the event's OWN timestamp: the barrier is about fold order, not about when the
        system knew something. A backdated entry became known when it was entered, which is e.at. */
-    if(opts.asOf&&e.type!=='record.snapshot'&&String(e.at).slice(0,10)>opts.asOf){skipped++;continue;}
+    if(opts.asOf&&e.type!=='record.snapshot'&&localDateOf(e.at)>opts.asOf){skipped++;continue;}
     var t=EVENT_TYPES[e.type];
     if(!t){skipped++;continue;}
     try{t.apply(db,e);applied++;}catch(err){_q(err,'P1');skipped++;}
@@ -362,8 +362,8 @@ function _liveAt(db,date){
   var vis=function(x,supKey,supAtKey){
     if(!x)return false;
     if(x.date&&x.date>date)return false;
-    if(x.createdAt&&String(x.createdAt).slice(0,10)>date)return false;
-    if(x.retracted&&(!x.retractedAt||String(x.retractedAt).slice(0,10)<=date))return false;
+    if(x.createdAt&&localDateOf(x.createdAt)>date)return false;
+    if(x.retracted&&(!x.retractedAt||localDateOf(x.retractedAt)<=date))return false;
     if(supKey&&x[supKey]&&(!x[supAtKey]||String(x[supAtKey]).slice(0,10)<=date))return false;
     return true;
   };

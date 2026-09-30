@@ -380,8 +380,8 @@ function inventoryState(){
      flag erased it from every historical view. */
   var on=asOf();
   var inv=(DB.settings.inventory||[]).filter(function(i){
-    if(i.createdAt&&String(i.createdAt).slice(0,10)>on)return false;
-    return !i.removedAt||String(i.removedAt).slice(0,10)>on;
+    if(i.createdAt&&localDateOf(i.createdAt)>on)return false;
+    return !i.removedAt||localDateOf(i.removedAt)>on;
   });
   if(!inv.length)return {status:'insufficient',need:['items you want tracked'],
     headline:'nothing tracked',why:'Depletion is forecast from the rate you actually log, so an item needs to exist first.'};

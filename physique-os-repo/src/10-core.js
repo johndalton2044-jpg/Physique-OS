@@ -41,14 +41,26 @@ function getSwallowedErrors(){
 
 /* ---- ids ---- */
 var _idSeq=0;
+/* LOCAL CALENDAR DATE of a timestamp. Timestamps are UTC (toISOString); record dates are local. Comparing
+   timestamp.slice(0,10) with a local date hid anything logged after 8 pm in US Eastern time (UTC is already tomorrow)
+   from "as of today" until local midnight — found on a device in the US; the release checks run in UTC and never saw it. */
+var _LOCAL_DAY_CACHE={};
+function localDateOf(ts){if(ts==null||ts==='')return null;var s=String(ts);if(s.length===10)return s;var c=_LOCAL_DAY_CACHE[s];if(c)return c;
+  var d=new Date(s);if(isNaN(d.getTime()))return s.slice(0,10);
+  var out=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');_LOCAL_DAY_CACHE[s]=out;return out;}
 function uid(prefix){_idSeq++;return (prefix||'id')+'-'+Date.now().toString(36)+'-'+(_idSeq).toString(36)+'-'+Math.random().toString(36).slice(2,6);}
 
 /* ---- dates: ISO day strings internally, local display ---- */
 function pad2(n){return String(n).padStart(2,'0');}
 function isoDate(d){d=d||new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
 var _NOW_OVERRIDE=null; // replay + tests can pin "today"
-function todayISO(){return _NOW_OVERRIDE||isoDate(new Date());}
-function nowISO(){return _NOW_OVERRIDE?(_NOW_OVERRIDE+'T12:00:00.000Z'):new Date().toISOString();}
+/* always a LOCAL DATE: a clock held at a full timestamp made "today" that timestamp string, and date comparisons against it broke east of UTC */
+function todayISO(){return _NOW_OVERRIDE?localDateOf(_NOW_OVERRIDE):isoDate(new Date());}
+/* With the clock held at a date, "now" is LOCAL noon on it. Noon UTC is already the next local day east of UTC+12,
+   so an edit stamped then was dated tomorrow and hidden from today (Auckland, Kiritimati). */
+function nowISO(){if(!_NOW_OVERRIDE)return new Date().toISOString();var o=String(_NOW_OVERRIDE);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(o)){var d=new Date(o);return isNaN(d.getTime())?o:d.toISOString();}   /* a full timestamp is used as given */
+  var p=o.split('-');return new Date(+p[0],+p[1]-1,+p[2],12,0,0).toISOString();}
 function parseISO(s){if(!s)return null;var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));if(!m)return null;return new Date(+m[1],+m[2]-1,+m[3]);}
 function addDays(iso,n){var d=parseISO(iso);if(!d)return null;d.setDate(d.getDate()+n);return isoDate(d);}
 function daysBetween(a,b){var da=parseISO(a),db=parseISO(b);if(!da||!db)return null;return Math.round((db-da)/86400000);}

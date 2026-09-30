@@ -12,7 +12,11 @@ var PROVIDER_NAMES={'apple-health':'Apple Health',applehealth:'Apple Health',fit
 function _prettyId(id){return PROVIDER_NAMES[id]||String(id).replace(/[-_]+/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
 function sourceLabel(key){var k=String(key);if(k.indexOf('import:')===0){var id=k.slice(7);return ((typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[id])||{}).label||_prettyId(id);}
   if(k.indexOf('provider:')===0||k.indexOf('device:')===0)return _prettyId(k.split(':').slice(1).join(':'));
-  return {manual:'You (typed in)',demo:'Demo record','food-log':'Food log (totals)',test:'Test',import:'An import'}[k]||k;}
+  var fixed={manual:'You (typed in)',demo:'Demo record','food-log':'Food log (totals)',test:'Test',import:'An import'}[k];if(fixed)return fixed;
+  /* a bare provider or import id is the source itself (normalizeImported sets source to it) */
+  if(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]&&IMPORT_SOURCES[k].label)return IMPORT_SOURCES[k].label;
+  if(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])return WEARABLE_PROVIDERS[k].label;
+  return PROVIDER_NAMES[k]||k;}
 function sourcePreference(type){return (DB.settings.sourcePreference||{})[type]||null;}
 function setSourcePreference(type,key){DB.settings.sourcePreference=Object.assign({},DB.settings.sourcePreference||{});if(key)DB.settings.sourcePreference[type]=key;else delete DB.settings.sourcePreference[type];_memoInvalidate();save('settings');return {status:'ok'};}
 /* One day's total for a device-measured type: per-source sums, then one source chosen. */
@@ -32,7 +36,7 @@ function sourcesOverview(){
   Object.keys(S).forEach(function(k){var s=S[k],agree=[];Object.keys(s.types).forEach(function(t){var byDay={};(DB.observations||[]).forEach(function(o){if(o.type!==t||o.retracted||o.correctedBy)return;var kk=sourceKeyOf(o);(byDay[o.date]=byDay[o.date]||{})[kk]=((byDay[o.date]||{})[kk]||0)+o.value;});
       var diffs=[];Object.keys(byDay).forEach(function(d){var row=byDay[d];if(row[k]==null)return;Object.keys(row).forEach(function(o2){if(o2!==k&&row[o2])diffs.push(Math.abs(row[k]-row[o2])/Math.max(1e-9,Math.abs(row[o2])));});});
       if(diffs.length>=3)agree.push({type:t,days:diffs.length,medianDifferencePct:round(100*_medianOf(diffs),1)});});
-    s.agreement=agree;s.kind=k.indexOf('import:')===0?'import':(k==='manual'?'you':(k==='food-log'?'derived':(k==='demo'?'demo':'other')));
+    s.agreement=agree;s.kind=(k.indexOf('import:')===0||(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])||(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]))?'import':(k==='manual'?'you':(k==='food-log'?'derived':(k==='demo'?'demo':'other')));
     s.deletable=s.kind!=='derived';});
   var ext=[];try{var ws=DB.settings.weatherSync;if(ws)ext.push({key:'open-meteo',label:'Weather ('+((EXTERNAL_SOURCES[DB.settings.weatherProvider||'open-meteo']||{}).name||'Open-Meteo')+')',kind:'connected',lastAt:ws.lastSuccess,state:ws.state,error:ws.error&&ws.error.text,manage:'weather.open'});
     var c=DB.settings.cloud||{};if(c.enabled)ext.push({key:'cloud',label:'Sync server',kind:'connected',lastAt:c.lastSyncAt,state:'enabled',manage:'nav.cloud'});}catch(e){}
@@ -50,7 +54,7 @@ function deleteSourceData(key,opts){opts=opts||{};if(key==='food-log')return {st
   return {status:'ok',count:list.length,byType:byType,label:sourceLabel(key)};}
 
 /* ---- on screen ---- */
-registerAction('sources.open',function(){openSheet('edit',{form:'sources',title:'Your data sources',desc:'',buf:{}});});
+registerAction('sources.open',function(){openSheet('edit',{form:'sources',title:'Your data sources',desc:'',buf:{}});if(typeof loadConnectedServices==='function')loadConnectedServices();});
 registerAction('sources.prefer',function(arg){var q=String(arg).split('|');setSourcePreference(q[0],q[1]==='auto'?null:q[1]);renderSheet();renderAll();});
 registerAction('sources.deletePreview',function(key){_SHEET.buf.confirmDelete=deleteSourceData(key,{preview:true});_SHEET.buf.confirmKey=key;renderSheet();});
 registerAction('sources.deleteConfirm',function(key){var r=deleteSourceData(key);_SHEET.buf.confirmDelete=null;renderSheet();renderAll();toast(r.status==='ok'?('Removed '+r.count+' entries from '+r.label):(r.note||'Nothing to remove'),{undo:r.status==='ok'});});
@@ -62,6 +66,7 @@ SHEETS.sources=function(b){var O=sourcesOverview(),out='';
     '<div class="hint">'+s.count+' entries \u00b7 '+esc(Object.keys(s.types).slice(0,5).map(function(t){return t+' '+s.types[t];}).join(', '))+(Object.keys(s.types).length>5?'\u2026':'')+' \u00b7 '+esc(shortDate(s.first))+' \u2013 '+esc(shortDate(s.last))+'</div>'+
     (s.agreement.length?'<div class="hint">Agreement with other sources: '+esc(s.agreement.map(function(a){return a.type+' typically '+a.medianDifferencePct+'% apart over '+a.days+' shared days';}).join('; '))+'</div>':'')+'</div>'+
     (s.deletable?uiBtn('Remove its data','sources.deletePreview',s.key,'btn-sm btn-ghost'):'')+'</div>';}).join('');
+  try{out+=renderConnectedServices(b);}catch(e){_q(e,'P2');}
   if(O.connections.length)out+='<div class="card-title" style="margin-top:12px">Connections</div>'+O.connections.map(function(c){return uiRow(esc(c.label),esc(c.state||''),{sub:(c.lastAt?'last updated '+esc(String(c.lastAt).replace('T',' ').slice(0,16)):'')+(c.error?' \u00b7 '+esc(c.error):'')})+'<div class="btn-row">'+uiBtn('Manage',c.manage,null,'btn-sm btn-ghost')+'</div>';}).join('');
   out+='<div class="card-title" style="margin-top:12px">When two sources measure the same day</div><div class="hint">Steps and sleep from two devices are one quantity measured twice: one source is used. Choose which, or leave it to the most complete record.</div>'+
     Object.keys(DEVICE_TOTAL_TYPES).map(function(t){var keys=O.sources.filter(function(s){return s.types[t];}).map(function(s){return s.key;}),cur=O.preferences[t]||'auto';

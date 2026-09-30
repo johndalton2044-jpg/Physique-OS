@@ -46,6 +46,8 @@ function normalizeImported(rows,sourceId){
     if(!t.text&&(value<t.min*0.5||value>t.max*2)){rejected.push({row:r,reason:'value far outside the plausible range for '+type});return;}
     out.push(canonicalObservation({type:type,date:r.date,value:round(value,2),unit:r.unit,at:r.at,
       source:sourceId,sourceDetail:r.sourceDetail||(IMPORT_SOURCES[sourceId]||{}).label,device:r.device,externalId:r.externalId}));
+    /* the row's own method and metadata travel with it (a workout's modality, heart rate, distance) — they were dropped */
+    out[out.length-1].method=r.method||null;out[out.length-1].rowMeta=r.meta||null;
   });
   return {observations:out,rejected:rejected,
     note:rejected.length?(rejected.length+' row(s) were refused rather than coerced'):'every row normalised cleanly'};
@@ -234,6 +236,7 @@ function importObservations(rows,sourceId,opts){
   var overlapSkipped=[];
   dd.fresh=dd.fresh.filter(function(c){
     if(!SUM_TYPES[c.type])return true;
+    if(c.externalId&&/:activity:/.test(String(c.externalId)))return true;   /* one activity is not a day total: two workouts on a day both count */
     var ex=(DB.observations||[]).filter(function(o){return o.type===c.type&&o.date===c.date&&_visible(o,asOf());});
     if(ex.length){overlapSkipped.push({type:c.type,date:c.date,existing:ex.reduce(function(a,o){return a+(o.value||0);},0),incoming:c.value,
       existingSource:ex[0].source,note:'already recorded for that day; adding would count the day twice'});return false;}
@@ -260,9 +263,9 @@ function importObservations(rows,sourceId,opts){
   var added=0;
   dd.fresh.forEach(function(c){
     try{
-      var rec=makeObservation({type:c.type,date:c.date,value:c.value,source:'import',
+      var rec=makeObservation({type:c.type,date:c.date,value:c.value,source:'import',method:c.method||undefined,
         note:(IMPORT_SOURCES[sourceId]||{}).label||sourceId,
-        meta:{importSource:sourceId,device:c.device||null,externalId:c.externalId||null,trust:c.trust}});
+        meta:Object.assign({},c.rowMeta||{},{importSource:sourceId,device:c.device||null,externalId:c.externalId||null,trust:c.trust})});
       rec.externalId=c.externalId||null;rec.trust=c.trust;
       DB.observations.push(rec);emitEvent('observation.added',rec,{at:rec.createdAt});added++;
     }catch(e){_q(e,'P1');}
@@ -297,8 +300,8 @@ function photoMeta(){
   var on=asOf();
   return (DB.settings.photos||[]).filter(function(p){
     if(p.date>on)return false;
-    if(p.addedAt&&String(p.addedAt).slice(0,10)>on)return false;
-    if(p.removedAt&&String(p.removedAt).slice(0,10)<=on)return false;
+    if(p.addedAt&&localDateOf(p.addedAt)>on)return false;
+    if(p.removedAt&&localDateOf(p.removedAt)<=on)return false;
     return true;
   }).slice().sort(function(a,b){return a.date<b.date?1:-1;});
 }

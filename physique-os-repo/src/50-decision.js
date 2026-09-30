@@ -123,7 +123,7 @@ function decide(){
     // 2b. an active experiment holds every lower level: outcomes must stay attributable
     else if(activeExperiments().length&&!(F('rapid')&&F('rapid').likelihood==='probable')){
       var ex=activeExperiments()[0];var left=daysBetween(asOf(),ex.recheckDate);var el=daysBetween(ex.startDate,asOf());
-      dec=Object.assign(base,{code:'EXPERIMENT',verb:'Hold: experiment running',tone:'inferred',priority:'plateau',lede:'"'+(ex.intervention||ex.variable)+'" is on day '+el+' of '+ex.durationDays+'. Changing anything else now would make the outcome unattributable. The prediction stamped on '+shortDate(ex.createdAt.slice(0,10))+' is scored on '+shortDate(ex.recheckDate)+'.',why:['one major variable at a time','prediction: '+(ex.prediction||'—'),tr.status==='ok'?('trend so far '+fmtRate(tr.slopePerWeek)+(ex.baseline&&ex.baseline.trend!=null?(' vs '+fmtRate(ex.baseline.trend)+' at baseline'):'')):'trend not yet estimable'],evidence:[],action:actionsBase(),confidence:'medium',recheckDays:Math.max(0,left),reverseIf:['recovery becomes poor or strength falls with the rate past the band → the safety level overrides this hold','the experiment is evaluated or abandoned'],alternatives:['abandon the experiment and change a different variable'],experimentId:ex.id});
+      dec=Object.assign(base,{code:'EXPERIMENT',verb:'Hold: experiment running',tone:'inferred',priority:'plateau',lede:'"'+(ex.intervention||ex.variable)+'" is on day '+el+' of '+ex.durationDays+'. Changing anything else now would make the outcome unattributable. The prediction stamped on '+shortDate(localDateOf(ex.createdAt))+' is scored on '+shortDate(ex.recheckDate)+'.',why:['one major variable at a time','prediction: '+(ex.prediction||'—'),tr.status==='ok'?('trend so far '+fmtRate(tr.slopePerWeek)+(ex.baseline&&ex.baseline.trend!=null?(' vs '+fmtRate(ex.baseline.trend)+' at baseline'):'')):'trend not yet estimable'],evidence:[],action:actionsBase(),confidence:'medium',recheckDays:Math.max(0,left),reverseIf:['recovery becomes poor or strength falls with the rate past the band → the safety level overrides this hold','the experiment is evaluated or abandoned'],alternatives:['abandon the experiment and change a different variable'],experimentId:ex.id});
     }
     // 3. severe adherence
     else if(F('underlogging')||F('adherence')){
@@ -250,7 +250,7 @@ function stampPredictions(){
   var today=todayISO();var made=[];
   [['weight7',7],['weight14',14],['weight28',28]].forEach(function(pair){
     var subject=pair[0],h=pair[1];
-    if((DB.predictions||[]).some(function(p){return p.subject===subject&&p.madeAt.slice(0,10)===today;}))return;
+    if((DB.predictions||[]).some(function(p){return p.subject===subject&&localDateOf(p.madeAt)===today;}))return;
     var f=weightForecast(h);if(f.status!=='ok')return;
     var rec={id:uid('pred'),madeAt:nowISO(),date:today,subject:subject,model:'weight_forecast',modelVersion:modelById('weight_forecast').version,horizonDays:h,dueDate:f.dueDate,point:round(f.point,2),lo:round(f.lo,2),hi:round(f.hi,2),confidence:f.confidence,unit:'lb',
       inputs:{base:round(f.base,2),slopePerWeek:round(f.trend.slopePerWeek,3),residSd:round(f.trend.residSd,2),n:f.trend.n},assumptions:f.assumptions,phaseId:(activePhase()||{}).id||null,context:predictionContext(),outcome:null,actual:null,error:null,absError:null,covered:null,status:'pending',scoredAt:null};
@@ -267,7 +267,7 @@ function stampPredictions(){
          trusted — the first version — would have made its track record a record of its confident moments, flattering
          it exactly where honesty matters. */
       if(!d||d.status==='insufficient')return;
-      if((DB.predictions||[]).some(function(p){return p.subject===subject&&p.madeAt.slice(0,10)===today;}))return;
+      if((DB.predictions||[]).some(function(p){return p.subject===subject&&localDateOf(p.madeAt)===today;}))return;
       var rec={id:uid('pred'),madeAt:nowISO(),date:today,subject:subject,model:'weight_forecast_family',modelVersion:'1.0',horizonDays:h,
         dueDate:d.dueDate,point:d.point,lo:d.p10,hi:d.p90,level:d.level,confidence:'n/a',unit:'lb',reliable:d.reliable!==false,
         inputs:{method:F.selection[h].selected,weights:F.selection[h].weights},assumptions:['the recent regime continues','a single phase across the window'],
@@ -289,7 +289,7 @@ function scorePredictions(){
 }
 function forecastAccuracy(){
   var out={};['weight7','weight14','weight28'].forEach(function(sub){
-    var list=(DB.predictions||[]).filter(function(p){return p.subject===sub&&p.status==='scored'&&p.scoredAt&&p.scoredAt.slice(0,10)<=asOf();});
+    var list=(DB.predictions||[]).filter(function(p){return p.subject===sub&&p.status==='scored'&&p.scoredAt&&localDateOf(p.scoredAt)<=asOf();});
     if(list.length<3){out[sub]={status:'insufficient',n:list.length,need:(3-list.length)+' more scored forecasts'};return;}
     var errs=list.map(function(p){return p.error;});
     out[sub]={status:'ok',n:list.length,mae:mean(list.map(function(p){return p.absError;})),bias:mean(errs),coverage:Math.round(100*list.filter(function(p){return p.covered;}).length/list.length),nominal:80,verdict:function(){var b=mean(errs);var cov=list.filter(function(p){return p.covered;}).length/list.length;return (Math.abs(b)<0.4?'directionally accurate':(b>0?'losing less than predicted':'losing more than predicted'))+(cov<0.6?' \u00b7 intervals too narrow':(cov>0.95?' \u00b7 intervals wider than needed':' \u00b7 intervals calibrated'));}()};
@@ -391,7 +391,7 @@ function evaluateExperiment(id,opts){
   return res;
 }
 /* as-of aware: an experiment is active on a day if it had been created by then, had started, and had not yet been completed/abandoned by that day */
-function _experimentActiveOn(e,date){if(!_knownBy(e,date))return false;if(e.startDate>date)return false;if(!_ASOF)return e.status==='active';if(e.status==='active')return true;var done=e.completedAt||e.abandonedAt||null;return !!done&&String(done).slice(0,10)>date;}
+function _experimentActiveOn(e,date){if(!_knownBy(e,date))return false;if(e.startDate>date)return false;if(!_ASOF)return e.status==='active';if(e.status==='active')return true;var done=e.completedAt||e.abandonedAt||null;return !!done&&localDateOf(done)>date;}
 function experimentsDue(){var d=asOf();return (DB.experiments||[]).filter(function(e){return _experimentActiveOn(e,d)&&e.recheckDate<=d;});}
 function activeExperiments(){var d=asOf();return (DB.experiments||[]).filter(function(e){return _experimentActiveOn(e,d);});}
 
@@ -477,9 +477,9 @@ function cardioHungerAssociation(){
 /* ============================================================================
    REGION: REPLAY — what the system knew at the time. No future information leaks backward.
    ============================================================================ */
-function replayAt(date){return withAsOf(date,function(){var S=getCurrentState();var dec=decide();return {date:date,state:S,decision:dec,diagnosis:diagnose(),predictionsThen:(DB.predictions||[]).filter(function(p){return p.madeAt.slice(0,10)<=date;}).length,snapshot:(DB.snapshots||[]).filter(function(s){return s.date===date;})[0]||null};});}
+function replayAt(date){return withAsOf(date,function(){var S=getCurrentState();var dec=decide();return {date:date,state:S,decision:dec,diagnosis:diagnose(),predictionsThen:(DB.predictions||[]).filter(function(p){return localDateOf(p.madeAt)<=date;}).length,snapshot:(DB.snapshots||[]).filter(function(s){return s.date===date;})[0]||null};});}
 function replayLeakageCheck(dates){
-  var leaks=[];(dates||[]).forEach(function(d){withAsOf(d,function(){getCurrentState();decide();Object.keys(_MEMO).forEach(function(k){if(k.indexOf('ds:')!==0)return;(_MEMO[k]||[]).forEach(function(day){if(day.date>d)leaks.push({asOf:d,key:k,date:day.date});(day.obs||[]).forEach(function(o){if(o.createdAt&&o.createdAt.slice(0,10)>d)leaks.push({asOf:d,key:k,createdAt:o.createdAt});});});});});});
+  var leaks=[];(dates||[]).forEach(function(d){withAsOf(d,function(){getCurrentState();decide();Object.keys(_MEMO).forEach(function(k){if(k.indexOf('ds:')!==0)return;(_MEMO[k]||[]).forEach(function(day){if(day.date>d)leaks.push({asOf:d,key:k,date:day.date});(day.obs||[]).forEach(function(o){if(o.createdAt&&localDateOf(o.createdAt)>d)leaks.push({asOf:d,key:k,createdAt:o.createdAt});});});});});});
   return leaks;
 }
 /* ---- snapshots + archive ---- */
@@ -567,7 +567,7 @@ var PROGRAMS={
 function trainingProgram(){var key=DB.settings.program||'fullbody3';
   if(_ASOF&&Array.isArray(DB.settings.programHistory)&&DB.settings.programHistory.length){
     var H=DB.settings.programHistory;
-    var hist=H.filter(function(h){return String(h.at).slice(0,10)<=_ASOF;});
+    var hist=H.filter(function(h){return localDateOf(h.at)<=_ASOF;});
     /* With no change recorded on or before the replay day, the program in force then is what the earliest
        recorded change moved AWAY from — not what it moved to. Using the entry's own program would report a
        switch as if it had always been in place. */

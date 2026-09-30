@@ -106,6 +106,15 @@ drawn.length?hard('chart-without-renderer','a surface draws a chart type that ha
 const REGS=[['registerAction',/^function registerAction\(/m,/^registerAction\(/m],['SHEETS',/^var SHEETS\s*=/m,/^SHEETS\.[A-Za-z_$]+\s*=/m],
   ['CHART_RENDERERS',/^var CHART_RENDERERS\s*=/m,/^CHART_RENDERERS\.[A-Za-z_$]+\s*=/m],['WIDGET_REGISTRY',/^var WIDGET_REGISTRY\s*=/m,/^WIDGET_REGISTRY\[/m]];
 const early=[];for(const [name,def,use] of REGS){const df=files.find(f=>def.test(code[f]));if(!df)continue;files.filter(f=>f<df&&use.test(code[f])).forEach(f=>early.push(name+' used in '+f+' before '+df));}
+/* Release metadata is derived, never hand-written: a literal "25 models" in the release evidence drifted from the registry
+   (audit §3, §100). Any hand-written count of models, quantities, capabilities or actions in release tooling fails. */
+{const offenders=[];for(const f of ['tests/release.mjs','scripts/baseline.mjs','scripts/verify-dist.mjs']){if(!fs.existsSync(f))continue;const t=fs.readFileSync(f,'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+    (t.match(/['"`][^'"`\n]*\b\d+\s+(models|quantities|capabilities|actions|executable)\b[^'"`\n]*['"`]/g)||[]).forEach(m=>offenders.push(f+': '+m.slice(0,60)));}
+  offenders.length?hard('hard-coded-count','a count is written by hand in release tooling instead of derived from a registry',offenders):pass('hard-coded-count','release counts are derived from the registries');}
+/* SYSTEM_AUTHORITY.md names the source of truth for every subsystem; each named symbol must exist in the build */
+{const auth=fs.existsSync('docs/SYSTEM_AUTHORITY.md')?fs.readFileSync('docs/SYSTEM_AUTHORITY.md','utf8'):'';const bundle=fs.existsSync('dist/index.html')?fs.readFileSync('dist/index.html','utf8'):'';
+  const syms=[...auth.matchAll(/`([A-Za-z_$][\w$]*)`/g)].map(m=>m[1]).filter((v,i,a)=>a.indexOf(v)===i),missing=syms.filter(x=>!new RegExp('\\b'+x.replace(/\$/g,'\\$')+'\\b').test(bundle));
+  !auth?hard('system-authority','docs/SYSTEM_AUTHORITY.md is missing',[]):(missing.length?hard('system-authority','SYSTEM_AUTHORITY.md names symbols that do not exist in the build',missing):pass('system-authority','every authority named in SYSTEM_AUTHORITY.md exists in the build ('+syms.length+')'));}
 early.length?hard('action-before-registry','a registry is used at load time before the file that defines it',early):pass('action-before-registry','no file uses a registry before the file that defines it');
 /* S2c \u2014 GOAL OWNERSHIP (hard gate, H0). The goal had several owners: trajectory took the phase's weight first, the protein
    suggestion only the profile's, scenarios and the copilot their own fallbacks. canonicalGoal() is the one reader;

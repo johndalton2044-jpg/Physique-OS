@@ -330,12 +330,12 @@ function timeline(opts){
     var done=e.completedAt||e.abandonedAt;
     if(done&&done.slice(0,10)>=from)ev.push({at:done,date:done.slice(0,10),kind:'outcome',label:'Experiment '+(e.conclusion||e.status),detail:e.summary||'',id:e.id,act:'exp.open',arg:e.id});});
   (DB.predictions||[]).forEach(function(p){if(!p.madeAt)return;
-    if(p.madeAt.slice(0,10)>=from)ev.push({at:p.madeAt,date:p.madeAt.slice(0,10),kind:'prediction',label:'Forecast stamped',detail:p.subject+(p.lo!=null?(' '+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi)):''),id:p.id});
-    if(p.status==='scored'&&p.scoredAt&&p.scoredAt.slice(0,10)>=from)ev.push({at:p.scoredAt,date:p.scoredAt.slice(0,10),kind:'calibration',label:'Forecast scored',detail:(p.covered?'inside':'outside')+' the stated range'+(p.error!=null?(', error '+fmtSigned(p.error,2)):''),id:p.id});});
+    if(localDateOf(p.madeAt)>=from)ev.push({at:p.madeAt,date:localDateOf(p.madeAt),kind:'prediction',label:'Forecast stamped',detail:p.subject+(p.lo!=null?(' '+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi)):''),id:p.id});
+    if(p.status==='scored'&&p.scoredAt&&localDateOf(p.scoredAt)>=from)ev.push({at:p.scoredAt,date:localDateOf(p.scoredAt),kind:'calibration',label:'Forecast scored',detail:(p.covered?'inside':'outside')+' the stated range'+(p.error!=null?(', error '+fmtSigned(p.error,2)):''),id:p.id});});
   (DB.phases||[]).forEach(function(p){if(!_knownBy(p,asOf()))return;
     if(p.startDate>=from)ev.push({at:p.createdAt||p.startDate+'T00:00:00.000Z',date:p.startDate,kind:'phase',label:phaseLabel(p)+' started',detail:'',id:p.id,act:'phase.edit',arg:p.id});
-    (p.history||[]).forEach(function(h){if(h.at.slice(0,10)<from)return;
-      var keys=Object.keys(h.before||{});ev.push({at:h.at,date:h.at.slice(0,10),kind:'target',label:'Targets edited',detail:keys.join(', '),id:p.id,act:'phase.edit',arg:p.id});});});
+    (p.history||[]).forEach(function(h){if(localDateOf(h.at)<from)return;
+      var keys=Object.keys(h.before||{});ev.push({at:h.at,date:localDateOf(h.at),kind:'target',label:'Targets edited',detail:keys.join(', '),id:p.id,act:'phase.edit',arg:p.id});});});
   obsOf('context',{from:from}).forEach(function(o){ev.push({at:o.createdAt||o.at,date:o.date,kind:'context',label:o.value,detail:'',id:o.id,act:'nav.day',arg:o.date});});
   (DB.negatives||[]).forEach(function(n){if(n.date<from||!_knownBy(n,asOf()))return;
     ev.push({at:n.createdAt||n.at,date:n.date,kind:'negative',label:'Recorded as ineffective: '+n.intervention,detail:String(n.observed||'').slice(0,120),id:n.id});});
@@ -363,7 +363,7 @@ function setFocusMode(on){
 function undoHistory(){
   var stack=(typeof _undoStack!=='undefined'&&_undoStack)?_undoStack:[];
   /* newest first, with the label the user will actually see before committing to it */
-  return stack.slice().reverse().map(function(u,i){return {steps:i+1,label:u.label||'change',at:u.at||null,age:u.at?ageLabel(u.at.slice(0,10)):''};});
+  return stack.slice().reverse().map(function(u,i){return {steps:i+1,label:u.label||'change',at:u.at||null,age:u.at?ageLabel(localDateOf(u.at)):''};});
 }
 
 /* ---------- search domains ----------
@@ -430,7 +430,7 @@ var KEYMAP=[
 
    `available` returns true, or a STRING SAYING WHY NOT. A disabled control that will not say why is a dead
    end; the catalogue is explicit about this and it is the whole reason the reason is a string. */
-var REQUIRES_SUBJECT=/^(welcome\.|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
   'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -637,7 +637,7 @@ function noteCommandUse(id){
 function commandUseScore(id){
   var u=(DB.settings&&DB.settings.commandUse)||{};
   var e=u[id];if(!e)return 0;
-  var ageDays=e.at?daysBetween(String(e.at).slice(0,10),todayISO()):999;
+  var ageDays=e.at?daysBetween(localDateOf(e.at),todayISO()):999;
   return e.n*Math.pow(0.5,ageDays/21);   // frequency, halving every three weeks
 }
 function commandRegister(){
@@ -852,15 +852,15 @@ function whatChanged(days){
     items.push({at:i.createdAt||i.date,date:i.date,what:i.variable+(i.from!=null&&i.to!=null?(' '+i.from+' \u2192 '+i.to):' changed'),
       reason:i.expected||i.note||'recorded without a stated expectation',
       confidence:null,expected:i.expected||null,recheck:i.recheckDate||null,kind:'intervention',id:i.id});});
-  (DB.phases||[]).forEach(function(p){(p.history||[]).forEach(function(h){if(h.at.slice(0,10)<from)return;
+  (DB.phases||[]).forEach(function(p){(p.history||[]).forEach(function(h){if(localDateOf(h.at)<from)return;
     Object.keys(h.before||{}).forEach(function(k){
-      items.push({at:h.at,date:h.at.slice(0,10),what:k+' '+String(h.before[k])+' \u2192 '+String(p[k]),
+      items.push({at:h.at,date:localDateOf(h.at),what:k+' '+String(h.before[k])+' \u2192 '+String(p[k]),
         reason:'phase targets edited',confidence:null,kind:'target',id:p.id});});});});
   decisionsOf().forEach(function(d){if(d.date<from)return;
     items.push({at:d.at||d.date,date:d.date,what:d.verb||d.code,reason:d.lede||'',confidence:d.confidence||null,
       recheck:d.recheckDays?addDays(d.date,d.recheckDays):null,kind:'decision',id:d.id});});
-  (DB.settings.programHistory||[]).forEach(function(h){if(String(h.at).slice(0,10)<from)return;
-    items.push({at:h.at,date:h.at.slice(0,10),what:'training program '+(h.from?h.from+' \u2192 ':'set to ')+h.program,
+  (DB.settings.programHistory||[]).forEach(function(h){if(localDateOf(h.at)<from)return;
+    items.push({at:h.at,date:localDateOf(h.at),what:'training program '+(h.from?h.from+' \u2192 ':'set to ')+h.program,
       reason:'program change \u2014 strength history restarts for exercises that are new to the plan',kind:'program',id:h.program});});
   items.sort(function(a,b){return String(a.at)<String(b.at)?1:-1;});
   return {items:items,days:days,empty:!items.length};

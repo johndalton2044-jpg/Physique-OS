@@ -95,3 +95,6 @@ fs.writeFileSync(logPath,head+entry);
 console.log(`baseline written: build ${version.build}, ${baseline.registries.quantities} quantities, `+
   `${cm.capabilities} capabilities (${cm.detections.productionReady.length} production-ready), `+
   `${Object.keys(g).length}-node dependency map`);
+/* close the simulated window and exit: the app keeps timers (the weather auto-updater) that would hold Node open */
+try{dom.window.close();}catch(e){}
+setTimeout(()=>process.exit(0),100).unref();

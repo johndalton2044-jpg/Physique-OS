@@ -21,8 +21,8 @@ var EQUIPMENT_CONDITIONS={
 function equipmentItems(){
   var on=asOf();
   return (DB.settings.equipmentItems||[]).filter(function(e){
-    if(e.acquiredAt&&String(e.acquiredAt).slice(0,10)>on)return false;
-    return !e.retiredAt||String(e.retiredAt).slice(0,10)>on;
+    if(e.acquiredAt&&localDateOf(e.acquiredAt)>on)return false;
+    return !e.retiredAt||localDateOf(e.retiredAt)>on;
   });
 }
 function addEquipment(o){
@@ -65,9 +65,9 @@ function equipmentLifecycle(){
   if(!items.length)return {status:'insufficient',need:['equipment recorded individually'],
     note:'The profile knows what kind of setup you train in; this tracks the individual items, which is what wears out and what limits a plan.'};
   var rows=items.map(function(e){
-    var ageDays=daysBetween(String(e.acquiredAt).slice(0,10),asOf());
+    var ageDays=daysBetween(localDateOf(e.acquiredAt),asOf());
     var serviceDue=(e.serviceEveryDays&&e.servicedAt)?
-      daysBetween(String(e.servicedAt).slice(0,10),asOf())>=e.serviceEveryDays:
+      daysBetween(localDateOf(e.servicedAt),asOf())>=e.serviceEveryDays:
       (e.serviceEveryDays?ageDays>=e.serviceEveryDays:false);
     /* Usage from the record, not from a guess: sets performed on movements this implement can do. */
     var uses=0;
@@ -140,7 +140,7 @@ function inventoryLifecycle(){
   if(st.status!=='ok')return st;
   var rows=st.rows.map(function(r){
     var i=r.item;
-    var expiresIn=i.expiresAt?daysBetween(asOf(),String(i.expiresAt).slice(0,10)):null;
+    var expiresIn=i.expiresAt?daysBetween(asOf(),localDateOf(i.expiresAt)):null;
     /* Replenish before it runs out, not when it has: lead time is the point. */
     var lead=num(i.leadTimeDays)!=null?num(i.leadTimeDays):3;
     var reorderIn=(r.daysLeft!=null)?r.daysLeft-lead:null;

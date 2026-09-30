@@ -9,7 +9,7 @@ function dailyJobs(){try{
   try{runDueJobs();}catch(e){_q(e);}
   if(last===today)return;
   captureSnapshot();DB.settings.lastDailyJobs=today;save('daily');
-  if(!DB.settings.lastAutoBackupAt||DB.settings.lastAutoBackupAt.slice(0,10)!==today){writeAutoBackup();DB.settings.lastAutoBackupAt=nowISO();}
+  if(!DB.settings.lastAutoBackupAt||localDateOf(DB.settings.lastAutoBackupAt)!==today){writeAutoBackup();DB.settings.lastAutoBackupAt=nowISO();}
 }catch(e){_q(e);}}
 /* Every record that has a phase has a plan; records from before H1 adopt one once, saying so. */
 function _ensurePlanAfterBoot(){if(typeof ensurePlan==='function'){try{var had=(DB.plans||[]).length;var p=ensurePlan();if(p&&!had){_memoInvalidate();renderAll();}}catch(e){_q(e,'P1');}}}
@@ -96,7 +96,9 @@ function boot(){
   try{applyLayout();window.addEventListener('resize',function(){applyLayout();},{passive:true});}catch(e){_q(e,'P3');}
   window.addEventListener('hashchange',function(){var t=location.hash.replace('#','');if(t&&document.getElementById('view-'+t)&&t!==_TAB)switchTab(t);});
   var start=location.hash.replace('#','');switchTab(document.getElementById('view-'+start)?start:'today');
-  if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);   /* home-screen shortcuts: ?do=weigh-in and friends */
+  if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);
+  if(typeof handleConnectReturn==='function')setTimeout(handleConnectReturn,400);
+  if(typeof startWeatherAuto==='function')startWeatherAuto();   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
   makeDelegatedControlsFocusable();
   onSave(function(){_memoInvalidate();});
   /* Durable startup, in order of authority:
