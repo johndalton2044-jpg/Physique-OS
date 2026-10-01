@@ -52,7 +52,7 @@ function emptyDB(){
     schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
     profile:{name:'',age:null,sex:'',heightIn:null,startWeightLb:null,goalWeightLb:null,goalType:'',targetDate:'',trainingExperience:'',activityBaseline:'',dietPreference:'',equipment:'',schedule:'',sleepTargetH:null,createdAt:nowISO(),updatedAt:null},
     phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
-    decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],environment:[],
+    decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],environment:[],
     models:{calibration:{},versions:{}},
     settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
     ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},
@@ -94,7 +94,7 @@ function migrate(db){
   // structural backfill for collections a same-version document may lack (partial exports, older minor builds)
   var fresh=emptyDB();
   Object.keys(fresh).forEach(function(k){if(db[k]===undefined)db[k]=fresh[k];});
-  ['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
+  ['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','responses'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
   if(!db.settings||typeof db.settings!=='object')db.settings=fresh.settings;
   Object.keys(fresh.settings).forEach(function(k){if(db.settings[k]===undefined)db.settings[k]=fresh.settings[k];});
   if(!db.profile||typeof db.profile!=='object')db.profile=fresh.profile;

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-30T07:28:26.053Z",
-  "buildId": "e7bd36cfde",
-  "nodes": 87,
-  "edges": 221,
-  "contractDerived": 75,
+  "generatedAt": "2026-10-01T02:24:45.737Z",
+  "buildId": "058f0ade05",
+  "nodes": 93,
+  "edges": 246,
+  "contractDerived": 81,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -151,6 +151,16 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "fatigue",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "readiness",
       "targetId": "unifiedRecovery",
       "dependencyType": "model"
@@ -227,12 +237,37 @@
     },
     {
       "sourceId": "weight",
+      "targetId": "model_competition",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
       "targetId": "cardio_fitness_latent",
       "dependencyType": "data"
     },
     {
       "sourceId": "weight",
       "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "physique_regions",
       "dependencyType": "data"
     },
     {
@@ -452,6 +487,16 @@
     },
     {
       "sourceId": "calories",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
       "targetId": "hydration_balance",
       "dependencyType": "data"
     },
@@ -513,6 +558,11 @@
     {
       "sourceId": "waist",
       "targetId": "fat_vs_other",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "waist",
+      "targetId": "physique_regions",
       "dependencyType": "data"
     },
     {
@@ -712,6 +762,16 @@
     },
     {
       "sourceId": "sleep",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
       "targetId": "recovery_allocation",
       "dependencyType": "data"
     },
@@ -773,6 +833,16 @@
     {
       "sourceId": "hunger",
       "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "personal_response",
       "dependencyType": "data"
     },
     {
@@ -848,6 +918,16 @@
     {
       "sourceId": "steps",
       "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "personal_response",
       "dependencyType": "data"
     },
     {
@@ -1041,6 +1121,41 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "model_competition",
+      "targetId": "competitionForecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "intervention_response",
+      "targetId": "responsesOf",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_response",
+      "targetId": "predictResponse",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_response",
+      "targetId": "evaluateResponse",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "motivation",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "friction",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "friction",
+      "targetId": "rankLevers",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "rhr",
       "targetId": "cardio_fitness_latent",
       "dependencyType": "data"
@@ -1086,6 +1201,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "bodyfat",
+      "targetId": "physique_regions",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "energy_availability",
       "targetId": "physiologySummary",
       "dependencyType": "model"
@@ -1108,6 +1228,11 @@
     {
       "sourceId": "supplement_adherence",
       "targetId": "supplementsCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "physique_regions",
+      "targetId": "physiqueCard",
       "dependencyType": "model"
     }
   ],

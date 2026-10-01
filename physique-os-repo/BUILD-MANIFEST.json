@@ -1,7 +1,7 @@
 {
- "build": "e7bd36cfde",
- "release": "9d3a2f8f6320",
- "builtAt": "2026-09-30T07:19:07.070Z",
+ "build": "058f0ade05",
+ "release": "58e1706ac31b",
+ "builtAt": "2026-10-01T02:11:05.091Z",
  "version": "1.0.0",
  "schema": 2,
  "deployment": {
@@ -36,23 +36,23 @@
   },
   {
    "file": "src/20-schema-storage.js",
-   "bytes": 29626,
-   "sha256": "dbfc780cdaa6622a182fc278a4f68884ca9b722f553bbbc7bfd4d438494dea9f"
+   "bytes": 29651,
+   "sha256": "7f6a6b979269997378cc126c5be5b549de0fc766a36584c3e23deb15a80e5d85"
   },
   {
    "file": "src/22-persistence.js",
-   "bytes": 22659,
-   "sha256": "82474b8295c2de124c40bc64bd154fcf0e98a1ee5fe062b2e224cab5b8ecfdfa"
+   "bytes": 22695,
+   "sha256": "85851301d3360305e145f723e8eb3c7ddc712ecda1c5a5ea8e979fccb15b248f"
   },
   {
    "file": "src/23-entity-contracts.js",
-   "bytes": 10604,
-   "sha256": "478cbba54de5b2ed24e34cb6e8cf49d6e9cd3300b44bcb86a141ac1891132814"
+   "bytes": 10934,
+   "sha256": "aafa8ae487631e34c013c559d72a560358e3a6e7db46278d98041180a457d183"
   },
   {
    "file": "src/24-events.js",
-   "bytes": 33824,
-   "sha256": "906b18c12603bcf7a97d2ff105afc2f1376196face0f2541dce63d85f9bcbb61"
+   "bytes": 34122,
+   "sha256": "30e3e98f3a09f25295363ab0ae9ee9ee5e5a6c84d137d8ee7f70185bc0e4f7fc"
   },
   {
    "file": "src/26-sync.js",
@@ -101,8 +101,8 @@
   },
   {
    "file": "src/50-decision.js",
-   "bytes": 91414,
-   "sha256": "e07a311d5beafaa58e2a98180d95802754579db58ad81ae2d2ce4b3758f659ae"
+   "bytes": 93400,
+   "sha256": "ec0970ab5990ad328c266b525bb5b812274215ddc8db9833ced62991c042bb43"
   },
   {
    "file": "src/51-resistance.js",
@@ -140,9 +140,24 @@
    "sha256": "c21fc56b93ada43c1f6e432e1dfe2c39398571d9657f9531920af0f0b18f3cb1"
   },
   {
+   "file": "src/58-model-competition.js",
+   "bytes": 14552,
+   "sha256": "1886afad644db415ebf2c0472a7336c17327af5db52034bbe0be880d3a2e5a66"
+  },
+  {
    "file": "src/58-plan.js",
    "bytes": 43638,
    "sha256": "1863c2a7a786951dfd9570b56d7e272699290c822daff560c0e5a128e89f4990"
+  },
+  {
+   "file": "src/58-response-entity.js",
+   "bytes": 12025,
+   "sha256": "2705b55408da182b6dea9bce131bab5fdf7caf588b879637cefe36f63578d6ab"
+  },
+  {
+   "file": "src/58-response-model.js",
+   "bytes": 6815,
+   "sha256": "25af6d8ec89c3a274f48088ef3a4ab01cc501d31b3eee66daf8b0a96c766e353"
   },
   {
    "file": "src/58-schedule.js",
@@ -153,6 +168,11 @@
    "file": "src/58-trace.js",
    "bytes": 11439,
    "sha256": "fd77c3e71a58196d723679336f885fc114a2be19f43b3755e71ac6daa5568876"
+  },
+  {
+   "file": "src/59-friction.js",
+   "bytes": 10811,
+   "sha256": "b52c0abf90702dd58f036259c0ba9e62466636cd9b5353c9d43b18b4b9abcb33"
   },
   {
    "file": "src/59-graph.js",
@@ -203,6 +223,11 @@
    "file": "src/64-movement-library.js",
    "bytes": 45269,
    "sha256": "10d900e19b85ddd63c5c653e7bb574778ecae61231ed643cf64f12d06b6fe73f"
+  },
+  {
+   "file": "src/64-physique.js",
+   "bytes": 11496,
+   "sha256": "7ff68e532bb9c92cbf3ddeeeadafe98f5ceb6e1e60db93478d41462c677f68e6"
   },
   {
    "file": "src/65-import.js",
@@ -301,8 +326,8 @@
   },
   {
    "file": "src/83-views-b.js",
-   "bytes": 74046,
-   "sha256": "adb001fefb59fe777980c8f7fa07b50214981e68fdc0a6e0f27b955dc77397e9"
+   "bytes": 74421,
+   "sha256": "4d60c72ef2ac83918123d0ac160b69386e2e14cec873d739db0c80bd975bfd92"
   },
   {
    "file": "src/84-presentation.js",
@@ -365,6 +390,16 @@
    "sha256": "2d0a423bb618e3bd263e8e6133c2ebb9e96cfaeb424b62503e5b8893429c26d3"
   },
   {
+   "file": "src/90-physique-ui.js",
+   "bytes": 4140,
+   "sha256": "92217ac589788de594f9206e9b8c3e0a1323cd2fa93ab8cea06fab6e5c4e3d95"
+  },
+  {
+   "file": "src/90-responses.js",
+   "bytes": 7051,
+   "sha256": "ca3b8f211aa8296b124da3494cd18b0461740a620a86d70e1679a8f6358e60c9"
+  },
+  {
    "file": "src/90-sources.js",
    "bytes": 10637,
    "sha256": "99e5ad061c0747fdc121707dedd10b75b72f98f3322c7dab4846d1dc2a0cb91b"
@@ -396,13 +431,13 @@
   },
   {
    "file": "src/94-navigation.js",
-   "bytes": 102323,
-   "sha256": "dd91b1aaa759486871ab36198a023bc0b4fc90009e5436b3c88f1a2a2f9cb892"
+   "bytes": 102849,
+   "sha256": "553b2059a1337f7ab1d06fda1f5b23c5be4579a8393a2cb27c131252d4a1e4b2"
   },
   {
    "file": "src/95-selftest.js",
-   "bytes": 353792,
-   "sha256": "bed15bbfc414702cf1d8a11858cd6926301b7dbe720d7924a25d98e8a6db0e32"
+   "bytes": 366409,
+   "sha256": "953356838b371c8d25b925356eacb0fce812008431dd35e0d19f3af542cd72c5"
   },
   {
    "file": "src/96-bayes-engine.js",
@@ -436,8 +471,8 @@
   },
   {
    "file": "src/99-boot.js",
-   "bytes": 11089,
-   "sha256": "7c819da0418e7d87d2694cc016febc7962034b305b677118b011f6d89e02918b"
+   "bytes": 11257,
+   "sha256": "90a38b063f52181cd56fab274d8c46c9ccebaca14d96c7105acaa080df0e80e6"
   },
   {
    "file": "build.mjs",
@@ -551,8 +586,8 @@
   },
   {
    "file": "tests/audit.mjs",
-   "bytes": 33517,
-   "sha256": "43757e2641181702716525b146038826fdc46ef392d687251c21cdeef0f5e7f8"
+   "bytes": 33851,
+   "sha256": "a8a248b8085d764f95907517c9e315d5aef3ac65c8aaeb70c26bc99ac74e91ef"
   },
   {
    "file": "tests/browser.mjs",
@@ -788,8 +823,8 @@
   },
   {
    "file": "docs/architecture-roadmap.md",
-   "bytes": 232638,
-   "sha256": "9a216c0f22bbe735d949201a5e90bec292c8add64fa3736a9a12af32d6a1d303"
+   "bytes": 239155,
+   "sha256": "7e5a170749eb011ede0a38211f348c0ceaa6265c723f7765bbc2acc0839d8ad6"
   },
   {
    "file": "docs/data-adapters.md",
@@ -873,8 +908,8 @@
   },
   {
    "file": "index.html",
-   "bytes": 3304487,
-   "sha256": "f45220888737b576f75d7a022dddd5471405b81b989f1dd83abbb89d4213ca30"
+   "bytes": 3376576,
+   "sha256": "42650e696e230e7533a3d3b0864bf9595c3207d5c4662cc75d830b2e9d73ce77"
   },
   {
    "file": "manifest.webmanifest",
@@ -884,7 +919,7 @@
   {
    "file": "sw.js",
    "bytes": 3721,
-   "sha256": "de507559f632bee0e9ea98ea51eb644521998967e05d9f255d9ed1745643267a"
+   "sha256": "f911ec18dfe22213c73d4695ecfad0eb88c5cdd4e4ec641d2a83f6a96cb403e9"
   },
   {
    "file": "vercel.json",
@@ -898,12 +933,12 @@
   },
   {
    "file": "version.json",
-   "bytes": 2423,
-   "sha256": "bca802d34df9202756994ace5285ef2236ea64e17cc9d874e69935621debde48"
+   "bytes": 2589,
+   "sha256": "bc74a91508946a79212c909756bf660b3e16bdee0c2da8671ca04ca8a83d41c6"
   }
  ],
- "indexBytes": 3304487,
- "scriptLines": 29473,
+ "indexBytes": 3376576,
+ "scriptLines": 29942,
  "components": {
   "client": [
    "ARCHITECTURE.md",

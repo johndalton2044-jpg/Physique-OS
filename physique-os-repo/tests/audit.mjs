@@ -319,8 +319,10 @@ const script=/<script>([\s\S]*?)<\/script>/.exec(html)[1];
    Hardcoded counts in prose go stale silently. Both the roadmap and an external reviewer had the event-type
    count wrong, in different directions. Anything the docs assert about the build is checked against it. */
 {
-  const docs=['README.md','docs/architecture-roadmap.md','docs/deployment.md']
-    .filter(f=>fs.existsSync(f)).map(f=>({f,text:fs.readFileSync(f,'utf8')}));
+  /* authoritative documents are checked; a document that declares itself a development history on its first line (the
+     roadmap, audit §100 C) records counts as they were when written and is exempt — the registries are the authority */
+  const docs=['README.md','docs/architecture-roadmap.md','docs/deployment.md','docs/SYSTEM_AUTHORITY.md']
+    .filter(f=>fs.existsSync(f)).map(f=>({f,text:fs.readFileSync(f,'utf8')})).filter(d=>!/^> \*\*This is a development history/.test(d.text));
   const stale=[];
   const eventTypes=Object.keys(w.EVENT_TYPES).length;
   const yields=(()=>{try{return JSON.parse(fs.readFileSync('dist/data/reference/yields.json','utf8')).count;}catch(e){return null;}})();

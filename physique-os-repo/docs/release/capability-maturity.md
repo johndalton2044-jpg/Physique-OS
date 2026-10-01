@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build e7bd36cfde. Every status is derived from evidence the build can check; none is assigned by hand.
+Build 058f0ade05. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -56,6 +56,10 @@ Build e7bd36cfde. Every status is derived from evidence the build can check; non
 | response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | assigned |
 | exercise_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | uncertainty_chain | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| model_competition | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| intervention_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| friction | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | cardio_fitness_latent | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | hydration_balance | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | supplement_efficacy | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
@@ -64,5 +68,6 @@ Build e7bd36cfde. Every status is derived from evidence the build can check; non
 | recovery_allocation | 1.0 | INFRASTRUCTURE_GRADE | assigned |
 | micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 
 Production-ready capabilities: 0. Experimentally validated engines: 0.

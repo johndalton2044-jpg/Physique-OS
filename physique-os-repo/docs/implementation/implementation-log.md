@@ -596,3 +596,38 @@ Appended by `node scripts/baseline.mjs`. Each entry is generated from the runnin
 - capabilities: 22 — surfaced 16, validated 5, integrated 1
 - production-ready: 0; implemented but unsurfaced: none
 - dependency graph: 87 nodes, 221 edges
+
+## 2026-09-30T12:49:24.745Z — build d17516adc9
+
+- sources: 84, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 88 nodes, 228 edges
+
+## 2026-09-30T13:20:57.917Z — build afc6725478
+
+- sources: 85, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 89 nodes, 234 edges
+
+## 2026-09-30T14:49:07.085Z — build d1db7b02ed
+
+- sources: 86, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 91 nodes, 240 edges
+
+## 2026-10-01T01:37:02.390Z — build c5b3d60080
+
+- sources: 88, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 92 nodes, 244 edges
+
+## 2026-10-01T02:24:45.737Z — build 058f0ade05
+
+- sources: 89, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges

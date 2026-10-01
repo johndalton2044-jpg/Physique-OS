@@ -4,18 +4,18 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 33 |
+| models | 38 |
 | capabilities | 22 |
 | entity contracts | 11 |
-| commands | 486 |
-| sheets | 113 |
-| event types | 44 |
+| commands | 489 |
+| sheets | 115 |
+| event types | 45 |
 | observation types | 32 |
 | exercises | 159 |
 | movement patterns | 28 |
 | progression families | 18 |
 | mobility items | 43 |
-| classified panels (rules) | 107 |
+| classified panels (rules) | 111 |
 
 ## Entity contracts
 
@@ -27,7 +27,7 @@ Produced from the running registries on every governance run. Do not edit by han
 - **Intervention**: implemented
 - **Execution**: implemented
 - **Observation**: implemented
-- **Response**: partial (H3)
+- **Response**: implemented
 - **Decision**: implemented
 - **Adaptation**: implemented
 

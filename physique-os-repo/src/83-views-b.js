@@ -48,6 +48,7 @@ RENDERERS.body=function(){
       {why:'Without a measured anchor the split cannot be separated from the estimate\u2019s own error.'}));
     if(bl.length)out+=uiCard({title:'Not available yet',sub:'what each needs, and why it matters',body:bl.join('')});
   }catch(e){_q(e,'P2');}
+  try{out+=physiqueCard();}catch(e){_q(e,'P2');}   /* by region: exposure, progress, status */
   setHTML('bodyZone',out);
 };
 /* ---- PROGRESS ---- */
@@ -178,6 +179,9 @@ RENDERERS.learn=function(){
       cal.rows.map(function(r){return '<tr'+(r.current?' style="font-weight:600"':'')+'><td>'+esc(r.context)+(r.current?' \u2190 now':'')+'</td><td>'+r.n+'</td><td>'+fmtSigned(r.bias,2)+'</td><td>'+fmtNum(r.mae,2)+'</td><td>'+(r.hitRate!=null?fmtNum(r.hitRate*100,0)+'%':'\u2014')+'</td></tr>';}).join('')+'</tbody></table></div>':'<div class="muted">No scored forecasts yet.</div>')+
     '<div class="prov">'+esc(cal.basis)+'. Forecast error is not constant: a bias learned at 250 lb in a cut does not transfer to maintenance at 200 lb, so calibration is kept per context and only applied when at least three forecasts match.</div>');
   var voi=valueOfInformationFormal();
+  try{recordResponses();out+=responsesCard();}catch(e){_q(e,'P2');}
+  try{out+=frictionCard();}catch(e){_q(e,'P2');}
+  try{out+=competitionCard();}catch(e){_q(e,'P2');}   /* which forecast to trust */   /* why plan items are missed */   /* what happened because of each change */
   /* Always drawn: when nothing is worth measuring the section says so, instead of vanishing (and taking every link to it,
      such as nav.voi, with it). */
   if(!voi.items.length)out+=uiFold('learn-voi','What is worth measuring next','nothing extra right now','<div class="hint">No measurement you could add would change the next decision much: the decisions are not limited by missing data at the moment.</div>');

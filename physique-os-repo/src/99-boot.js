@@ -98,7 +98,8 @@ function boot(){
   var start=location.hash.replace('#','');switchTab(document.getElementById('view-'+start)?start:'today');
   if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);
   if(typeof handleConnectReturn==='function')setTimeout(handleConnectReturn,400);
-  if(typeof startWeatherAuto==='function')startWeatherAuto();   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
+  if(typeof startWeatherAuto==='function')startWeatherAuto();
+  if(typeof recordResponses==='function')setTimeout(function(){try{recordResponses();}catch(e){_q(e,'P2');}},1500);   /* responses that matured since the last visit */   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
   makeDelegatedControlsFocusable();
   onSave(function(){_memoInvalidate();});
   /* Durable startup, in order of authority:

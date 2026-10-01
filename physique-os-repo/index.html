@@ -861,9 +861,9 @@ tr.wx-today td{font-weight:700}
 .qa-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;font:inherit}
 .qa-chip .ic{color:var(--accent)}.qa-more{color:var(--text-2)}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AjPfrn4vRyqwOClXAds2G2BIkqDm4yXeuX/jC0AoiWk='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="e7bd36cfde 2026-09-30T07:19:07.070Z">
-<meta name="physique-release" content="9d3a2f8f6320">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uqwRtfA9SXzTqdhNfUvzXLv0pa1kah0yJmY8A2M3vXM='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="058f0ade05 2026-10-01T02:11:05.091Z">
+<meta name="physique-release" content="58e1706ac31b">
 </head>
 <body>
 
@@ -1068,9 +1068,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='e7bd36cfde';        // hash of src/ — identifies the application code
-var RELEASE_ID='9d3a2f8f6320';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-30T07:19:07.070Z';
+var BUILD_ID='058f0ade05';        // hash of src/ — identifies the application code
+var RELEASE_ID='58e1706ac31b';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-10-01T02:11:05.091Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -1266,7 +1266,7 @@ return {
 schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
 profile:{name:'',age:null,sex:'',heightIn:null,startWeightLb:null,goalWeightLb:null,goalType:'',targetDate:'',trainingExperience:'',activityBaseline:'',dietPreference:'',equipment:'',schedule:'',sleepTargetH:null,createdAt:nowISO(),updatedAt:null},
 phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
-decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],environment:[],
+decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],environment:[],
 models:{calibration:{},versions:{}},
 settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
 ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},
@@ -1303,7 +1303,7 @@ try{db=m.fn(db)||db;}catch(e){_q(e);return {ok:false,reason:'migration '+m.from+
 db.schemaVersion=m.to;v=m.to;applied.push(m.from+'\u2192'+m.to+' '+m.note);}
 var fresh=emptyDB();
 Object.keys(fresh).forEach(function(k){if(db[k]===undefined)db[k]=fresh[k];});
-['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
+['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','responses'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
 if(!db.settings||typeof db.settings!=='object')db.settings=fresh.settings;
 Object.keys(fresh.settings).forEach(function(k){if(db.settings[k]===undefined)db.settings[k]=fresh.settings[k];});
 if(!db.profile||typeof db.profile!=='object')db.profile=fresh.profile;
@@ -1470,7 +1470,7 @@ return false;
 if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('pagehide',function(){flushMirrorIfBehind('pagehide');});
 if(typeof document!=='undefined'&&document&&document.addEventListener)document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flushMirrorIfBehind('hidden');});
 /* ===== SOURCE: 22-persistence.js ===== */
-var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment'];
+var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses'];
 var PERSIST_SCALARS=['schemaVersion','appVersion','revision','instance','createdAt','profile','settings','ledger','models','demo'];
 var LABEL_COLLECTIONS={
 plan:['plans'],execution:['executions'],environment:['environment'],
@@ -1480,7 +1480,7 @@ session:['sessions'],'session:retract':['sessions'],'session:edit':['sessions'],
 'food-log:repeat':['foodLogs','observations'],food:['foods'],recipe:['recipes'],favorite:[],
 phase:['phases'],'phase:edit':['phases','interventions'],'phase:end':['phases'],
 decision:['decisions'],'decision:user':['decisions'],intervention:['interventions'],'intervention:user':['interventions'],
-prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],
+prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],responses:['responses'],
 'experiment:evaluate':['experiments','negatives','interventions'],negative:['negatives'],
 snapshot:['snapshots'],archive:['archive','phases'],note:['notes'],
 program:[],settings:[],profile:[],focus:[],'device-test':[],'food-db-version':[],daily:['snapshots'],
@@ -1790,11 +1790,12 @@ temporal:'date is what it describes, at is when it was recorded; replay answers 
 provenance:'source and quality on each record, and the event log',
 correction:'a correction supersedes the original; a retraction hides it without deleting it',
 events:['observation.added','observation.corrected','observation.retracted','observation.flagged']},
-Response:{status:'partial',stores:[],identity:'one per evaluated window',
-lifecycle:['pending','observed','interpreted'],owners:[],readModel:'planResponse',registry:null,layer:'models',
-temporal:'the window it evaluates',provenance:'model runs and the execution record',correction:'recomputed on replay, never stored as fact',
-events:[],horizon:'H3',existing:['planResponse','responseFor','exerciseResponse','forecastTrackRecord'],
-gap:'a response is read per week, and only when enough of the plan was done; linking it to the adaptation it causes is H3'},
+Response:{status:'implemented',stores:['responses'],identity:'one per intervention (resp:<intervention id>); a later stage replaces an earlier',
+lifecycle:['pending','provisional','final'],owners:['recordResponses'],readModel:'responsesOf',registry:null,layer:'models',
+temporal:'the before and after windows of its intervention; provisional after 7 days, final after 21',provenance:'response.recorded events carrying the evaluation, its windows and its method',
+correction:'recomputed from the record at the next stage; the earlier stage stays in the event log',events:['response.recorded'],
+existing:['planResponse','responseFor','exerciseResponse','forecastTrackRecord','evaluateResponse'],
+note:'intervention \u2192 adherence \u2192 outcome \u2192 expectation \u2192 effect \u00b1 uncertainty \u2192 what followed; experiments, plan changes, adaptations and supplements alike'},
 Decision:{status:'implemented',stores:['decisions'],identity:'uid per decision',
 lifecycle:['recorded','applied','reviewed'],owners:['recordDecision','recordUserDecision'],readModel:'decisionsOf',registry:null,layer:'decision',
 temporal:'dated when recorded, with the state it was made from',provenance:'the event log and the decision\u2019s inputs',
@@ -1973,6 +1974,7 @@ x.revisions=(x.revisions||[]).concat([{version:e.data.version,at:e.at,previous:e
 Object.keys(e.data.changes||{}).forEach(function(k){x[k]=e.data.changes[k];});
 x.planVersion=e.data.version;x.planHash=e.data.planHash;}},
 'experiment.created':{apply:function(db,e){db.experiments.push(JSON.parse(JSON.stringify(e.data)));}},
+'response.recorded':{apply:function(db,e){db.responses=(db.responses||[]).filter(function(x){return x.id!==e.data.id;});db.responses.push(JSON.parse(JSON.stringify(e.data)));}},
 'experiment.evaluated':{apply:function(db,e){var x=db.experiments.filter(function(y){return y.id===e.data.id;})[0];
 if(x)Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});}},
 'negative.recorded':{apply:function(db,e){db.negatives.push(JSON.parse(JSON.stringify(e.data)));}},
@@ -5418,8 +5420,14 @@ var s=F('stall');
 if(s.preferred==='wait'){dec=Object.assign(base,{code:'WAIT',verb:'Hold and extend the window',tone:'inferred',priority:'plateau',lede:'Weight is flat over '+s.flatDays+' days, but that window may contain too little signal to justify a change. Additional observations still have high information value.',why:s.evidence,evidence:s.evidence,action:actionsBase().concat([{key:'measure',text:'measure waist this week'}]),confidence:'medium',recheckDays:21-s.flatDays>0?21-s.flatDays:7,reverseIf:['still flat at 21 days with logging above 85% \u2192 add steps'],costOfWaiting:'about one week at the current intake; a false change now would confound the next 14 days'});}
 else{
 var stepsNeg=negFor('steps'),calNeg=negFor('calories');var useSteps=!(stepsNeg.length&&!calNeg.length);
+var _lv=null;try{if(typeof rankLevers==='function')_lv=rankLevers([{key:'steps',variable:'steps',dose:2000,current:S.steps.mean7},{key:'calories',variable:'calories',dose:-175,current:ph.calorieTarget}]);}catch(e){_lv=null;}
+var _le=function(k){var o=_lv&&_lv.filter(function(x){return x.key===k;})[0];return o&&o.effectiveEffect!=null?Math.abs(o.effectiveEffect):null;};
+var _o=function(k){return _lv&&_lv.filter(function(x){return x.key===k;})[0];},_personal=_o('steps')&&_o('calories')&&(_o('steps').personalWeight>=0.5||_o('calories').personalWeight>=0.5||_o('steps').adherenceEvidence>=1);
+if(useSteps&&!calNeg.length&&_personal&&_le('calories')!=null&&_le('steps')!=null&&_le('calories')>1.5*_le('steps'))useSteps=false;
 var stepTo=S.steps.mean7!=null?roundTo(S.steps.mean7+2000,500):(ph.stepTarget?ph.stepTarget+2000:10000);
 dec=Object.assign(base,{code:useSteps?'ADD_STEPS':'REDUCE_CALORIES',verb:useSteps?'Add steps, hold calories':'Reduce calories modestly',tone:'attention',priority:'plateau',lede:s.summary+' The most likely cause is an observed deficit smaller than estimated. Change one variable and observe.',why:s.causes.slice(0,4).map(function(c){return c.cause;}),evidence:s.evidence,action:useSteps?[{key:'steps',text:'raise steps to \u2248'+fmtNum(stepTo,0)+'/day (+2,000)'},{key:'calories',text:'hold '+fmtKcal(ph.calorieTarget)},{key:'protein',text:'protein at target'}]:[{key:'calories',text:'reduce intake by 150\u2013200 kcal/day'},{key:'steps',text:'hold steps'}],confidence:s.likelihood==='probable'?'medium':'low',recheckDays:14,reverseIf:['trend reaches '+fmtRateRange(band?band.lo:-2,band?band.hi:-1)+' within 14 days \u2192 hold','no change after 21 days \u2192 record as negative knowledge and try the other variable'],intervention:useSteps?{variable:'steps',from:S.steps.mean7!=null?Math.round(S.steps.mean7):ph.stepTarget,to:stepTo,expected:'about 0.2\u20130.4 lb/week additional loss',recheckDays:14}:{variable:'calories',from:ph.calorieTarget,to:(ph.calorieTarget||0)-175,expected:'about 0.3\u20130.4 lb/week additional loss',recheckDays:14},alternatives:[useSteps?'\u2212150\u2013200 kcal/day instead':'+2,000 steps instead','add a cardio session (higher recovery cost)'],negatives:useSteps?stepsNeg:calNeg});
+if(_lv)dec.leverChoice={options:_lv,rule:'expected effect \u00d7 the probability of carrying it out; steps unless your own record shows calories are better by half again (a cut also adds hunger); population figures alone never switch the lever; a lever that failed before is avoided'};
+if(_lv&&Array.isArray(dec.evidence)){var _t=_lv.filter(function(o){return o.effectiveEffect!=null;}).map(function(o){return o.key+' '+o.effectiveEffect+' lb/week (done on about '+Math.round(o.pExecution*100)+'% of days)';});if(_t.length)dec.evidence=dec.evidence.concat(['Allowing for how often each is carried out: '+_t.join(', ')+'.']);}
 }
 }
 else if(F('slow')&&F('slow').likelihood==='probable'){
@@ -7655,6 +7663,81 @@ change:(a!=null&&b!=null)?round(b-a,1):null};
 return {status:'ok',cls:'MEASURED',exercise:exercise,observations:h.length,rows:rows,
 note:'What you observed, not what it means. A reduced range was observed; whether a joint, a muscle or a decision caused it is not something this can tell you, and it will not guess.'};
 }
+/* ===== SOURCE: 58-model-competition.js ===== */
+var MODEL_LIFECYCLE_STATES=['DRAFT','EXPERIMENTAL','OPERATIONAL','CALIBRATED','CHALLENGER','PRIMARY','DEPRECATED','RETIRED'];
+function _tail(S,origin,n){return S.filter(function(x){return x.date<=origin&&x.date>addDays(origin,-n);});}
+function _residSd(S,origin){var T=_tail(S,origin,21);if(T.length<5)return null;var f=_slopePerWeek(T);if(!f)return sd(T.map(function(x){return x.value;}));
+var x0=T[0].date,res=T.map(function(x){return x.value-(mean(T.map(function(y){return y.value;}))+f.slope/7*(daysBetween(x0,x.date)-mean(T.map(function(y){return daysBetween(x0,y.date);}))));});return sd(res);}
+var COMPETITION_CANDIDATES={
+naive:{label:'Recent average, held flat (baseline)',params:1,baseline:true,predict:function(S,o,h){var T=_tail(S,o,7);if(T.length<3)return null;var s=_residSd(S,o)||sd(T.map(function(x){return x.value;}));return {mean:mean(T.map(function(x){return x.value;})),sd:Math.sqrt(s*s+0.02*h*s*s)};}},
+theil_sen:{label:'14-day Theil\u2013Sen trend (the app\u2019s method)',params:2,incumbent:true,predict:function(S,o,h){var T=_tail(S,o,14);if(T.length<6)return null;var sl=[];
+for(var i=0;i<T.length;i++)for(var j=i+1;j<T.length;j++){var dd=daysBetween(T[i].date,T[j].date);if(dd)sl.push((T[j].value-T[i].value)/dd);}var b=_medianOf(sl),L=_tail(S,o,7),anchor=mean(L.map(function(x){return x.value;}));
+var s=_residSd(S,o)||0.5;return {mean:anchor+b*(h+3),sd:Math.sqrt(s*s*(1+h/14)+Math.pow(0.15*b*h,2))};}},
+holt:{label:'Holt exponential smoothing (level and trend)',params:2,predict:function(S,o,h){var T=_tail(S,o,42);if(T.length<10)return null;var a=0.3,bt=0.1,l=T[0].value,t=0,prev=T[0].date;
+for(var i=1;i<T.length;i++){var gap=Math.max(1,daysBetween(prev,T[i].date)),lp=l;l=a*T[i].value+(1-a)*(l+t*gap);t=bt*(l-lp)/gap+(1-bt)*t;prev=T[i].date;}
+var s=_residSd(S,o)||0.5,lead=daysBetween(prev,o)+h;return {mean:l+t*lead,sd:Math.sqrt(s*s*(1+h/10))};}},
+damped:{label:'Damped trend (the trend fades week by week)',params:3,predict:function(S,o,h){var base=COMPETITION_CANDIDATES.theil_sen.predict(S,o,0);if(!base)return null;var T=_tail(S,o,14),sl=[];
+for(var i=0;i<T.length;i++)for(var j=i+1;j<T.length;j++){var dd=daysBetween(T[i].date,T[j].date);if(dd)sl.push((T[j].value-T[i].value)/dd);}var b=_medianOf(sl),phi=0.9,eff=0;for(var k=1;k<=h;k++)eff+=Math.pow(phi,k/7);
+var s=_residSd(S,o)||0.5;return {mean:base.mean-b*3+b*(3+eff),sd:Math.sqrt(s*s*(1+h/14))};}}};
+function _e1rmTop(){var by={};sessionsOf({from:addDays(todayISO(),-180)}).forEach(function(s){(s.sets||[]).forEach(function(x){if(!x.load||!x.reps)return;var v=x.load*(1+x.reps/30);(by[x.exercise]=by[x.exercise]||{})[s.date]=Math.max((by[x.exercise]||{})[s.date]||0,v);});});
+var top=Object.keys(by).sort(function(a,b){return Object.keys(by[b]).length-Object.keys(by[a]).length;})[0];return top?{exercise:top,series:Object.keys(by[top]).sort().map(function(d){return {date:d,value:by[top][d]};})}:null;}
+var MODEL_COMPETITIONS={
+weight:{label:'Weight forecast',unit:'lb',horizons:[7,14],series:function(){return seriesWindow('weight',200).map(function(x){return {date:x.date,value:x.value};});},candidates:['naive','theil_sen','holt','damped']},
+strength:{label:'Strength forecast (most-trained lift)',unit:'lb e1RM',horizons:[14],series:function(){var t=_e1rmTop();return t?t.series:[];},candidates:['naive','theil_sen','holt']}};
+function backtestCompetition(id,opts){opts=opts||{};if(!opts.series&&typeof memo==='function')return memo('competition:'+id+':'+todayISO(),function(){return _backtestCompetition(id,opts);});return _backtestCompetition(id,opts);}
+function _backtestCompetition(id,opts){var C=MODEL_COMPETITIONS[id];opts=opts||{};var S=opts.series||C.series();if(S.length<20)return {status:'insufficient',competition:id,note:'fewer than 20 readings'};
+var lastDate=S[S.length-1].date,res={};C.candidates.forEach(function(c){res[c]={};C.horizons.forEach(function(h){res[c][h]=[];});});
+for(var k=0;k<=90;k+=3){var o=addDays(lastDate,-k);C.horizons.forEach(function(h){var tgt=addDays(o,h),act=S.filter(function(x){return Math.abs(daysBetween(x.date,tgt))<=1;});if(!act.length||o<=S[0].date)return;
+var actual=mean(act.map(function(x){return x.value;}));C.candidates.forEach(function(c){var p=COMPETITION_CANDIDATES[c].predict(S,o,h);if(!p||!isFinite(p.mean))return;
+res[c][h].push({origin:o,err:p.mean-actual,inside:Math.abs(p.mean-actual)<=1.2816*Math.max(p.sd,1e-6),pred:p.mean,ratio:Math.abs(p.mean-actual)/Math.max(p.sd,1e-6)});});});}
+var recentFrom=addDays(lastDate,-30);
+var rows=C.candidates.map(function(c){var m={};C.horizons.forEach(function(h){var E=res[c][h];if(E.length<5){m[h]=null;return;}var ae=E.map(function(e){return Math.abs(e.err);}),R=E.filter(function(e){return e.origin>=recentFrom;});
+var preds=E.map(function(e){return e.pred;}),jumps=[];for(var i=1;i<preds.length;i++)jumps.push(Math.abs(preds[i]-preds[i-1]));
+var byAge=E.slice().sort(function(a,b){return a.origin<b.origin?-1:1;}),half=Math.floor(byAge.length/2),q80=function(A){var r=A.map(function(e){return e.ratio;}).sort(function(a,b){return a-b;});return r.length?r[Math.min(r.length-1,Math.floor(0.8*r.length))]/1.2816:1;};
+var kOld=Math.max(0.25,q80(byAge.slice(0,half))),kAll=Math.max(0.25,q80(byAge)),newer=byAge.slice(half);
+m[h]={n:E.length,mae:round(mean(ae),3),bias:round(mean(E.map(function(e){return e.err;})),3),coverage:round(E.filter(function(e){return e.inside;}).length/E.length,2),
+scale:round(kAll,2),calibratedCoverage:newer.length?round(newer.filter(function(e){return e.ratio<=1.2816*kOld;}).length/newer.length,2):null,calibrationN:newer.length,
+recentMae:R.length>=3?round(mean(R.map(function(e){return Math.abs(e.err);})),3):null,stability:jumps.length?round(mean(jumps),3):null};});
+return {candidate:c,label:COMPETITION_CANDIDATES[c].label,params:COMPETITION_CANDIDATES[c].params,baseline:!!COMPETITION_CANDIDATES[c].baseline,metrics:m,errors:res[c]};});
+return {status:'ok',competition:id,label:C.label,unit:C.unit,horizons:C.horizons,rows:rows,origins:Math.floor(90/3)+1};}
+function _pairedZ(Ea,Eb,h){var by={};Eb.forEach(function(e){by[e.origin]=Math.abs(e.err);});
+var d=Ea.filter(function(e){return by[e.origin]!=null;}).sort(function(a,b){return a.origin<b.origin?-1:1;}).map(function(e){return Math.abs(e.err)-by[e.origin];});
+var n=d.length;if(n<5)return null;var m=mean(d),L=Math.max(0,Math.ceil((h||7)/3)-1),g=function(k){var s=0;for(var i=k;i<n;i++)s+=(d[i]-m)*(d[i-k]-m);return s/n;};
+var v=g(0);for(var k=1;k<=Math.min(L,n-1);k++)v+=2*(1-k/(L+1))*g(k);v=Math.max(v,1e-12)/n;
+return {z:m/Math.sqrt(v),n:n,meanDiff:m,hacLag:L};}
+function _lc(){return DB.settings.modelLifecycle||(DB.settings.modelLifecycle={});}
+function evaluateCompetition(id,opts){opts=opts||{};var B0=backtestCompetition(id,opts);if(B0.status!=='ok')return B0;var B=Object.assign({},B0,{rows:B0.rows.map(function(r){return Object.assign({},r);})});var C=MODEL_COMPETITIONS[id],h=C.horizons[C.horizons.length-1];
+var saved=_lc()[id];
+if(saved&&saved.lastRun===todayISO()&&!opts.force)opts=Object.assign({},opts,{dryRun:true});
+var L=JSON.parse(JSON.stringify(saved||{primary:C.candidates.filter(function(c){return COMPETITION_CANDIDATES[c].incumbent;})[0]||C.candidates[0],states:{},history:[],deprecatedRuns:{}}));
+var get=function(c){return B.rows.filter(function(r){return r.candidate===c;})[0];},base=B.rows.filter(function(r){return r.baseline;})[0],prim=get(L.primary),changes=[];
+var calibrated=function(r){var m=r&&r.metrics[h];if(!m)return false;var c=m.calibratedCoverage!=null?m.calibratedCoverage:m.coverage,n=m.calibrationN||m.n;return c!=null&&Math.abs(c-0.8)<=Math.max(0.1,2*Math.sqrt(0.16/Math.max(1,n)));};
+B.rows.forEach(function(r){if(L.states[r.candidate]==='RETIRED')return;var m=r.metrics[h];if(!m){L.states[r.candidate]=L.states[r.candidate]||'EXPERIMENTAL';return;}
+var vsBase=base&&r!==base?_pairedZ(r.errors[h],base.errors[h],h):null;r.vsBaseline=vsBase;
+if(vsBase&&vsBase.z>2&&r.candidate!==L.primary){L.deprecatedRuns[r.candidate]=(L.deprecatedRuns[r.candidate]||0)+1;L.states[r.candidate]=L.deprecatedRuns[r.candidate]>=2?'RETIRED':'DEPRECATED';return;}
+L.deprecatedRuns[r.candidate]=0;L.states[r.candidate]=r.candidate===L.primary?'PRIMARY':(calibrated(r)?'CALIBRATED':'OPERATIONAL');});
+var last=L.history[L.history.length-1];if(last&&last.type==='promoted'&&prim&&get(last.from)){var pm=prim.metrics[h],om=get(last.from).metrics[h];
+if(pm&&om&&pm.recentMae!=null&&om.recentMae!=null&&pm.recentMae>om.recentMae*1.1){changes.push({type:'rolled back',from:L.primary,to:last.from,why:'recent error '+pm.recentMae+' against '+om.recentMae+' for the model it replaced'});L.primary=last.from;prim=get(L.primary);}}
+var best=null;B.rows.forEach(function(r){if(r.candidate===L.primary||L.states[r.candidate]==='RETIRED'||L.states[r.candidate]==='DEPRECATED'||!prim||!prim.metrics[h]||!r.metrics[h])return;
+var z=_pairedZ(prim.errors[h],r.errors[h],h);if(z&&z.z>2&&calibrated(r)){L.states[r.candidate]='CHALLENGER';if(!best||z.z>best.z.z||(Math.abs(z.z-best.z.z)<0.5&&r.params<best.r.params))best={r:r,z:z};}});
+if(best&&!changes.length){changes.push({type:'promoted',from:L.primary,to:best.r.candidate,why:'mean absolute error '+best.r.metrics[h].mae+' against '+prim.metrics[h].mae+' ('+round(best.z.z,1)+' standard errors better on '+best.z.n+' paired forecasts, allowing for their overlap), calibrated coverage '+Math.round((best.r.metrics[h].calibratedCoverage!=null?best.r.metrics[h].calibratedCoverage:best.r.metrics[h].coverage)*100)+'%'});
+L.states[L.primary]='OPERATIONAL';L.primary=best.r.candidate;}
+L.states[L.primary]='PRIMARY';
+Object.keys(L.states).forEach(function(k){if(MODEL_LIFECYCLE_STATES.indexOf(L.states[k])<0)L.states[k]='EXPERIMENTAL';});   /* the registry is the authority for states */
+if(!opts.dryRun)changes.forEach(function(c){c.at=nowISO();c.competition=id;L.history.push(c);if(typeof auditAppend==='function')auditAppend('model.'+c.type.replace(' ','-'),c);});
+if(!opts.dryRun){L.lastRun=todayISO();_lc()[id]=L;save('settings');}
+else if(saved){L=saved;}
+var p=get(L.primary),beatsBase=p&&base&&p!==base?_pairedZ(p.errors[h],base.errors[h],h):null;
+return Object.assign(B,{lifecycle:MODEL_LIFECYCLE_STATES,primary:L.primary,states:L.states,history:L.history.slice(-10),changes:changes,
+primaryBeatsBaseline:p===base?null:(beatsBase?beatsBase.z<-2:null),warning:beatsBase&&beatsBase.z>=-2&&p!==base?'the primary model does not clearly beat the naive baseline':null,
+rule:'a challenger replaces the primary only when significantly better on paired errors (beyond two standard errors) and calibrated (70\u201390% coverage); newer is not assumed better'});}
+function competitionForecast(id,h){var L=_lc()[id],C=MODEL_COMPETITIONS[id];if(!C)return null;var c=L?L.primary:C.candidates.filter(function(x){return COMPETITION_CANDIDATES[x].incumbent;})[0],S=C.series();if(!S.length)return null;
+var p=COMPETITION_CANDIDATES[c].predict(S,S[S.length-1].date,h),B=backtestCompetition(id),row=B.status==='ok'?B.rows.filter(function(r){return r.candidate===c;})[0]:null,mm=row&&(row.metrics[h]||row.metrics[C.horizons[C.horizons.length-1]]),k=mm&&mm.scale?mm.scale:1;
+return p?{model:c,label:COMPETITION_CANDIDATES[c].label,mean:round(p.mean,2),lo:round(p.mean-1.2816*p.sd*k,2),hi:round(p.mean+1.2816*p.sd*k,2),horizon:h,calibrationScale:k}:null;}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='model_competition';}))return;
+MODELS.push({id:'model_competition',name:'Model competition',cls:'EMPIRICAL',version:'1.0',inputs:['weight'],minN:20,
+assumes:['the backtest period resembles the coming one'],failsWhen:['fewer than 20 readings','a regime change inside the backtest window'],
+output:'which forecast to trust for each important prediction, with its error, bias and calibration',consumers:['competitionForecast'],freshnessDays:7,uncertainty:{kind:'paired error test and interval coverage'},fn:'evaluateCompetition'});})();
 /* ===== SOURCE: 58-plan.js ===== */
 var CONSTRAINT_OPTIONS={
 sessionMinutes:[[30,'30 minutes'],[45,'45 minutes'],[60,'An hour'],[90,'90 minutes or more']],
@@ -8082,6 +8165,121 @@ if(!r||r.status!=='ok'||!/less recovered/.test(String(r.band||'')))return null;
 var I=intendedFor(todayISO());if(!(I.items||[]).some(function(x){return x.item==='training';}))return null;
 return {suggest:'reduced',why:'Recovery reads '+r.band+' today, from '+((r.stressorState&&r.stressorState.loadBasis)||'recent training load')+' and what you logged.',cls:r.cls};
 }
+/* ===== SOURCE: 58-response-entity.js ===== */
+var RESPONSE_OUTCOME={steps:'weight',calories:'weight',cardio:'weight','training days':'weight',protein:'hunger',sleep:'fatigue'};
+var RESPONSE_SECONDARY=[['hunger',+1,'hunger rose'],['fatigue',+1,'fatigue rose'],['sleep',-1,'sleep fell'],['e1rm',-1,'strength fell']];
+function _rangeSeries(type,from,to){return seriesWindow(type,daysBetween(from,todayISO())+1).filter(function(d){return d.date>=from&&d.date<=to;});}
+function _slopePerWeek(S){if(S.length<4)return null;var xs=S.map(function(d){return daysBetween(S[0].date,d.date);}),ys=S.map(function(d){return d.value;}),xm=mean(xs),ym=mean(ys);
+var sxx=xs.reduce(function(a,x){return a+(x-xm)*(x-xm);},0);if(!sxx)return null;var b=xs.reduce(function(a,x,i){return a+(x-xm)*(ys[i]-ym);},0)/sxx;
+var res=ys.map(function(y,i){return y-(ym+b*(xs[i]-xm));}),s2=res.reduce(function(a,r){return a+r*r;},0)/Math.max(1,S.length-2);return {slope:b*7,se:Math.sqrt(s2/sxx)*7,n:S.length};}
+function _levelChange(type,B,A){var sb=_rangeSeries(type,B[0],B[1]).map(function(d){return d.value;}),sa=_rangeSeries(type,A[0],A[1]).map(function(d){return d.value;});
+if(sb.length<4||sa.length<4)return null;return {before:mean(sb),after:mean(sa),change:mean(sa)-mean(sb),se:Math.sqrt(sd(sb)*sd(sb)/sb.length+sd(sa)*sd(sa)/sa.length),n:[sb.length,sa.length]};}
+function _e1rmSeries(from,to){return (DB.sessions||[]).filter(function(s){return !s.retracted&&s.date>=from&&s.date<=to;}).map(function(s){var best=0;(s.sets||[]).forEach(function(t){var l=t.load||t.weight||0;if(l&&t.reps)best=Math.max(best,l*(1+t.reps/30));});return best?{date:s.date,value:best}:null;}).filter(Boolean);}
+function responseInterventions(){
+var out=[];
+(DB.experiments||[]).filter(function(e){return e.startDate&&e.variable;}).forEach(function(e){
+out.push({id:'exp:'+e.id,kind:'experiment',date:e.startDate,variable:e.variable,from:e.baselineValue,to:e.interventionValue,
+expected:(e.predLo!=null&&e.predHi!=null)?{lo:+e.predLo,hi:+e.predHi,unit:'lb/week',basis:'the prediction stated when the experiment began'}:null,source:{experiment:e.id},reversible:'yes: end the experiment'});});
+plansOf().filter(function(p){return p.version>1&&(p.changes||[]).length;}).forEach(function(p){(p.changes||[]).forEach(function(c){
+var f=String(c.field||c.key||c.path||''),v=/calor/i.test(f)?'calories':(/step/i.test(f)?'steps':(/train|days/i.test(f)?'training days':(/cardio/i.test(f)?'cardio':(/protein/i.test(f)?'protein':null))));if(!v)return;
+var from=c.from!=null?c.from:c.before,to=c.to!=null?c.to:c.after;if(typeof from!=='number'||typeof to!=='number'||from===to)return;
+out.push({id:'plan:'+p.id+':'+v,kind:p.trigger&&p.trigger.kind==='adaptation'?'adaptation':'plan change',date:p.effectiveFrom,variable:v,from:from,to:to,expected:null,source:{planVersion:p.version},reversible:'yes: a later plan version can restore it'});});});
+if(typeof supplementStack==='function')supplementStack().forEach(function(s){var first=(supplementIntakes('0000-01-01',todayISO()).filter(function(x){return x.id===s.id;}).map(function(x){return x.date;}).sort()[0]);
+var c=SUPPLEMENT_CATALOGUE[s.id];if(first&&c&&c.test&&c.test[0])out.push({id:'supp:'+s.id,kind:'supplement',date:first,variable:'supplement: '+c.label,outcome:c.test[0],expected:null,source:{supplement:s.id},reversible:'yes: stop taking it'});});
+return out.sort(function(a,b){return a.date<b.date?-1:1;});
+}
+function _expectedWeightChange(iv){var kg=typeof _kgNow==='function'?_kgNow():null;
+if(iv.variable==='calories'&&typeof iv.to==='number')return {lo:(iv.to-iv.from)*7/3500*1.3,hi:(iv.to-iv.from)*7/3500*0.7,unit:'lb/week',basis:'energy arithmetic (3,500 kcal per lb), \u00b130%'};
+if(iv.variable==='steps'&&kg&&typeof iv.to==='number'){var k=-(iv.to-iv.from)*0.0005*kg*7/3500;return {lo:k*1.5,hi:k*0.5,unit:'lb/week',basis:'about 0.5 kcal per step per kg, \u00b150%'};}
+return null;}
+function evaluateResponse(iv){
+var d=iv.date,B=[addDays(d,-21),addDays(d,-1)],A=[d,todayISO()<addDays(d,20)?todayISO():addDays(d,20)],afterDays=daysBetween(d,todayISO())+1;
+var rec={id:'resp:'+iv.id,interventionId:iv.id,kind:iv.kind,variable:iv.variable,dose:(typeof iv.to==='number'&&typeof iv.from==='number')?round(iv.to-iv.from,1):null,
+from:iv.from!=null?iv.from:null,to:iv.to!=null?iv.to:null,start:d,windows:{before:B,after:A},stage:afterDays>=21?'final':(afterDays>=7?'provisional':'pending'),
+evaluatedAt:nowISO(),source:iv.source,reversible:iv.reversible,cls:'EMPIRICAL'};
+if(rec.stage==='pending'){rec.verdict='too early: '+afterDays+' of 7 days after the change';return rec;}
+if(typeof iv.to==='number'&&(iv.variable==='calories'||iv.variable==='steps')){var S=_rangeSeries(iv.variable,A[0],A[1]);
+var met=S.filter(function(x){return iv.variable==='calories'?Math.abs(x.value-iv.to)<=0.1*iv.to:x.value>=0.9*iv.to;}).length;
+rec.adherence={daysLogged:S.length,daysMet:met,share:S.length?round(met/S.length,2):null,rule:iv.variable==='calories'?'within 10% of the new target':'at least 90% of the new target'};}
+var oc=iv.outcome||RESPONSE_OUTCOME[iv.variable]||null;rec.outcome=oc;
+if(oc==='weight'){var sb=_slopePerWeek(_rangeSeries('weight',B[0],B[1])),sa=_slopePerWeek(_rangeSeries('weight',A[0],A[1]));
+if(sb&&sa){var eff=sa.slope-sb.slope,se=Math.sqrt(sb.se*sb.se+sa.se*sa.se);
+rec.primary={quantity:'weight trend',unit:'lb/week',before:round(sb.slope,2),after:round(sa.slope,2),counterfactual:round(sb.slope,2),effect:round(eff,2),se:round(se,2),n:[sb.n,sa.n],
+method:'the change in the weight trend; the counterfactual is the trend before, continued'};
+var pb=_slopePerWeek(_rangeSeries('weight',addDays(d,-28),addDays(d,-8))),pa=_slopePerWeek(_rangeSeries('weight',addDays(d,-7),addDays(d,-1)));
+if(pb&&pa){var pe=pa.slope-pb.slope,ps=Math.sqrt(pb.se*pb.se+pa.se*pa.se);rec.placebo={effect:round(pe,2),se:round(ps,2),alreadyUnderWay:Math.abs(pe)>2*ps&&pe*eff>0};}}}
+else if(oc){var lc=_levelChange(oc,B,A);if(lc)rec.primary={quantity:oc,before:round(lc.before,2),after:round(lc.after,2),counterfactual:round(lc.before,2),effect:round(lc.change,2),se:round(lc.se,2),n:lc.n,method:'the change in the average level'};}
+var ex=iv.expected||(function(){if(rec.dose!=null&&oc&&typeof predictResponse==='function'){var pr=predictResponse(iv.variable,oc,rec.dose,{excludeId:iv.id});
+if(pr&&pr.n)return {lo:pr.lo,hi:pr.hi,unit:pr.unit,basis:pr.basis};}return oc==='weight'?_expectedWeightChange(iv):null;})();
+if(ex&&rec.primary){rec.expected=ex;var lo=Math.min(ex.lo,ex.hi),hi=Math.max(ex.lo,ex.hi);rec.expectation=rec.primary.effect>=lo-rec.primary.se&&rec.primary.effect<=hi+rec.primary.se?'as expected':(Math.abs(rec.primary.effect)<Math.abs((lo+hi)/2)?'less than expected':'more than expected');}
+rec.unintended=[];RESPONSE_SECONDARY.forEach(function(s){if(s[0]===oc)return;var lc=s[0]==='e1rm'?(function(){var b=_e1rmSeries(B[0],B[1]).map(function(x){return x.value;}),a=_e1rmSeries(A[0],A[1]).map(function(x){return x.value;});
+return b.length>=3&&a.length>=3?{change:mean(a)-mean(b),se:Math.sqrt(sd(b)*sd(b)/b.length+sd(a)*sd(a)/a.length)}:null;})():_levelChange(s[0],B,A);
+if(lc&&lc.change*s[1]>0&&Math.abs(lc.change)>2*lc.se)rec.unintended.push({quantity:s[0],change:round(lc.change,2),se:round(lc.se,2),text:s[2]});});
+var logged=function(R){var days={};(DB.observations||[]).forEach(function(o){if(!o.retracted&&o.date>=R[0]&&o.date<=R[1])days[o.date]=1;});return Object.keys(days).length/Math.max(1,daysBetween(R[0],R[1])+1);};
+var lb=logged(B),la=logged(A);rec.burden={loggingBefore:round(lb,2),loggingAfter:round(la,2),note:la<lb-0.2?'logging fell from '+Math.round(lb*100)+'% to '+Math.round(la*100)+'% of days':'logging held steady'};
+rec.followedBy={planVersions:plansOf().filter(function(p){return p.effectiveFrom>d&&daysBetween(d,p.effectiveFrom)<=35;}).map(function(p){return p.version;}),
+decisions:(DB.decisions||[]).filter(function(x){var dd=String(x.date||x.at||'').slice(0,10);return dd>d&&daysBetween(d,dd)<=35;}).map(function(x){return x.id;}).slice(0,5)};
+var P=rec.primary;
+if(!P)rec.verdict='no outcome to judge: '+(oc?('too few '+oc+' readings'):'nothing this app measures would show it');
+else{var clear=Math.abs(P.effect)>2*P.se,expDir=ex?Math.sign((ex.lo+ex.hi)/2):null;
+rec.verdict=!clear?'no clear response yet':(expDir&&Math.sign(P.effect)!==expDir?'the opposite of what was expected':'a clear response');
+if(rec.placebo&&rec.placebo.alreadyUnderWay)rec.verdict+=' \u2014 but the change was already under way before it started';}
+rec.confidence=!P?'none':(rec.stage==='final'&&Math.abs(P.effect)>3*P.se&&!(rec.placebo&&rec.placebo.alreadyUnderWay)?'high':(Math.abs(P.effect)>2*P.se?'medium':'low'));
+return rec;
+}
+function recordResponses(){
+DB.responses=DB.responses||[];var n=0;
+responseInterventions().forEach(function(iv){var r=evaluateResponse(iv);if(r.stage==='pending')return;
+var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&(ex.stage===r.stage||ex.stage==='final'))return;
+DB.responses=DB.responses.filter(function(x){return x.id!==r.id;});DB.responses.push(r);emitEvent('response.recorded',r,{at:r.evaluatedAt});n++;});
+if(n)save('responses');return {status:'ok',recorded:n,total:DB.responses.length};
+}
+function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){return a.start<b.start?1:-1;});}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='intervention_response';}))return;
+MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
+assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
+failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)'],
+output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual',consumers:['responsesOf'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
+/* ===== SOURCE: 58-response-model.js ===== */
+function RESPONSE_PRIORS(){var kg=typeof _kgNow==='function'?(_kgNow()||90):90;return {
+'calories\u2192weight':{perUnit:7/3500,sdAbs:0.3*7/3500,scale:100,label:'per 100 kcal a day',unit:'lb/week',basis:'energy arithmetic: about 3,500 kcal per lb'},
+'steps\u2192weight':{perUnit:-0.0005*kg*7/3500,sdAbs:0.5*0.0005*kg*7/3500,scale:1000,label:'per 1,000 steps a day',unit:'lb/week',basis:'about 0.5 kcal per step per kg of body weight'},
+'training days\u2192weight':{perUnit:0,sdAbs:0.3,scale:1,label:'per training day a week',unit:'lb/week',basis:'no reliable population figure: centred on no effect'},
+'protein\u2192hunger':{perUnit:0,sdAbs:0.03,scale:20,label:'per 20 g of protein a day',unit:'hunger points',basis:'no reliable population figure: centred on no effect'}};}
+function _respKey(r){return r.variable+'\u2192'+(r.outcome||'?');}
+function _respContext(r){var ph=(DB.phases||[]).filter(function(p){return p.startDate<=r.start&&(!p.endDate||p.endDate>=r.start);})[0];return ph?ph.type:'unknown';}
+function _perUnit(r){var P=r.primary;if(!P||r.dose==null||!r.dose||P.se==null||r.stage==='pending')return null;
+var s=r.adherence&&r.adherence.share!=null?Math.max(0.3,r.adherence.share):1;   /* a change done on 60% of days delivered 60% of the dose */
+var y=P.effect/(r.dose*s),se=Math.abs(P.se/(r.dose*s))*(r.stage==='provisional'?Math.SQRT2:1);   /* provisional counts half (variance doubled) */
+return {id:r.id,y:y,se:Math.max(se,1e-9),stage:r.stage,context:_respContext(r),start:r.start,adherence:s};}
+function _posterior(prior,obs){var pm=prior?prior.perUnit:0,pv=prior?prior.sdAbs*prior.sdAbs:1;
+var prec=1/pv,num=pm/pv;obs.forEach(function(o){prec+=1/(o.se*o.se);num+=o.y/(o.se*o.se);});
+var dataPrec=obs.reduce(function(a,o){return a+1/(o.se*o.se);},0);return {mean:num/prec,sd:Math.sqrt(1/prec),personalWeight:dataPrec/prec};}
+function personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by={};
+(DB.responses||[]).forEach(function(r){if(opts.excludeId&&(r.id===opts.excludeId||r.interventionId===opts.excludeId))return;var u=_perUnit(r);if(!u)return;(by[_respKey(r)]=by[_respKey(r)]||[]).push(u);});
+var keys=Object.keys(PR).concat(Object.keys(by).filter(function(k){return !PR[k];}));
+var rows=keys.map(function(k){var prior=PR[k]||{perUnit:0,sdAbs:null,scale:1,label:'per unit',unit:'',basis:'no population figure'},obs=by[k]||[];
+if(prior.sdAbs==null){var spread=obs.length?Math.max.apply(null,obs.map(function(o){return Math.abs(o.y)+2*o.se;})):1;prior=Object.assign({},prior,{sdAbs:spread*2});}   /* wide, scaled to the data */
+var post=_posterior(prior,obs),sc=prior.scale;
+var ctx={};obs.forEach(function(o){(ctx[o.context]=ctx[o.context]||[]).push(o);});
+var contexts=Object.keys(ctx).filter(function(c){return ctx[c].length>=2;}).map(function(c){var p=_posterior(prior,ctx[c]);return {context:c,n:ctx[c].length,mean:round(p.mean*sc,3),sd:round(p.sd*sc,3)};});
+var differs=contexts.length>=2&&contexts.some(function(a){return contexts.some(function(b){return a!==b&&Math.abs(a.mean-b.mean)>2*Math.sqrt(a.sd*a.sd+b.sd*b.sd);});});
+return {key:k,variable:k.split('\u2192')[0],outcome:k.split('\u2192')[1],label:prior.label,unit:prior.unit,n:obs.length,finals:obs.filter(function(o){return o.stage==='final';}).length,
+prior:{mean:round(prior.perUnit*sc,3),sd:round(prior.sdAbs*sc,3),basis:prior.basis},
+personal:obs.length?{mean:round(obs.reduce(function(a,o){return a+o.y/(o.se*o.se);},0)/obs.reduce(function(a,o){return a+1/(o.se*o.se);},0)*sc,3)}:null,
+posterior:{mean:round(post.mean*sc,3),sd:round(post.sd*sc,3)},personalWeight:round(post.personalWeight,2),contexts:contexts,contextsDiffer:differs,
+verdict:!obs.length?'no personal data yet: the population figure':(post.personalWeight>=0.5?'mostly your own data':'still mostly the population figure')};});
+return {status:'ok',cls:'EMPIRICAL',rows:rows,responses:(DB.responses||[]).length,method:'normal\u2013normal update of a population prior per unit of dose by your Response records; adherence-adjusted; provisional responses count half',
+limits:'Assumes the effect scales with dose and is steady over time; context splits need at least two responses each.'};}
+function predictResponse(variable,outcome,dose,opts){opts=opts||{};var M=personalResponseModel({excludeId:opts.excludeId}),row=M.rows.filter(function(r){return r.variable===variable&&r.outcome===outcome;})[0];
+if(!row||dose==null)return null;var c=opts.context&&row.contexts.filter(function(x){return x.context===opts.context;})[0],src=c||row.posterior,per=dose/(RESPONSE_PRIORS()[row.key]?RESPONSE_PRIORS()[row.key].scale:1);
+var m=src.mean*per,s=Math.abs(src.sd*per);return {mean:round(m,3),lo:round(m-2*s,3),hi:round(m+2*s,3),unit:row.unit,n:row.n,personalWeight:row.personalWeight,
+basis:row.n?('your '+row.n+' earlier response'+(row.n===1?'':'s')+' with the population figure ('+Math.round(row.personalWeight*100)+'% yours)'+(c?', in '+c:'')):row.prior.basis};}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_response';}))return;
+MODELS.push({id:'personal_response',name:'Personal response model',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','steps','calories'],minN:1,
+assumes:['the effect scales with dose','the effect is steady over time','responses are independent'],failsWhen:['fewer than one response per change','a change that interacts with another at the same time'],
+output:'the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data',consumers:['predictResponse','evaluateResponse'],freshnessDays:7,
+uncertainty:{kind:'posterior standard deviation'},fn:'personalResponseModel'});})();
 /* ===== SOURCE: 58-schedule.js ===== */
 var SHIFT_LABELS={D:'Day shift',N:'Night shift',O:'Day off',E:'Evening shift'};
 var ROTATION_PRESETS={
@@ -8302,6 +8500,70 @@ out.restsOnPrior=priors.length?priors.map(function(s){return s.step;}):null;
 return out;
 }
 function traceIds(){return Object.keys(TRACES);}
+/* ===== SOURCE: 59-friction.js ===== */
+var FRICTION_FACTORS={
+planLoad:{label:'a heavy plan day (6+ items)',kind:'plan burden'},longSession:{label:'a session of an hour or more',kind:'time burden'},
+workShift:{label:'a work shift',kind:'schedule conflict'},shortSleep:{label:'under 6 hours of sleep the night before',kind:'sleep conflict'},
+lowMotivation:{label:'low motivation (4 or less)',kind:'motivation'},highFatigue:{label:'high fatigue (7 or more)',kind:'fatigue'},
+weekend:{label:'the weekend',kind:'social context'},badWeather:{label:'rain or heat',kind:'weather'},
+noTemplate:{label:'no saved meal to repeat',kind:'cooking burden'},pendingDecisions:{label:'decisions waiting for you',kind:'decision fatigue'}};
+var FRICTION_ITEMS=['training','cardio','steps','nutrition','protein','weigh-in'];
+function _dayVal(type,date){var s=(obsOf(type)||[]).filter(function(o){return o.date===date;});return s.length?s[s.length-1].value:null;}
+function _frictionFeatures(date,item,rows){var f={},plan=null;try{plan=scheduledPlan(date,trainingProgram());}catch(e){}
+var dow=new Date(date+'T12:00:00Z').getUTCDay();f.weekend=(dow===0||dow===6)?1:0;
+f.planLoad=(rows||[]).length>=6?1:0;f.longSession=plan&&plan.kind==='lift'&&(plan.minutes||plan.durationMin||0)>=60?1:0;
+f.workShift=plan&&plan.shift&&plan.shift!=='O'&&plan.shift!=='off'?1:0;
+var sl=_dayVal('sleep',date);f.shortSleep=sl!=null&&sl<6?1:0;var mo=_dayVal('motivation',date);f.lowMotivation=mo!=null&&mo<=4?1:0;var fa=_dayVal('fatigue',date);f.highFatigue=fa!=null&&fa>=7?1:0;
+f.badWeather=0;if((item==='cardio'||item==='steps')&&typeof weatherContextAt==='function'){try{var w=weatherContextAt(date+'T17:00:00');if(w&&((w.precipitation||0)>=2||(w.temperature!=null&&w.temperature>=32)))f.badWeather=1;}catch(e){}}
+f.noTemplate=(item==='nutrition'||item==='protein')&&!(DB.settings.templates||[]).some(function(t){return t.kind==='meal';})?1:0;
+var acted={};(DB.experiments||[]).concat(DB.interventions||[]).forEach(function(x){if(x.decisionId)acted[x.decisionId]=1;});
+f.pendingDecisions=(DB.decisions||[]).filter(function(d){var dd=String(d.date||'').slice(0,10);return dd<=date&&dd>=addDays(date,-3)&&d.intervention&&!acted[d.id];}).length>=2?1:0;
+return f;}
+function _logitRidge(X,y,lambda){var p=X[0].length,b=new Array(p).fill(0);for(var it=0;it<25;it++){var g=new Array(p).fill(0),H=[];for(var i=0;i<p;i++)H.push(new Array(p).fill(0));
+X.forEach(function(x,k){var z=x.reduce(function(a,v,j){return a+v*b[j];},0),mu=1/(1+Math.exp(-z)),wt=mu*(1-mu);for(var i2=0;i2<p;i2++){g[i2]+=(y[k]-mu)*x[i2];for(var j=0;j<p;j++)H[i2][j]+=wt*x[i2]*x[j];}});
+for(var i3=1;i3<p;i3++){g[i3]-=lambda*b[i3];H[i3][i3]+=lambda;}H[0][0]+=1e-6;var inv=_matInv(H);if(!inv)break;var step=inv.map(function(r){return r.reduce(function(a,v,j){return a+v*g[j];},0);});
+b=b.map(function(v,j){return v+step[j];});if(Math.max.apply(null,step.map(Math.abs))<1e-6)break;}
+var Hf=[];for(var q=0;q<p;q++)Hf.push(new Array(p).fill(0));X.forEach(function(x){var z=x.reduce(function(a,v,j){return a+v*b[j];},0),mu=1/(1+Math.exp(-z)),wt=mu*(1-mu);for(var i=0;i<p;i++)for(var j=0;j<p;j++)Hf[i][j]+=wt*x[i]*x[j];});
+for(var r=1;r<p;r++)Hf[r][r]+=lambda;var iv=_matInv(Hf);return {b:b,se:iv?iv.map(function(r,i){return Math.sqrt(Math.max(0,r[i]));}):b.map(function(){return null;})};}
+function _matInv(A){var n=A.length,M=A.map(function(r,i){return r.concat(Array.from({length:n},function(_,j){return i===j?1:0;}));});
+for(var c=0;c<n;c++){var piv=c;for(var r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[piv][c]))piv=r;if(Math.abs(M[piv][c])<1e-12)return null;var t=M[c];M[c]=M[piv];M[piv]=t;
+var d=M[c][c];for(var j=0;j<2*n;j++)M[c][j]/=d;for(var r2=0;r2<n;r2++){if(r2===c)continue;var f=M[r2][c];if(f)for(var j2=0;j2<2*n;j2++)M[r2][j2]-=f*M[c][j2];}}
+return M.map(function(r){return r.slice(n);});}
+function frictionModel(days){days=days||56;var data={};FRICTION_ITEMS.forEach(function(i){data[i]=[];});
+for(var k=1;k<=days;k++){var d=addDays(todayISO(),-k),e=null;try{e=executionFor(d);}catch(err){}if(!e||!e.rows)continue;
+e.rows.forEach(function(r){if(!data[r.item])return;if(r.status==='unknown'||r.status==='planned'||r.status==='pending'||r.status==='rest')return;data[r.item].push({date:d,y:r.status==='done'?1:0,f:_frictionFeatures(d,r.item,e.rows)});});}
+var keys=Object.keys(FRICTION_FACTORS);
+var items=FRICTION_ITEMS.map(function(it){var D=data[it],n=D.length,rate=n?D.filter(function(x){return x.y;}).length/n:null;
+if(n<14)return {item:it,n:n,rate:rate!=null?round(rate,2):null,status:'insufficient',note:'fewer than 14 recorded days'};
+var used=keys.filter(function(f){var ex=D.filter(function(x){return x.f[f];}).length;return ex>=3&&ex<=n-3;});   /* a factor needs both kinds of day */
+var misses=D.filter(function(x){return !x.y;}).length;
+if(!used.length||misses<2)return {item:it,n:n,rate:round(rate,2),status:'ok',factors:[],note:misses<2?'almost never missed: no friction to explain':'no factor varies enough to test'};
+var X=D.map(function(x){return [1].concat(used.map(function(f){return x.f[f];}));}),y=D.map(function(x){return x.y;}),fit=_logitRidge(X,y,1);
+var factors=used.map(function(f,i){var c=fit.b[i+1],s=fit.se[i+1];return {factor:f,label:FRICTION_FACTORS[f].label,kind:FRICTION_FACTORS[f].kind,exposedDays:D.filter(function(x){return x.f[f];}).length,
+oddsRatio:round(Math.exp(c),2),lo:s!=null?round(Math.exp(c-2*s),2):null,hi:s!=null?round(Math.exp(c+2*s),2):null,clear:s!=null&&Math.abs(c)>2*s};})
+.sort(function(a,b){return a.oddsRatio-b.oddsRatio;});
+return {item:it,n:n,rate:round(rate,2),status:'ok',intercept:fit.b[0],coef:used.reduce(function(o,f,i){o[f]=fit.b[i+1];return o;},{}),factors:factors};});
+return {status:'ok',cls:'EMPIRICAL',days:days,items:items,method:'ridge-regularised logistic regression per item on the last '+days+' days (\u03bb = 1); odds ratios below 1 are friction',
+limits:'Associations, not causes: a factor can stand in for something unmeasured. Needs 14 recorded days per item and both kinds of day for a factor.'};}
+function executionProbability(item,date){var M=frictionModel(),r=M.items.filter(function(x){return x.item===item;})[0];date=date||todayISO();
+if(!r||r.status!=='ok'||r.rate==null)return null;if(!r.coef)return {p:r.rate,basis:'your rate over '+r.n+' days',drivers:[]};
+var f=_frictionFeatures(date,item,null),z=r.intercept,drivers=[];Object.keys(r.coef).forEach(function(k){if(f[k]){z+=r.coef[k];drivers.push(FRICTION_FACTORS[k].label);}});
+return {p:round(1/(1+Math.exp(-z)),2),basis:'your record over '+r.n+' days',drivers:drivers};}
+var FRICTION_ITEM_FOR={steps:'steps',calories:'nutrition',protein:'protein',cardio:'cardio','training days':'training'};
+function interventionAdherence(variable,dose,current){var rel=current&&dose!=null?Math.abs(dose)/Math.max(1,Math.abs(current)):0.1;
+var pm=rel>0.2?0.55:(rel>0.1?0.65:0.75),a=pm*6,b=(1-pm)*6;   /* a prior worth six days: bigger changes are carried out less */
+(DB.responses||[]).filter(function(r){return r.variable===variable&&r.adherence&&r.adherence.share!=null;}).forEach(function(r){var n=Math.min(21,r.adherence.daysLogged||0);a+=r.adherence.share*n;b+=(1-r.adherence.share)*n;});
+var m=a/(a+b),sdv=Math.sqrt(a*b/((a+b)*(a+b)*(a+b+1))),today=FRICTION_ITEM_FOR[variable]?executionProbability(FRICTION_ITEM_FOR[variable]):null,adj=1;
+var base=frictionModel().items.filter(function(x){return x.item===FRICTION_ITEM_FOR[variable];})[0];if(today&&base&&base.rate)adj=Math.min(1.3,Math.max(0.5,today.p/base.rate));
+return {p:round(Math.min(0.98,m*adj),2),sd:round(sdv,2),relativeSize:round(rel,2),basis:'past adherence to '+variable+' changes, a prior for a change of this size'+(adj!==1?', and today\u2019s friction':''),drivers:today?today.drivers:[]};}
+function rankLevers(options){return options.map(function(o){var eff=typeof predictResponse==='function'?predictResponse(o.variable,o.outcome||'weight',o.dose):null,ad=interventionAdherence(o.variable,o.dose,o.current);
+var effective=eff?eff.mean*ad.p:null,adN=(DB.responses||[]).filter(function(r){return r.variable===o.variable&&r.adherence&&r.adherence.share!=null;}).length;
+return Object.assign({},o,{expectedEffect:eff?eff.mean:null,effectBasis:eff?eff.basis:null,personalWeight:eff?eff.personalWeight:0,adherenceEvidence:adN,pExecution:ad.p,adherenceBasis:ad.basis,effectiveEffect:effective!=null?round(effective,3):null});})
+.sort(function(a,b){return (a.effectiveEffect==null?0:Math.abs(b.effectiveEffect||0))-(b.effectiveEffect==null?0:Math.abs(a.effectiveEffect||0));});}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='friction';}))return;
+MODELS.push({id:'friction',name:'Friction and adherence',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue','motivation','weight'],minN:14,
+assumes:['recorded burdens stand for the real ones','days are independent'],failsWhen:['fewer than 14 recorded days per item','a factor that never varies'],
+output:'why plan items are missed (odds ratios per burden) and the probability a change is carried out',consumers:['decide','rankLevers'],freshnessDays:7,uncertainty:{kind:'standard error of each log odds'},fn:'frictionModel'});})();
 /* ===== SOURCE: 59-graph.js ===== */
 var NODE_KINDS={
 observation:{label:'Observation',cls:'MEASURED'},
@@ -10140,6 +10402,68 @@ var issues=[];EXERCISES.forEach(function(e){var o=exerciseOntology(e.id);
 if(!o.joints||!o.joints.length)issues.push(e.id+': no joints');});
 return {ok:issues.length===0,issues:issues,exercises:EXERCISES.length};
 }
+/* ===== SOURCE: 64-physique.js ===== */
+var PHYSIQUE_RANGE={setsLow:10,setsHigh:20,minFrequency:2,source:'dose\u2013response meta-analyses (Schoenfeld 2017; Pelland 2024): about 10\u201320 hard sets a week, at least twice a week'};
+var REGION_MEASURE={chest:'chest',biceps:'arm',triceps:'arm',quads:'thigh',hamstrings:'thigh',glutes:'hip'};
+var BODYFAT_METHOD_SE={DEXA:1.5,'Bod Pod':2,hydrostatic:2,calipers:3,'BIA scale':3.5,'visual estimate':4,other:4,unspecified:4};
+function _setsByMuscle(from,to){var out={},freq={};sessionsOf({from:from}).filter(function(s){return s.date<=to;}).forEach(function(s){var seen={};
+(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e)return;e.primary.forEach(function(m){out[m]=(out[m]||0)+1;seen[m]=1;});e.secondary.forEach(function(m){out[m]=(out[m]||0)+0.5;});});
+Object.keys(seen).forEach(function(m){freq[m]=(freq[m]||0)+1;});});return {sets:out,freq:freq};}
+function regionalExposure(weeks){weeks=weeks||8;var W=[];for(var k=0;k<weeks;k++){var to=addDays(todayISO(),-7*k),from=addDays(to,-6);W.push(_setsByMuscle(from,to));}
+var keys={};W.forEach(function(w){Object.keys(w.sets).forEach(function(m){keys[m]=1;});});
+var out={};Object.keys(keys).forEach(function(m){var s=W.map(function(w){return w.sets[m]||0;}),f=W.map(function(w){return w.freq[m]||0;});
+out[m]={weekly:s,recentSets:round(mean(s.slice(0,4)),1),recentFrequency:round(mean(f.slice(0,4)),1)};});return out;}
+function regionalStrength(muscle,weeks){weeks=weeks||12;var from=addDays(todayISO(),-7*weeks),by={};
+sessionsOf({from:from}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e||e.primary.indexOf(muscle)<0||!x.load||!x.reps)return;
+var v=x.load*(1+x.reps/30);(by[e.name]=by[e.name]||{})[s.date]=Math.max((by[e.name]||{})[s.date]||0,v);});});
+var est=[];Object.keys(by).forEach(function(n){var d=Object.keys(by[n]).sort();if(d.length<4)return;var base=by[n][d[0]];
+var S=d.map(function(dd){return {date:dd,value:100*by[n][dd]/base};}),f=_slopePerWeek(S);if(f)est.push({exercise:n,slope:f.slope*30/7,se:f.se*30/7,n:d.length});});
+if(!est.length)return null;var w=est.map(function(e){return 1/Math.max(1e-6,e.se*e.se);}),sw=w.reduce(function(a,b){return a+b;},0);
+return {pctPerMonth:round(est.reduce(function(a,e,i){return a+e.slope*w[i];},0)/sw,2),se:round(Math.sqrt(1/sw),2),exercises:est.map(function(e){return e.exercise;})};}
+function regionalSize(muscle){var t=REGION_MEASURE[muscle];if(!t)return null;var S=obsOf(t).slice(-12).map(function(o){return {date:o.date,value:o.value};});var f=_slopePerWeek(S);
+return f?{measure:t,perMonth:round(f.slope*30/7,2),se:round(Math.max(f.se,0.2)*30/7,2),n:S.length,note:'tape error is about 0.5 cm a reading; a limb also grows with fat'}:{measure:t,status:'not measured'};}
+function physiquePriorities(){return (DB.settings.physiquePriorities||[]).filter(function(m){return MUSCLE_GROUPS[m];}).slice(0,3);}
+function physiqueModel(){
+var X=regionalExposure(8),pri=physiquePriorities(),regions=Object.keys(X).concat(pri.filter(function(m){return !X[m];}));
+var rows=regions.map(function(m){var x=X[m]||{recentSets:0,recentFrequency:0},st=regionalStrength(m),sz=regionalSize(m);
+return {muscle:m,label:MUSCLE_GROUPS[m]||m,priority:pri.indexOf(m)>=0,sets:x.recentSets,frequency:x.recentFrequency,strength:st,size:sz};});
+var trained=rows.filter(function(r){return r.strength&&r.sets>=PHYSIQUE_RANGE.setsLow;}),med=trained.length>=3?_medianOf(trained.map(function(r){return r.strength.pctPerMonth;})):null;
+rows.forEach(function(r){
+if(r.sets<(r.priority?PHYSIQUE_RANGE.setsLow:6))r.status='under-trained';
+else if(r.sets>PHYSIQUE_RANGE.setsHigh&&!r.priority)r.status='over-served';
+else if(r.strength&&med!=null&&r.strength.pctPerMonth<med-2*Math.max(r.strength.se,0.25))r.status=r.sets>=PHYSIQUE_RANGE.setsLow?'lagging':'under-trained';
+else r.status=r.strength?'on track':'unknown';
+r.why=r.status==='under-trained'?(r.sets>=6&&!r.priority?r.sets+' sets a week: progressing slower than your other regions, but with too few sets to tell a weak point from under-training':r.sets+' sets a week is below what can be judged ('+(r.priority?PHYSIQUE_RANGE.setsLow:6)+')'):
+(r.status==='lagging'?'enough sets ('+r.sets+'/week), yet strength is rising '+r.strength.pctPerMonth+'% a month against '+round(med,2)+'% for your other regions':
+(r.status==='over-served'?r.sets+' sets a week, above the range, and not a priority':(r.status==='on track'?'progressing in line with your other regions':'no strength record for this region yet')));});
+var need=rows.filter(function(r){return (r.priority||r.status==='lagging')&&r.sets<PHYSIQUE_RANGE.setsHigh;}),donors=rows.filter(function(r){return r.status==='over-served';}),sugg=[];
+need.forEach(function(r){var add=Math.max(2,Math.min(4,Math.round(PHYSIQUE_RANGE.setsLow+4-r.sets)));if(r.sets>=PHYSIQUE_RANGE.setsLow+4&&r.status!=='lagging')return;
+sugg.push({muscle:r.muscle,text:'add '+add+' sets a week for '+r.label+(r.frequency<PHYSIQUE_RANGE.minFrequency?', across two sessions':'')+(donors.length?' (take them from '+donors.map(function(d){return d.label;}).join(', ')+')':''),why:r.status==='lagging'?r.why:'a priority'});});
+rows.filter(function(r){return r.priority&&r.frequency<PHYSIQUE_RANGE.minFrequency&&r.sets>=PHYSIQUE_RANGE.setsLow;}).forEach(function(r){sugg.push({muscle:r.muscle,text:'split '+r.label+' across at least two sessions a week',why:'trained '+r.frequency+' times a week'});});
+return {status:'ok',cls:'EMPIRICAL',regions:rows.sort(function(a,b){return (b.priority-a.priority)||(b.sets-a.sets);}),suggestions:sugg,redundancy:exerciseRedundancy(28),rate:physiqueRate(),bodyComposition:bodyCompositionByMethod(),
+range:PHYSIQUE_RANGE,limits:'Strength is a proxy for size, and a limb also grows with fat. "Lagging" compares your regions with each other, needs three trained regions, and only applies to a region with enough sets.'};}
+function exerciseRedundancy(days){var by={};sessionsOf({from:addDays(todayISO(),-(days||28))}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e||!e.primary.length)return;
+var k=e.primary[0]+'|'+e.pattern;(by[k]=by[k]||{})[e.name]=1;});});
+return Object.keys(by).filter(function(k){return Object.keys(by[k]).length>=3;}).map(function(k){var p=k.split('|');return {muscle:p[0],pattern:p[1],exercises:Object.keys(by[k]),note:Object.keys(by[k]).length+' '+p[1]+' exercises for '+(MUSCLE_GROUPS[p[0]]||p[0])+': one or two may be enough'};});}
+function physiqueRate(){var ph=typeof activePhase==='function'?activePhase():(DB.phases||[]).slice(-1)[0],S=seriesWindow('weight',21),f=_slopePerWeek(S),w=S.length?S[S.length-1].value:null;
+if(!f||!w)return {status:'insufficient'};var pct=100*f.slope/w,type=ph?ph.type:'maintenance',R={cut:[-1.0,-0.5],bulk:[0.1,0.25],maintenance:[-0.1,0.1]}[type]||[-0.1,0.1];
+var state=type==='cut'?(pct<R[0]?'faster than the range: more muscle at risk':(pct>R[1]?'slower than the range':'within the range')):
+(type==='bulk'?(pct>R[1]?'faster than the range: more of the gain is fat':(pct<R[0]?'slower than the range':'within the range')):(pct<R[0]||pct>R[1]?'drifting outside maintenance':'within the range'));
+return {status:'ok',phase:type,pctPerWeek:round(pct,2),se:round(100*f.se/w,2),range:R,state:state,basis:'cut 0.5\u20131% of body weight a week; lean gain 0.1\u20130.25% a week (about 0.5\u20131% a month); maintenance within \u00b10.1%'};}
+function bodyCompositionByMethod(){var by={};obsOf('bodyfat').forEach(function(o){var m=o.method||(o.meta&&o.meta.method)||'unspecified';(by[m]=by[m]||[]).push(o);});
+var wAt=function(d){var W=obsOf('weight').filter(function(o){return Math.abs(daysBetween(o.date,d))<=3;});return W.length?W[W.length-1].value:null;};
+var methods=Object.keys(by).map(function(m){var L=by[m].slice().sort(function(a,b){return a.date<b.date?-1:1;}),se=BODYFAT_METHOD_SE[m]||4,f=_slopePerWeek(L.map(function(o){return {date:o.date,value:o.value};}));
+var pts=L.map(function(o){var w=wAt(o.date);return w?{date:o.date,bf:o.value,lean:round(w*(1-o.value/100),1),fat:round(w*o.value/100,1)}:{date:o.date,bf:o.value};});
+var lf=_slopePerWeek(pts.filter(function(p){return p.lean!=null;}).map(function(p){return {date:p.date,value:p.lean};}));
+return {method:m,n:L.length,latest:L[L.length-1].value,errorPct:se,trendPerMonth:f?round(f.slope*30/7,2):null,leanPerMonth:lf?round(lf.slope*30/7,2):null,points:pts.slice(-6),
+note:L.length<3?'too few readings for a trend':'a single reading is \u00b1'+se+' percentage points'};});
+var offsets=[];for(var i=0;i<methods.length;i++)for(var j=i+1;j<methods.length;j++){var a=by[methods[i].method],b=by[methods[j].method],d=[];
+a.forEach(function(x){b.forEach(function(y){if(Math.abs(daysBetween(x.date,y.date))<=7)d.push(x.value-y.value);});});if(d.length)offsets.push({between:[methods[i].method,methods[j].method],offset:round(mean(d),1),pairs:d.length});}
+return {methods:methods,offsets:offsets,rule:'each method is trended only against itself; methods differ by a steady offset, which is shown, not corrected away',unspecified:!!by.unspecified};}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='physique_regions';}))return;
+MODELS.push({id:'physique_regions',name:'Physique by region',cls:'EMPIRICAL',version:'1.0',inputs:['waist','bodyfat','weight'],minN:4,
+assumes:['strength progress stands in for growth','regions are comparable with each other'],failsWhen:['fewer than three trained regions','too few sessions per exercise','circumference changes that are fat, not muscle'],
+output:'per region: exposure, strength and size trends, status, and where to add or take sets',consumers:['physiqueCard'],freshnessDays:7,uncertainty:{kind:'standard error of each trend'},fn:'physiqueModel'});})();
 /* ===== SOURCE: 65-import.js ===== */
 var IMPORT_SOURCES={
 apple_health:{label:'Apple Health export',format:'xml',trust:0.9,note:'the export.xml inside the Health app\u2019s export archive'},
@@ -14782,6 +15106,7 @@ if(!bc.measured)bl.push(uiLocked('Fat and lean mass split',['one measured body-f
 {why:'Without a measured anchor the split cannot be separated from the estimate\u2019s own error.'}));
 if(bl.length)out+=uiCard({title:'Not available yet',sub:'what each needs, and why it matters',body:bl.join('')});
 }catch(e){_q(e,'P2');}
+try{out+=physiqueCard();}catch(e){_q(e,'P2');}   /* by region: exposure, progress, status */
 setHTML('bodyZone',out);
 };
 var _RANGE='30';
@@ -14897,6 +15222,9 @@ out+=uiFold('learn-calib','Forecast calibration by context',cal.usable?('calibra
 cal.rows.map(function(r){return '<tr'+(r.current?' style="font-weight:600"':'')+'><td>'+esc(r.context)+(r.current?' \u2190 now':'')+'</td><td>'+r.n+'</td><td>'+fmtSigned(r.bias,2)+'</td><td>'+fmtNum(r.mae,2)+'</td><td>'+(r.hitRate!=null?fmtNum(r.hitRate*100,0)+'%':'\u2014')+'</td></tr>';}).join('')+'</tbody></table></div>':'<div class="muted">No scored forecasts yet.</div>')+
 '<div class="prov">'+esc(cal.basis)+'. Forecast error is not constant: a bias learned at 250 lb in a cut does not transfer to maintenance at 200 lb, so calibration is kept per context and only applied when at least three forecasts match.</div>');
 var voi=valueOfInformationFormal();
+try{recordResponses();out+=responsesCard();}catch(e){_q(e,'P2');}
+try{out+=frictionCard();}catch(e){_q(e,'P2');}
+try{out+=competitionCard();}catch(e){_q(e,'P2');}   /* which forecast to trust */   /* why plan items are missed */   /* what happened because of each change */
 if(!voi.items.length)out+=uiFold('learn-voi','What is worth measuring next','nothing extra right now','<div class="hint">No measurement you could add would change the next decision much: the decisions are not limited by missing data at the moment.</div>');
 else out+=uiFold('learn-voi','What is worth measuring next',voi.items[0].ask,
 voi.items.map(function(i){return uiRow(esc(i.ask),'<strong>'+i.value.toFixed(2)+'</strong>',{sub:esc(i.why)+' \u00b7 cuts '+esc(i.reduces),rsub:'answer in '+i.timeToInfo+'d'});}).join('')+'<div class="prov">'+esc(voi.note)+'</span></div>');
@@ -22162,6 +22490,63 @@ function handleConnectReturn(){try{var q=window.location.search||'',m=/[?&]conne
 if(window.history&&window.history.replaceState)window.history.replaceState(null,'',window.location.pathname+window.location.hash);
 if(m){toast((WEARABLE_PROVIDERS[m[1]]||{label:m[1]}).label+' connected. Fetching the last 30 days\u2026');connectSync(m[1]);}
 else toast('The connection did not complete: '+e[1].replace(/_/g,' '),{tone:'attention',ms:8000});}catch(err){_q(err,'P2');}}
+/* ===== SOURCE: 90-physique-ui.js ===== */
+function _statusTone(s){return s==='on track'?'good':(s==='lagging'||s==='under-trained'?'attention':'neutral');}
+function physiqueCard(){var P=physiqueModel(),R=P.regions.filter(function(r){return r.sets>0||r.priority;}).slice(0,8);if(!R.length)return '';
+var body=R.map(function(r){return uiRow(esc(r.label)+(r.priority?' '+uiPill('priority','attention'):''),r.sets+' sets/wk',{sub:esc((r.strength?('strength '+(r.strength.pctPerMonth>0?'+':'')+r.strength.pctPerMonth+'%/month \u00b7 '):'')+r.why),rsub:r.status});}).join('');
+if(P.rate.status==='ok')body+=uiRow('Rate of change',(P.rate.pctPerWeek>0?'+':'')+P.rate.pctPerWeek+'% a week',{sub:esc(P.rate.phase+': '+P.rate.state),rsub:'range '+P.rate.range.join(' to ')+'%'});
+if(P.suggestions.length)body+='<div class="hint">'+esc(P.suggestions.slice(0,2).map(function(s){return s.text;}).join('; '))+'.</div>';
+return uiCard({title:'Physique',sub:R.filter(function(r){return r.status==='lagging';}).length?'a region is lagging':(physiquePriorities().length?'priorities: '+physiquePriorities().map(function(m){return MUSCLE_GROUPS[m];}).join(', '):'by region'),
+body:body+'<div class="btn-row">'+uiBtn('Priorities and detail','physique.open',null,'btn-sm btn-secondary')+'</div>'});}
+registerAction('physique.open',function(){openSheet('edit',{form:'physique',title:'Physique by region',desc:'',buf:{}});});
+registerAction('physique.priority',function(m){var P=physiquePriorities().slice(),i=P.indexOf(m);if(i>=0)P.splice(i,1);else{if(P.length>=3){toast('Up to three priorities: remove one first');return;}P.push(m);}
+DB.settings.physiquePriorities=P;save('settings');renderSheet();renderAll();});
+SHEETS.physique=function(){var P=physiqueModel(),pri=physiquePriorities(),out='<div class="card-title">Priorities (up to three)</div><div class="btn-row wrap">'+
+Object.keys(MUSCLE_GROUPS).map(function(m){return uiBtn(MUSCLE_GROUPS[m],'physique.priority',m,'btn-sm '+(pri.indexOf(m)>=0?'btn-primary':'btn-ghost'));}).join('')+'</div>';
+out+='<div class="card-title" style="margin-top:10px">By region (last four weeks)</div>'+P.regions.map(function(r){return uiRow(esc(r.label),uiPill(r.status,_statusTone(r.status)),{sub:esc(r.sets+' sets/wk, '+r.frequency+'\u00d7 a week'+(r.strength?' \u00b7 strength '+r.strength.pctPerMonth+' \u00b1 '+round(2*r.strength.se,1)+'%/month':'')+(r.size&&r.size.perMonth!=null?' \u00b7 '+r.size.measure+' '+r.size.perMonth+'/month':'')+' \u00b7 '+r.why)});}).join('');
+if(P.suggestions.length)out+='<div class="card-title" style="margin-top:10px">Where to add or take sets</div>'+P.suggestions.map(function(s){return uiRow(esc(s.text),'',{sub:esc(s.why)});}).join('');
+if(P.redundancy.length)out+='<div class="card-title" style="margin-top:10px">Overlap</div>'+P.redundancy.map(function(x){return uiRow(esc(x.note),'',{sub:esc(x.exercises.join(', '))});}).join('');
+if(P.rate.status==='ok')out+='<div class="card-title" style="margin-top:10px">Rate of change</div>'+uiRow(esc(P.rate.phase),(P.rate.pctPerWeek>0?'+':'')+P.rate.pctPerWeek+'% a week',{sub:esc(P.rate.state+' \u00b7 '+P.rate.basis)});
+var B=P.bodyComposition;if(B.methods.length)out+='<div class="card-title" style="margin-top:10px">Body fat, by method</div>'+B.methods.map(function(m){return uiRow(esc(m.method),m.latest+'%',{sub:esc(m.n+' readings \u00b7 '+(m.trendPerMonth!=null?m.trendPerMonth+' points/month':'no trend yet')+(m.leanPerMonth!=null?' \u00b7 lean '+m.leanPerMonth+'/month':'')+' \u00b7 '+m.note)});}).join('')+
+(B.offsets.length?'<div class="hint">'+esc(B.offsets.map(function(o){return o.between.join(' vs ')+': '+o.offset+' points apart on '+o.pairs+' near dates';}).join('; '))+'</div>':'')+
+(B.unspecified?'<div class="hint">Some readings do not say how they were measured. Choose the method when logging, so each is compared only with its own kind.</div>':'')+'<div class="prov">'+esc(B.rule)+'</div>';
+out+='<div class="prov">'+esc(P.range.source)+'. '+esc(P.limits)+'</div>';
+return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+/* ===== SOURCE: 90-responses.js ===== */
+function _respLabel(r){var v=r.variable,d=r.dose;return (v.charAt(0).toUpperCase()+v.slice(1))+(d!=null?(' '+(d>0?'+':'')+(Math.abs(d)>=100?Math.round(d).toLocaleString():d)+(v==='steps'?' a day':(v==='calories'?' kcal':''))):'')+' ('+r.kind+', '+shortDate(r.start)+')';}
+function _respEffect(r){var P=r.primary;if(!P)return '\u2014';return (P.effect>0?'+':'')+P.effect+' \u00b1 '+round(2*P.se,2)+(P.unit?' '+P.unit:'');}
+function responsesCard(){var R=responsesOf();if(!R.length)return '';
+return uiFold('learn-responses','What happened because of it',R.length+' change'+(R.length===1?'':'s')+' evaluated',
+R.slice(0,6).map(function(r){return uiRow(esc(_respLabel(r)),esc(_respEffect(r)),{sub:esc(r.verdict+(r.expectation?' \u00b7 '+r.expectation:'')+(r.adherence&&r.adherence.share!=null?' \u00b7 done on '+Math.round(r.adherence.share*100)+'% of days':'')+(r.unintended&&r.unintended.length?' \u00b7 '+r.unintended.map(function(u){return u.text;}).join(', '):'')),rsub:r.stage+' \u00b7 '+r.confidence+' confidence'})+
+'<div class="btn-row">'+uiBtn('Details','responses.open',r.id,'btn-sm btn-ghost')+'</div>';}).join('')+
+'<div class="prov">Each change is compared with the trend before it, continued. Provisional after 7 days, final after 21.</div>'+_howYouRespond());}
+function _howYouRespond(){var M=personalResponseModel(),rows=M.rows.filter(function(r){return r.n>0;});if(!rows.length)return '';
+return '<div class="card-title" style="margin-top:10px">How you respond</div>'+rows.map(function(r){var p=r.posterior;
+return uiRow(esc(r.variable+' \u2192 '+r.outcome+', '+r.label),esc((p.mean>0?'+':'')+p.mean+' \u00b1 '+round(2*p.sd,3)+' '+r.unit),{sub:esc('population '+(r.prior.mean>0?'+':'')+r.prior.mean+' \u00b7 '+Math.round(r.personalWeight*100)+'% your own data from '+r.n+' change'+(r.n===1?'':'s')+(r.contextsDiffer?' \u00b7 differs by phase: '+r.contexts.map(function(c){return c.context+' '+c.mean;}).join(', '):''))});}).join('')+
+'<div class="prov">'+esc(M.method)+'. '+esc(M.limits)+'</div>';}
+registerAction('responses.open',function(id){openSheet('edit',{form:'response',title:'What happened because of it',desc:'',buf:{id:id}});});
+SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x.id===b.id;})[0];if(!r)return {body:'<div class="hint">That response is no longer in the record.</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
+var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
+if(r.adherence)out+=uiRow('Carried out',r.adherence.share!=null?Math.round(r.adherence.share*100)+'% of days':'\u2014',{sub:esc(r.adherence.daysMet+' of '+r.adherence.daysLogged+' logged days '+r.adherence.rule)});
+if(P)out+=uiRow(esc(P.quantity)+' before',esc(String(P.before)+(P.unit?' '+P.unit:'')))+uiRow('after',esc(String(P.after)+(P.unit?' '+P.unit:'')))+uiRow('Effect',esc(_respEffect(r)),{sub:esc(P.method)});
+if(r.expected)out+=uiRow('Expected',esc(round(Math.min(r.expected.lo,r.expected.hi),2)+' to '+round(Math.max(r.expected.lo,r.expected.hi),2)+' '+r.expected.unit),{sub:esc(r.expected.basis+' \u00b7 '+(r.expectation||''))});
+if(r.placebo)out+=uiRow('Already under way?',r.placebo.alreadyUnderWay?'yes':'no',{sub:'the same comparison a week earlier: '+r.placebo.effect+' \u00b1 '+round(2*r.placebo.se,2)});
+out+=uiRow('Unintended effects',r.unintended&&r.unintended.length?esc(r.unintended.map(function(u){return u.text+' ('+(u.change>0?'+':'')+u.change+')';}).join(', ')):'none detected');
+if(r.burden)out+=uiRow('Burden',esc(r.burden.note));out+=uiRow('Reversible',esc(r.reversible||'\u2014'));
+if(r.followedBy&&(r.followedBy.planVersions.length||r.followedBy.decisions.length))out+=uiRow('What followed',esc((r.followedBy.planVersions.length?'plan version '+r.followedBy.planVersions.join(', '):'')+(r.followedBy.decisions.length?' \u00b7 '+r.followedBy.decisions.length+' decision(s)':'')));
+return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+function frictionCard(){var M=frictionModel(),rows=M.items.filter(function(i){return i.status==='ok';});if(!rows.length)return '';
+return uiFold('learn-friction','What gets in the way',rows.map(function(i){return i.item+' '+Math.round(i.rate*100)+'%';}).join(' \u00b7 '),
+rows.map(function(i){var f=(i.factors||[]).filter(function(x){return x.oddsRatio<1;}),clear=f.filter(function(x){return x.clear;});
+var txt=!i.factors||!i.factors.length?(i.note||'nothing measurable gets in the way'):(clear.length?clear.map(function(x){return x.label+' (odds \u00d7'+x.oddsRatio+')';}).join(', '):(f.length?'possibly '+f[0].label+' (odds \u00d7'+f[0].oddsRatio+', not clear yet)':'no factor lowers it'));
+return uiRow(esc(i.item),Math.round(i.rate*100)+'% of '+i.n+' days',{sub:esc(txt)});}).join('')+'<div class="prov">'+esc(M.method)+'. '+esc(M.limits)+'</div>');}
+function competitionCard(){var out=[];Object.keys(MODEL_COMPETITIONS).forEach(function(id){var E=evaluateCompetition(id);if(E.status!=='ok')return;var h=E.horizons[E.horizons.length-1];
+out.push('<div class="card-title" style="margin-top:6px">'+esc(E.label)+' ('+h+' days ahead)</div>'+(E.warning?'<div class="hint">'+esc(E.warning)+'</div>':'')+
+E.rows.map(function(r){var m=r.metrics[h],st=E.states[r.candidate]||'EXPERIMENTAL';return uiRow(esc(r.label),m?('\u00b1'+m.mae+' '+E.unit):'\u2014',{sub:esc(m?('bias '+(m.bias>0?'+':'')+m.bias+' \u00b7 80% interval held '+Math.round(m.coverage*100)+'% of the time'+(Math.abs(m.scale-1)>0.05?' ('+(m.scale>1?'widened':'narrowed')+' \u00d7'+m.scale+' to calibrate'+(m.calibratedCoverage!=null?': '+Math.round(m.calibratedCoverage*100)+'% on newer forecasts':'')+')':'')+(m.recentMae!=null?' \u00b7 last 30 days \u00b1'+m.recentMae:'')+' \u00b7 '+m.n+' forecasts'):'too few forecasts to score'),rsub:st.toLowerCase()});}).join('')+
+(E.history.length?'<div class="hint">'+esc(E.history.slice(-2).map(function(c){return c.type+': '+c.to+' ('+c.why+')';}).join('; '))+'</div>':''));});
+if(!out.length)return '';
+return uiFold('learn-competition','Which forecast to trust',Object.keys(MODEL_COMPETITIONS).map(function(id){var L=(DB.settings.modelLifecycle||{})[id];return MODEL_COMPETITIONS[id].label.split(' ')[0]+': '+(L?COMPETITION_CANDIDATES[L.primary].label.split(' (')[0]:'not scored');}).join(' \u00b7 '),
+out.join('')+'<div class="prov">Each forecast is replayed every 3 days over the last 90, using only what was known then. A challenger replaces the primary only when clearly better and calibrated; newer is not assumed better.</div>');}
 /* ===== SOURCE: 90-sources.js ===== */
 var DEVICE_TOTAL_TYPES={steps:1,sleep:1};
 function sourceKeyOf(o){var m=o&&o.meta||{};if(m.importSource)return 'import:'+m.importSource;if(m.provider)return 'provider:'+m.provider;if(m.device)return 'device:'+m.device;return (o&&o.source)||'unknown';}
@@ -23986,7 +24371,7 @@ var KEYMAP=[
 {keys:'Tab / Shift+Tab',label:'Move through controls; inside a sheet focus stays in the sheet',group:'navigation'},
 {keys:'Enter / Space',label:'Activate the focused control',group:'navigation'}
 ];
-var REQUIRES_SUBJECT=/^(welcome\.|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|physique\.priority|responses\.open|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
 'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -24051,6 +24436,7 @@ k:['deload','easier week','rest week','back off','fatigue']},
 'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
 'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
 'exp.custom':{d:'An experiment you design yourself, when none of the ready-made ones fits',k:['experiment','design','custom','own']},
+'physique.open':{d:'Sets, frequency and progress per muscle, priorities, lagging regions, rate of change and body fat by method',k:['physique','muscle','lagging','priority','region','volume','sets','body fat','dexa','bia','hypertrophy']},
 'sources.open':{d:'Where your record comes from, how sources agree, which one to trust for steps and sleep, and removing a source\u2019s data',k:['sources','data sources','import','apple health','fitbit','withings','duplicate','delete data','devices']},
 'automation.open':{d:'Quick actions, templates, automations, patterns noticed in your record, and home-screen shortcuts',k:['automation','shortcuts','quick actions','templates','routine','one tap','repeat','auto']},
 'supp.open':{d:'Your supplement regimen, vitamins and minerals from food and supplements, evidence and cautions',k:['supplements','vitamins','minerals','creatine','vitamin d','magnesium','iron','regimen','stack','multivitamin']},
@@ -24288,6 +24674,7 @@ var NAV_COMMANDS=[
 {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
 {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
 {id:'exp.custom',label:'Design my own experiment',group:'decisions',surfaces:['ui','palette']},
+{id:'physique.open',label:'Physique by region',group:'navigation',surfaces:['ui','palette']},
 {id:'sources.open',label:'Your data sources',group:'navigation',surfaces:['ui','palette']},
 {id:'automation.open',label:'Shortcuts and automation',group:'navigation',surfaces:['ui','palette']},
 {id:'supp.open',label:'Supplements and vitamins',group:'navigation',surfaces:['ui','palette']},
@@ -24658,7 +25045,7 @@ commandRegister().forEach(function(c){if(!DETAIL_LEVELS[commandLevel(c.id,c.grou
 return {ok:issues.length===0,issues:issues,levels:Object.keys(DETAIL_LEVELS)};
 }
 var PANEL_LEVEL_RULES=[
-[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
+[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^What happened because of it/,'insightful'],[/^What gets in the way/,'insightful'],[/^Physique/,'insightful'],[/^Which forecast to trust/,'insightful'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
 [/^Quick log/,'casual'],[/^Today$/,'casual'],[/^All observations/,'casual'],
 [/^[A-Z][A-Za-z ]+ \u00b7 week \d+/,'casual'],[/^No active phase/,'casual'],[/^Profile$/,'casual'],
 [/^How targets and estimates are kept apart/,'developer'],[/^Criteria/,'insightful'],[/^Phase progression/,'insightful'],[/^Phase history/,'insightful'],[/^What if/,'insightful'],
@@ -28003,6 +28390,87 @@ ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMP
 ok('External server is pinned to the top of Tools by default, and any section can be pinned',toolsPinned()[0]==='tools-server'&&typeof ACTIONS['tools.pin']==='function');
 ok('a feature opened from the guide closes the guide first (nothing opens behind it)',typeof ACTIONS['features.go']==='function'&&renderFeatureRow({id:'x',icon:'pin',label:'x',what:'x',on:false,act:'weather.open',cta:'Go'}).indexOf('features.go')>=0);
 withFixture('successful_cut',function(){
+var keepO=DB.observations,keepR=DB.responses,D=addDays(todayISO(),-21);
+var build=function(slopeBefore,slopeAfter,shift,hungerJump){DB.observations=keepO.filter(function(o){return o.type!=='weight'&&o.type!=='hunger';});var w=250;
+for(var i=-21;i<=20;i++){var d=addDays(D,i),inAfter=i>=(shift||0);w+=(inAfter?slopeAfter:slopeBefore)/7;DB.observations.push(makeObservation({type:'weight',date:d,value:round(w+((i*7919)%5-2)*0.05,2),source:'test'}));
+DB.observations.push(makeObservation({type:'hunger',date:d,value:(hungerJump&&i>=0)?7+((i*31)%3-1)*0.3:4+((i*17)%3-1)*0.3,source:'test'}));}_memoInvalidate();};
+var iv={id:'t1',kind:'plan change',date:D,variable:'calories',from:2400,to:1900,reversible:'yes'};
+build(0,-1,0,false);var r=evaluateResponse(iv);
+ok('a clear change in trend after a change is judged a clear response, against the trend before continued',r.stage==='final'&&r.primary&&Math.abs(r.primary.effect+1)<0.3&&/clear response/.test(r.verdict)&&r.primary.counterfactual===r.primary.before);
+ok('the effect is compared with what the model expected (500 kcal less is about 1 lb a week)',r.expected&&r.expectation==='as expected');
+build(0,-1,-7,false);r=evaluateResponse(iv);ok('a change already under way before the intervention is caught by the placebo check',r.placebo&&r.placebo.alreadyUnderWay===true&&/already under way/.test(r.verdict));
+build(0,-1,0,true);r=evaluateResponse(iv);ok('an unintended effect (hunger rising) is reported',r.unintended.some(function(u){return u.quantity==='hunger';}));
+var p=evaluateResponse({id:'t2',kind:'plan change',date:addDays(todayISO(),-3),variable:'calories',from:2400,to:2200});ok('a change only 3 days old is pending, not judged',p.stage==='pending');
+var ev={type:'response.recorded',data:r},db={responses:[]};EVENT_TYPES['response.recorded'].apply(db,ev);EVENT_TYPES['response.recorded'].apply(db,ev);
+ok('a response replays from its event, and a later record replaces the earlier',db.responses.length===1&&db.responses[0].id===r.id);
+DB.observations=keepO;DB.responses=keepR;_memoInvalidate();
+});
+(function(){var keep=DB.responses,PR=RESPONSE_PRIORS()['calories\u2192weight'],pop=PR.perUnit*100;
+var mk=function(id,dose,effect,se,stage,adh,start){return {id:id,interventionId:id,variable:'calories',outcome:'weight',dose:dose,stage:stage||'final',start:start||'2026-01-01',
+adherence:adh!=null?{share:adh}:null,primary:{effect:effect,se:se}};};
+DB.responses=[];var row=function(){return personalResponseModel().rows.filter(function(r){return r.key==='calories\u2192weight';})[0];};
+ok('with no responses of its own, the model is the population figure',row().n===0&&Math.abs(row().posterior.mean-round(pop,3))<1e-9&&row().personalWeight===0);
+DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05),mk('b',-500,-2*500*PR.perUnit,0.05)];   /* this person loses twice what the arithmetic says */
+var r2=row();ok('precise personal responses move the estimate toward this person and say how much is theirs',r2.posterior.mean>1.6*pop&&r2.personalWeight>0.5);
+DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05,'provisional')];var wP=row().personalWeight;DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05,'final')];var wF=row().personalWeight;
+ok('a provisional response counts for less than a final one',wP<wF);
+DB.responses=[mk('h',-500,-500*PR.perUnit,0.02,'final',0.5),mk('f',-500,-1000*PR.perUnit,0.04,'final',1)];
+var per=personalResponseModel().rows.filter(function(r){return r.key==='calories\u2192weight';})[0];
+ok('a change done on half the days is read as half the dose',Math.abs(_perUnit(DB.responses[0]).y-_perUnit(DB.responses[1]).y)<1e-9);
+DB.responses=[mk('x',-500,-3*500*PR.perUnit,0.02)];var withX=predictResponse('calories','weight',-500),without=predictResponse('calories','weight',-500,{excludeId:'x'});
+ok('a change is never judged against an expectation built from itself (leave-one-out)',withX.n===1&&without.n===0);
+DB.responses=keep;})();
+(function(){var X=[],y=[];for(var i=0;i<200;i++){var f=i%2,p=f?0.3:0.9,u=((i*7919)%100)/100;X.push([1,f]);y.push(u<p?1:0);}   /* a planted friction: 90% done without it, 30% with it */
+var fit=_logitRidge(X,y,1),or=Math.exp(fit.b[1]);ok('the friction regression recovers a planted effect (done 90% without the factor, 30% with it)',or<0.15&&Math.abs(fit.b[1])>2*fit.se[1]);
+var keep=DB.responses;DB.responses=[];var small=interventionAdherence('steps',500,8000).p,big=interventionAdherence('steps',3000,8000).p;
+ok('a bigger change is expected to be carried out less often',big<small);
+DB.responses=[{id:'a',variable:'steps',adherence:{share:0.3,daysLogged:21}},{id:'b',variable:'steps',adherence:{share:0.3,daysLogged:21}}];
+ok('past adherence to changes of this kind pulls the estimate toward what actually happened',interventionAdherence('steps',3000,8000).p<big);
+var L=rankLevers([{key:'a',variable:'calories',dose:-175,current:2400},{key:'b',variable:'steps',dose:2000,current:8000}]);
+ok('levers are ranked by expected effect times the probability of carrying them out',L.every(function(o){return o.effectiveEffect==null||Math.abs(o.effectiveEffect-o.expectedEffect*o.pExecution)<0.002;})&&Math.abs(L[0].effectiveEffect)>=Math.abs(L[1].effectiveEffect));
+DB.responses=keep;})();
+withFixture('stall',function(){var d=decide();ok('population figures alone never switch the lever away from activity (no personal record here)',d.code!=='REDUCE_CALORIES');if(d.code==='ADD_STEPS'||d.code==='REDUCE_CALORIES')ok('a lever decision records both options, their effects and how likely each is to be done',!!(d.leverChoice&&d.leverChoice.options.length===2&&d.leverChoice.options.every(function(o){return o.pExecution>0;})));});
+withFixture('successful_cut',function(){
+var keepS=DB.sessions,keepO=DB.observations,keepP=DB.settings.physiquePriorities;DB.settings.physiquePriorities=[];DB.sessions=[];
+for(var d=55;d>=0;d--){if(d%7!==0&&d%7!==2&&d%7!==4)continue;var k=55-d,sets=[];
+for(var i=0;i<4;i++){sets.push({exercise:'Squat',load:round(200*(1+0.006*k),1),reps:8,rir:2});sets.push({exercise:'Bench press',load:150+((k*7)%3-1),reps:8,rir:2});sets.push({exercise:'Lat pulldown',load:round(140*(1+0.006*k),1),reps:10,rir:2});}
+if(d%7===0)sets.push({exercise:'Overhead press',load:95,reps:8,rir:2});
+DB.sessions.push({id:'ps'+d,date:addDays(todayISO(),-d),sets:sets,createdAt:nowISO()});}
+_memoInvalidate();var P=physiqueModel(),R=function(m){return P.regions.filter(function(r){return r.muscle===m;})[0];};
+ok('a region trained enough but progressing clearly slower than the others is lagging',R('chest')&&R('chest').status==='lagging'&&R('quads').status==='on track');
+ok('a region with too few sets is under-trained, never lagging',R('delts')&&R('delts').status==='under-trained');
+ok('a lagging region gets a suggestion',P.suggestions.some(function(s){return s.muscle==='chest';}));
+['Hack squat','Front squat','Leg press'].forEach(function(n,i){DB.sessions.push({id:'rx'+i,date:addDays(todayISO(),-i-1),sets:[{exercise:n,load:200,reps:10,rir:2}],createdAt:nowISO()});});_memoInvalidate();
+ok('several exercises with the same pattern for the same muscle are flagged as overlap',exerciseRedundancy(28).some(function(x){return x.muscle==='quads'&&x.pattern==='squat'&&x.exercises.length>=3;}));
+DB.observations=DB.observations.filter(function(o){return o.type!=='bodyfat';});
+[[0,20,24],[14,19.5,23.6],[28,19,23.1]].forEach(function(r){DB.observations.push(makeObservation({type:'bodyfat',date:addDays(todayISO(),-r[0]),value:r[1],source:'test',method:'DEXA'}));DB.observations.push(makeObservation({type:'bodyfat',date:addDays(todayISO(),-r[0]-1),value:r[2],source:'test',method:'BIA scale'}));});
+_memoInvalidate();var B=bodyCompositionByMethod();
+ok('body fat is trended per method and never mixed; the methods are compared by their offset',B.methods.length===2&&B.offsets.length===1&&Math.abs(B.offsets[0].offset)>=3.5&&B.methods.every(function(m){return m.n===3;}));
+DB.observations=DB.observations.filter(function(o){return o.type!=='weight';});for(var j=20;j>=0;j--)DB.observations.push(makeObservation({type:'weight',date:addDays(todayISO(),-j),value:round(250*Math.pow(1-0.015/7,20-j),2),source:'test'}));_memoInvalidate();
+ok('a cut losing 1.5% a week is faster than the range',physiqueRate().state.indexOf('faster')===0);
+DB.sessions=keepS;DB.observations=keepO;DB.settings.physiquePriorities=keepP;_memoInvalidate();});
+(function(){var keepL=DB.settings.modelLifecycle,keepC=MODEL_COMPETITIONS.__t;DB.settings.modelLifecycle={};
+var S=[];for(var i=0;i<140;i++)S.push({date:addDays(todayISO(),-139+i),value:200-0.1*i+((i*7919)%7-3)*0.15});
+var truth=function(o,h){var t=addDays(o,h),x=S.filter(function(p){return Math.abs(daysBetween(p.date,t))<=1;});return x.length?mean(x.map(function(p){return p.value;})):null;};
+COMPETITION_CANDIDATES.__good={label:'good',params:1,predict:function(_,o,h){var v=truth(o,h);return v==null?null:{mean:v+((daysBetween('2026-01-01',o)*31)%5-2)*0.12,sd:0.3};}};
+COMPETITION_CANDIDATES.__bad={label:'bad',params:1,incumbent:true,predict:function(_,o,h){var v=truth(o,h);return v==null?null:{mean:v+3+((daysBetween('2026-01-01',o)*17)%5-2)*0.2,sd:3};}};
+COMPETITION_CANDIDATES.__awful={label:'awful',params:1,predict:function(_,o,h){var v=truth(o,h);return v==null?null:{mean:v+15,sd:1};}};
+MODEL_COMPETITIONS.__t={label:'test',unit:'lb',horizons:[7],series:function(){return S;},candidates:['naive','__bad','__good','__awful']};
+var E=evaluateCompetition('__t',{series:S,force:true});
+ok('a clearly better, calibrated challenger replaces the incumbent, with the reason recorded',E.primary==='__good'&&E.changes.some(function(c){return c.type==='promoted'&&c.to==='__good'&&/standard errors better/.test(c.why);}));
+ok('a model far worse than the baseline is deprecated first',E.states.__awful==='DEPRECATED');
+var E2=evaluateCompetition('__t',{series:S});ok('a second look the same day changes nothing (evaluations, not refreshes, count)',E2.states.__awful==='DEPRECATED'&&E2.changes.length===0);
+var E3=evaluateCompetition('__t',{series:S,force:true});ok('deprecated again on the next evaluation, it is retired',E3.states.__awful==='RETIRED');
+ok('a model whose intervals are too narrow is given a widening factor',E.rows.filter(function(r){return r.candidate==='__awful';})[0].metrics[7].scale>2);
+DB.settings.modelLifecycle={};var F=[];for(var j=0;j<140;j++)F.push({date:addDays(todayISO(),-139+j),value:180+((j*7919)%11-5)*0.3});
+MODEL_COMPETITIONS.__f={label:'flat',unit:'lb',horizons:[7],series:function(){return F;},candidates:['naive','theil_sen','holt','damped']};
+var G=evaluateCompetition('__f',{series:F,force:true});ok('on flat noise no elaborate model is promoted over the incumbent (newer is not assumed better)',G.changes.every(function(c){return c.type!=='promoted'||c.to==='naive';}));
+DB.settings.modelLifecycle={};var D=[];for(var k=0;k<140;k++)D.push({date:addDays(todayISO(),-139+k),value:250-0.2*k+((k*7919)%5-2)*0.1});
+MODEL_COMPETITIONS.__d={label:'decline',unit:'lb',horizons:[14],series:function(){return D;},candidates:['naive','theil_sen']};
+var H=evaluateCompetition('__d',{series:D,force:true});ok('on a steady decline the trend clearly beats the flat baseline',H.primaryBeatsBaseline===true);
+['__good','__bad','__awful'].forEach(function(c){delete COMPETITION_CANDIDATES[c];});['__t','__f','__d'].forEach(function(c){delete MODEL_COMPETITIONS[c];});DB.settings.modelLifecycle=keepL;})();
+ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
+withFixture('successful_cut',function(){
 var keepO=DB.observations,keepP=DB.settings.sourcePreference,d=addDays(todayISO(),-3);DB.settings.sourcePreference={};
 DB.observations=DB.observations.filter(function(o){return !(o.date===d&&/steps|water|cardio/.test(o.type));});
 DB.observations.push(makeObservation({type:'steps',date:d,value:9000,source:'import',meta:{importSource:'apple-health'}}));
@@ -30505,7 +30973,8 @@ window.addEventListener('hashchange',function(){var t=location.hash.replace('#',
 var start=location.hash.replace('#','');switchTab(document.getElementById('view-'+start)?start:'today');
 if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);
 if(typeof handleConnectReturn==='function')setTimeout(handleConnectReturn,400);
-if(typeof startWeatherAuto==='function')startWeatherAuto();   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
+if(typeof startWeatherAuto==='function')startWeatherAuto();
+if(typeof recordResponses==='function')setTimeout(function(){try{recordResponses();}catch(e){_q(e,'P2');}},1500);   /* responses that matured since the last visit */   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
 makeDelegatedControlsFocusable();
 onSave(function(){_memoInvalidate();});
 initDurableStorage().then(function(){return _RECONCILED;}).then(function(){

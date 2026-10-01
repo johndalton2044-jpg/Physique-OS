@@ -3006,3 +3006,70 @@ forecast is on screen. A switch in the Weather sheet turns automatic updates off
 
 The auto-updater's interval held Node open in two scripts that relied on the event loop draining (the cloud end-to-end
 test and the baseline script); both now close their simulated windows and exit, and no other such script remains.
+
+## The reconstruction audit, phases 0–5 (build d17516adc9)
+
+The audit (of build a75467fc29) was checked against the current source; findings already fixed (HTTPS push, time zones,
+panels) were confirmed rather than redone. Phase 0: docs/SYSTEM_AUTHORITY.md names the source of truth for each
+subsystem, and governance fails if it names a symbol the build lacks. Phase 1: release item 20 read "25 models", written
+by hand; it now reads the live registry through the baseline written for the same build, and governance fails any
+hand-written count in release tooling (both rules proved by planting a violation). This roadmap is declared history;
+the documentation check covers authoritative documents and exempts only one that says so on its first line. Phase 2:
+the npm prebuild step fetches the locked food archive when the corpus is missing (pure Node: zlib and a small ustar
+reader), checks the archive and the per-file checksum list, and the build verifies every file; scripts/package.mjs
+makes reproducible archives (sorted, fixed times, gzip without a timestamp; two runs are byte-identical), refuses a
+build whose recorded gates did not all pass, and checks the food archive against the lock, which now pins that
+reproducible archive and still accepts the first published one of identical content. Phase 3: health verifies the data
+folder is writable and warns on low disk, vaults near their event limit and non-persistent storage; /v1/metrics
+(METRICS_TOKEN); /v1/admin/backup (ADMIN_TOKEN); CONNECT_TOKEN_KEY_PREVIOUS and a rotation endpoint re-seal stored
+sign-ins; tests/restore-drill.mjs backs up, restores under a rotated key and proves events, epoch, push keys and
+sign-ins survive. Phase 4: the deployment smoke test certifies every layer (build, rewrite, storage, push keys, food
+with a shard checked against its checksum, Open Food Facts, connections, metrics) and writes a certificate; it is run
+against the local production-shaped stack on every release. Phase 5: Response is a first-class entity (DB.responses,
+response.recorded): every intervention (experiment, plan change, adaptation, supplement start) evaluated the same way
+— adherence, the primary outcome against the pre-change trend continued, the model's expectation, a placebo check a
+week earlier, unintended effects, burden, reversibility, and the plan versions and decisions that followed —
+provisional at 7 days, final at 21. Phases 6–12 and the future-state architecture remain.
+
+## Phase 6: the personal response model (build afc6725478)
+
+personalResponseModel() generalises the per-experiment matrix across interventions and outcomes: for each pair
+(calories → weight, steps → weight, training days → weight, protein → hunger, and any pair the record produces), a
+population prior per unit of dose is updated by the person's Response records (normal–normal). Each response gives an
+effect per unit of dose actually carried out (adherence-adjusted, floor 30%), weighted by its standard error;
+provisional responses count half. Pairs without a population figure get a wide prior centred on zero. Per-context
+estimates (by phase) appear with at least two responses each, and a difference between contexts is flagged when it
+exceeds twice the combined uncertainty. predictResponse() gives the expected effect of a change of a given size, with
+its basis and the share resting on the person's own data; evaluateResponse() now takes its expectation from it,
+leaving the change being judged out. Registered as personal_response; shown on Learn under "How you respond".
+
+## Phase 7: friction and adherence (build d1db7b02ed)
+
+frictionModel() asks why plan items are missed: per item (training, cardio, steps, nutrition, protein, weigh-in), a
+ridge-regularised logistic regression over the last eight weeks on the burdens the record can measure — plan burden,
+time burden, schedule conflict, sleep conflict, motivation, fatigue, social context (the weekend), weather for outdoor
+activity, cooking burden (no saved meal) and decision fatigue (changes proposed and not applied) — reported as odds
+ratios with intervals, and only called clear beyond two standard errors. Unknown days are left out; a partial item
+counts as not done. interventionAdherence() gives P(execution | intervention) from past adherence to changes of that
+kind (Response records), a prior that falls with the size of the change, and today's friction; rankLevers() multiplies
+the personal expected effect by it. decide() records both levers with their effects and probabilities on a stall and
+adds them to the evidence. Two things found on the way: population figures alone had flipped the stall fixture to
+calories (energy arithmetic makes a calorie cut look better than steps for most people), so the lever now switches only
+on the person's own record, and never on priors; and the decision-fatigue factor read accepted/dismissed flags that
+nothing writes (governance caught it), so it now counts decisions that proposed a change nobody applied.
+
+## Phase 8: physique by region (build c5b3d60080)
+
+physiqueModel() follows the audit's chain without a hypertrophy equation: exposure per muscle (weekly sets, primary 1
+and secondary 0.5, and frequency, over eight weeks) → regional outcome (each primary exercise's e1RM relative to its
+own start, pooled by precision as % per month; the region's circumference where measured, with tape error) → status:
+under-trained (too few sets to judge), lagging (at least 10 sets a week yet clearly slower than the median of the other
+trained regions), over-served (above 20 sets and not a priority), on track, or unknown. A region that is slower with
+6–9 sets is called under-trained, never lagging and never on track: a test found it falling through to "on track".
+Up to three priorities; suggestions add 2–4 sets to priorities and lagging regions, taken from over-served ones, and
+split a priority across two sessions; overlap is flagged when three or more exercises share a pattern for the same
+muscle. Rate control reads the weight trend as % of body weight a week against the phase's range (cut 0.5–1%, lean
+gain 0.1–0.25%, maintenance ±0.1%), worded by direction of travel. Body fat is trended per method only, with each
+method's measurement error and lean and fat mass; methods are compared by their offset on near dates, never mixed; an
+unspecified method is called out. Ranges cite their sources (Schoenfeld 2017; Pelland 2024). On the Body tab and in
+the palette ("Physique by region").

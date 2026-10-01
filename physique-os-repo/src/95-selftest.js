@@ -3641,6 +3641,93 @@ function runSelfTest(opts){
     /* ---- Usage review: Tools order, the guide, Today ---- */
     ok('External server is pinned to the top of Tools by default, and any section can be pinned',toolsPinned()[0]==='tools-server'&&typeof ACTIONS['tools.pin']==='function');
     ok('a feature opened from the guide closes the guide first (nothing opens behind it)',typeof ACTIONS['features.go']==='function'&&renderFeatureRow({id:'x',icon:'pin',label:'x',what:'x',on:false,act:'weather.open',cta:'Go'}).indexOf('features.go')>=0);
+    /* ---- Response entity: what happened because of a change (constructed cases with known answers) ---- */
+    withFixture('successful_cut',function(){
+      var keepO=DB.observations,keepR=DB.responses,D=addDays(todayISO(),-21);
+      var build=function(slopeBefore,slopeAfter,shift,hungerJump){DB.observations=keepO.filter(function(o){return o.type!=='weight'&&o.type!=='hunger';});var w=250;
+        for(var i=-21;i<=20;i++){var d=addDays(D,i),inAfter=i>=(shift||0);w+=(inAfter?slopeAfter:slopeBefore)/7;DB.observations.push(makeObservation({type:'weight',date:d,value:round(w+((i*7919)%5-2)*0.05,2),source:'test'}));
+          DB.observations.push(makeObservation({type:'hunger',date:d,value:(hungerJump&&i>=0)?7+((i*31)%3-1)*0.3:4+((i*17)%3-1)*0.3,source:'test'}));}_memoInvalidate();};
+      var iv={id:'t1',kind:'plan change',date:D,variable:'calories',from:2400,to:1900,reversible:'yes'};
+      build(0,-1,0,false);var r=evaluateResponse(iv);
+      ok('a clear change in trend after a change is judged a clear response, against the trend before continued',r.stage==='final'&&r.primary&&Math.abs(r.primary.effect+1)<0.3&&/clear response/.test(r.verdict)&&r.primary.counterfactual===r.primary.before);
+      ok('the effect is compared with what the model expected (500 kcal less is about 1 lb a week)',r.expected&&r.expectation==='as expected');
+      build(0,-1,-7,false);r=evaluateResponse(iv);ok('a change already under way before the intervention is caught by the placebo check',r.placebo&&r.placebo.alreadyUnderWay===true&&/already under way/.test(r.verdict));
+      build(0,-1,0,true);r=evaluateResponse(iv);ok('an unintended effect (hunger rising) is reported',r.unintended.some(function(u){return u.quantity==='hunger';}));
+      var p=evaluateResponse({id:'t2',kind:'plan change',date:addDays(todayISO(),-3),variable:'calories',from:2400,to:2200});ok('a change only 3 days old is pending, not judged',p.stage==='pending');
+      var ev={type:'response.recorded',data:r},db={responses:[]};EVENT_TYPES['response.recorded'].apply(db,ev);EVENT_TYPES['response.recorded'].apply(db,ev);
+      ok('a response replays from its event, and a later record replaces the earlier',db.responses.length===1&&db.responses[0].id===r.id);
+      DB.observations=keepO;DB.responses=keepR;_memoInvalidate();
+    });
+    /* ---- Personal response model (constructed responses, known answers) ---- */
+    (function(){var keep=DB.responses,PR=RESPONSE_PRIORS()['calories\u2192weight'],pop=PR.perUnit*100;
+      var mk=function(id,dose,effect,se,stage,adh,start){return {id:id,interventionId:id,variable:'calories',outcome:'weight',dose:dose,stage:stage||'final',start:start||'2026-01-01',
+        adherence:adh!=null?{share:adh}:null,primary:{effect:effect,se:se}};};
+      DB.responses=[];var row=function(){return personalResponseModel().rows.filter(function(r){return r.key==='calories\u2192weight';})[0];};
+      ok('with no responses of its own, the model is the population figure',row().n===0&&Math.abs(row().posterior.mean-round(pop,3))<1e-9&&row().personalWeight===0);
+      DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05),mk('b',-500,-2*500*PR.perUnit,0.05)];   /* this person loses twice what the arithmetic says */
+      var r2=row();ok('precise personal responses move the estimate toward this person and say how much is theirs',r2.posterior.mean>1.6*pop&&r2.personalWeight>0.5);
+      DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05,'provisional')];var wP=row().personalWeight;DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05,'final')];var wF=row().personalWeight;
+      ok('a provisional response counts for less than a final one',wP<wF);
+      DB.responses=[mk('h',-500,-500*PR.perUnit,0.02,'final',0.5),mk('f',-500,-1000*PR.perUnit,0.04,'final',1)];
+      var per=personalResponseModel().rows.filter(function(r){return r.key==='calories\u2192weight';})[0];
+      ok('a change done on half the days is read as half the dose',Math.abs(_perUnit(DB.responses[0]).y-_perUnit(DB.responses[1]).y)<1e-9);
+      DB.responses=[mk('x',-500,-3*500*PR.perUnit,0.02)];var withX=predictResponse('calories','weight',-500),without=predictResponse('calories','weight',-500,{excludeId:'x'});
+      ok('a change is never judged against an expectation built from itself (leave-one-out)',withX.n===1&&without.n===0);
+      DB.responses=keep;})();
+    /* ---- Friction and adherence ---- */
+    (function(){var X=[],y=[];for(var i=0;i<200;i++){var f=i%2,p=f?0.3:0.9,u=((i*7919)%100)/100;X.push([1,f]);y.push(u<p?1:0);}   /* a planted friction: 90% done without it, 30% with it */
+      var fit=_logitRidge(X,y,1),or=Math.exp(fit.b[1]);ok('the friction regression recovers a planted effect (done 90% without the factor, 30% with it)',or<0.15&&Math.abs(fit.b[1])>2*fit.se[1]);
+      var keep=DB.responses;DB.responses=[];var small=interventionAdherence('steps',500,8000).p,big=interventionAdherence('steps',3000,8000).p;
+      ok('a bigger change is expected to be carried out less often',big<small);
+      DB.responses=[{id:'a',variable:'steps',adherence:{share:0.3,daysLogged:21}},{id:'b',variable:'steps',adherence:{share:0.3,daysLogged:21}}];
+      ok('past adherence to changes of this kind pulls the estimate toward what actually happened',interventionAdherence('steps',3000,8000).p<big);
+      var L=rankLevers([{key:'a',variable:'calories',dose:-175,current:2400},{key:'b',variable:'steps',dose:2000,current:8000}]);
+      ok('levers are ranked by expected effect times the probability of carrying them out',L.every(function(o){return o.effectiveEffect==null||Math.abs(o.effectiveEffect-o.expectedEffect*o.pExecution)<0.002;})&&Math.abs(L[0].effectiveEffect)>=Math.abs(L[1].effectiveEffect));
+      DB.responses=keep;})();
+    withFixture('stall',function(){var d=decide();ok('population figures alone never switch the lever away from activity (no personal record here)',d.code!=='REDUCE_CALORIES');if(d.code==='ADD_STEPS'||d.code==='REDUCE_CALORIES')ok('a lever decision records both options, their effects and how likely each is to be done',!!(d.leverChoice&&d.leverChoice.options.length===2&&d.leverChoice.options.every(function(o){return o.pExecution>0;})));});
+    /* ---- Physique by region (constructed training with a known lagging region) ---- */
+    withFixture('successful_cut',function(){
+      var keepS=DB.sessions,keepO=DB.observations,keepP=DB.settings.physiquePriorities;DB.settings.physiquePriorities=[];DB.sessions=[];
+      for(var d=55;d>=0;d--){if(d%7!==0&&d%7!==2&&d%7!==4)continue;var k=55-d,sets=[];
+        for(var i=0;i<4;i++){sets.push({exercise:'Squat',load:round(200*(1+0.006*k),1),reps:8,rir:2});sets.push({exercise:'Bench press',load:150+((k*7)%3-1),reps:8,rir:2});sets.push({exercise:'Lat pulldown',load:round(140*(1+0.006*k),1),reps:10,rir:2});}
+        if(d%7===0)sets.push({exercise:'Overhead press',load:95,reps:8,rir:2});
+        DB.sessions.push({id:'ps'+d,date:addDays(todayISO(),-d),sets:sets,createdAt:nowISO()});}
+      _memoInvalidate();var P=physiqueModel(),R=function(m){return P.regions.filter(function(r){return r.muscle===m;})[0];};
+      ok('a region trained enough but progressing clearly slower than the others is lagging',R('chest')&&R('chest').status==='lagging'&&R('quads').status==='on track');
+      ok('a region with too few sets is under-trained, never lagging',R('delts')&&R('delts').status==='under-trained');
+      ok('a lagging region gets a suggestion',P.suggestions.some(function(s){return s.muscle==='chest';}));
+      ['Hack squat','Front squat','Leg press'].forEach(function(n,i){DB.sessions.push({id:'rx'+i,date:addDays(todayISO(),-i-1),sets:[{exercise:n,load:200,reps:10,rir:2}],createdAt:nowISO()});});_memoInvalidate();
+      ok('several exercises with the same pattern for the same muscle are flagged as overlap',exerciseRedundancy(28).some(function(x){return x.muscle==='quads'&&x.pattern==='squat'&&x.exercises.length>=3;}));
+      DB.observations=DB.observations.filter(function(o){return o.type!=='bodyfat';});
+      [[0,20,24],[14,19.5,23.6],[28,19,23.1]].forEach(function(r){DB.observations.push(makeObservation({type:'bodyfat',date:addDays(todayISO(),-r[0]),value:r[1],source:'test',method:'DEXA'}));DB.observations.push(makeObservation({type:'bodyfat',date:addDays(todayISO(),-r[0]-1),value:r[2],source:'test',method:'BIA scale'}));});
+      _memoInvalidate();var B=bodyCompositionByMethod();
+      ok('body fat is trended per method and never mixed; the methods are compared by their offset',B.methods.length===2&&B.offsets.length===1&&Math.abs(B.offsets[0].offset)>=3.5&&B.methods.every(function(m){return m.n===3;}));
+      DB.observations=DB.observations.filter(function(o){return o.type!=='weight';});for(var j=20;j>=0;j--)DB.observations.push(makeObservation({type:'weight',date:addDays(todayISO(),-j),value:round(250*Math.pow(1-0.015/7,20-j),2),source:'test'}));_memoInvalidate();
+      ok('a cut losing 1.5% a week is faster than the range',physiqueRate().state.indexOf('faster')===0);
+      DB.sessions=keepS;DB.observations=keepO;DB.settings.physiquePriorities=keepP;_memoInvalidate();});
+    /* ---- Model competition (synthetic candidates make the lifecycle rules deterministic) ---- */
+    (function(){var keepL=DB.settings.modelLifecycle,keepC=MODEL_COMPETITIONS.__t;DB.settings.modelLifecycle={};
+      var S=[];for(var i=0;i<140;i++)S.push({date:addDays(todayISO(),-139+i),value:200-0.1*i+((i*7919)%7-3)*0.15});
+      var truth=function(o,h){var t=addDays(o,h),x=S.filter(function(p){return Math.abs(daysBetween(p.date,t))<=1;});return x.length?mean(x.map(function(p){return p.value;})):null;};
+      COMPETITION_CANDIDATES.__good={label:'good',params:1,predict:function(_,o,h){var v=truth(o,h);return v==null?null:{mean:v+((daysBetween('2026-01-01',o)*31)%5-2)*0.12,sd:0.3};}};
+      COMPETITION_CANDIDATES.__bad={label:'bad',params:1,incumbent:true,predict:function(_,o,h){var v=truth(o,h);return v==null?null:{mean:v+3+((daysBetween('2026-01-01',o)*17)%5-2)*0.2,sd:3};}};
+      COMPETITION_CANDIDATES.__awful={label:'awful',params:1,predict:function(_,o,h){var v=truth(o,h);return v==null?null:{mean:v+15,sd:1};}};
+      MODEL_COMPETITIONS.__t={label:'test',unit:'lb',horizons:[7],series:function(){return S;},candidates:['naive','__bad','__good','__awful']};
+      var E=evaluateCompetition('__t',{series:S,force:true});
+      ok('a clearly better, calibrated challenger replaces the incumbent, with the reason recorded',E.primary==='__good'&&E.changes.some(function(c){return c.type==='promoted'&&c.to==='__good'&&/standard errors better/.test(c.why);}));
+      ok('a model far worse than the baseline is deprecated first',E.states.__awful==='DEPRECATED');
+      var E2=evaluateCompetition('__t',{series:S});ok('a second look the same day changes nothing (evaluations, not refreshes, count)',E2.states.__awful==='DEPRECATED'&&E2.changes.length===0);
+      var E3=evaluateCompetition('__t',{series:S,force:true});ok('deprecated again on the next evaluation, it is retired',E3.states.__awful==='RETIRED');
+      ok('a model whose intervals are too narrow is given a widening factor',E.rows.filter(function(r){return r.candidate==='__awful';})[0].metrics[7].scale>2);
+      /* flat noise: a trend model is not better just because it is more elaborate */
+      DB.settings.modelLifecycle={};var F=[];for(var j=0;j<140;j++)F.push({date:addDays(todayISO(),-139+j),value:180+((j*7919)%11-5)*0.3});
+      MODEL_COMPETITIONS.__f={label:'flat',unit:'lb',horizons:[7],series:function(){return F;},candidates:['naive','theil_sen','holt','damped']};
+      var G=evaluateCompetition('__f',{series:F,force:true});ok('on flat noise no elaborate model is promoted over the incumbent (newer is not assumed better)',G.changes.every(function(c){return c.type!=='promoted'||c.to==='naive';}));
+      DB.settings.modelLifecycle={};var D=[];for(var k=0;k<140;k++)D.push({date:addDays(todayISO(),-139+k),value:250-0.2*k+((k*7919)%5-2)*0.1});
+      MODEL_COMPETITIONS.__d={label:'decline',unit:'lb',horizons:[14],series:function(){return D;},candidates:['naive','theil_sen']};
+      var H=evaluateCompetition('__d',{series:D,force:true});ok('on a steady decline the trend clearly beats the flat baseline',H.primaryBeatsBaseline===true);
+      ['__good','__bad','__awful'].forEach(function(c){delete COMPETITION_CANDIDATES[c];});['__t','__f','__d'].forEach(function(c){delete MODEL_COMPETITIONS[c];});DB.settings.modelLifecycle=keepL;})();
+    ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
       var keepO=DB.observations,keepP=DB.settings.sourcePreference,d=addDays(todayISO(),-3);DB.settings.sourcePreference={};

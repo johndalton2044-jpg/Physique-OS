@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "e7bd36cfde",
+ "build": "058f0ade05",
  "models": [
   {
    "id": "adherence",
@@ -63,6 +63,11 @@
    "fn": "fatVsOther"
   },
   {
+   "id": "friction",
+   "cls": "EMPIRICAL",
+   "fn": "frictionModel"
+  },
+  {
    "id": "goal_traj",
    "cls": "PREDICTIVE",
    "fn": "goalTrajectory"
@@ -71,6 +76,11 @@
    "id": "hydration_balance",
    "cls": "HEURISTIC",
    "fn": "hydrationBalance"
+  },
+  {
+   "id": "intervention_response",
+   "cls": "EMPIRICAL",
+   "fn": "evaluateResponse"
   },
   {
    "id": "measurement_quality",
@@ -88,6 +98,11 @@
    "fn": "micronutrientCoverage"
   },
   {
+   "id": "model_competition",
+   "cls": "EMPIRICAL",
+   "fn": "evaluateCompetition"
+  },
+  {
    "id": "muscle_risk",
    "cls": "HEURISTIC",
    "fn": "muscleRetentionRisk"
@@ -96,6 +111,16 @@
    "id": "personal_baseline",
    "cls": "EMPIRICAL",
    "fn": "personalBaselines"
+  },
+  {
+   "id": "personal_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalResponseModel"
+  },
+  {
+   "id": "physique_regions",
+   "cls": "EMPIRICAL",
+   "fn": "physiqueModel"
   },
   {
    "id": "rate_band",
@@ -415,8 +440,8 @@
   },
   {
    "entity": "Response",
-   "status": "partial",
-   "horizon": "H3"
+   "status": "implemented",
+   "horizon": null
   },
   {
    "entity": "Decision",
@@ -1583,6 +1608,14 @@
    "level": "casual"
   },
   {
+   "id": "physique.open",
+   "level": "casual"
+  },
+  {
+   "id": "physique.priority",
+   "level": "developer"
+  },
+  {
    "id": "plan.adapt",
    "level": "developer"
   },
@@ -1736,6 +1769,10 @@
   },
   {
    "id": "res.exercise",
+   "level": "developer"
+  },
+  {
+   "id": "responses.open",
    "level": "developer"
   },
   {
@@ -2440,6 +2477,7 @@
   "phase",
   "photos",
   "physio",
+  "physique",
   "planEdit",
   "planSearch",
   "prepare",
@@ -2456,6 +2494,7 @@
   "recoveryState",
   "replayCompare",
   "resistance",
+  "response",
   "restore",
   "routine",
   "saved",
@@ -2526,6 +2565,7 @@
   "recipe.saved",
   "record.imported",
   "record.snapshot",
+  "response.recorded",
   "session.added",
   "session.retracted",
   "session.superseded",
@@ -2577,5 +2617,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 107
+ "panels": 111
 }
