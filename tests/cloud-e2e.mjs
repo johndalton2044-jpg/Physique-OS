@@ -15,6 +15,8 @@ process.on('exit',stop);process.on('uncaughtException',e=>{console.error(e);stop
 await new Promise(r=>setTimeout(r,900));
 const html=fs.readFileSync('dist/index.html','utf8');
 const PORT=8791, URL_='http://127.0.0.1:'+PORT;
+/* Every result below fails the gate when it does not hold; this test used to print them and exit 0 regardless. */
+let failures=0;const expect=(label,cond,detail)=>{console.log(label+':',cond,cond?'':(detail||''));if(!cond)failures++;};
 function mk(name){
   const vc=new VirtualConsole();vc.on('jsdomError',e=>console.log(name+' ERR:',String(e&&e.message).slice(0,160)));
   const dom=new JSDOM(html,{url:'https://localhost/app/index.html',runScripts:'dangerously',pretendToBeVisual:true,
@@ -39,7 +41,7 @@ const PHRASE='correct horse battery staple orange window';
 console.log('--- A creates the vault ---');
 const created=await A.cloudCreateVault(PHRASE);
 console.log('vault created:',JSON.stringify(created).slice(0,80));
-console.log('vault id is derived, not assigned:',created.vaultId===(await A.deriveVault(PHRASE)).vaultId);
+expect('vault id is derived, not assigned',created.vaultId===(await A.deriveVault(PHRASE)).vaultId);
 
 console.log('--- A logs data and syncs up ---');
 A._NOW_OVERRIDE=A.todayISO();
@@ -51,7 +53,7 @@ console.log('A sync:',JSON.stringify(up));
 console.log('--- the server cannot read any of it ---');
 const raw=fs.readFileSync(DATA+'/vaults/'+created.vaultId+'/events.ndjson','utf8');
 console.log('stored rows:',raw.trim().split('\n').length);
-console.log('plaintext leaks (weight/221.4/steps):',/weight|221\.4|steps/.test(raw));
+expect('the stored rows carry no plaintext (weight / 221.4 / steps)',!/weight|221\.4|steps/.test(raw));
 console.log('sample row:',raw.trim().split('\n')[0].slice(0,110)+'...');
 
 console.log('--- B joins with the same phrase ---');
@@ -59,32 +61,31 @@ await B.cloudUnlock(PHRASE);
 // B must be authorised by A, which is what stops a stolen phrase silently joining
 let joinBlocked=false;
 try{await B.cloudAuthenticate();}catch(e){joinBlocked=/not registered/.test(String(e.message))||e.status===401;}
-console.log('unknown device refused until authorised:',joinBlocked);
+expect('unknown device refused until authorised',joinBlocked);
 const bKeys=await B.deviceKeyPair();
 const tok=await (async()=>{await A.cloudAuthenticate();return A._cloud.token;})();
 const res=await fetch(URL_+'/v1/vault/device',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},
   body:JSON.stringify({deviceId:'device-B',devicePublicKey:bKeys.publicPem})});
-console.log('A authorises B:',res.status);
+expect('A authorises B',res.status===201,String(res.status));
 
 console.log('--- B pulls and decrypts ---');
 const down=await B.cloudSync();
 console.log('B sync:',JSON.stringify(down));
-console.log('B now sees weight:',B.obsOf('weight').length,'steps:',B.obsOf('steps').length);
-console.log('B decrypted the actual value:',B.obsOf('weight')[0]?.value);
+expect('B now sees the weight and the steps',B.obsOf('weight').length===1&&B.obsOf('steps').length===1,JSON.stringify({weight:B.obsOf('weight').length,steps:B.obsOf('steps').length}));
+expect('B decrypted the actual value',B.obsOf('weight')[0]?.value===221.4,String(B.obsOf('weight')[0]?.value));
 
 console.log('--- concurrent edits converge without loss ---');
 B._NOW_OVERRIDE=B.todayISO();
 B.addObservation({type:'sleep',date:B.todayISO(),value:7.4,source:'manual'},{silent:true,noSave:true});
 A.addObservation({type:'waist',date:A.todayISO(),value:38.2,source:'manual'},{silent:true,noSave:true});
 await B.cloudSync();await A.cloudSync();await B.cloudSync();
-console.log('A has waist+sleep:',A.obsOf('waist').length===1&&A.obsOf('sleep').length===1);
-console.log('B has waist+sleep:',B.obsOf('waist').length===1&&B.obsOf('sleep').length===1);
-console.log('A projection valid:',A.projectionMatchesRecord().ok,'| B projection valid:',B.projectionMatchesRecord().ok);
+expect('A has waist+sleep',A.obsOf('waist').length===1&&A.obsOf('sleep').length===1);
+expect('B has waist+sleep',B.obsOf('waist').length===1&&B.obsOf('sleep').length===1);
+expect('both projections reproduce their records',A.projectionMatchesRecord().ok&&B.projectionMatchesRecord().ok);
 
 console.log('--- each event is stored once, however often it is sent ---');
 /* These two fail the gate when false (the lines above only print). Before event ids were idempotent, B uploaded A's
    events straight back after pulling them, and a device that lost its list of sent ids stored its history again. */
-let failures=0;const expect=(label,cond,detail)=>{console.log(label+':',cond,cond?'':(detail||''));if(!cond)failures++;};
 const ledgerIds=()=>fs.readFileSync(DATA+'/vaults/'+created.vaultId+'/events.ndjson','utf8').trim().split('\n').map(l=>JSON.parse(l).id);
 {const ids=ledgerIds();expect('the ledger holds each event id once',new Set(ids).size===ids.length,ids.length+' rows, '+new Set(ids).size+' ids');
   const rowsBefore=ids.length;A.DB.settings.cloud.pushedIds=[];const resent=await A.cloudSync();
@@ -114,21 +115,21 @@ console.log('--- the server loses its data (a free host restarting with an empty
   const srv2=spawn(process.execPath,['server/server.mjs','--port','8791','--data',DATA],{stdio:['ignore','pipe','pipe']});srv2.stdout.on('data',d=>{serverLog+=d;});
   process.on('exit',()=>{try{srv2.kill();}catch(e){}});await new Promise(r=>setTimeout(r,900));
   A._cloud.token=null;const again=await A.cloudSync().catch(e=>({err:String(e.message||e)}));
-  console.log('reset detected and everything re-sent:',again.serverReset===true&&again.sent>=before,JSON.stringify({reset:again.serverReset,sent:again.sent,had:before,err:again.err}));
-  const second=await A.cloudSync();console.log('the next sync is quiet again:',second.sent===0&&second.serverReset===false);
+  expect('reset detected and everything re-sent',again.serverReset===true&&again.sent>=before,JSON.stringify({reset:again.serverReset,sent:again.sent,had:before,err:again.err}));
+  const second=await A.cloudSync();expect('the next sync is quiet again',second.sent===0&&second.serverReset===false,JSON.stringify(second));
   globalThis.__srv2=srv2;}
 console.log('--- the base address answers with an index, not "no such endpoint" ---');
-{const r=await fetch('http://127.0.0.1:8791/');const j=await r.json();console.log('base address is friendly:',r.status===200&&j.ok===true&&!j.error);}
+{const r=await fetch('http://127.0.0.1:8791/');const j=await r.json();expect('base address is friendly',r.status===200&&j.ok===true&&!j.error);}
 console.log('--- a wrong phrase derives a different vault and cannot decrypt ---');
 const wrong=await A.deriveVault('totally different words entirely here now');
-console.log('different vault id:',wrong.vaultId!==created.vaultId);
+expect('a wrong phrase derives a different vault',wrong.vaultId!==created.vaultId);
 
 console.log('--- vault deletion is total ---');
 const del=await A.cloudDeleteVault();
-console.log('deleted:',JSON.stringify(del),'| dir gone:',!fs.existsSync(DATA+'/vaults/'+created.vaultId));
+expect('vault deletion removes the vault and its folder',del.deleted===true&&!fs.existsSync(DATA+'/vaults/'+created.vaultId),JSON.stringify(del));
 
 console.log('--- server log is incapable of carrying payloads ---');
-console.log('log mentions a weight or a value:',/221\.4|weight|ciphertext/.test(serverLog));
+expect('the server log mentions no weight, value or ciphertext',!/221\.4|weight|ciphertext/.test(serverLog));
 console.log('log lines:',serverLog.trim().split('\n').length);
 /* close every simulated window: an app that keeps timers (the weather auto-updater) would otherwise hold Node open */
 for(const w of (globalThis.__windows||[])){try{w.close();}catch(e){}}
