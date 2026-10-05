@@ -750,3 +750,24 @@ Appended by `node scripts/baseline.mjs`. Each entry is generated from the runnin
 - capabilities: 22 — surfaced 16, validated 5, integrated 1
 - production-ready: 0; implemented but unsurfaced: none
 - dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T17:31:08.760Z — build ad620e6fcf
+
+- sources: 97, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T17:53:05.197Z — build 2f16ead21c
+
+- sources: 97, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T18:10:34.950Z — build ff3eec8b6e
+
+- sources: 97, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges

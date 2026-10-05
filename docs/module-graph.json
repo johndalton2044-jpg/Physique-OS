@@ -23,6 +23,10 @@
     "persistIncremental",
     "auditAppend"
    ],
+   "24-events.js": [
+    "undoMark",
+    "undoInLog"
+   ],
    "80-ui.js": [
     "toast"
    ],
@@ -2637,6 +2641,7 @@
     "updatePhase",
     "setProgram",
     "addSession",
+    "updateSession",
     "sessionsOf"
    ],
    "40-models.js": [
@@ -3038,6 +3043,7 @@
     "eventArchiveState",
     "compactEvents",
     "deviceId",
+    "emitEvent",
     "resetEventLog",
     "eventLog",
     "eventStats",
@@ -4319,7 +4325,8 @@
     "serializeDB",
     "pushUndo",
     "canUndo",
-    "undo"
+    "undo",
+    "clearUndo"
    ],
    "22-persistence.js": [
     "_dirtyFor",
@@ -4337,6 +4344,7 @@
    "24-events.js": [
     "eventArchiveState",
     "compactEvents",
+    "deviceId",
     "emitEvent",
     "resetEventLog",
     "eventStats",
@@ -4461,6 +4469,7 @@
    "50-decision.js": [
     "diagnose",
     "decide",
+    "recordDecision",
     "decisionsOf",
     "stampPredictions",
     "scorePredictions",
@@ -4778,6 +4787,7 @@
     "foodFrequency"
    ],
    "70-demo.js": [
+    "_rng",
     "generateRecord",
     "loadDemo",
     "withFixture"
@@ -4937,6 +4947,7 @@
    ],
    "86-identification.js": [
     "frontDoorSet",
+    "linearFrontDoor",
     "instrumentalEstimate",
     "eValue",
     "identificationStrategy",

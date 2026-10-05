@@ -415,7 +415,7 @@ function postSessionSummary(sessId){
 /* Saving a session opens the existing After-the-session screen, now expanded (see the wrappers at the end of this file). */
 function openPostSession(id){_POST={id:id};dispatchAct('move.recover');}
 function _rateSession(field,val){var s=(DB.sessions||[]).filter(function(x){return x.id===(_POST&&_POST.id);})[0];if(!s)return;
-  s[field]=val;s.updatedAt=nowISO();save('session:edit');renderSheet();}
+  var ev=emitEvent('session.rated',{id:s.id,field:field,value:val});s[field]=val;s.updatedAt=(ev&&ev.at)||nowISO();save('session:edit');renderSheet();}
 registerAction('post.effort',function(n){_rateSession('effort',Math.max(1,Math.min(10,parseInt(n,10)||0)));});
 registerAction('post.feel',function(v){if(['drained','ok','good'].indexOf(v)>=0)_rateSession('feel',v);});
 
@@ -2626,7 +2626,7 @@ SHEETS.obsInspect=function(b){var o=b.o;var t=OBS_TYPES[o.type]||{};var mq=measu
     uiRow('Measurement quality',fmtNum(mq.score*100,0)+'%',{sub:mq.factors.length?esc(mq.factors.join('; ')):'no deductions',tone:mq.level==='high'?'good':(mq.level==='moderate'?'attention':'negative')});
   if(o.flags&&o.flags.length)body+='<div class="hint warn">'+o.flags.map(esc).join('<br>')+'</div>';
   if(o.supersedes)body+=uiRow('Supersedes an earlier entry',esc(String(o.supersedes)),{sub:'this value corrected a previous one'});
-  if(o.correctedBy)body+=uiRow('Corrected',esc(String(o.correctedAt||'').slice(0,10)),{sub:'a later entry supersedes this one; replays of days before that date still see this value'});
+  if(o.correctedBy)body+=uiRow('Corrected',esc(o.correctedAt?localDateOf(o.correctedAt):''),{sub:'a later entry supersedes this one; replays of days before that date still see this value'});
   if(o.retracted)body+=uiRow('Retracted',esc(String(o.retractedAt||'').slice(0,10)),{sub:'kept in the record; replays of days before that date still see it'});
   var proto=protocolFor(o.type);
   if(proto)body+=uiFold('proto-'+o.id,'Measurement protocol',proto.cadence,'<ul>'+proto.steps.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+(proto.driftNote?'<div class="prov">'+esc(proto.driftNote)+'</div>':''));

@@ -65,7 +65,7 @@ function compactEvents(force){
   var snapshotEvent={id:uid('ev'),seq:boundary.seq,type:'record.snapshot',at:boundary.at,device:boundary.device,
     schema:EVENT_SCHEMA,compaction:true,
     data:{reason:'compaction of '+older.length+' earlier events',at:boundary.at,
-      firstArchived:older[0].at,lastArchived:boundary.at,archivedCount:older.length,record:snap}};
+      firstArchived:older[0].at,lastArchived:boundary.at,archivedCount:older.length,record:snap,covers:_coverIds(older)}};
   /* Archive the originals before dropping them from memory. If the archive write fails, keep them: losing
      history to save memory is the wrong trade in every case. */
   var shardKey='archive:'+String(boundary.at).slice(0,7)+':'+boundary.seq;
@@ -106,6 +106,7 @@ function deviceId(){
 /* EVENT TYPES. Each names a thing that happened in the world or in the record, never a resulting state.
    `apply` folds the event into a document. Adding a type requires adding its fold, and the contract test
    asserts every emitted type has one. */
+var SESSION_RATINGS={effort:1,feel:1};
 var EVENT_TYPES={
   'observation.added':{apply:function(db,e){db.observations.push(JSON.parse(JSON.stringify(e.data)));}},
   'observation.corrected':{apply:function(db,e){
@@ -123,6 +124,10 @@ var EVENT_TYPES={
   'session.retracted':{apply:function(db,e){
     var s=db.sessions.filter(function(x){return x.id===e.data.id;})[0];
     if(s){s.retracted=true;s.retractedAt=e.at;}}},
+  /* how a session felt, rated afterwards: an annotation of the same session, not an edit of what was done. Only the
+     rating fields can be set, because the data may arrive from another device. */
+  'session.rated':{apply:function(db,e){var s=db.sessions.filter(function(x){return x.id===e.data.id;})[0];
+    if(s&&SESSION_RATINGS[e.data.field]){s[e.data.field]=e.data.value;s.updatedAt=e.at;}}},
   'session.superseded':{apply:function(db,e){
     var old=db.sessions.filter(function(x){return x.id===e.data.of;})[0];
     if(old){old.supersededBy=e.data.record.id;old.supersededAt=e.at;}
@@ -149,7 +154,8 @@ var EVENT_TYPES={
   'phase.started':{apply:function(db,e){
     (db.phases||[]).forEach(function(x){if(x.status==='active'&&!x.endDate&&x.id!==e.data.id){
       x.history=(x.history||[]).concat([{at:e.at,before:{endDate:x.endDate,status:x.status}}]);
-      x.endDate=e.data.priorEnd||x.endDate;x.status='ended';}});
+      var pe=e.data.priorEnd;   /* never before the phase's own start, as startPhase does */
+      x.endDate=pe?(pe<x.startDate?x.startDate:pe):x.endDate;x.status='ended';}});
     db.phases.push(JSON.parse(JSON.stringify(e.data)));}},
   'phase.targetsChanged':{apply:function(db,e){
     var p=db.phases.filter(function(x){return x.id===e.data.id;})[0];if(!p)return;
@@ -167,6 +173,8 @@ var EVENT_TYPES={
     db.settings.programHistory=(db.settings.programHistory||[]).concat([{at:e.at,program:e.data.to,from:e.data.from||null,source:e.data.source||'user'}]);}},
   'intervention.recorded':{apply:function(db,e){db.interventions.push(JSON.parse(JSON.stringify(e.data)));}},
   'decision.recorded':{apply:function(db,e){db.decisions.push(JSON.parse(JSON.stringify(e.data)));}},
+  'decision.applied':{apply:function(db,e){var d=db.decisions.filter(function(x){return x.id===e.data.id;})[0];
+    if(d){d.status='applied';d.experimentId=e.data.experimentId||null;}}},
   'prediction.stamped':{apply:function(db,e){db.predictions.push(JSON.parse(JSON.stringify(e.data)));}},
   'prediction.scored':{apply:function(db,e){var p=db.predictions.filter(function(x){return x.id===e.data.id;})[0];
     if(p)Object.keys(e.data.result).forEach(function(k){p[k]=e.data.result[k];});}},
@@ -186,7 +194,10 @@ var EVENT_TYPES={
   'cycle.recorded':{apply:function(db,e){db.cycles=(db.cycles||[]).filter(function(x){return x.id!==e.data.id;});db.cycles.push(JSON.parse(JSON.stringify(e.data)));}},
   'response.recorded':{apply:function(db,e){db.responses=(db.responses||[]).filter(function(x){return x.id!==e.data.id;});db.responses.push(JSON.parse(JSON.stringify(e.data)));}},
   'experiment.evaluated':{apply:function(db,e){var x=db.experiments.filter(function(y){return y.id===e.data.id;})[0];
-    if(x)Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});}},
+    if(!x)return;Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});
+    /* scoring an experiment closes its intervention (evaluateExperiment); folded here so a replay closes it too */
+    var iv=(db.interventions||[]).filter(function(i){return i.id===x.interventionId;})[0];
+    if(iv){iv.status='evaluated';iv.outcome=e.data.result.conclusion;}}},
   'negative.recorded':{apply:function(db,e){db.negatives.push(JSON.parse(JSON.stringify(e.data)));}},
   'plan.created':{apply:function(db,e){(db.plans=db.plans||[]).push(JSON.parse(JSON.stringify(e.data)));}},
   'execution.marked':{apply:function(db,e){(db.executions=db.executions||[]).push(JSON.parse(JSON.stringify(e.data)));}},
@@ -233,6 +244,7 @@ var EVENT_TYPES={
   'injury.resolved':{apply:function(db,e){
     var i=(db.settings.injuries||[]).filter(function(x){return x.id===e.data.id;})[0];
     if(i)i.resolvedAt=e.at;}},
+  'events.revoked':{apply:function(db,e){/* read by projectEvents before folding: the events it names are left out */}},
   'record.imported':{apply:function(db,e){/* recorded for provenance; the rows arrive as observation.added */}},
   /* A record can enter the app without passing through the mutators: the demo generator, a restore, or a
      boot from a build that predates the event log. Pretending the log describes such a record would make the
@@ -243,13 +255,46 @@ var EVENT_TYPES={
     var snap=e.data&&e.data.record;if(!snap)return;
     Object.keys(snap).forEach(function(k){db[k]=JSON.parse(JSON.stringify(snap[k]));});}}
 };
+/* UNDO IS A FACT TOO. Undo puts an earlier copy of the record back, but the events of what it undid stayed in the log, so
+   the next start (which rebuilds the record from the log) brought the undone change back, and no other device heard of
+   the undo. Each undo step now records how far this device's own events had got; undoing it revokes the events this
+   device recorded since, with an event of its own, and a projection leaves revoked events out (at every date: what was
+   undone is treated as never having happened, as the record the undo put back treats it). A revocation is never itself
+   revoked, so a deeper undo revokes everything since its step and nothing earlier comes back. If the log was restarted
+   or compacted since the step, the events may sit inside a snapshot where they cannot be left out, so the log restarts
+   from the record the undo put back, as a restore does. Undoing a merge of another device's changes revokes nothing:
+   those are that device's facts, and revoking them would remove them on every device. */
+var _LOCAL_EMITTED=[],_EMIT_N=0,LOCAL_EMITTED_MAX=20000;
+function _latestSnapshotId(){var s=null;_EVENTS.forEach(function(e){if(e.type==='record.snapshot'&&(!s||_eventOrder(s,e)<0))s=e;});return s?s.id:null;}
+function undoMark(){return {n:_EMIT_N,snapshot:_latestSnapshotId()};}
+function undoInLog(mark,label){
+  if(!mark||/^merge\b/i.test(String(label||'')))return {revoked:0};
+  var inLog={};_EVENTS.forEach(function(e){inLog[e.id]=1;});
+  var ids=_LOCAL_EMITTED.filter(function(x){return x.n>mark.n&&x.type!=='events.revoked'&&inLog[x.id];}).map(function(x){return x.id;});
+  if(mark.snapshot!==_latestSnapshotId()){resetEventLog('undo: '+(label||'change'));return {restarted:true};}
+  if(!ids.length)return {revoked:0};
+  emitEvent('events.revoked',{ids:ids,reason:'undo: '+(label||'change')});
+  return {revoked:ids.length};
+}
+/* The ids every revocation in these events names, or null when there is none (the common case costs nothing). */
+function _revokedIds(events){
+  var out=null;(events||[]).forEach(function(e){if(e&&e.type==='events.revoked'&&e.data&&Array.isArray(e.data.ids)){out=out||{};e.data.ids.forEach(function(id){out[id]=1;});}});
+  return out;
+}
 function emitEvent(type,data,opts){
   if(!_EVENTS_ENABLED)return null;
   if(!EVENT_TYPES[type]){_q(new Error('unknown event type: '+type),'P1');return null;}
   opts=opts||{};
+  /* AN EVENT IS A FACT, SO IT IS COPIED WHEN IT IS RECORDED. Most callers passed the live record itself, so every later
+     in-place edit (a prediction expiring, a decision marked applied, a correction flag) silently rewrote events already
+     in the log: a replay of an earlier day saw the later state, and a change with no event of its own existed only
+     through that shared object, so it never reached another device (each event is uploaded once). A snapshot's record
+     is already a fresh copy (recordSnapshot) and by far the largest payload, so it is not copied twice. */
+  var payload=(type==='record.snapshot'||data===undefined)?data:JSON.parse(JSON.stringify(data));
   var e={id:(opts.id||uid('ev')),seq:++_EVENT_SEQ,type:type,at:opts.at||nowISO(),
-    device:deviceId(),schema:EVENT_SCHEMA,data:data};
+    device:deviceId(),schema:EVENT_SCHEMA,data:payload};
   _EVENTS.push(e);
+  _LOCAL_EMITTED.push({n:++_EMIT_N,id:e.id,type:type});if(_LOCAL_EMITTED.length>LOCAL_EMITTED_MAX)_LOCAL_EMITTED.splice(0,_LOCAL_EMITTED.length-LOCAL_EMITTED_MAX);
   if(typeof _automationOnEvent==='function')_automationOnEvent(e);   /* workflow rules: after recording, never during replay (replay does not emit) */
   if(_EVENTS.length>EVENT_WINDOW){try{compactEvents();}catch(err){_q(err,'P0');}}
   if(DB&&DB.ledger)DB.ledger.events=(DB.ledger.events||0)+1;
@@ -257,11 +302,14 @@ function emitEvent(type,data,opts){
 }
 /* Restart the log from the current document. Used wherever a record arrives from outside the log. */
 function resetEventLog(reason){
+  /* what the old log held is part of the record now (or, after a replace, deliberately not): either way another device
+     still holding those events must not fold them again on top of this snapshot */
+  var covers=_coverIds(_EVENTS);
   _EVENTS.length=0;_EVENT_SEQ=0;_eventsDirty={};
   var snap=recordSnapshot(DB);
   emitEvent('record.snapshot',{reason:reason||'record adopted from outside the event log',
     at:nowISO(),counts:{observations:(DB.observations||[]).length,foodLogs:(DB.foodLogs||[]).length,
-    sessions:(DB.sessions||[]).length},record:snap});
+    sessions:(DB.sessions||[]).length},record:snap,covers:covers});
   return {ok:true,reason:reason||null,events:_EVENTS.length};
 }
 function eventLog(opts){
@@ -328,8 +376,21 @@ function projectEvents(events,opts){
 
      Snapshots act as barriers instead. An event emitted AFTER a snapshot (higher sequence) is folded after
      it whatever its own timestamp says, by lifting its effective sort key to the barrier. Timestamp order is
-     preserved everywhere else, so cross-device merge is unaffected. */
-  var raw=(events||_EVENTS).slice().sort(function(a,b){return (a.seq||0)-(b.seq||0);});
+     preserved everywhere else, so cross-device merge is unaffected.
+
+     COVERED, NOT EARLIER. The barrier ordered events by sequence number, and a sequence number is one device's count:
+     a restore restarts it, and another device's numbers are unrelated. So on a second device the events a restored
+     snapshot already contained came out "after" it and were folded again, duplicating every record they added. A
+     snapshot now lists the events folded into it (covers, through earlier snapshots too), and a projection is the
+     latest snapshot followed by every event it does not cover, in time order: nothing it contains is applied twice,
+     an entry backdated after it still survives, and a fact the snapshotting device had not yet seen survives as well.
+     A log written before snapshots carried covers projects exactly as it did. */
+  var all=events||_EVENTS,revoked=_revokedIds(all);
+  if(revoked)all=all.filter(function(e){return !revoked[e.id];});
+  var snaps=all.filter(function(e){return e.type==='record.snapshot';}).sort(_eventOrder);
+  var lastSnap=snaps[snaps.length-1];
+  if(lastSnap&&lastSnap.data&&Array.isArray(lastSnap.data.covers))return _foldEvents(db,_coveredOrder(all,lastSnap),opts);
+  var raw=all.slice().sort(function(a,b){return (a.seq||0)-(b.seq||0);});
   var barrier=null;
   raw.forEach(function(e){
     e.__sortAt=(barrier&&String(e.at)<barrier)?barrier:e.at;
@@ -341,6 +402,23 @@ function projectEvents(events,opts){
     if(a.device!==b.device)return a.device<b.device?-1:1;   // deterministic tie-break across devices
     return (a.seq||0)-(b.seq||0);
   });
+  return _foldEvents(db,list,opts);
+}
+function _eventOrder(a,b){if(a.at!==b.at)return String(a.at)<String(b.at)?-1:1;if(a.device!==b.device)return a.device<b.device?-1:1;return (a.seq||0)-(b.seq||0);}
+/* The latest snapshot, then everything it does not cover. An earlier snapshot it does not cover came from another
+   device's independent restore; as before, the latest snapshot stands in its place. */
+function _coveredOrder(all,last){
+  var covered={};last.data.covers.forEach(function(id){covered[id]=1;});
+  return [last].concat(all.filter(function(e){return e!==last&&e.type!=='record.snapshot'&&!covered[e.id];}).sort(_eventOrder));
+}
+/* The ids a snapshot taken from these events contains: the events themselves and, through any snapshot among them,
+   everything that snapshot contained. */
+function _coverIds(events){
+  var seen={},out=[];var add=function(id){if(id&&!seen[id]){seen[id]=1;out.push(id);}};
+  (events||[]).forEach(function(e){if(!e)return;add(e.id);if(e.type==='record.snapshot'&&e.data&&Array.isArray(e.data.covers))e.data.covers.forEach(add);});
+  return out;
+}
+function _foldEvents(db,list,opts){
   var applied=0,skipped=0;
   for(var i=0;i<list.length;i++){
     var e=list[i];
@@ -375,7 +453,9 @@ function _liveAt(db,date){
     if(x.date&&x.date>date)return false;
     if(x.createdAt&&localDateOf(x.createdAt)>date)return false;
     if(x.retracted&&(!x.retractedAt||localDateOf(x.retractedAt)<=date))return false;
-    if(supKey&&x[supKey]&&(!x[supAtKey]||String(x[supAtKey]).slice(0,10)<=date))return false;
+    /* the local date, as the app's own visibility rules use (_foodLogVisible, the observation rules): a UTC slice put a
+       correction made after 10 am in UTC+14 on the previous day */
+    if(supKey&&x[supKey]&&(!x[supAtKey]||localDateOf(x[supAtKey])<=date))return false;
     return true;
   };
   return {

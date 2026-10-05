@@ -186,15 +186,55 @@ function cloudAddThisDevice(){
   });
 }
 /* ---------- encrypted event exchange ---------- */
+/* LARGE EVENTS GO IN PARTS. A record that enters the log from outside it (a restored backup, the demo, a record from a
+   build before the log, every compaction) is one snapshot event holding the whole record, about 290 KB for ten weeks.
+   The server refuses an event over 256 KB, so the batch holding it failed on every sync and cloud sync never recovered.
+   An event larger than CLOUD_PART_BYTES once encoded is now sent as numbered parts. Each part is sealed with its own
+   row id as AES-GCM additional data, so a server cannot move a part to another position or another event without the
+   decryption failing, and an event is put back together only when every part has arrived and decrypted. */
+var CLOUD_PART_BYTES=150000,CLOUD_BATCH_BYTES=1200000,CLOUD_PART_RE=/^(.+)#part-(\d+)-of-(\d+)$/,CLOUD_PART_WAIT_DAYS=7;
+function _encryptRow(id,bytes,device,sealed){
+  var alg={name:'AES-GCM',iv:crypto.getRandomValues(new Uint8Array(12))};if(sealed)alg.additionalData=new TextEncoder().encode(id);
+  return crypto.subtle.encrypt(alg,_vaultKey,bytes).then(function(ct){return {id:id,iv:_b64(alg.iv),ciphertext:_b64(ct),device:device};});
+}
+/* One event becomes one row, or several when it is large. */
 function _encryptEvent(e){
-  var iv=crypto.getRandomValues(new Uint8Array(12));
-  return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},_vaultKey,new TextEncoder().encode(JSON.stringify(e)))
-    .then(function(ct){return {id:e.id,iv:_b64(iv),ciphertext:_b64(ct),device:e.device};});
+  var bytes=new TextEncoder().encode(JSON.stringify(e));
+  if(bytes.length<=CLOUD_PART_BYTES)return _encryptRow(e.id,bytes,e.device,false).then(function(r){return [r];});
+  var n=Math.ceil(bytes.length/CLOUD_PART_BYTES),parts=[];
+  for(var i=0;i<n;i++)parts.push(_encryptRow(e.id+'#part-'+(i+1)+'-of-'+n,bytes.subarray(i*CLOUD_PART_BYTES,(i+1)*CLOUD_PART_BYTES),e.device,true));
+  return Promise.all(parts);
+}
+function _decryptRow(row){
+  var alg={name:'AES-GCM',iv:_unb64(row.iv)};if(CLOUD_PART_RE.test(row.id||''))alg.additionalData=new TextEncoder().encode(row.id);
+  return crypto.subtle.decrypt(alg,_vaultKey,_unb64(row.ciphertext)).then(function(pt){return new Uint8Array(pt);})
+    .catch(function(){return null;});   // wrong key, damaged or moved row: skip it rather than corrupt the log
 }
 function _decryptEvent(row){
-  return crypto.subtle.decrypt({name:'AES-GCM',iv:_unb64(row.iv)},_vaultKey,_unb64(row.ciphertext))
-    .then(function(pt){return JSON.parse(new TextDecoder().decode(pt));})
-    .catch(function(){return null;});   // wrong key or damaged row: skip it rather than corrupt the log
+  return _decryptRow(row).then(function(b){if(!b)return null;try{return JSON.parse(new TextDecoder().decode(b));}catch(e){return null;}});
+}
+/* Rows back to events. A large event whose parts have not all arrived (or did not decrypt) is held: waitFrom is the
+   earliest server position among its parts, and the pull position stays before it so the next sync reads them again.
+   After CLOUD_PART_WAIT_DAYS an incomplete event is given up rather than holding every later sync back for ever.
+   onServer lists the events the server is known to hold whole, so they are not uploaded again. */
+function _assembleRows(rows){
+  var whole=[],groups={},onServer=[];
+  return Promise.all(rows.map(function(r){
+    var m=CLOUD_PART_RE.exec(r.id||'');
+    if(!m){if(r.id)onServer.push(r.id);return _decryptEvent(r).then(function(e){if(e)whole.push(e);});}
+    var g=groups[m[1]]=groups[m[1]]||{n:+m[3],parts:{},seq:Infinity,at:null};
+    g.seq=Math.min(g.seq,r.serverSeq||0);if(r.receivedAt&&(!g.at||r.receivedAt<g.at))g.at=r.receivedAt;
+    return _decryptRow(r).then(function(b){if(b)g.parts[m[2]]=b;});
+  })).then(function(){
+    var waitFrom=null;
+    Object.keys(groups).forEach(function(id){var g=groups[id],i;
+      for(i=1;i<=g.n;i++)if(!g.parts[i])break;
+      if(i<=g.n){if(!g.at||(Date.now()-Date.parse(g.at))/864e5<CLOUD_PART_WAIT_DAYS)waitFrom=waitFrom==null?g.seq:Math.min(waitFrom,g.seq);return;}
+      var len=0;for(i=1;i<=g.n;i++)len+=g.parts[i].length;
+      var all=new Uint8Array(len),off=0;for(i=1;i<=g.n;i++){all.set(g.parts[i],off);off+=g.parts[i].length;}
+      try{var e=JSON.parse(new TextDecoder().decode(all));if(e&&e.id===id){whole.push(e);onServer.push(id);}}catch(err){}});
+    return {events:whole,waitFrom:waitFrom,onServer:onServer};
+  });
 }
 /* SYNC, hardened after use on a free host (Render). Three defects made syncing "abnormal": a wiped server was never
    noticed \u2014 the app kept its pull position and its list of events already sent, so it neither re-sent nor re-pulled;
@@ -224,22 +264,34 @@ function cloudSync(opts){
     return page;
   }).then(function(page){
     DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{serverEpoch:page.epoch||stored.serverEpoch||null});
-    /* A pulled row is on the server already. Not counting it as sent uploaded every event received from another device
-       straight back, so each device stored its own copy of everyone else's history. */
-    page.events.forEach(function(r){if(r&&r.id)pushed[r.id]=1;});
     if(!page.events.length)return {maxSeq:reset?0:(c.lastPullSeq||0),events:[],serverSeq:page.serverSeq};
-    return Promise.all(page.events.map(_decryptEvent)).then(function(list){
-      var good=list.filter(Boolean);received=good.length;
+    return _assembleRows(page.events).then(function(asm){
+      /* A pulled event is on the server already. Not counting it as sent uploaded every event received from another
+         device straight back, so each device stored its own copy of everyone else's history. */
+      asm.onServer.forEach(function(id){pushed[id]=1;});
+      var good=asm.events;received=good.length;
       var maxSeq=page.events.reduce(function(a,r){return Math.max(a,r.serverSeq||0);},reset?0:(c.lastPullSeq||0));
+      if(asm.waitFrom!=null)maxSeq=Math.min(maxSeq,asm.waitFrom-1);   /* read the waiting parts again next time */
       if(good.length){var merged=mergeEvents(_EVENTS,good);conflicts=merged.conflicts.length;
         if(merged.events.length>_EVENTS.length){pushUndo('merge '+(merged.events.length-_EVENTS.length)+' change(s) from the cloud');adoptMergedEvents(merged);}
         (merged.conflicts||[]).forEach(function(x){_syncState.conflicts.push(x);});}
       return {maxSeq:maxSeq,events:good};});
   }).then(function(pull){
     var toSend=_EVENTS.filter(function(e){return !pushed[e.id];});
+    /* Requests are bounded by size as well as count (the server takes a 2 MB body; one part is about 200 KB), and an
+       event counts as sent once the request carrying its last part is accepted. */
     var sendBatch=function(k){var chunk=toSend.slice(k,k+CLOUD_PUSH_BATCH);if(!chunk.length)return Promise.resolve();
-      return Promise.all(chunk.map(_encryptEvent)).then(function(rows){return _api('/v1/events',{method:'POST',body:{events:rows}}).then(function(r){
-        sent+=(r.accepted!=null?r.accepted:rows.length);rows.forEach(function(row){pushed[row.id]=1;});return sendBatch(k+CLOUD_PUSH_BATCH);});});};
+      return Promise.all(chunk.map(_encryptEvent)).then(function(perEvent){
+        var reqs=[],cur=[],size=0;
+        perEvent.forEach(function(rows,i){rows.forEach(function(row,j){var b=row.ciphertext.length+row.iv.length+row.id.length+80;
+          if(cur.length&&(size+b>CLOUD_BATCH_BYTES||cur.length>=CLOUD_PUSH_BATCH)){reqs.push(cur);cur=[];size=0;}
+          cur.push({row:row,done:j===rows.length-1?chunk[i].id:null});size+=b;});});
+        if(cur.length)reqs.push(cur);
+        var post=function(q){if(q>=reqs.length)return Promise.resolve();
+          return _api('/v1/events',{method:'POST',body:{events:reqs[q].map(function(x){return x.row;})}}).then(function(r){
+            sent+=(r.accepted!=null?r.accepted:reqs[q].length);reqs[q].forEach(function(x){if(x.done)pushed[x.done]=1;});return post(q+1);});};
+        return post(0);
+      }).then(function(){return sendBatch(k+CLOUD_PUSH_BATCH);});};
     return sendBatch(0).then(function(){return {pull:pull,sent:sent};});
   }).then(function(res){
     clearTimeout(waking);

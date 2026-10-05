@@ -770,6 +770,93 @@ function runSelfTest(opts){
       ok('migration repairs every persisted collection to a list',mg.ok&&PERSIST_COLLECTIONS.every(function(k){return Array.isArray(mg.db[k]);}));
       DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    /* EVENTS ARE IMMUTABLE, AND EVERY EDIT HAS ONE. Events used to share their data with the live record, so an edit with
+       no event of its own looked recorded until a restart rebuilt the record from the log and dropped it. Each edit
+       below is checked against a projection of the log rather than against the live record. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
+      var T=todayISO();
+      DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;resetEventLog('immutable events');_memoInvalidate();
+      var proj=function(k,id){return (projectEvents(_EVENTS).db[k]||[]).filter(function(x){return x.id===id;})[0]||{};};
+      var o=addObservation({type:'weight',date:T,value:200,source:'manual'},{silent:true,noSave:true});
+      var ev=_EVENTS[_EVENTS.length-1];o.value=999;o.note='edited in place';
+      ok('an event keeps the data it was recorded with when the live record changes later',ev.data.value===200&&ev.data.note!=='edited in place');
+      /* an experiment records its intervention's id, and scoring it closes the intervention in a replay too */
+      var x=createExperiment({question:'q',variable:'steps',baselineValue:8000,interventionValue:10000,startDate:addDays(T,-20),durationDays:14,silent:true,noSave:true});
+      ok('an experiment’s link to its intervention is in the log',!!x.interventionId&&proj('experiments',x.id).interventionId===x.interventionId);
+      evaluateExperiment(x.id);
+      var iv=proj('interventions',x.interventionId);
+      ok('scoring an experiment closes its intervention in a replay, not only in the live record',iv.status==='evaluated'&&iv.outcome===x.conclusion,JSON.stringify({status:iv.status,outcome:iv.outcome,conclusion:x.conclusion}));
+      /* applying a decision */
+      var d=recordDecision({code:'HOLD',confidence:'medium',verb:'Hold',lede:'',why:[],action:[]});
+      d.status='applied';d.experimentId=x.id;emitEvent('decision.applied',{id:d.id,experimentId:x.id});
+      ok('an applied decision is applied in a replay',proj('decisions',d.id).status==='applied'&&proj('decisions',d.id).experimentId===x.id);
+      /* a prediction that expires unscored */
+      var p={id:uid('pred'),model:'weight_forecast',subject:'weight',madeAt:addDays(T,-40)+'T08:00:00.000Z',dueDate:addDays(T,-20),horizon:14,point:200,lo:198,hi:202,status:'pending'};
+      DB.predictions.push(p);emitEvent('prediction.stamped',p,{at:p.madeAt});scorePredictions();
+      ok('a prediction that expires is expired in a replay',p.status==='expired'&&proj('predictions',p.id).status==='expired',p.status+' / '+proj('predictions',p.id).status);
+      /* a day's last food log removed */
+      var fl=logFood({food:seedFoods()[0],grams:100,date:T,silent:true,noSave:true});
+      removeFoodLog(fl.id);
+      var liveKcal=DB.observations.filter(function(q){return q.source==='food-log'&&q.date===T&&!q.retracted;}).length;
+      var projKcal=(projectEvents(_EVENTS).db.observations||[]).filter(function(q){return q.source==='food-log'&&q.date===T&&!q.retracted;}).length;
+      ok('removing a day’s last food log retracts its totals in a replay too',liveKcal===0&&projKcal===0,'live '+liveKcal+', replay '+projKcal);
+      /* rating a session: only the rating fields can be set by the event */
+      var s=addSession({name:'S',date:T,sets:[{exercise:'Back squat',load:200,reps:5,rir:2}],silent:true,noSave:true});
+      emitEvent('session.rated',{id:s.id,field:'effort',value:7});emitEvent('session.rated',{id:s.id,field:'date',value:'1999-01-01'});
+      var ps=proj('sessions',s.id);
+      ok('a session rating replays, and a rating event cannot set any other field',ps.effort===7&&ps.date===T,JSON.stringify({effort:ps.effort,date:ps.date}));
+      /* a phase edit's history and update time are the event's, so the replay matches the record exactly */
+      var ph=startPhase({type:'cut',startDate:addDays(T,-30),calorieTarget:2400});updatePhase(ph.id,{calorieTarget:2200},{noUndo:true,noSave:true});
+      var pp=proj('phases',ph.id);
+      ok('a phase edit replays with the same history and update time as the record',JSON.stringify(pp.history)===JSON.stringify(ph.history)&&pp.updatedAt===ph.updatedAt);
+      _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
+    })();
+    /* COVERED, NOT EARLIER: a snapshot that reaches another device. The second device already holds the events the
+       snapshot contains (they synced before the restore) plus one the restoring device never saw. Ordered by sequence
+       number, the contained events were folded again after the snapshot and every record they added appeared twice. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ;
+      var T=todayISO(),at=function(d){return d+'T08:00:00.000Z';};
+      var obsEv=function(type,date,value,device){var o=makeObservation({type:type,date:date,value:value,source:'manual'});
+        return {id:uid('ev'),seq:1,type:'observation.added',at:at(date),device:device,schema:EVENT_SCHEMA,data:o};};
+      DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;_memoInvalidate();
+      var a1=obsEv('weight',addDays(T,-3),201,'dev-a'),a2=obsEv('weight',addDays(T,-2),200,'dev-a'),b1=obsEv('waist',addDays(T,-4),38,'dev-b');
+      [a1,a2].forEach(function(e){_EVENTS.push(e);DB.observations.push(JSON.parse(JSON.stringify(e.data)));});
+      resetEventLog('record restored from a backup');var snap=_EVENTS[0];
+      var late=obsEv('weight',addDays(T,-5),205,deviceId());late.seq=++_EVENT_SEQ;_EVENTS.push(late);DB.observations.push(JSON.parse(JSON.stringify(late.data)));
+      ok('a restore snapshot lists the events it already contains',Array.isArray(snap.data.covers)&&snap.data.covers.indexOf(a1.id)>=0&&snap.data.covers.indexOf(a2.id)>=0);
+      var onB=projectEvents([a1,a2,b1,snap,late]).db.observations,ids=onB.map(function(o){return o.id;});
+      ok('a device that already held the snapshot’s events does not fold them a second time',ids.filter(function(x,i){return ids.indexOf(x)!==i;}).length===0,ids.length+' records');
+      ok('a fact the restoring device had not seen survives its snapshot on the device that recorded it',ids.indexOf(b1.data.id)>=0);
+      ok('an entry backdated after the snapshot survives it',ids.indexOf(late.data.id)>=0&&projectionMatchesRecord().ok);
+      /* a log from before covers projects as it did: the barrier keeps the backdated entry */
+      var legacy=JSON.parse(JSON.stringify(snap));delete legacy.data.covers;
+      var onOld=projectEvents([legacy,late]).db.observations.map(function(o){return o.id;});
+      ok('a snapshot without covers (an older build) still keeps a backdated entry made after it',onOld.indexOf(late.data.id)>=0);
+      DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
+    })();
+    /* UNDO SURVIVES A RESTART. Undo put an earlier record back but left the undone events in the log, so the next start
+       rebuilt the record with the change in it again. Each check below rebuilds the record from its log, as a start does. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedStack=_undoStack.slice();
+      var T=todayISO(),restart=function(){var stored=_EVENTS.slice();_EVENTS.length=0;adoptMergedEvents(mergeEvents([],stored));};
+      var has=function(id){return DB.observations.some(function(o){return o.id===id;});};
+      DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;clearUndo();resetEventLog('undo test');_memoInvalidate();
+      var keep=addObservation({type:'weight',date:addDays(T,-1),value:211,source:'manual'},{noSave:true});
+      var o=addObservation({type:'weight',date:T,value:210,source:'manual'},{noSave:true});
+      undo();restart();
+      ok('an undone entry stays undone after the record is rebuilt from its log',!has(o.id)&&has(keep.id)&&projectionMatchesRecord().ok);
+      var a=addObservation({type:'waist',date:T,value:38,source:'manual'},{noSave:true});
+      var b=addObservation({type:'waist',date:T,value:37.5,source:'manual'},{noSave:true});
+      undo();undo();restart();
+      ok('undoing twice removes both entries, and the first undo does not bring anything back',!has(a.id)&&!has(b.id)&&!has(o.id)&&has(keep.id));
+      var c=addObservation({type:'steps',date:T,value:9000,source:'manual'},{noSave:true});
+      resetEventLog('record restored from a backup');
+      undo();restart();
+      ok('an undo across a restart of the log restarts the log from the record it put back',!has(c.id)&&has(keep.id)&&projectionMatchesRecord().ok);
+      DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();
+    })();
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
@@ -2548,6 +2635,17 @@ function runSelfTest(opts){
         fd.status!=='none'||/around whatever mediator|no mediator/.test(fd.note));
       ok('a front-door mediator must itself be unconfounded with the outcome',
         /mediator-to-outcome step unconfounded/.test(fd.caveat||'')||fd.status==='none');
+      /* the linear front door on data with a known effect: a hidden confounder drives both the treatment and the outcome,
+         the treatment moves the mediator by 2 and the mediator moves the outcome by 0.5, so the effect is 1.0 */
+      (function(){var r=_rng(41),g=function(){return Math.sqrt(-2*Math.log(r()||1e-9))*Math.cos(2*Math.PI*r());},rows=[];
+        for(var i=0;i<600;i++){var u=g(),t=u+g(),m2=2*t+g(),y=0.5*m2+1.5*u+g();rows.push({T:t,M:m2,Y:y});}
+        var lf=linearFrontDoor(rows);
+        var mm=mean(rows.map(function(x){return x.M;})),my=mean(rows.map(function(x){return x.Y;}));
+        var bMarginal=mean(rows.map(function(x){return (x.M-mm)*(x.Y-my);}))/mean(rows.map(function(x){return Math.pow(x.M-mm,2);}));
+        ok('the linear front door recovers a known effect through a confounded treatment',lf&&Math.abs(lf.estimate-1)<0.15&&lf.lo<1&&lf.hi>1,
+          lf?(round(lf.estimate,3)+' ['+round(lf.lo,3)+', '+round(lf.hi,3)+']'):'none');
+        ok('taking the mediator\u2192outcome leg without the treatment would have been biased by that confounding',lf&&Math.abs(lf.a*bMarginal-1)>0.4,
+          lf?String(round(lf.a*bMarginal,3)):'none');})();
       /* instrumental variables */
       var iv=instrumentalEstimate('dayOfWeek','steps','weight');
       ok('instrument strength is reported as a first-stage F against the conventional minimum',

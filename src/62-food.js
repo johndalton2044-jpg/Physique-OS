@@ -237,9 +237,11 @@ var FOODLOG_OBS={kcal:'calories',protein:'protein',carbs:'carbs',fat:'fat',fiber
 var FOODLOG_TYPES={calories:1,protein:1,carbs:1,fat:1,fiber:1}; // declared BEFORE the aggregation override below is installed
 function syncNutritionObservations(date){
   var day=dayNutrition(date);
-  DB.observations.forEach(function(o){if(o.source==='food-log'&&o.date===date&&!o.retracted){o.retracted=true;o.retractedAt=nowISO();o.retractReason='superseded by recalculation';}});
+  var cleared=0;
+  DB.observations.forEach(function(o){if(o.source==='food-log'&&o.date===date&&!o.retracted){o.retracted=true;o.retractedAt=nowISO();o.retractReason='superseded by recalculation';cleared++;}});
   _memoInvalidate();
-  if(!day.items)return;
+  /* the day's last food log removed: the retraction is still an event (an empty derivation), or the log keeps the totals */
+  if(!day.items){if(cleared)emitEvent('nutrition.derived',{date:date,records:[]});return;}
   var derived=[];
   Object.keys(FOODLOG_OBS).forEach(function(k){var v=day.totals[k];if(v==null)return;var rec=makeObservation({type:FOODLOG_OBS[k],date:date,value:round(v,0),source:'food-log',quality:'derived',note:day.items+' logged items',meta:{items:day.items}});DB.observations.push(rec);derived.push(rec);});
   emitEvent('nutrition.derived',{date:date,records:derived});
