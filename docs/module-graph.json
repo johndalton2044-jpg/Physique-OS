@@ -4339,6 +4339,7 @@
    "24-events.js": [
     "eventArchiveState",
     "compactEvents",
+    "deviceId",
     "emitEvent",
     "resetEventLog",
     "eventStats",
