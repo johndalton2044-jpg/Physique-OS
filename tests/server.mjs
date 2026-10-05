@@ -44,6 +44,8 @@ const v2=S.readVault(id);let seq=v2.serverSeq;const big=Array.from({length:1200}
 const v3=S.readVault(id);const p1=S.readEvents(v3,0,500),p2=S.readEvents(v3,1000,500);
 line(p1.rows.length===500&&p1.more===true,'a page stops at its limit and says there is more',JSON.stringify({n:p1.rows.length,more:p1.more}));
 line(p2.rows.length===204&&p2.rows[0].serverSeq===1001&&p2.more===false,'reading from the middle starts where it should and ends cleanly',JSON.stringify({n:p2.rows.length,first:p2.rows[0]&&p2.rows[0].serverSeq,more:p2.more}));
+const p3=S.readEvents(v3,0,500,300);
+line(p3.rows.length>=1&&p3.rows.length<10&&p3.more===true,'a page also stops at its byte budget, so large parts cannot make one reply enormous',JSON.stringify({n:p3.rows.length,more:p3.more}));
 line(Object.keys(v3.offsets||{}).length>=2&&v3.eventCount===1204,'the vault keeps an offset index and a count, so reads need not scan the file',JSON.stringify({offsets:Object.keys(v3.offsets||{}),count:v3.eventCount}));
 /* 7. the proxy boundary: a per-socket ceiling that a forged forwarded address cannot escape */
 let n=0;for(let i=0;i<30;i++)if(S.rateOk('sock:test',25))n++;line(n===25,'the socket limit holds whatever addresses are forwarded through it');

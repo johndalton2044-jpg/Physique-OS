@@ -812,6 +812,30 @@ function runSelfTest(opts){
       ok('a phase edit replays with the same history and update time as the record',JSON.stringify(pp.history)===JSON.stringify(ph.history)&&pp.updatedAt===ph.updatedAt);
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    /* COVERED, NOT EARLIER: a snapshot that reaches another device. The second device already holds the events the
+       snapshot contains (they synced before the restore) plus one the restoring device never saw. Ordered by sequence
+       number, the contained events were folded again after the snapshot and every record they added appeared twice. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ;
+      var T=todayISO(),at=function(d){return d+'T08:00:00.000Z';};
+      var obsEv=function(type,date,value,device){var o=makeObservation({type:type,date:date,value:value,source:'manual'});
+        return {id:uid('ev'),seq:1,type:'observation.added',at:at(date),device:device,schema:EVENT_SCHEMA,data:o};};
+      DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;_memoInvalidate();
+      var a1=obsEv('weight',addDays(T,-3),201,'dev-a'),a2=obsEv('weight',addDays(T,-2),200,'dev-a'),b1=obsEv('waist',addDays(T,-4),38,'dev-b');
+      [a1,a2].forEach(function(e){_EVENTS.push(e);DB.observations.push(JSON.parse(JSON.stringify(e.data)));});
+      resetEventLog('record restored from a backup');var snap=_EVENTS[0];
+      var late=obsEv('weight',addDays(T,-5),205,deviceId());late.seq=++_EVENT_SEQ;_EVENTS.push(late);DB.observations.push(JSON.parse(JSON.stringify(late.data)));
+      ok('a restore snapshot lists the events it already contains',Array.isArray(snap.data.covers)&&snap.data.covers.indexOf(a1.id)>=0&&snap.data.covers.indexOf(a2.id)>=0);
+      var onB=projectEvents([a1,a2,b1,snap,late]).db.observations,ids=onB.map(function(o){return o.id;});
+      ok('a device that already held the snapshot’s events does not fold them a second time',ids.filter(function(x,i){return ids.indexOf(x)!==i;}).length===0,ids.length+' records');
+      ok('a fact the restoring device had not seen survives its snapshot on the device that recorded it',ids.indexOf(b1.data.id)>=0);
+      ok('an entry backdated after the snapshot survives it',ids.indexOf(late.data.id)>=0&&projectionMatchesRecord().ok);
+      /* a log from before covers projects as it did: the barrier keeps the backdated entry */
+      var legacy=JSON.parse(JSON.stringify(snap));delete legacy.data.covers;
+      var onOld=projectEvents([legacy,late]).db.observations.map(function(o){return o.id;});
+      ok('a snapshot without covers (an older build) still keeps a backdated entry made after it',onOld.indexOf(late.data.id)>=0);
+      DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
+    })();
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;

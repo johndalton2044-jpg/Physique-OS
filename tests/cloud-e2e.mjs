@@ -91,6 +91,24 @@ const ledgerIds=()=>fs.readFileSync(DATA+'/vaults/'+created.vaultId+'/events.ndj
   expect('a device that lost its sent list re-sends without adding rows',resent.sent===0&&ledgerIds().length===rowsBefore,
     JSON.stringify({sent:resent.sent,rows:ledgerIds().length,before:rowsBefore}));}
 
+console.log('--- a large record (a restored backup, the demo, a compaction) syncs in parts ---');
+/* The restore restarts the log from one snapshot event holding the whole record, larger than the server takes for one
+   event, so before parts it failed every sync. A server that moves a part cannot make it decrypt in its new place. */
+{const gen=A.FIXTURES.successful_cut();A.mergeRecordCollections(gen);A.resetEventLog('record restored from a backup');
+  const snapBytes=JSON.stringify(A._EVENTS.filter(e=>e.type==='record.snapshot')[0]).length;
+  const up=await A.cloudSync().catch(e=>({err:String(e.message||e)}));
+  const parts=fs.readFileSync(DATA+'/vaults/'+created.vaultId+'/events.ndjson','utf8').trim().split('\n').map(l=>JSON.parse(l)).filter(r=>/#part-\d+-of-\d+$/.test(r.id));
+  expect('a record larger than one event allows is sent without error, in parts',!up.err&&parts.length>1,JSON.stringify({err:up.err,parts:parts.length,snapshotBytes:snapBytes}));
+  const file=DATA+'/vaults/'+created.vaultId+'/events.ndjson',original=fs.readFileSync(file,'utf8');
+  const swapped=original.replace(parts[0].id,'@@SWAP@@').replace(parts[1].id,parts[0].id).replace('@@SWAP@@',parts[1].id);
+  fs.writeFileSync(file,swapped);
+  const before=B.obsOf('weight').length;await B.cloudSync();
+  expect('parts a server has moved do not decrypt, so the event is held instead of corrupting the record',B.obsOf('weight').length===before,B.obsOf('weight').length+' vs '+before);
+  fs.writeFileSync(file,original);await B.cloudSync();
+  expect('the held event arrives whole at the next sync once its parts are in place',
+    B.DB.observations.length===A.DB.observations.length&&B.obsOf('weight').length===A.obsOf('weight').length,
+    JSON.stringify({b:B.DB.observations.length,a:A.DB.observations.length}));}
+
 console.log('--- the server loses its data (a free host restarting with an empty disk) ---');
 {const before=A._EVENTS.length;srv.kill();await new Promise(r=>setTimeout(r,500));fs.rmSync(DATA,{recursive:true,force:true});
   const srv2=spawn(process.execPath,['server/server.mjs','--port','8791','--data',DATA],{stdio:['ignore','pipe','pipe']});srv2.stdout.on('data',d=>{serverLog+=d;});

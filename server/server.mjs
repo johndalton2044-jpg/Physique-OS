@@ -101,6 +101,7 @@ function writeVault(v){
    ledger whenever the file is not the one the index last saw (a restore, a crash recovery, another process). The index
    is bounded by ids held, not by vaults, since one vault may hold MAX_EVENTS_PER_VAULT of them: the least recently used
    vaults are dropped first, never the one in use, and a dropped vault is simply read from its ledger again. */
+const PULL_PAGE_BYTES=8*1024*1024;
 const _ledgerIndex=new Map(),LEDGER_INDEX_IDS=+(process.env.LEDGER_INDEX_IDS||500000),MAX_EVENT_ID=200;
 function _ledgerStamp(p){try{const st=fs.statSync(p);return st.size+':'+st.mtimeMs+':'+st.ino;}catch(e){return null;}}
 function ledgerIds(v){
@@ -133,14 +134,15 @@ function countEventsSlow(id){const p=eventsPath(id);if(!fs.existsSync(p))return 
   for(const line of fs.readFileSync(p,'utf8').split('\n')){if(!line)continue;try{JSON.parse(line);n++;}catch(e){}}return n;}
 function rebuildOffsets(id){const p=eventsPath(id),out={};if(!fs.existsSync(p))return out;let off=0;
   for(const line of fs.readFileSync(p,'utf8').split('\n')){const len=Buffer.byteLength(line)+1;if(line){try{const r=JSON.parse(line);if(r.serverSeq%IDX_EVERY===1)out[r.serverSeq]=off;}catch(e){}}off+=len;}return out;}
-/* Bounded read: seek to the nearest indexed event at or before since+1, read forward in chunks, stop at the limit. */
-function readEvents(v,since,limit){
+/* Bounded read: seek to the nearest indexed event at or before since+1, read forward in chunks, stop at the limit, or
+   once a page holds maxBytes of rows (large events arrive in parts of about 200 KB, so a count alone does not bound it). */
+function readEvents(v,since,limit,maxBytes){maxBytes=maxBytes||Infinity;let bytes=0;
   const p=eventsPath(v.id);if(!fs.existsSync(p))return {rows:[],more:false};
   let start=0;const keys=Object.keys(v.offsets||{}).map(Number).filter(k=>k<=since+1).sort((a,b)=>b-a);if(keys.length)start=v.offsets[keys[0]];
   const fd=fs.openSync(p,'r'),size=fs.statSync(p).size,out=[];let pos=start,rest='',more=false;
   try{while(pos<size){const n=Math.min(1<<20,size-pos),buf=Buffer.alloc(n);fs.readSync(fd,buf,0,n,pos);pos+=n;
       const lines=(rest+buf.toString('utf8')).split('\n');rest=lines.pop();
-      for(const l of lines){if(!l)continue;let r;try{r=JSON.parse(l);}catch(e){continue;}if(r.serverSeq<=since)continue;if(out.length>=limit){more=true;break;}out.push(r);}
+      for(const l of lines){if(!l)continue;let r;try{r=JSON.parse(l);}catch(e){continue;}if(r.serverSeq<=since)continue;if(out.length>=limit||(out.length&&bytes+l.length>maxBytes)){more=true;break;}out.push(r);bytes+=l.length;}
       if(more)break;}
     if(!more&&rest){try{const r=JSON.parse(rest);if(r.serverSeq>since){if(out.length>=limit)more=true;else out.push(r);}}catch(e){}}}
   finally{fs.closeSync(fd);}
@@ -659,7 +661,7 @@ const routes={
     if(!v)return {code:404,body:{error:'no such vault'}};
     const since=+(url.searchParams.get('since')||0);
     const limit=Math.max(1,Math.min(5000,+(url.searchParams.get('limit')||2000)));
-    const page=readEvents(v,since,limit);
+    const page=readEvents(v,since,limit,PULL_PAGE_BYTES);
     return {code:200,body:{events:page.rows,serverSeq:v.serverSeq,epoch:DATA_EPOCH,more:page.more,
       note:'ciphertext only; this server cannot read these'}};
   },

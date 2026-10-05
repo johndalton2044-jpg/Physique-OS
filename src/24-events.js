@@ -65,7 +65,7 @@ function compactEvents(force){
   var snapshotEvent={id:uid('ev'),seq:boundary.seq,type:'record.snapshot',at:boundary.at,device:boundary.device,
     schema:EVENT_SCHEMA,compaction:true,
     data:{reason:'compaction of '+older.length+' earlier events',at:boundary.at,
-      firstArchived:older[0].at,lastArchived:boundary.at,archivedCount:older.length,record:snap}};
+      firstArchived:older[0].at,lastArchived:boundary.at,archivedCount:older.length,record:snap,covers:_coverIds(older)}};
   /* Archive the originals before dropping them from memory. If the archive write fails, keep them: losing
      history to save memory is the wrong trade in every case. */
   var shardKey='archive:'+String(boundary.at).slice(0,7)+':'+boundary.seq;
@@ -274,11 +274,14 @@ function emitEvent(type,data,opts){
 }
 /* Restart the log from the current document. Used wherever a record arrives from outside the log. */
 function resetEventLog(reason){
+  /* what the old log held is part of the record now (or, after a replace, deliberately not): either way another device
+     still holding those events must not fold them again on top of this snapshot */
+  var covers=_coverIds(_EVENTS);
   _EVENTS.length=0;_EVENT_SEQ=0;_eventsDirty={};
   var snap=recordSnapshot(DB);
   emitEvent('record.snapshot',{reason:reason||'record adopted from outside the event log',
     at:nowISO(),counts:{observations:(DB.observations||[]).length,foodLogs:(DB.foodLogs||[]).length,
-    sessions:(DB.sessions||[]).length},record:snap});
+    sessions:(DB.sessions||[]).length},record:snap,covers:covers});
   return {ok:true,reason:reason||null,events:_EVENTS.length};
 }
 function eventLog(opts){
@@ -345,8 +348,19 @@ function projectEvents(events,opts){
 
      Snapshots act as barriers instead. An event emitted AFTER a snapshot (higher sequence) is folded after
      it whatever its own timestamp says, by lifting its effective sort key to the barrier. Timestamp order is
-     preserved everywhere else, so cross-device merge is unaffected. */
-  var raw=(events||_EVENTS).slice().sort(function(a,b){return (a.seq||0)-(b.seq||0);});
+     preserved everywhere else, so cross-device merge is unaffected.
+
+     COVERED, NOT EARLIER. The barrier ordered events by sequence number, and a sequence number is one device's count:
+     a restore restarts it, and another device's numbers are unrelated. So on a second device the events a restored
+     snapshot already contained came out "after" it and were folded again, duplicating every record they added. A
+     snapshot now lists the events folded into it (covers, through earlier snapshots too), and a projection is the
+     latest snapshot followed by every event it does not cover, in time order: nothing it contains is applied twice,
+     an entry backdated after it still survives, and a fact the snapshotting device had not yet seen survives as well.
+     A log written before snapshots carried covers projects exactly as it did. */
+  var all=events||_EVENTS,snaps=all.filter(function(e){return e.type==='record.snapshot';}).sort(_eventOrder);
+  var lastSnap=snaps[snaps.length-1];
+  if(lastSnap&&lastSnap.data&&Array.isArray(lastSnap.data.covers))return _foldEvents(db,_coveredOrder(all,lastSnap),opts);
+  var raw=all.slice().sort(function(a,b){return (a.seq||0)-(b.seq||0);});
   var barrier=null;
   raw.forEach(function(e){
     e.__sortAt=(barrier&&String(e.at)<barrier)?barrier:e.at;
@@ -358,6 +372,23 @@ function projectEvents(events,opts){
     if(a.device!==b.device)return a.device<b.device?-1:1;   // deterministic tie-break across devices
     return (a.seq||0)-(b.seq||0);
   });
+  return _foldEvents(db,list,opts);
+}
+function _eventOrder(a,b){if(a.at!==b.at)return String(a.at)<String(b.at)?-1:1;if(a.device!==b.device)return a.device<b.device?-1:1;return (a.seq||0)-(b.seq||0);}
+/* The latest snapshot, then everything it does not cover. An earlier snapshot it does not cover came from another
+   device's independent restore; as before, the latest snapshot stands in its place. */
+function _coveredOrder(all,last){
+  var covered={};last.data.covers.forEach(function(id){covered[id]=1;});
+  return [last].concat(all.filter(function(e){return e!==last&&e.type!=='record.snapshot'&&!covered[e.id];}).sort(_eventOrder));
+}
+/* The ids a snapshot taken from these events contains: the events themselves and, through any snapshot among them,
+   everything that snapshot contained. */
+function _coverIds(events){
+  var seen={},out=[];var add=function(id){if(id&&!seen[id]){seen[id]=1;out.push(id);}};
+  (events||[]).forEach(function(e){if(!e)return;add(e.id);if(e.type==='record.snapshot'&&e.data&&Array.isArray(e.data.covers))e.data.covers.forEach(add);});
+  return out;
+}
+function _foldEvents(db,list,opts){
   var applied=0,skipped=0;
   for(var i=0;i<list.length;i++){
     var e=list[i];
