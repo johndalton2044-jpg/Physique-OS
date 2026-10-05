@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-01T02:24:45.737Z",
-  "buildId": "058f0ade05",
-  "nodes": 93,
-  "edges": 246,
-  "contractDerived": 81,
+  "generatedAt": "2026-10-05T16:24:54.133Z",
+  "buildId": "de9d967236",
+  "nodes": 95,
+  "edges": 254,
+  "contractDerived": 83,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -161,6 +161,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "fatigue",
+      "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "readiness",
       "targetId": "unifiedRecovery",
       "dependencyType": "model"
@@ -237,6 +242,11 @@
     },
     {
       "sourceId": "weight",
+      "targetId": "learning_loop",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
       "targetId": "model_competition",
       "dependencyType": "data"
     },
@@ -268,6 +278,11 @@
     {
       "sourceId": "weight",
       "targetId": "physique_regions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "unified_optimiser",
       "dependencyType": "data"
     },
     {
@@ -487,6 +502,11 @@
     },
     {
       "sourceId": "calories",
+      "targetId": "learning_loop",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
       "targetId": "intervention_response",
       "dependencyType": "data"
     },
@@ -513,6 +533,11 @@
     {
       "sourceId": "calories",
       "targetId": "micronutrient_coverage",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "unified_optimiser",
       "dependencyType": "data"
     },
     {
@@ -936,6 +961,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "steps",
+      "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "coverage",
       "targetId": "data_trust",
       "dependencyType": "model"
@@ -1121,6 +1151,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "learning_loop",
+      "targetId": "loopCard",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "model_competition",
       "targetId": "competitionForecast",
       "dependencyType": "model"
@@ -1233,6 +1268,11 @@
     {
       "sourceId": "physique_regions",
       "targetId": "physiqueCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "unified_optimiser",
+      "targetId": "optimiserCard",
       "dependencyType": "model"
     }
   ],

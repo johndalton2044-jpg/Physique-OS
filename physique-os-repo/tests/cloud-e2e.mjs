@@ -81,6 +81,16 @@ console.log('A has waist+sleep:',A.obsOf('waist').length===1&&A.obsOf('sleep').l
 console.log('B has waist+sleep:',B.obsOf('waist').length===1&&B.obsOf('sleep').length===1);
 console.log('A projection valid:',A.projectionMatchesRecord().ok,'| B projection valid:',B.projectionMatchesRecord().ok);
 
+console.log('--- each event is stored once, however often it is sent ---');
+/* These two fail the gate when false (the lines above only print). Before event ids were idempotent, B uploaded A's
+   events straight back after pulling them, and a device that lost its list of sent ids stored its history again. */
+let failures=0;const expect=(label,cond,detail)=>{console.log(label+':',cond,cond?'':(detail||''));if(!cond)failures++;};
+const ledgerIds=()=>fs.readFileSync(DATA+'/vaults/'+created.vaultId+'/events.ndjson','utf8').trim().split('\n').map(l=>JSON.parse(l).id);
+{const ids=ledgerIds();expect('the ledger holds each event id once',new Set(ids).size===ids.length,ids.length+' rows, '+new Set(ids).size+' ids');
+  const rowsBefore=ids.length;A.DB.settings.cloud.pushedIds=[];const resent=await A.cloudSync();
+  expect('a device that lost its sent list re-sends without adding rows',resent.sent===0&&ledgerIds().length===rowsBefore,
+    JSON.stringify({sent:resent.sent,rows:ledgerIds().length,before:rowsBefore}));}
+
 console.log('--- the server loses its data (a free host restarting with an empty disk) ---');
 {const before=A._EVENTS.length;srv.kill();await new Promise(r=>setTimeout(r,500));fs.rmSync(DATA,{recursive:true,force:true});
   const srv2=spawn(process.execPath,['server/server.mjs','--port','8791','--data',DATA],{stdio:['ignore','pipe','pipe']});srv2.stdout.on('data',d=>{serverLog+=d;});
@@ -105,4 +115,4 @@ console.log('log lines:',serverLog.trim().split('\n').length);
 /* close every simulated window: an app that keeps timers (the weather auto-updater) would otherwise hold Node open */
 for(const w of (globalThis.__windows||[])){try{w.close();}catch(e){}}
 stop();try{globalThis.__srv2&&globalThis.__srv2.kill();}catch(e){}
-setTimeout(()=>process.exit(0),200).unref();
+process.exitCode=failures?1:0;setTimeout(()=>process.exit(),200).unref();

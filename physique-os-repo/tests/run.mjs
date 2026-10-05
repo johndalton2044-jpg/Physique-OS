@@ -231,7 +231,10 @@ w.DB.settings.contrast='normal';w.DB.settings.motion='auto';w.DB.settings.densit
   const bar=w.document.querySelector('.sel-bar');
   ok('the selection bar is a labelled toolbar that always offers a way out',
      !!bar&&bar.getAttribute('role')==='toolbar'&&!!bar.querySelector('[data-act="sel.exit"]'));
-  const ids=w.obsOnDay(w.currentDay()).map(o=>o.id).slice(0,3);
+  /* the first three entries a person can see: food-derived totals are hidden on the Log page by default, so on a day
+     whose first observations are those, selecting by data picked rows that are not on screen */
+  const visible=new Set([...w.document.querySelectorAll('#view-log [data-record^="obs:"]')].map(e=>e.getAttribute('data-record').slice(4)));
+  const ids=w.obsOnDay(w.currentDay()).map(o=>o.id).filter(id=>visible.has(id)).slice(0,3);
   ids.forEach(id=>w.selectionToggle(id));w.renderAll();await sleep(30);
   ok('the bar states the selected count',/3 selected/.test(w.document.querySelector('.sb-count').textContent));
   ok('checkbox state is reflected for assistive technology',

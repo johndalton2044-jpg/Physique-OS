@@ -38,7 +38,8 @@ function _matInv(A){var n=A.length,M=A.map(function(r,i){return r.concat(Array.f
   for(var c=0;c<n;c++){var piv=c;for(var r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[piv][c]))piv=r;if(Math.abs(M[piv][c])<1e-12)return null;var t=M[c];M[c]=M[piv];M[piv]=t;
     var d=M[c][c];for(var j=0;j<2*n;j++)M[c][j]/=d;for(var r2=0;r2<n;r2++){if(r2===c)continue;var f=M[r2][c];if(f)for(var j2=0;j2<2*n;j2++)M[r2][j2]-=f*M[c][j2];}}
   return M.map(function(r){return r.slice(n);});}
-function frictionModel(days){days=days||56;var data={};FRICTION_ITEMS.forEach(function(i){data[i]=[];});
+function frictionModel(days){days=days||56;if(typeof memo==='function')return memo('friction:'+days+':'+todayISO(),function(){return _frictionModel(days);});return _frictionModel(days);}
+function _frictionModel(days){var data={};FRICTION_ITEMS.forEach(function(i){data[i]=[];});
   for(var k=1;k<=days;k++){var d=addDays(todayISO(),-k),e=null;try{e=executionFor(d);}catch(err){}if(!e||!e.rows)continue;
     e.rows.forEach(function(r){if(!data[r.item])return;if(r.status==='unknown'||r.status==='planned'||r.status==='pending'||r.status==='rest')return;data[r.item].push({date:d,y:r.status==='done'?1:0,f:_frictionFeatures(d,r.item,e.rows)});});}
   var keys=Object.keys(FRICTION_FACTORS);

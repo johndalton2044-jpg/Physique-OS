@@ -95,6 +95,7 @@ function _loadDemoInner(){
   var gen=generateRecord(DEMO_SPEC,11);var db=replayHistory(gen,DEMO_SPEC);
   // steps intervention also raised the phase target and cardio (as the decision prescribed)
   var ph=db.phases[0];ph.stepTarget=9500;ph.cardioSessions=3;ph.cardioMinutes=40;
+  if(typeof PHASE_CRITERIA_DEFAULTS!=='undefined')ph.criteria=JSON.parse(JSON.stringify(PHASE_CRITERIA_DEFAULTS.cut));   /* criteria chosen, as a person would */
   DB=db;_memoInvalidate();
   if(typeof dismissWelcome==='function')dismissWelcome();
   try{seedDemoFoodLogs();}catch(e){_q(e);}
@@ -129,6 +130,8 @@ function _loadDemoInner(){
     var hard=(x.sets||[]).filter(function(st){return st.rir==null||st.rir<=3;}).length;
     x.effort=Math.max(5,Math.min(9,Math.round(5+hard/4)));if(!x.durationMin)x.durationMin=40+hard*2;});
   if(typeof captureSnapshot==='function'){try{captureSnapshot();}catch(e){}}
+  /* responses are part of the demo's state: recorded now, not whenever something happens to trigger them */
+  if(typeof recordResponses==='function'){try{recordResponses();}catch(e){_q(e,'P2');}}
   save('demo:load');
   return db;
 }

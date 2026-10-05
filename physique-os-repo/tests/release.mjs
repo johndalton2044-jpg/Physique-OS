@@ -24,7 +24,7 @@ console.log('running the gates \u2014 this takes several minutes');
 /* ---------------- gates, in order ---------------- */
 const G={};
 function manifestBuildId(){try{return JSON.parse(fs.readFileSync('dist/version.json','utf8')).build;}catch(e){return null;}}
-const GATES=['build','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','direction','server','timezones','connect','perf','cloud:e2e','yields:gate','baseline','verify'];
+const GATES=['build','authority','layers','maturity','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','direction','server','timezones','connect','inputs','blackbox','ai','reproducible','perf','cloud:e2e','yields:gate','baseline','verify'];
 /* --from-results: use gates recorded by tests/gate-record.mjs, ONLY if every one passed against the identical build now in
    dist/. Anything else — a missing gate, a failure, a different build — and the gates are run here as before. */
 let reused=false;

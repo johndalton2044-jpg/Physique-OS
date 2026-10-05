@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "058f0ade05",
+ "build": "de9d967236",
  "models": [
   {
    "id": "adherence",
@@ -81,6 +81,11 @@
    "id": "intervention_response",
    "cls": "EMPIRICAL",
    "fn": "evaluateResponse"
+  },
+  {
+   "id": "learning_loop",
+   "cls": "DERIVED",
+   "fn": "learningCycleView"
   },
   {
    "id": "measurement_quality",
@@ -171,6 +176,11 @@
    "id": "uncertainty_chain",
    "cls": "DERIVED",
    "fn": "uncertaintyChain"
+  },
+  {
+   "id": "unified_optimiser",
+   "cls": "PREDICTIVE",
+   "fn": "unifiedOptimiser"
   },
   {
    "id": "water_noise",
@@ -439,7 +449,67 @@
    "horizon": null
   },
   {
+   "entity": "Experiment",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "NegativeKnowledge",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Recipe",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Food",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Prediction",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Snapshot",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Archive",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Source",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "IndividualState",
+   "status": "projection",
+   "horizon": null
+  },
+  {
+   "entity": "InterventionLifecycle",
+   "status": "projection",
+   "horizon": null
+  },
+  {
+   "entity": "Evidence",
+   "status": "reference",
+   "horizon": null
+  },
+  {
    "entity": "Response",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "LearningCycle",
    "status": "implemented",
    "horizon": null
   },
@@ -468,6 +538,50 @@
    "level": "developer"
   },
   {
+   "id": "ai.allow",
+   "level": "developer"
+  },
+  {
+   "id": "ai.applyLog",
+   "level": "developer"
+  },
+  {
+   "id": "ai.applyMeal",
+   "level": "developer"
+  },
+  {
+   "id": "ai.applyWorkout",
+   "level": "developer"
+  },
+  {
+   "id": "ai.consent",
+   "level": "developer"
+  },
+  {
+   "id": "ai.enable",
+   "level": "developer"
+  },
+  {
+   "id": "ai.log",
+   "level": "developer"
+  },
+  {
+   "id": "ai.meal",
+   "level": "developer"
+  },
+  {
+   "id": "ai.off",
+   "level": "developer"
+  },
+  {
+   "id": "ai.pick",
+   "level": "developer"
+  },
+  {
+   "id": "ai.workout",
+   "level": "developer"
+  },
+  {
    "id": "ask.field",
    "level": "developer"
   },
@@ -476,7 +590,15 @@
    "level": "developer"
   },
   {
+   "id": "attention.dismiss",
+   "level": "developer"
+  },
+  {
    "id": "attention.go",
+   "level": "developer"
+  },
+  {
+   "id": "attention.show",
    "level": "developer"
   },
   {
@@ -932,11 +1054,19 @@
    "level": "casual"
   },
   {
+   "id": "foodsheet.clear",
+   "level": "casual"
+  },
+  {
    "id": "foodsheet.pick",
    "level": "casual"
   },
   {
    "id": "foodsheet.save",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.saveAnother",
    "level": "casual"
   },
   {
@@ -1072,11 +1202,23 @@
    "level": "casual"
   },
   {
+   "id": "log.group",
+   "level": "casual"
+  },
+  {
+   "id": "log.hidden",
+   "level": "casual"
+  },
+  {
    "id": "log.hunger",
    "level": "casual"
   },
   {
    "id": "log.open",
+   "level": "casual"
+  },
+  {
+   "id": "log.q",
    "level": "casual"
   },
   {
@@ -1552,6 +1694,30 @@
    "level": "casual"
   },
   {
+   "id": "opt.apply",
+   "level": "developer"
+  },
+  {
+   "id": "opt.pref",
+   "level": "developer"
+  },
+  {
+   "id": "page.customize",
+   "level": "casual"
+  },
+  {
+   "id": "page.move",
+   "level": "developer"
+  },
+  {
+   "id": "page.reset",
+   "level": "developer"
+  },
+  {
+   "id": "page.toggle",
+   "level": "developer"
+  },
+  {
    "id": "pattern.accept",
    "level": "developer"
   },
@@ -1562,6 +1728,10 @@
   {
    "id": "pg.weeks",
    "level": "developer"
+  },
+  {
+   "id": "phase.crit",
+   "level": "casual"
   },
   {
    "id": "phase.edit",
@@ -1577,6 +1747,10 @@
   },
   {
    "id": "phase.start",
+   "level": "casual"
+  },
+  {
+   "id": "phase.suggest",
    "level": "casual"
   },
   {
@@ -1664,8 +1838,16 @@
    "level": "insightful"
   },
   {
+   "id": "profile.diet",
+   "level": "developer"
+  },
+  {
    "id": "profile.edit",
    "level": "casual"
+  },
+  {
+   "id": "profile.eq",
+   "level": "developer"
   },
   {
    "id": "profile.save",
@@ -1713,6 +1895,10 @@
   },
   {
    "id": "qa.water",
+   "level": "developer"
+  },
+  {
+   "id": "qa.waterAmt",
    "level": "developer"
   },
   {
@@ -1824,11 +2010,19 @@
    "level": "developer"
   },
   {
+   "id": "sched.cycleTrain",
+   "level": "developer"
+  },
+  {
    "id": "sched.minutes",
    "level": "developer"
   },
   {
    "id": "sched.mode",
+   "level": "developer"
+  },
+  {
+   "id": "sched.override",
    "level": "developer"
   },
   {
@@ -1996,6 +2190,10 @@
    "level": "casual"
   },
   {
+   "id": "setup.hide",
+   "level": "developer"
+  },
+  {
    "id": "sheet.ctx",
    "level": "developer"
   },
@@ -2033,6 +2231,26 @@
   },
   {
    "id": "sheet.setDup",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.suppDose",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.suppPick",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.suppTiming",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.urine",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.waterQuick",
    "level": "developer"
   },
   {
@@ -2136,6 +2354,18 @@
    "level": "developer"
   },
   {
+   "id": "supp.customField",
+   "level": "developer"
+  },
+  {
+   "id": "supp.customOpen",
+   "level": "developer"
+  },
+  {
+   "id": "supp.customSave",
+   "level": "developer"
+  },
+  {
    "id": "supp.dose",
    "level": "developer"
   },
@@ -2156,6 +2386,14 @@
    "level": "developer"
   },
   {
+   "id": "supp.timing",
+   "level": "developer"
+  },
+  {
+   "id": "supp.toggle",
+   "level": "developer"
+  },
+  {
    "id": "supp.when",
    "level": "developer"
   },
@@ -2173,6 +2411,22 @@
   },
   {
    "id": "timeline.filter",
+   "level": "developer"
+  },
+  {
+   "id": "timer.cardioMinutes",
+   "level": "developer"
+  },
+  {
+   "id": "timer.setSeconds",
+   "level": "developer"
+  },
+  {
+   "id": "timer.start",
+   "level": "developer"
+  },
+  {
+   "id": "timer.stop",
    "level": "developer"
   },
   {
@@ -2225,6 +2479,10 @@
   },
   {
    "id": "ui.skipToMain",
+   "level": "casual"
+  },
+  {
+   "id": "ui.step",
    "level": "casual"
   },
   {
@@ -2285,6 +2543,10 @@
   },
   {
    "id": "weather.auto",
+   "level": "developer"
+  },
+  {
+   "id": "weather.expand",
    "level": "developer"
   },
   {
@@ -2413,8 +2675,12 @@
   }
  ],
  "sheets": [
+  "about",
+  "aiConsent",
+  "aiProposals",
   "ask",
   "attention",
+  "attentionItem",
   "automation",
   "bodymap",
   "causal",
@@ -2474,6 +2740,7 @@
   "nutritionviz",
   "obsInspect",
   "optimise",
+  "pageLayout",
   "phase",
   "photos",
   "physio",
@@ -2530,7 +2797,9 @@
   "yoga"
  ],
  "events": [
+  "archive.recorded",
   "copilot.authorized",
+  "cycle.recorded",
   "decision.recorded",
   "equipment.changed",
   "execution.marked",
@@ -2605,7 +2874,9 @@
   "steps",
   "stress",
   "supplement",
+  "sweatrate",
   "thigh",
+  "urine",
   "waist",
   "water",
   "weight"
@@ -2617,5 +2888,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 111
+ "panels": 115
 }

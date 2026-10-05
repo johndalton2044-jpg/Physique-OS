@@ -3073,3 +3073,261 @@ gain 0.1–0.25%, maintenance ±0.1%), worded by direction of travel. Body fat i
 method's measurement error and lean and fat mass; methods are compared by their offset on near dates, never mixed; an
 unspecified method is called out. Ranges cite their sources (Schoenfeld 2017; Pelland 2024). On the Body tab and in
 the palette ("Physique by region").
+
+## Phase 10: model competition (build 058f0ade05)
+
+The working tree was reset mid-phase; it was restored from the last release's reproducible repository archive (checked
+against SHA256SUMS), the food corpus through the verified fetch, and dependencies from the lock. The restored tree
+rebuilt to exactly c5b3d60080 before this phase's work was reapplied.
+
+evaluateCompetition() makes important predictions compete: weight 7 and 14 days ahead (naive baseline, the app's
+14-day Theil–Sen trend as the incumbent, Holt smoothing, a damped trend) and the most-trained lift's e1RM 14 days ahead.
+A rolling-origin backtest every 3 days over 90 uses only data known at each origin and reports error, bias, 80%
+interval coverage, recent error, stability and simplicity. Calibration is empirical and runs both ways: each model's
+interval is scaled by the factor that would have held 80% of outcomes, learned on the older half of the origins and
+checked on the newer half; "calibrated" allows for sampling error (0.8 ± 2√(0.16/n)). Promotion needs the paired error
+test beyond two standard errors with a Newey–West variance (overlapping forecasts are correlated) and calibration;
+newer is not assumed better. A primary that does not beat the baseline is flagged; a model significantly worse than it
+is deprecated, then retired on the next evaluation; a new primary whose recent error grows past the old one's is
+rolled back. Lifecycle changes happen at most once a day (counting evaluations, not screen refreshes), are validated
+against MODEL_LIFECYCLE_STATES, and are written to the audit log. On the demo the backtest confirms the audit's finding
+that the current weight forecast is biased (−1.6 lb, too optimistic) and that every model's intervals were far too
+narrow (11–41% coverage); the damped trend is promoted (3 standard errors better allowing for overlap), and the panel
+says no model yet clearly beats the naive baseline. Shown on Learn under "Which forecast to trust".
+
+## From use, batch 1: logging, supplements, the Log page (build 8fd604b278)
+
+Switching the quick-log type now starts with empty fields (the weight typed before stayed in the buffer). Self-rated
+adherence is gone from logging (the type and the food form's 1–10 scale): adherence is measured from what was done; past
+entries stay readable. Water is its own log type, entered in ml, L, fl oz, US cups or US gallons (the default follows
+the unit preference), stored in litres, with one-tap amounts. Undo batching: a group action records one undo step
+(undoBatch); addObservation had recorded a full snapshot per entry, so undo removed a group one item at a time.
+Supplements: each regimen item has a time of day; "Log morning supplements" takes only what is due now, as one undo;
+each item on the card is a toggle; the quick-log form is a checklist of the regimen with editable doses, a time of day
+and any catalogue item, instead of free text; a product can be entered from its label with its own nutrient amounts
+(camera label reading would need offline text recognition the app does not have). The Log page hides retracted
+entries, superseded corrections and the food log's derived totals behind a counted toggle, groups the rest into
+collapsible sections, has search and kind filters, and lists each food with its portion and macros. Tabs always open at
+the top. The self-test restores settings exactly and reapplies appearance (it reset appearance on an iOS home-screen
+install). Body-fat readings saved as dexa/bia/navy are mapped to the method names whose errors are known (all had
+fallen to the generic error). Remaining from the same list: alerts that land at the bottom of a page; dismissable
+setup items; collapsible weather; Upcoming following schedule edits; the About pop-up; page and Tools customisation;
+setup fields filled from earlier answers; context, phase criteria and other free-text fields made structured; own
+schedule patterns and days off; workout steppers and timers; food search clearing and portion units; a full audit of
+every input; hydration maturity; then phase 11.
+
+## From use, batch 2: alerts, setup items, Upcoming, weather, About (build cdabd52def)
+
+An alert whose action only switched tabs (such as "Your plan changed") now opens its own sheet (attentionItem): what
+happened, why, the plan's actual changes, and Later / Show me / Done; Show me opens the page at the right section (the
+plan history now has one); Done dismisses for good, except an action-level problem still present after 14 days; the
+alert list has Done on each row too. The first version of the item sheet reused the name of the existing alert-list
+sheet and was replaced by it (renamed). "Set up more" items can be hidden, and features that are a page to review
+(automation, data sources, physique, charts) count as set up once opened. Upcoming reads the schedule (scheduledPlan)
+instead of the weekly template, so shift patterns, moved sessions, days off and plan edits show, and today's session
+says when it is done. Weather on Today is a glance by default (now, today's range, rain in the next six hours, UV, the
+next hours) with More for the full card, remembered; the external test now checks both. The ⓘ button opens an About
+pop-up built from the live registries; the About panel left Tools.
+
+## From use, batch 3: setup and planning inputs (build 04f7b12dc2)
+
+Setup prefills from the record, not only the profile (current weight from the latest weigh-in; session length from the
+schedule). The Profile editor's equipment and diet are chips writing the lists setup writes and the advice reads
+(saving the profile had turned the equipment list into one string, which the programme generator depends on); its
+schedule box is the actual schedule with an Edit schedule button; profile actions act only from the profile editor.
+Phase criteria are rules the app checks (58-phase-criteria.js), replacing three free-text boxes that were shown and
+never evaluated: success (goal weight through canonicalGoal, rate in range, waist down, strength held or up), stop
+(strength down 10%, losing over 1% or gaining over 0.5% a week, fatigue ≥ 7, too long), transition (at goal, diet
+break after 10 weeks, plateau while on plan, end date); defaults per phase type, chosen as chips; each reports met,
+not yet or unknown with evidence on the Plan tab; a met stop rule raises an action alert, a met success or transition
+rule a review. The phase editor has Use suggested targets. Context is chips in the exact words the models match,
+several at once, each saved on its own with what it affects, plus a note (free text had to happen to match a pattern).
+
+## From use, batch 4: your own schedule (build eb82b79633)
+
+scheduledPlan() puts the person's choice first: any of the next 14 days can be set to train, short, rest or auto
+(DB.settings.schedule.overrides), and in a rotation each cycle day to train, rest or auto, applying every cycle
+(cycleTrain); the automatic placement (a full-time day, under the weekly count, at most three in a row) had forced some
+off days to rest with no way to say otherwise. Weekly mode now follows the schedule's training days — they were ignored,
+so two places set the days and only the programme's weekday grid counted — taking the programme's lift sessions in
+order and keeping its cardio and mobility days; a day chosen to train gets the next session in that order. The memo key
+includes the choices. Short and full session lengths are two labelled settings (they read as one choice that could be
+both). The schedule shows the session order with Edit sessions and exercises; the plan editor shows the next 7 days as
+they will happen, with Change which days; its weekday grid applies only when no training days are set.
+
+## From use, batch 5: workouts (build ecd9636511)
+
+Steppers app-wide (uiStepper / ui.step): − and + around an ordinary field, each tap changing the field and then running
+the field's own action, so steppers go through the same wiring as typing; the guided workout has them on load (5 lb or
+2.5 kg), reps and reps in reserve; the session logger, too wide for a stepper per cell, has a bar acting on the number
+last tapped. Timers (uiTimer): countdowns and stopwatches that vibrate when done and can write their result into a
+field — a live session clock, a countdown for timed exercises (planks, holds, carries, hangs) that records seconds on
+the set, a hold timer on every mobility step, and a stopwatch on the cardio log that fills in the minutes.
+resolveExercise matches loosely ("Bulgarian splitsquats" became plain Squat), so the session logger now reports any
+name that is not exactly an exercise or alias with what it will count as, and saves on confirmation. Found while
+testing: buildWorkout read only the programme structure, which covers its current period, so a lifting day outside
+it (including a day chosen to train) built an empty session; it now falls back to the schedule's session template.
+
+## From use, batch 6: food search and portions (build 61443a15d7)
+
+The food search has a clear button, and "Log and add another" logs and returns to an empty search without closing
+(logging closed the sheet, so each food meant reopening it and clearing the last search). Logged food keeps the unit it
+was logged in: entries store the chosen portion (amount and unit), food snapshots keep the food's portions (they were
+dropped), and the edit sheet offers the food's own units with a stepper, resolving through portionResolve like logging
+does. An edit replaced the portion label with grams even when only the meal changed; it now keeps the portion unless the
+amount changes, and an amount changed in the portion's unit is labelled in it ("2 × 2 tablespoon (67.8 g)"). Entries
+logged before portions travelled with them borrow the live food's portions when edited.
+
+## From use, batch 7: every input audited (build f703397e30)
+
+tests/inputs.mjs (the inputs gate) opens every sheet through its own opener on the demo — every quick-log type in its
+own container, the food sheet with a food picked, food edit, the guided workout, an alert — and classifies each of the
+157 inputs in 37 forms: own action, read by the sheet's save path (directly, under the parameter name of a function the
+buffer is handed to, or through a key list read dynamically), unwired, broken, or with nowhere to go; broken, unwired
+or nowhere fails the release, and docs/implementation/inputs-report.md lists every input and where it goes. Found: the
+injury form's "since" and "note" called edit.field, an action that does not exist, so the start date fell back to today
+and notes were lost. Free text that is free by nature (names, notes, searches, colours, a place, questions, research
+notes) is named in the audit; anything else typed is reported as a candidate for choices. The phase objective became a
+choice per phase type, with "In my own words" still available.
+
+## From use, batch 8: hydration matured, the catalogue at 125 (build a83bf631d0)
+
+hydrationModel() (hydrationBalance remains its name for existing consumers): intake is drinks plus the water in what
+was eaten and drunk as food, from each food's own water content (FoodData Central carries it for all foundation foods;
+entries without it fall back to 0.3 ml/kcal, and the share estimated is reported); needs are EFSA's adequate intake of
+total water plus sweat per session by intensity, scaled by the weather at the time (temperature above 20 °C, humidity
+above 60%), or by the person's own sweat rate from a sweat test (weight lost plus fluid drunk, per hour); sodium lost in
+sweat (about 0.9 g/L) is set against sodium eaten; urine colour (1–8) and a morning drop of more than 1% after a
+heavy-sweat day are status signals; training guidance (5–7 ml/kg in the four hours before; 125–150% of losses after).
+New observation types urine and sweatrate, bound to the hydration model and given semantic kinds; a Hydration card on
+the Food tab with intake against need in the person's unit, one-tap amounts, sweat, sodium and status. Food water is
+read from each entry's snapshot rather than added to the shared nutrient keys, which would have counted it twice
+through the nutrition observations. The supplement catalogue grew from 80 to 125 (cognition and mood, metabolic and
+general health, joints, immune, herbs and hormonal claims, performance), graded honestly, with new interaction rules
+(several liver-injury reports, cholinergic stacking, L-dopa with 5-HTP, three or more blood thinners, cod liver oil with
+vitamin A, stacked stimulants); overlapping rules now say each warning once.
+
+## From use, batch 9: every page customisable (build 25e9935f0f)
+
+src/95-page-layout.js: one layer for every page — any section can be hidden, or moved up or down within its part of
+the page, kept per page in DB.settings.pageLayout and reset per page. It sits on top of the three detail presets: the
+Customize sheet marks sections the current view hides. It runs from the observer that tags panel levels, after it, so
+every render path is covered; panels move only when the order differs, so the observer settles. Every page ends with
+"Customize this page" (also in the palette), Tools included, alongside its existing pins. Found by the visual check:
+Today lays out its parts with CSS order, and the new footer had none, so it rendered first, between the subtitle and the
+first card; it now has an order that keeps it last. The browser gate hides, moves, re-renders and resets on Today and
+Tools. This closes the list from use; phase 11 (the unified optimiser) is next.
+
+## Phase 11: the unified intervention optimiser (build 919db0158d)
+
+unifiedOptimiser() follows §81: state → candidates → effect → uncertainty → burden → adherence → risk → opportunity
+cost → reversibility → robustness → Pareto set → the person's choice, across nutrition (calories, protein), activity
+(steps, cardio), training (sessions a week), recovery (sleep) and schedule (minutes available). Candidates are
+combinations of up to three changes; each lever's effect comes from the personal response model (population figures
+where it has none) and its probability of being carried out from the friction model, computed once per lever and dose
+and combined (per-candidate recomputation took 16 s; it now takes about 0.3 s, and repeat views are memoised).
+Constraints: the extra time a week the schedule allows, the phase's safe rate range, and no added training while
+fatigue averages 7 or more. Risk flags: too fast for the range, training added under high fatigue, a training day
+dropped while a priority muscle lags. The Pareto set is over effect toward the goal, burden, time and risk, ranked by a
+stated preference (balanced, least effort, least time, fastest within range), with a cost per change beyond the first
+(a first version suggested three changes at once with a 21% chance of all three being done). A choice is applied
+through updatePhase, so the Response entity evaluates it. Shown on the Plan tab as Options for the next two weeks.
+Also: the friction and personal response models are memoised (the latter keyed by the content of the responses, after a
+count-based key went stale).
+
+## Phase 12: the learning loop (build 3b126e9944)
+
+runLearningCycle() runs observe → understand → decide → act → measure → explain → learn → adapt → predict → test →
+personalize as one recorded cycle a week (DB.cycles, cycle.recorded, a LearningCycle contract): each stage's status and
+figure; the beliefs about the person (response estimates and how personal they are, clear friction, the trusted
+forecast and its calibration, lagging muscles, adherence) and what changed since the last cycle; loop health (share of
+changes judged, days to a verdict, open experiments, starved stages); and the next test where the personal model is
+least certain, skipping a lever already being tested, with its experiment template. Shown on Learn as The learning loop.
+Found while testing: anything that saves at startup must wait for the record to load — the cycle ran on a timer and,
+under slow storage, wrote a partly loaded record over the stored one (data logged before closing was lost on reopen);
+recording responses and the weather refresh had the same exposure. All three now run after loading completes. The
+model-reproducibility check failed about one run in five: the loop returned its stored cycle with a timestamp, and the
+demo's responses appeared whenever something triggered them; the registered model is now a pure view without a
+timestamp, and loading the demo records its responses. "No clear response" had counted as a clear verdict.
+
+With phases 0–12 the audit's recommended order is complete; the future-state architecture in the second half of the
+reconstruction document has not been started.
+
+## Engineering control (audit of 2026-10-04), first pass (build 8c6061a8ed)
+
+Release control. The build fails without the food corpus unless a development build is asked for by name
+(PHYSIQUE_DEV_BUILD=1, recorded in version.json); version.json and the build manifest carry the data provenance; the
+release identity hashes the food lock and every reference file; SOURCE_DATE_EPOCH fixes the build time. A skipped gate
+is recorded as not passed (browser gates exited 0 when they skipped). The build starts from a clean dist (stale output
+was shipped), and the yields table, which existed only in dist though recipes load it, is a checksummed input in
+data/reference with its provenance. scripts/clean-room.mjs (gate reproducible) copies the repository without
+node_modules, dist or data, runs npm ci, fetches the locked corpus, builds, and compares every file: byte-identical.
+.github/workflows/ci.yml runs the same from a clean checkout with real browsers.
+
+Authority and layering. tests/authority.mjs (gate authority) writes docs/authority.json and fails when a store is
+written outside its declared owners: it found seven stores without contracts and undeclared canonical writers; four
+food-log copy paths became copyFoodLog (copying a day had recorded no events, so copies were missing from sync and
+replay). 21 contracts, with reference and projection statuses. tests/layers.mjs (gate layers) declares each file's
+layer in docs/layers.json (the file numbers record history, not layering), writes docs/module-graph.json, and fails on
+a new engine → interface call: 37 became 18 by moving ten misplaced functions and the weather card's rendering; the
+18 are a reasoned baseline that may only shrink.
+
+Canonical objects. Every Response carries the audit's field set (exposure window, executions, expected and observed
+outcome, delta, uncertainty, confounders, attribution, confidence, applicability, evidence, model version, status);
+one intervention lifecycle (proposed → … → learned) is a projection for every domain; individualState() is a frozen
+projection of the twelve parts.
+
+Independent verification. tests/blackbox.mjs (gate blackbox) drives the interface only, with expectations computed in
+the test: nutrition (311 kcal for 80 g at 389/100 g), training, correction and retraction, backup, erase and restore,
+and phase targets on Today. It found a lifting session logged on a rest day named "Rest / walk", and "1 sets",
+"1 sessions" in five places; it also corrected six wrong assumptions of its own. Maturity: docs/capabilities.json and
+tests/maturity.mjs (gate maturity) require evidence for each level, keep README claims within it, and generate the
+README's maturity table; the wearables claim now says the connections were tested against simulated providers only.
+
+## Engineering control, second pass: the plan authority and the recovery workflow (build dcdbcca1ee)
+
+A-004. changePlan(change) is the one way the plan changes from anything a person or the app's adaptive systems do: the
+phase editor, ending a phase, choosing a programme, applying an experiment, a decision, an adaptation or an optimiser
+choice, schedule edits and setup. The underlying mutators still do the work inside it; their notes are gathered and one
+plan version is made when the plan's content actually changed (deciding from the notes missed changes while
+persistence was suspended). Every change states its reason; an adaptive one (decision, adaptation, optimiser,
+experiment) without an expected outcome is refused (rule 7). A person's first plan is always the setup version.
+tests/authority.mjs fails on a call to an underlying plan mutator outside changePlan or a composite mutator, found by
+bracket-matching spans (a planted violation was reported with its file and line).
+
+V-004. The black-box recovery workflow found that a new person at fatigue 9 on 4.5 hours of sleep read "recovery
+unknown" (recovery status needs three ratings a week) and Today did not change. acuteRecovery() acts on today's readings
+alone (an autoregulation heuristic, labelled: fatigue 9+ or under 4.5 h → rest or very light; fatigue 8, under 5 h or
+soreness 8+ → lighter); recovery status reports it as acute; a new safety severity ranks it above setup prompts, which
+had hidden it behind "start a phase". Also: applyProfileFields, the profile's owner, moved to the engine layer (the
+layers gate caught the optimiser calling into the interface for it); an unread registry was removed (governance); the
+V-003 naming check was made independent of the date (on a planned lifting day the planned name is correct).
+
+## Engineering control, third pass: production durability and temporal replay validated
+
+Server (audit S-001, S-003, S-004, S-006, S-009–S-012). PHYSIQUE_PRODUCTION=1 refuses to start on storage not declared
+persistent or inside the temp folder, without off-host backups, or with an admin or metrics token under 32 characters.
+Backups go to any S3-compatible bucket, signed with AWS Signature V4 written in the server (it matches AWS's published
+get-vanilla vector), every BACKUP_INTERVAL_HOURS; each is read back and its checksum and contents verified before it
+counts, recorded, and pruned to BACKUP_KEEP. --restore-from-s3 restores into an empty folder after verifying. Every
+request carries an x-request-id, logged with errors; metrics add errors by route, the last 20 failures and the backup
+state; /v1/health says degraded with reasons, for an uptime monitor. tests/server-ops.mjs (in the server gate) runs it
+against a mock bucket that checks the signature's form and the payload hash; not yet a real provider.
+
+Temporal replay is validated by black-box workflow V-011: with only the clock controlled (a system boundary), a weight
+entered three days ago and corrected today replays two days ago as the original value. Building it confirmed replay is
+bitemporal — a value dated earlier but entered later is not known on the earlier day. Two date-dependent test
+assumptions were corrected after the clock crossed midnight: a session on a planned lifting day correctly takes the
+planned name (V-003 now checks it is never named after a non-lifting label), and the accessibility check selects the
+first visible Log rows (food-derived totals are hidden by default, and on some days come first).
+
+## Engineering control, fourth pass: no engine → interface calls (build e8bf5158ff)
+
+The reviewed baseline of 18 engine → interface calls is empty. The record module no longer names presentation
+functions: registerExportAdapter lets a layer above register its formats, and the appearance, dashboard and chart-preset
+formats are registered by the presentation files that own them (each still exports and validates its own export).
+exportCSV, which only builds text from the record, moved to the import module; visualizationSVG and visualizationPNG,
+which use the page, its styles and a canvas, moved to the presentation layer. Recall and the copilot are interface
+modules by both dependency and function — only interface files and self-tests call them, and they read interface state
+and act through the command registry — so docs/layers.json classifies them as such, with the reason recorded; no
+engine file depends on either. The layers gate now holds the engine to zero calls into the interface.

@@ -98,8 +98,6 @@ function boot(){
   var start=location.hash.replace('#','');switchTab(document.getElementById('view-'+start)?start:'today');
   if(typeof handleLaunchShortcut==='function')setTimeout(handleLaunchShortcut,300);
   if(typeof handleConnectReturn==='function')setTimeout(handleConnectReturn,400);
-  if(typeof startWeatherAuto==='function')startWeatherAuto();
-  if(typeof recordResponses==='function')setTimeout(function(){try{recordResponses();}catch(e){_q(e,'P2');}},1500);   /* responses that matured since the last visit */   /* saved forecast at once; background refresh when stale */   /* back from a provider's sign-in */   /* home-screen shortcuts: ?do=weigh-in and friends */
   makeDelegatedControlsFocusable();
   onSave(function(){_memoInvalidate();});
   /* Durable startup, in order of authority:
@@ -125,7 +123,15 @@ function boot(){
          the first moment this build touches it. */
       return Promise.resolve(adoptDurableCopy()).then(function(ad){try{resetEventLog('record loaded from a build without an event log');}catch(e){_q(e,'P1');}return ad;});
     });
-  }).then(function(adopted){if(adopted){_memoInvalidate();applySettings();renderAll();}dailyJobs();renderAll();})
+  }).then(function(adopted){if(adopted){_memoInvalidate();applySettings();renderAll();}dailyJobs();
+    /* anything that saves runs only after the record has loaded: run earlier on a slow device, a save wrote a partly loaded
+       record over the stored one (the learning cycle at 2.5 s lost data under delayed storage; responses and the weather
+       refresh had the same exposure) */
+    try{if(typeof recordResponses==='function')recordResponses();}catch(e){_q(e,'P2');}
+    try{if(typeof runLearningCycle==='function')runLearningCycle();}catch(e){_q(e,'P2');}
+    try{if(typeof startWeatherAuto==='function')startWeatherAuto();}catch(e){_q(e,'P2');}
+    try{if(typeof aiAttach==='function')aiAttach();}catch(e){_q(e,'P2');}   /* the model, only if the person turned it on */
+    renderAll();})
    .catch(function(e){_q(e,'P1');dailyJobs();});
   try{watchOtherTabs();}catch(e){_q(e);}
   storageEstimate().then(function(est){_STORAGE_EST=est;}).catch(_q);

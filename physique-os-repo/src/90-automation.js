@@ -21,7 +21,7 @@ function smartDefault(type){
   if(/^(calories|protein|carbs|fat|fiber)$/.test(type))return null;   /* intake is never guessed */
   return null;
 }
-function _medianOf(a){var s=a.slice().sort(function(x,y){return x-y;}),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+/* _medianOf moved to 10-core.js (engine layer) */
 function _modeOf(a){var c={},best=null;a.forEach(function(x){c[x]=(c[x]||0)+1;if(best==null||c[x]>c[best])best=x;});return best;}
 
 /* ---- QUICK ACTIONS: each knows when it is useful (context) and whether one tap finishes it ---- */
@@ -62,7 +62,7 @@ var TEMPLATE_STEPS={'supp.logStack':'Log supplements','qa.water':'+0.5 L water',
 function saveActionTemplate(name,steps){steps=(steps||[]).filter(function(s){return TEMPLATE_STEPS[s.act];});if(!steps.length)return {status:'refused',note:'no allowed steps'};
   var t={id:uid('tpl'),kind:'actions',name:name,steps:steps,createdAt:nowISO()};DB.settings.templates=(DB.settings.templates||[]).concat([t]);save('settings');return {status:'ok',template:t};}
 function runTemplate(id,date){var t=(DB.settings.templates||[]).filter(function(x){return x.id===id;})[0];if(!t)return {status:'none'};date=date||todayISO();
-  if(t.kind==='meal'){pushUndo('template: '+t.name);t.items.forEach(function(l){var c=_cloneLog(l,date,t.meal);DB.foodLogs.push(c);emitEvent('food.logged',c,{at:c.createdAt});});syncNutritionObservations(date);save('food-log:template');return {status:'ok',logged:t.items.length};}
+  if(t.kind==='meal'){pushUndo('template: '+t.name);t.items.forEach(function(l){copyFoodLog(l,date,t.meal);});syncNutritionObservations(date);save('food-log:template');return {status:'ok',logged:t.items.length};}
   var ran=0;t.steps.forEach(function(s){if(TEMPLATE_STEPS[s.act]){dispatchAct(s.act,s.arg||null);ran++;}});return {status:'ok',ran:ran};}
 registerAction('tpl.run',function(id){var r=runTemplate(id);recordActionUse('tpl:'+id);renderAll();toast(r.status==='ok'?(r.logged!=null?('Logged '+r.logged+' item'+(r.logged===1?'':'s')):'Done'):'That template is gone',{undo:r.logged>0});});
 registerAction('tpl.delete',function(id){DB.settings.templates=(DB.settings.templates||[]).filter(function(t){return t.id!==id;});save('settings');renderAll();if(_SHEET)renderSheet();});

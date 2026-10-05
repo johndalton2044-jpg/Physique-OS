@@ -39,6 +39,17 @@ function eventArchiveState(){
       ('History before '+localDateOf(_archiveMeta.lastSnapshotAt)+' is folded into a snapshot; the original events are kept in the archive and nothing was deleted.'):
       'The whole history fits in the working window; nothing has been compacted yet.'};
 }
+/* WHAT A SNAPSHOT CARRIES. Both snapshot sites listed their keys by hand, and the lists stopped growing when plans,
+   executions, environment, responses and cycles joined the record: every reset (demo, restore, legacy adoption) and
+   every compaction folded those collections away, and the next projection — every startup, tab merge and cloud pull —
+   rebuilt the record without them. The collections now come from PERSIST_COLLECTIONS, the list saving, loading and the
+   integrity check already use, so a collection added there is snapshotted with no second list to remember. */
+var SNAPSHOT_SCALARS=['schemaVersion','appVersion','profile','settings'];
+function recordSnapshot(db){
+  var snap={};
+  SNAPSHOT_SCALARS.concat(PERSIST_COLLECTIONS).forEach(function(k){if(db[k]!==undefined)snap[k]=JSON.parse(JSON.stringify(db[k]));});
+  return snap;
+}
 /* Fold the oldest events into a snapshot and move the originals to the archive. */
 function compactEvents(force){
   if(!force&&_EVENTS.length<=EVENT_WINDOW)return {compacted:0};
@@ -49,10 +60,7 @@ function compactEvents(force){
   var rest=_EVENTS.slice(take);
   /* State as of the last folded event, built from everything up to that point. */
   var upto=projectEvents(older,{});
-  var snap={};
-  ['schemaVersion','appVersion','profile','settings','phases','observations','sessions','foodLogs','foods',
-   'recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes']
-    .forEach(function(k){if(upto.db[k]!==undefined)snap[k]=upto.db[k];});
+  var snap=recordSnapshot(upto.db);
   var boundary=older[older.length-1];
   var snapshotEvent={id:uid('ev'),seq:boundary.seq,type:'record.snapshot',at:boundary.at,device:boundary.device,
     schema:EVENT_SCHEMA,compaction:true,
@@ -175,6 +183,7 @@ var EVENT_TYPES={
     x.planVersion=e.data.version;x.planHash=e.data.planHash;}},
   'experiment.created':{apply:function(db,e){db.experiments.push(JSON.parse(JSON.stringify(e.data)));}},
   /* a response matures (provisional, then final): the later record replaces the earlier for the same intervention */
+  'cycle.recorded':{apply:function(db,e){db.cycles=(db.cycles||[]).filter(function(x){return x.id!==e.data.id;});db.cycles.push(JSON.parse(JSON.stringify(e.data)));}},
   'response.recorded':{apply:function(db,e){db.responses=(db.responses||[]).filter(function(x){return x.id!==e.data.id;});db.responses.push(JSON.parse(JSON.stringify(e.data)));}},
   'experiment.evaluated':{apply:function(db,e){var x=db.experiments.filter(function(y){return y.id===e.data.id;})[0];
     if(x)Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});}},
@@ -182,6 +191,9 @@ var EVENT_TYPES={
   'plan.created':{apply:function(db,e){(db.plans=db.plans||[]).push(JSON.parse(JSON.stringify(e.data)));}},
   'execution.marked':{apply:function(db,e){(db.executions=db.executions||[]).push(JSON.parse(JSON.stringify(e.data)));}},
   'snapshot.captured':{apply:function(db,e){db.snapshots.push(JSON.parse(JSON.stringify(e.data)));}},
+  /* an archived phase or evaluated experiment: these were pushed straight into the record, so the next projection (every
+     startup) rebuilt the archive from the last snapshot and dropped every entry made since */
+  'archive.recorded':{apply:function(db,e){(db.archive=db.archive||[]).push(JSON.parse(JSON.stringify(e.data)));}},
   'profile.changed':{apply:function(db,e){db.profile=Object.assign(db.profile||{},JSON.parse(JSON.stringify(e.data)));}},
   'settings.changed':{apply:function(db,e){Object.keys(e.data||{}).forEach(function(k){db.settings[k]=e.data[k];});}},
   'inventory.changed':{apply:function(db,e){
@@ -246,10 +258,7 @@ function emitEvent(type,data,opts){
 /* Restart the log from the current document. Used wherever a record arrives from outside the log. */
 function resetEventLog(reason){
   _EVENTS.length=0;_EVENT_SEQ=0;_eventsDirty={};
-  var snap={};
-  ['schemaVersion','appVersion','profile','settings','phases','observations','sessions','foodLogs','foods',
-   'recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes']
-    .forEach(function(k){if(DB[k]!==undefined)snap[k]=JSON.parse(JSON.stringify(DB[k]));});
+  var snap=recordSnapshot(DB);
   emitEvent('record.snapshot',{reason:reason||'record adopted from outside the event log',
     at:nowISO(),counts:{observations:(DB.observations||[]).length,foodLogs:(DB.foodLogs||[]).length,
     sessions:(DB.sessions||[]).length},record:snap});
@@ -398,7 +407,9 @@ function projectionMatchesRecord(){
     ['predictions',['id','subject','status','hit']],
     ['decisions',['id','date','code']],
     ['negatives',['id','date','variable']],
-    ['foods',['id','name']],['recipes',['id','name']]
+    ['foods',['id','name']],['recipes',['id','name']],
+    ['plans',['id','version','effectiveFrom']],['executions',['id','date','item','status']],
+    ['responses',['id','stage']],['cycles',['id','week']],['archive',['id','kind']]
   ];
   var diffs=[];
   cmp.forEach(function(pair){
@@ -441,13 +452,21 @@ function mergeEvents(local,remote){
     conflicts:conflicts,
     note:'events merge by union on id; a duplicate id is the same fact seen twice, not a conflict'};
 }
+/* Persisted collections that no event writes, by design. Weather is re-fetchable context, kept out of the log because a
+   forecast refresh is tens of kilobytes (ingestEnvironmentBatch); notes have no writer in this build and arrive only
+   inside a restored or adopted record. A projection knows only the copy in the last snapshot, so adopting a merged log
+   keeps the live one. Every other persisted collection must be folded by an event; the self-test asserts it, so a new
+   collection cannot silently become another of these. */
+var UNEVENTED_COLLECTIONS=['environment','notes'];
 function adoptMergedEvents(merged){
   _EVENTS=merged.events.slice();
   _EVENT_SEQ=_EVENTS.reduce(function(a,e){return Math.max(a,e.seq||0);},0);
   var p=projectEvents(_EVENTS);
   if(!p.db)return {ok:false};
-  var keepSettings=DB.settings,keepProfile=DB.profile,keepRev=DB.revision||0;
+  var keepSettings=DB.settings,keepProfile=DB.profile,keepRev=DB.revision||0,keepUnevented={};
+  UNEVENTED_COLLECTIONS.forEach(function(k){if(Array.isArray(DB[k])&&DB[k].length)keepUnevented[k]=DB[k];});
   DB=p.db;
+  Object.keys(keepUnevented).forEach(function(k){DB[k]=keepUnevented[k];});
   /* The rebuilt record started at revision 0, so after a startup merge the saved record reported revision 0, and the
      next startup's choice between the IndexedDB copy and the older localStorage copy — decided by which revision is
      higher — could pick the stale one and lose every setting since its checkpoint. The revision never goes backwards. */

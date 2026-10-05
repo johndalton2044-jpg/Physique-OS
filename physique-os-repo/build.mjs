@@ -4,6 +4,9 @@
 import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';
 import vm from 'node:vm';
 const ROOT=process.cwd();const SRC=path.join(ROOT,'src'),DIST=path.join(ROOT,'dist');
+/* a clean distribution every build (audit R-004): stale output from earlier runs was shipped. The food corpus is kept to
+   avoid recopying 26 MB, and is verified file by file against its lock below. */
+if(fs.existsSync(DIST))for(const e of fs.readdirSync(DIST)){if(e==='data'){for(const d of fs.readdirSync(path.join(DIST,'data')))if(d!=='food')fs.rmSync(path.join(DIST,'data',d),{recursive:true,force:true});}else fs.rmSync(path.join(DIST,e),{recursive:true,force:true});}
 fs.mkdirSync(DIST,{recursive:true});fs.mkdirSync(path.join(DIST,'icons'),{recursive:true});fs.mkdirSync(path.join(DIST,'data','reference'),{recursive:true});
 const files=fs.readdirSync(SRC).sort();
 /* BUNDLED FONTS. The typeface setting named faces most devices do not have (Atkinson Hyperlegible, OpenDyslexic) and
@@ -28,7 +31,9 @@ if(strayJs.length){
   process.exit(1);
 }
 const CORE=fs.readFileSync(path.join(SRC,'10-core.js'),'utf8');const APP_VERSION=/APP_VERSION='([^']+)'/.exec(CORE)[1];const SCHEMA_VERSION=+/SCHEMA_VERSION=(\d+)/.exec(CORE)[1];
-const buildTime=new Date().toISOString();
+/* reproducible builds: SOURCE_DATE_EPOCH (CI sets it from the commit time) fixes the one time-dependent input */
+const buildTime=process.env.SOURCE_DATE_EPOCH?new Date(+process.env.SOURCE_DATE_EPOCH*1000).toISOString():new Date().toISOString();
+const DEV_BUILD=process.env.PHYSIQUE_DEV_BUILD==='1';
 /* ---- build identity ----
    BUILD_ID hashes src/ alone, which answers "is the application code the same". It does NOT answer "is the
    distribution the same", because the output also depends on build.mjs, the generator scripts, the reference
@@ -61,10 +66,15 @@ const hashInput=(rel)=>{const abs=path.join(ROOT,rel);if(!fs.existsSync(abs))ret
     if(bad){console.error('FOOD DATA: '+bad+' file(s) do not match the declared corpus');process.exit(1);}
     console.log('food data verified: '+lock.databaseVersion+', '+lock.files+' files');}
   if(!fs.existsSync(path.join(dstFood,'manifest.json'))){const m='the bundled food database is missing (no data/food/manifest.json): food search and barcode lookups will only reach Open Food Facts. Extract physique-os-food-data.tar.gz into data/food/.';
-    if(process.env.SYNC_DEPLOYMENT_MODE==='reverse-proxy'){console.error('DEPLOYMENT: '+m);process.exit(1);}console.warn('WARNING: '+m);}}
+    /* fail closed (audit R-002): a build without the corpus is not the product. A development build without it must be
+       asked for by name, and says so in version.json. */
+    if(!DEV_BUILD){console.error('BUILD: '+m+' (set PHYSIQUE_DEV_BUILD=1 for a development build without it)');process.exit(1);}
+    console.warn('DEVELOPMENT BUILD: '+m);}}
 const foodManifestForId=path.join(DIST,'data','food','manifest.json');
 if(fs.existsSync(foodManifestForId)){const m=JSON.parse(fs.readFileSync(foodManifestForId,'utf8'));
   inputSet.push({file:'data/food/manifest.json (database identity)',bytes:0,sha256:crypto.createHash('sha256').update(String(m.databaseVersion)+':'+String(m.totalBytes)+':'+String((m.files||[]).length)).digest('hex')});}
+/* the release identity covers every payload input: the food lock (content checksum of the corpus) is always an input */
+{const lockPath=path.join('data','food.lock.json');if(fs.existsSync(lockPath)){const lb=fs.readFileSync(lockPath);inputSet.push({file:'data/food.lock.json',bytes:lb.length,sha256:crypto.createHash('sha256').update(lb).digest('hex')});}}
 const releaseHash=crypto.createHash('sha256');
 inputSet.forEach(i=>releaseHash.update(i.file+':'+i.sha256+'\n'));
 const RELEASE_ID=releaseHash.digest('hex').slice(0,12);
@@ -240,7 +250,11 @@ fs.writeFileSync(path.join(DIST,'icons','favicon.svg'),svg); // index.html decla
   console.log('icons ok');
 }
 /* ---- data: reference json ---- */
-fs.copyFileSync(path.join(ROOT,'data','reference','compendium-2024.json'),path.join(DIST,'data','reference','compendium-2024.json'));
+/* every reference file is a controlled input: copied with its checksum list, and verified (yields.json was only ever
+   in dist, so the repository could not reproduce it) */
+{const RD=path.join(ROOT,'data','reference'),sums=fs.readFileSync(path.join(RD,'SHA256SUMS'),'utf8').trim().split('\n').map(l=>l.split(/\s+/));
+  for(const [h,f] of sums){const b=fs.readFileSync(path.join(RD,f));if(crypto.createHash('sha256').update(b).digest('hex')!==h){console.error('REFERENCE DATA: '+f+' does not match SHA256SUMS');process.exit(1);}fs.writeFileSync(path.join(DIST,'data','reference',f),b);}
+  fs.copyFileSync(path.join(RD,'SHA256SUMS'),path.join(DIST,'data','reference','SHA256SUMS'));}
 /* ---- docs: shipped alongside the app so an offline copy carries its own instructions ---- */
 fs.mkdirSync(path.join(DIST,'docs'),{recursive:true});
 for(const d of ['README.md','ARCHITECTURE.md'])if(fs.existsSync(path.join(ROOT,d)))fs.copyFileSync(path.join(ROOT,d),path.join(DIST,d));
@@ -332,12 +346,14 @@ server's https origin. Never use localhost or 127.0.0.1 — on Vercel those mean
 In the app: Tools → External server → Test external server names the layer that fails.
 `);
 fs.writeFileSync(path.join(DIST,'vercel.json.template'),JSON.stringify({rewrites:[{source:'/api/sync/:path*',destination:'https://REPLACE-WITH-YOUR-SYNC-SERVER/:path*'}],headers:DATA_HEADERS},null,2)+'\n');
-fs.writeFileSync(path.join(DIST,'version.json'),JSON.stringify({app:'Physique OS',version:APP_VERSION,schema:SCHEMA_VERSION,build:BUILD_ID,release:RELEASE_ID,deployment:DEPLOY,cacheName:'physique-os-'+APP_VERSION+'-'+RELEASE_ID,builtAt:buildTime,sources:js,buildInputs:inputSet.length,food:foodInfo?{databaseVersion:foodInfo.databaseVersion,branded:foodInfo.branded?foodInfo.branded.records:0,foundation:foodInfo.foundation.count,totalBytes:foodInfo.totalBytes}:null,fndds:fnddsInfo?{version:fnddsInfo.version,foods:fnddsInfo.foods}:null,dsld:dsldInfo?{version:dsldInfo.version,products:dsldInfo.products}:null},null,1));
+const DATA_PROVENANCE=(function(){var lk=null;try{lk=JSON.parse(fs.readFileSync(path.join('data','food.lock.json'),'utf8'));}catch(e){}var present=fs.existsSync(path.join(DIST,'data','food','manifest.json'));
+  return {food:{present:present,devBuild:DEV_BUILD&&!present,databaseVersion:lk&&lk.databaseVersion,sumsSha256:lk&&lk.sumsSha256,archiveSha256:lk&&lk.archive&&lk.archive.sha256,files:lk&&lk.files}};})();
+fs.writeFileSync(path.join(DIST,'version.json'),JSON.stringify({app:'Physique OS',version:APP_VERSION,schema:SCHEMA_VERSION,build:BUILD_ID,release:RELEASE_ID,data:DATA_PROVENANCE,deployment:DEPLOY,cacheName:'physique-os-'+APP_VERSION+'-'+RELEASE_ID,builtAt:buildTime,sources:js,buildInputs:inputSet.length,food:foodInfo?{databaseVersion:foodInfo.databaseVersion,branded:foodInfo.branded?foodInfo.branded.records:0,foundation:foodInfo.foundation.count,totalBytes:foodInfo.totalBytes}:null,fndds:fnddsInfo?{version:fnddsInfo.version,foods:fnddsInfo.foods}:null,dsld:dsldInfo?{version:dsldInfo.version,products:dsldInfo.products}:null},null,1));
 const walk=(dir,base='')=>fs.readdirSync(dir).flatMap(f=>{const p=path.join(dir,f);const rel=base?base+'/'+f:f;return fs.statSync(p).isDirectory()?walk(p,rel):[rel];});
 const isData=f=>f.startsWith('data/food/')||f.startsWith('data/supplements/');
 const listed=()=>walk(DIST).filter(f=>f!=='SHA256SUMS'&&f!=='BUILD-MANIFEST.json'&&!isData(f));
 const manifestFiles=listed().map(f=>({file:f,bytes:fs.statSync(path.join(DIST,f)).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(DIST,f))).digest('hex')}));
-fs.writeFileSync(path.join(DIST,'BUILD-MANIFEST.json'),JSON.stringify({build:BUILD_ID,release:RELEASE_ID,builtAt:buildTime,version:APP_VERSION,schema:SCHEMA_VERSION,deployment:DEPLOY,inputs:inputSet,files:manifestFiles,indexBytes:Buffer.byteLength(html),scriptLines:script.split('\n').length,components:{
+fs.writeFileSync(path.join(DIST,'BUILD-MANIFEST.json'),JSON.stringify({build:BUILD_ID,release:RELEASE_ID,builtAt:buildTime,data:DATA_PROVENANCE,version:APP_VERSION,schema:SCHEMA_VERSION,deployment:DEPLOY,inputs:inputSet,files:manifestFiles,indexBytes:Buffer.byteLength(html),scriptLines:script.split('\n').length,components:{
     client:manifestFiles.map(f=>f.file),
     food:{path:'data/food/',checksums:fs.existsSync(path.join(DIST,'data','food','SHA256SUMS'))?'data/food/SHA256SUMS':null,
       shards:fs.existsSync(path.join(DIST,'data','food'))?walk(path.join(DIST,'data','food')).length:0},

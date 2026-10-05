@@ -63,12 +63,8 @@ var WEATHER_CONDITIONS={0:['Clear','sun','moon'],1:['Mostly clear','sunCloud','m
   80:['Showers','rain','rain'],81:['Showers','rain','rain'],82:['Heavy showers','heavyRain','heavyRain'],85:['Snow showers','snow','snow'],86:['Heavy snow showers','snow','snow'],
   95:['Thunderstorm','thunder','thunder'],96:['Thunderstorm with hail','thunder','thunder'],99:['Thunderstorm with hail','thunder','thunder']};
 /* Without a code, a condition is derived from precipitation and cloud cover \u2014 and said to be derived. */
-function conditionCodeFrom(v){if(!v)return null;var pr=v.precipitation!=null?v.precipitation:v.precipitationSum,cc=v.cloudCover;
-  if(pr!=null&&pr>=0.1){var cold=v.temperature!=null&&v.temperature<=0;return cold?73:(pr>=4?65:(pr>=1?63:61));}
-  if(cc==null)return null;return cc<15?0:(cc<40?1:(cc<75?2:3));}
-function weatherCondition(v,isDay){var code=v&&v.weatherCode!=null?v.weatherCode:null,derived=false;if(code==null){code=conditionCodeFrom(v);derived=code!=null;}
-  if(code==null||!WEATHER_CONDITIONS[code])return null;var c=WEATHER_CONDITIONS[code],day=isDay==null?(v&&v.isDay!=null?!!v.isDay:true):!!isDay;
-  return {code:code,label:c[0],icon:day?c[1]:c[2],derived:derived};}
+/* conditionCodeFrom moved to 66-external.js (engine layer) */
+/* weatherCondition moved to 66-external.js (engine layer) */
 function weatherIcon(v,isDay,size){var c=weatherCondition(v,isDay);return c?uiIcon(c.icon,{size:size||22,title:c.label+(c.derived?' (from cloud cover and rain)':''),cls:'wx-ic'}):'';}
 /* Meteosource names its conditions; each maps to the nearest canonical code. */
 var METEOSOURCE_CODES={clear:0,sunny:0,mostly_sunny:1,mostly_clear:1,partly_sunny:2,partly_clear:2,mostly_cloudy:3,cloudy:3,overcast:3,overcast_with_low_clouds:3,fog:45,

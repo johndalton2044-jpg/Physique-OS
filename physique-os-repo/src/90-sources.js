@@ -7,16 +7,10 @@
    and cardio sessions are left summed: two logged drinks are two drinks, and two workouts may be two workouts.
    ============================================================================ */
 var DEVICE_TOTAL_TYPES={steps:1,sleep:1};
-function sourceKeyOf(o){var m=o&&o.meta||{};if(m.importSource)return 'import:'+m.importSource;if(m.provider)return 'provider:'+m.provider;if(m.device)return 'device:'+m.device;return (o&&o.source)||'unknown';}
+/* sourceKeyOf moved to 65-import.js (engine layer) */
 var PROVIDER_NAMES={'apple-health':'Apple Health',applehealth:'Apple Health',fitbit:'Fitbit',withings:'Withings',garmin:'Garmin',oura:'Oura',whoop:'WHOOP','google-fit':'Google Fit','health-connect':'Health Connect',polar:'Polar',strava:'Strava',csv:'CSV file',myfitnesspal:'MyFitnessPal',cronometer:'Cronometer'};
-function _prettyId(id){return PROVIDER_NAMES[id]||String(id).replace(/[-_]+/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
-function sourceLabel(key){var k=String(key);if(k.indexOf('import:')===0){var id=k.slice(7);return ((typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[id])||{}).label||_prettyId(id);}
-  if(k.indexOf('provider:')===0||k.indexOf('device:')===0)return _prettyId(k.split(':').slice(1).join(':'));
-  var fixed={manual:'You (typed in)',demo:'Demo record','food-log':'Food log (totals)',test:'Test',import:'An import'}[k];if(fixed)return fixed;
-  /* a bare provider or import id is the source itself (normalizeImported sets source to it) */
-  if(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]&&IMPORT_SOURCES[k].label)return IMPORT_SOURCES[k].label;
-  if(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])return WEARABLE_PROVIDERS[k].label;
-  return PROVIDER_NAMES[k]||k;}
+/* _prettyId moved to 65-import.js (engine layer) */
+/* sourceLabel moved to 65-import.js (engine layer) */
 function sourcePreference(type){return (DB.settings.sourcePreference||{})[type]||null;}
 function setSourcePreference(type,key){DB.settings.sourcePreference=Object.assign({},DB.settings.sourcePreference||{});if(key)DB.settings.sourcePreference[type]=key;else delete DB.settings.sourcePreference[type];_memoInvalidate();save('settings');return {status:'ok'};}
 /* One day's total for a device-measured type: per-source sums, then one source chosen. */

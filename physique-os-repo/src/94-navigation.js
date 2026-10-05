@@ -259,13 +259,15 @@ function attentionQueue(){
   try{items=items.concat(_domainAttention());}catch(e){_q(e,'P2');}
   /* The plan's signals — it changed, it does not fit, a constraint is missing, a save was lost — arrive here like any other. */
   try{if(typeof planAttentionItems==='function')items=items.concat(planAttentionItems());}catch(e){_q(e,'P2');}
-  var rank={action:0,review:1,system:2};
+  var rank={safety:-1,action:0,review:1,system:2};   /* safety: advice about not hurting yourself outranks setup and review */
   /* SNOOZED, NEVER DISMISSED FOR GOOD. "Not now" hides an item for a day (act now), three days (review) or a week (system);
      three snoozes in a row and it must stay visible for a day before it can be snoozed again. A snooze record whose item
      has gone (the cause resolved) is cleared. */
   var SZ=DB.settings.attentionSnooze||{},liveIds={},snoozed=[];items.forEach(function(i){liveIds[i.id]=1;});
   Object.keys(SZ).forEach(function(k){if(!liveIds[k])delete SZ[k];});
   items=items.filter(function(i){var z=SZ[i.id];if(z&&z.until&&z.until>nowISO()){snoozed.push(i);return false;}return true;});
+  /* dismissed with Done: gone for good, except an action-level problem that is still there after 14 days */
+  var DS=DB.settings.attentionDismissed||{};items=items.filter(function(i){var d=DS[i.id];return !(d&&((i.severity!=='action'&&i.severity!=='safety')||daysBetween(d,todayISO())<14));});
   items.forEach(function(i){var z=SZ[i.id];i.snoozeCount=z?z.count||0:0;i.canSnooze=!(z&&z.count>=3&&z.lastUntil&&(Date.now()-Date.parse(z.lastUntil))<86400000);});
   items.sort(function(a,b){return rank[a.severity]-rank[b.severity];});
   return {items:items,snoozed:snoozed,counts:{action:items.filter(function(i){return i.severity==='action';}).length,
@@ -275,25 +277,7 @@ function attentionQueue(){
 
 /* ---------- missing data and data quality, as navigation ----------
    Uncertainty becomes a path rather than a disclaimer: what is limited, why, and the action that improves it. */
-function missingDataReport(){
-  var rows=[];
-  var streams=[['weight','weight'],['calories','intake'],['protein','protein'],['steps','steps'],['sleep','sleep'],['waist','waist']];
-  streams.forEach(function(pair){
-    var type=pair[0],label=pair[1];
-    var have=obsOf(type,{from:addDays(asOf(),-13)}).length;
-    var missing=[];for(var i=0;i<14;i++){var d=addDays(asOf(),-i);if(!obsOf(type,{from:d,to:d}).length)missing.push(d);}
-    rows.push({type:type,label:label,have:have,of:14,missingDays:missing,
-      limits:type==='weight'?'the weight trend interval, and every energy number that depends on it':
-             (type==='calories'?'the personal maintenance estimate and the energy-balance interval':
-             (type==='waist'?'the fat-versus-other reading':'adherence and recovery context')),
-      action:{label:'Log '+label,act:'log.type',arg:type}});
-  });
-  var sessions=sessionsOf({from:addDays(asOf(),-13)}).length;
-  rows.push({type:'session',label:'training sessions',have:sessions,of:(activePhase()||{}).trainingSessions?Math.round((activePhase().trainingSessions)*2):6,missingDays:[],
-    limits:'the strength trend, which is the only muscle-retention proxy available without a lab',action:{label:'Log a session',act:'session.new'}});
-  rows.sort(function(a,b){return (a.have/a.of)-(b.have/b.of);});
-  return {rows:rows,asOf:asOf(),note:'An unlogged day is unknown, not zero. Every model states what it needs before it states a number.'};
-}
+/* missingDataReport moved to 45-baselines.js (engine layer) */
 function dataQualityReport(){
   var groups=[];
   var an=detectAnomalies();
@@ -430,7 +414,7 @@ var KEYMAP=[
 
    `available` returns true, or a STRING SAYING WHY NOT. A disabled control that will not say why is a dead
    end; the catalogue is explicit about this and it is the whole reason the reason is a string. */
-var REQUIRES_SUBJECT=/^(welcome\.|physique\.priority|responses\.open|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|ai\.(allow|pick)|opt\.(pref|apply)|page\.(toggle|move|reset)|qa\.waterAmt|sheet\.urine|ui\.step|timer\.(start|stop|cardioMinutes|setSeconds)|sched\.(override|cycleTrain)|profile\.(eq|diet)|phase\.crit|attention\.(dismiss|show)|setup\.hide|log\.(q|group)|supp\.(toggle|timing|customField)|sheet\.(suppTiming|suppPick|suppDose|waterQuick)|physique\.priority|responses\.open|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
   'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -495,6 +479,7 @@ var COMMAND_META={
   'nav.hydration':{d:'Whether today\u2019s weight is likely water movement',k:['water','hydration','scale','bloat','sodium','carbs']},
   'nav.supplements':{d:'What you take, the evidence, and whether you tested it',k:['supplements','creatine','caffeine','evidence']},
   'exp.custom':{d:'An experiment you design yourself, when none of the ready-made ones fits',k:['experiment','design','custom','own']},
+  'page.customize':{d:'Hide, show and reorder the sections of the page you are on',k:['customize','customise','layout','hide','show','reorder','arrange','sections','page']},
   'physique.open':{d:'Sets, frequency and progress per muscle, priorities, lagging regions, rate of change and body fat by method',k:['physique','muscle','lagging','priority','region','volume','sets','body fat','dexa','bia','hypertrophy']},
   'sources.open':{d:'Where your record comes from, how sources agree, which one to trust for steps and sleep, and removing a source\u2019s data',k:['sources','data sources','import','apple health','fitbit','withings','duplicate','delete data','devices']},
   'automation.open':{d:'Quick actions, templates, automations, patterns noticed in your record, and home-screen shortcuts',k:['automation','shortcuts','quick actions','templates','routine','one tap','repeat','auto']},
@@ -741,6 +726,7 @@ var NAV_COMMANDS=[
   {id:'nav.weightTrend',label:'Weight trend',group:'navigation',surfaces:['ui','palette']},
   {id:'nav.exlibrary',label:'Exercise library',group:'navigation',surfaces:['ui','palette']},
   {id:'exp.custom',label:'Design my own experiment',group:'decisions',surfaces:['ui','palette']},
+  {id:'page.customize',label:'Customize this page',group:'navigation',surfaces:['ui','palette']},
   {id:'physique.open',label:'Physique by region',group:'navigation',surfaces:['ui','palette']},
   {id:'sources.open',label:'Your data sources',group:'navigation',surfaces:['ui','palette']},
   {id:'automation.open',label:'Shortcuts and automation',group:'navigation',surfaces:['ui','palette']},
@@ -948,7 +934,7 @@ function bulkActions(){
      run:function(recs,arg){var n=0;recs.forEach(function(l){if(changeMeal(l.id,arg))n++;});return n;}},
     {id:'copy',label:'Copy to another day',danger:false,needs:'date',
      describe:function(recs,arg){return 'Copies '+recs.length+' entries to '+esc(arg)+' as new entries. The originals are untouched.';},
-     run:function(recs,arg){recs.forEach(function(l){var c=_cloneLog(l,arg,l.meal);DB.foodLogs.push(c);emitEvent('food.logged',c,{at:c.createdAt});});syncNutritionObservations(arg);return recs.length;}}
+     run:function(recs,arg){recs.forEach(function(l){copyFoodLog(l,arg,l.meal);});syncNutritionObservations(arg);return recs.length;}}
   ];
   return [];
 }
@@ -1190,7 +1176,7 @@ function detailAudit(){
    ============================================================================ */
 var PANEL_LEVEL_RULES=[
   /* today */
-  [/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^What happened because of it/,'insightful'],[/^What gets in the way/,'insightful'],[/^Physique/,'insightful'],[/^Which forecast to trust/,'insightful'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
+  [/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^Hydration/,'casual'],[/^What happened because of it/,'insightful'],[/^The learning loop/,'insightful'],[/^AI assistant/,'insightful'],[/^What gets in the way/,'insightful'],[/^Physique/,'insightful'],[/^Which forecast to trust/,'insightful'],[/^Options for the next two weeks/,'insightful'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
   /* log */
   [/^Quick log/,'casual'],[/^Today$/,'casual'],[/^All observations/,'casual'],
   /* plan */

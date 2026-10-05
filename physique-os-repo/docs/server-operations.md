@@ -87,7 +87,7 @@ location / {
 | POST | `/v1/vault/device` | authorise another device (requires an authenticated device) |
 | POST | `/v1/auth/challenge` | request a single-use nonce |
 | POST | `/v1/auth/verify` | exchange a signature for a short-lived token |
-| POST | `/v1/events` | append encrypted events |
+| POST | `/v1/events` | append encrypted events; an id already stored is acknowledged (`duplicates`) and not stored again |
 | GET | `/v1/events?since=` | pull events after a sequence number |
 | POST | `/v1/push/subscribe` | register a Web Push endpoint |
 | POST | `/v1/push/notify` | nudge a vault's other devices |
@@ -106,3 +106,52 @@ existing subscription.
 
 `POST /v1/vault/delete` with the vault id removes the vault directory immediately and completely. A service
 holding health data that cannot be left is not a service, it is a trap.
+
+## Production mode, off-host backups and health
+
+Set `PHYSIQUE_PRODUCTION=1` for a production server. It then refuses to start unless:
+
+* the data folder is on a persistent disk, declared with `PHYSIQUE_PERSISTENT_DATA=1`, and not inside the system's temp folder;
+* off-host backups are configured (below);
+* `ADMIN_TOKEN` and `METRICS_TOKEN`, when set, are at least 32 characters.
+
+Backups go to any S3-compatible bucket (AWS S3, Cloudflare R2, Backblaze B2, MinIO): `BACKUP_S3_ENDPOINT`,
+`BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`. A backup is taken a minute after
+start and then every `BACKUP_INTERVAL_HOURS` (default 24); each one is read back and its checksum and contents verified
+before it counts, recorded in `last-backup.json`, and `BACKUP_KEEP` (default 14) are kept. Requests are signed with
+AWS Signature V4 (no SDK; checked against AWS's published test vector).
+
+Restore into an empty data folder: `node server/server.mjs --restore-from-s3 latest` (or a key; `--force` to overwrite).
+
+`GET /v1/health` reports `status: ok` or `degraded` with reasons (the last backup failed, no verified backup within twice
+the interval, storage not persistent, disk low), so an uptime monitor pointed at it alerts on them. Every response
+carries an `x-request-id` (a caller's own is kept if it is safe), logged with any error; `/v1/metrics` adds errors by
+route, the last 20 failures with their request ids, the backup state, and `sync` (events appended, and re-sent events
+acknowledged without a new row).
+
+Event ids are idempotent. Every encryption uses a fresh IV, so a re-sent event arrives as different bytes; the server
+cannot compare contents it cannot read, so the id decides and the first stored copy stands. The ids are indexed in memory
+per vault, bounded by `LEDGER_INDEX_IDS` (default 500000 ids across all vaults); a vault dropped from the index is read
+from its ledger again on its next upload.
+
+Tested against a mock bucket that checks the signature's form and the payload hash (tests/server-ops.mjs), not yet
+against a real provider.
+
+## AI assistant (optional)
+
+The app can only talk to its own server (its content-security policy allows nothing else), so model calls go through
+`POST /v1/ai/complete`, which requires an unlocked vault and is rate-limited (`AI_RATE_PER_MINUTE`, default 20). The key
+never reaches a device. Configure:
+
+* `AI_PROVIDER`: `anthropic`, `openai` or `gemini`
+* `AI_MODEL`: for example `claude-sonnet-5-5`; for OpenAI and Gemini, the model name from their documentation
+* `AI_API_KEY`: the provider key (not needed for a local server)
+* `AI_BASE_URL`: optional; for a local or self-hosted OpenAI-compatible server (Ollama: `http://localhost:11434`,
+  LM Studio, a gateway) use `AI_PROVIDER=openai` with this. `AI_TOKEN_FIELD` overrides the token-limit field name.
+* `AI_TIMEOUT_MS`: default 60000
+
+Nothing is sent until a person turns the assistant on in Tools and accepts what it sends: what they type, plus what the
+model asks to read through read-only tools (parts of their current state, why the plan is what it is, adaptations on
+offer, cited evidence, food and exercise search results). Never their full history, photos or notes. The model cannot
+change the record; everything it suggests waits for the person to confirm. The server logs each call's size and timing,
+never its content. Tested against mock providers that check each protocol (tests/ai-proxy.mjs), not yet a real one.

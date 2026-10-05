@@ -44,6 +44,10 @@ function buildWorkout(date){
   var ps=null;try{ps=programStructure();}catch(e){}
   var day=null;if(ps&&ps.status==='ok')ps.mesocycles.forEach(function(ms){(ms.microcycles||[]).forEach(function(mc){(mc.days||[]).forEach(function(d){if(d.date===date)day=d;});});});
   var planned=day&&day.planned&&day.planned.kind==='lift'?day.planned:null;
+  /* the schedule decides the day (including days you chose to train); the structure covers only its current period,
+     so a lifting day outside it built an empty "Session" */
+  if(!planned){try{var _P=trainingProgram(),_sp=scheduledPlan(date,_P),_rows=_sp&&_sp.kind==='lift'&&_P.templates?_P.templates[_sp.template]:null;
+    if(_rows&&_rows.length)planned={label:_sp.label,kind:'lift',exercises:_rows.map(function(r){return Array.isArray(r)?{name:r[0],sets:r[1]||3,reps:r[2]||'8\u201312'}:r;})};}catch(e){}}
   var mk=(DB.executions||[]).filter(function(x){return x.date===date&&x.item==='training';}).slice(-1)[0];
   var variant=mk&&mk.variant?mk.variant:'full';
   var exs=(planned?planned.exercises:[]).map(function(x,i){
@@ -78,11 +82,12 @@ SHEETS.workout=function(){
     uiBtn('+30 s','workout.restAdd',null,'btn-sm btn-ghost')+uiBtn('Skip rest','workout.restSkip',null,'btn-sm btn-secondary')+'</div>':'';
   var rows=ex.sets.map(function(s,k){
     return '<div class="wo-set'+(s.done?' done':'')+'"><span class="wo-n">'+(k+1)+'</span>'+
-      '<label class="wo-f"><span>lb</span><input id="wo-l-'+k+'" type="number" inputmode="decimal" value="'+(s.load==null?'':s.load)+'" data-act="workout.field" data-arg="'+k+'|load" data-ev="input" aria-label="load for set '+(k+1)+'"></label>'+
-      '<label class="wo-f"><span>reps</span><input id="wo-r-'+k+'" type="number" inputmode="numeric" value="'+(s.reps==null?'':s.reps)+'" placeholder="'+ex.repLo+'\u2013'+ex.repHi+'" data-act="workout.field" data-arg="'+k+'|reps" data-ev="input" aria-label="reps for set '+(k+1)+'"></label>'+
-      '<label class="wo-f"><span>in reserve</span><input id="wo-i-'+k+'" type="number" inputmode="numeric" value="'+(s.rir==null?'':s.rir)+'" placeholder="2" data-act="workout.field" data-arg="'+k+'|rir" data-ev="input" aria-label="reps in reserve for set '+(k+1)+'"></label>'+
+      '<label class="wo-f"><span>lb</span>'+uiStepper('<input id="wo-l-'+k+'" type="number" inputmode="decimal" value="'+(s.load==null?'':s.load)+'" data-act="workout.field" data-arg="'+k+'|load" data-ev="input" aria-label="load for set '+(k+1)+'">','wo-l-'+k+'',(unitPref()==='metric'?2.5:5),0,null,1)+'</label>'+
+      '<label class="wo-f"><span>reps</span>'+uiStepper('<input id="wo-r-'+k+'" type="number" inputmode="numeric" value="'+(s.reps==null?'':s.reps)+'" placeholder="'+ex.repLo+'\u2013'+ex.repHi+'" data-act="workout.field" data-arg="'+k+'|reps" data-ev="input" aria-label="reps for set '+(k+1)+'">','wo-r-'+k+'',1,0,100,0)+'</label>'+
+      (/plank|hold|hang|carry|wall sit|l-sit|hollow|farmer|suitcase|dead bug/i.test(ex.name)?uiTimer('wo-t-'+k,{choices:[30,45,60,90],then:'timer.setSeconds|'+k})+(s.seconds?'<span class="hint">'+s.seconds+' s</span>':''):'')+
+      '<label class="wo-f"><span>in reserve</span>'+uiStepper('<input id="wo-i-'+k+'" type="number" inputmode="numeric" value="'+(s.rir==null?'':s.rir)+'" placeholder="2" data-act="workout.field" data-arg="'+k+'|rir" data-ev="input" aria-label="reps in reserve for set '+(k+1)+'">','wo-i-'+k,1,0,5,0)+'</label>'+
       uiBtn(s.done?'\u2713':'Done','workout.setDone',String(k),'btn-sm '+(s.done?'btn-secondary':'btn-primary'))+'</div>';}).join('');
-  var body='<div class="wo-head"><span>'+doneSets+' of '+total+' sets</span><span>'+_fmtClock((Date.now()-W.startedAt)/1000)+' elapsed'+(W.variant!=='full'?' \u00b7 '+esc(PLAN_VARIANTS[W.variant].label.toLowerCase())+' version':'')+'</span></div>'+nav+rest+
+  var body='<div class="wo-head"><span>'+doneSets+' of '+total+' sets</span><span data-clock="wo">'+_fmtClock((Date.now()-W.startedAt)/1000)+' elapsed'+(W.variant!=='full'?' \u00b7 '+esc(PLAN_VARIANTS[W.variant].label.toLowerCase())+' version':'')+'</span></div>'+nav+rest+
     '<div class="wo-ex"><div class="wo-name">'+esc(ex.name)+(ex.swappedFrom?' <span class="hint">(instead of '+esc(ex.swappedFrom)+')</span>':(ex.usualFor?' <span class="hint">(your usual '+esc(ex.usualFor.toLowerCase())+')</span>':''))+'</div>'+
     '<div class="hint">'+ex.sets.length+' \u00d7 '+esc(String(ex.reps))+' reps \u00b7 '+esc(ex.why)+(ex.cue?' \u00b7 '+esc(ex.cue):'')+'</div>'+rows+
     '<div class="btn-row wrap">'+uiBtn('Add a set','workout.addSet',null,'btn-sm btn-ghost')+uiBtn('Swap exercise','workout.swap',null,'btn-sm btn-ghost')+'</div></div>';
@@ -242,21 +247,29 @@ SHEETS.schedule=function(){
     var pat=M.pattern||'';
     out+='<div class="card-title" style="margin-top:10px">The cycle'+(pat?' ('+pat.length+' days)':'')+'</div><div class="hint">Tap a day to change it: D day shift, N night shift, O off, E evening shift.</div><div class="sched-pattern">'+
       pat.split('').map(function(c,i){return '<button class="pat-day sh-'+c+'" data-act="sched.cycleDay" data-arg="'+i+'" aria-label="day '+(i+1)+': '+attrEsc(SHIFT_LABELS[c])+'">'+c+'</button>';}).join('')+'</div>'+
+      '<div class="hint" style="margin-top:6px">Training on each day of the cycle (tap to change): auto lets the app place sessions; train or rest is your choice every cycle.</div><div class="sched-pattern">'+
+      pat.split('').map(function(c,i){var ch=M.cycleTrain[i]||'auto';return '<button class="pat-day ch-'+ch+'" data-act="sched.cycleTrain" data-arg="'+i+'" aria-label="day '+(i+1)+' training: '+ch+'">'+{auto:'\u00b7',train:'T',rest:'R'}[ch]+'</button>';}).join('')+'</div>'+
       '<div class="btn-row">'+uiBtn('Add a day','sched.addDay',null,'btn-sm btn-ghost')+(pat.length>1?uiBtn('Remove the last day','sched.removeDay',null,'btn-sm btn-ghost'):'')+'</div>'+
       '<label class="fld"><span>The first day of the cycle was</span><input id="schedAnchor" type="date" value="'+attrEsc(M.anchor||'')+'" data-act="sched.anchor" data-ev="change"></label>'+
       '<div class="card-title" style="margin-top:10px">What each shift leaves time for</div>'+['D','N','E','O'].map(function(k){return '<div class="sched-rule"><span>'+esc(SHIFT_LABELS[k])+'</span><div class="btn-row wrap">'+
         SHIFT_RULE_OPTIONS.map(function(o){return chip(o[1],'sched.rule',k+'|'+o[0],M.rules[k]===o[0]);}).join('')+'</div></div>';}).join('')+
-      '<div class="btn-row wrap">'+[20,30,45].map(function(m){return chip('Short: '+m+' min','sched.minutes','short|'+m,M.minutes.short===m);}).join('')+[45,60,75,90].map(function(m){return chip('Full: '+m+' min','sched.minutes','full|'+m,M.minutes.full===m);}).join('')+'</div>'+
+      '<div class="card-title" style="margin-top:10px">How long sessions are</div><div class="hint">Two settings: a short session fits around a shift; a full session is for a day with time.</div>'+
+      '<div class="sched-rule"><span>A short session lasts</span><div class="btn-row wrap">'+[20,30,45].map(function(m){return chip(m+' min','sched.minutes','short|'+m,M.minutes.short===m);}).join('')+'</div></div>'+
+      '<div class="sched-rule"><span>A full session lasts</span><div class="btn-row wrap">'+[45,60,75,90].map(function(m){return chip(m+' min','sched.minutes','full|'+m,M.minutes.full===m);}).join('')+'</div></div>'+
       '<div class="btn-row">'+chip(M.protectAfterNights?'The first day off after nights is kept for sleep':'Sessions can fall the day after nights','sched.protect',null,M.protectAfterNights)+'</div>';}
   if(M.mode==='irregular'){out+='<div class="card-title" style="margin-top:10px">The next 14 days</div><div class="hint">Tap how much time you have each day.</div>'+
     Array.apply(null,{length:14}).map(function(_,i){var d=addDays(todayISO(),i),v=M.available[d]||0;return '<div class="sched-rule"><span>'+esc(dowShort(d)+' '+shortDate(d))+'</span><div class="btn-row wrap">'+
       [0,30,45,60,90].map(function(m){return chip(m?m+' min':'none','sched.avail',d+'|'+m,v===m);}).join('')+'</div></div>';}).join('');}
+  out+='<div class="card-title" style="margin-top:12px">Choose any day</div><div class="hint">Tap to cycle: auto \u2192 train \u2192 short \u2192 rest. Your choice beats the automatic placement.</div><div class="sched-choose">'+
+    Array.apply(null,{length:14}).map(function(_,i){var d=addDays(todayISO(),i),ch=M.overrides[d]||'auto',pl=null;try{pl=scheduledPlan(d,trainingProgram());}catch(e){}
+      return '<button class="pw-day ch-'+ch+(pl?'':' rest')+'" data-act="sched.override" data-arg="'+d+'" aria-label="'+attrEsc(dowShort(d)+' '+shortDate(d)+': '+ch)+'"><b>'+esc(dowShort(d))+' '+esc(d.slice(8))+'</b><span>'+esc(pl?(pl.kind==='lift'?pl.label:'short'):'rest')+'</span><span class="hint">'+(ch==='auto'?'auto':'your choice')+'</span></button>';}).join('')+'</div>';
+  out+='<div class="card-title" style="margin-top:12px">Your sessions</div><div class="hint">'+esc(_liftSequence(trainingProgram()).map(function(x){return x.label;}).join(' \u2192 ')||'no sessions yet')+', in this order on your training days.</div><div class="btn-row">'+uiBtn('Edit sessions and exercises','nav.planEdit',null,'btn-sm btn-secondary')+'</div>';
   var A=scheduleAudit();
   out+='<div class="card-title" style="margin-top:12px">Your next 14 days</div>'+(A.ok?'<div class="sched-strip">'+scheduleAhead(14).map(function(x){return '<div class="pw-day'+(x.planned?'':' rest')+'" title="'+attrEsc(x.why)+'"><b>'+esc(dowShort(x.date))+' '+esc(x.date.slice(8))+'</b>'+(x.shift?'<span class="sh sh-'+x.shift+'">'+esc(x.shift)+'</span>':'')+'<span>'+esc(x.planned||'rest')+'</span></div>';}).join('')+'</div>':
     '<div class="hint">'+esc(A.issues.join('; '))+'.</div>');
   return {body:out,foot:'<button class="btn btn-primary" data-act="edit.close">Done</button>'};
 };
-var _sched=function(o){setSchedule(o);renderSheet();renderAll();};
+var _sched=function(o){changePlan({kind:'schedule',source:'your edit',reason:'You changed your schedule',expected:'as you set',apply:function(){return setSchedule(o);}});renderSheet();renderAll();};
 registerAction('nav.schedule',function(){openSchedule();});
 registerAction('sched.mode',function(m){var o={mode:m};if(m==='rotation'&&!(DB.settings.schedule||{}).pattern){o.preset='pitman-dn';o.anchor=todayISO();}_sched(o);});
 registerAction('sched.weekday',function(d){var t=(DB.settings.trainingDays||[]).slice(),i=t.indexOf(d);if(i>=0)t.splice(i,1);else t.push(d);
@@ -302,14 +315,27 @@ function _covBars(cov,keys){return '<div class="cov">'+cov.rows.filter(function(
   var pct=Math.max(0,Math.min(160,r.pct||0)),ulPct=r.ul&&r.target?Math.min(160,Math.round(100*r.ul/r.target)):null;
   return '<div class="cov-row" title="'+attrEsc(r.label+': '+r.avg+' '+r.unit+' a day, '+r.kind+' '+r.target+(r.ul?(', upper limit '+r.ul+' ('+r.ulScope+')'):''))+'"><span class="cov-l">'+esc(r.label)+'</span><span class="cov-bar"><span class="cov-fill'+(r.overUL?' over':(r.pct<67?' low':''))+'" style="width:'+(pct/1.6)+'%"></span><span class="cov-ref" style="left:'+(100/1.6)+'%"></span>'+(ulPct?'<span class="cov-ul" style="left:'+(ulPct/1.6)+'%"></span>':'')+'</span><span class="cov-v">'+(r.pct!=null?r.pct+'%':'\u2014')+'</span></div>';}).join('')+'</div>';}
 function supplementsCard(){
-  var A=supplementAdherence(14),cov=micronutrientCoverage(7),rows='';
-  if(A.status==='ok')rows=A.rows.map(function(r){return '<div class="feat">'+uiIcon('pill',{size:20})+'<div class="feat-body"><b>'+esc(r.label)+'</b> <span class="num">'+esc(r.dose+' '+r.unit)+'</span> '+uiPill(r.today?'taken today':(r.when==='training days'?'training days':'not yet today'),r.today?'good':'neutral')+
-    '<div class="hint">'+(r.pct!=null?r.pct+'% of due days in 2 weeks ('+r.taken+' of '+r.due+')':'')+'</div></div></div>';}).join('');
+  var A=supplementAdherence(14),cov=micronutrientCoverage(7),slot=supplementSlot(),due=supplementsDue(todayISO(),slot),rows='';
+  if(A.status==='ok')rows=A.rows.map(function(r){var st=supplementStack().filter(function(x){return x.id===r.id;})[0]||{};
+    return '<div class="feat">'+uiIcon('pill',{size:20})+'<div class="feat-body"><b>'+esc(r.label)+'</b> <span class="num">'+esc(r.dose+' '+r.unit)+'</span> <span class="hint">'+esc(SUPP_TIMINGS[st.timing||'any'])+'</span>'+
+      '<div class="hint">'+(r.pct!=null?r.pct+'% of due days in 2 weeks ('+r.taken+' of '+r.due+')':'')+'</div></div>'+
+      '<button class="chip'+(r.today?' active':'')+'" data-act="supp.toggle" data-arg="'+attrEsc(r.id)+'" aria-pressed="'+(!!r.today)+'">'+(r.today?'taken':'tap to log')+'</button></div>';}).join('');
   var body=(rows||'<div class="hint">No regimen yet. Add what you take, and the app tracks it and counts its vitamins and minerals with your food.</div>')+
-    '<div class="btn-row">'+(A.status==='ok'&&A.rows.some(function(r){return !r.today&&(r.when!=='training days'||_stackDue({when:r.when},todayISO()));})?uiBtn('Log today\u2019s supplements','supp.logStack',null,'btn-sm btn-primary'):'')+uiBtn(A.status==='ok'?'Regimen and vitamins':'Set up','supp.open',null,'btn-sm btn-secondary')+'</div>';
+    '<div class="btn-row">'+(due.length?uiBtn('Log '+slot+' supplements ('+due.length+')','supp.logStack',slot,'btn-sm btn-primary'):'')+uiBtn(A.status==='ok'?'Regimen and vitamins':'Set up','supp.open',null,'btn-sm btn-secondary')+'</div>';
   if(cov.status==='ok')body+='<div class="card-title" style="margin-top:8px">Vitamins and minerals, last '+cov.days+' days</div>'+_covBars(cov,['vitd','vitc','vitb12','folate','calcium','iron','magnesium','zinc','potassium'])+'<div class="hint">'+esc(cov.verdict)+'</div>';
   return uiCard({title:'Supplements and vitamins',sub:A.status==='ok'?(A.rows.filter(function(r){return r.today;}).length+' of '+A.rows.length+' taken today'):'not set up',body:body});}
-registerAction('supp.logStack',function(){var r=logSupplementStack(todayISO());renderAll();toast(r.logged?('Logged '+r.logged+' supplement'+(r.logged===1?'':'s')):'Nothing left to log today',{undo:!!r.logged});});
+registerAction('supp.logStack',function(slot){var r=logSupplementStack(todayISO(),{slot:slot||supplementSlot()});renderAll();toast(r.logged?('Logged '+r.logged+' supplement'+(r.logged===1?'':'s')):'Nothing due now',{undo:!!r.logged});});
+registerAction('supp.toggle',function(id){var r=toggleSupplementToday(id);renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='supplements')renderSheet();toast((SUPPLEMENT_CATALOGUE[id]||{label:id}).label+(r.taken?' logged':' removed for today'),{undo:true});});
+registerAction('supp.timing',function(arg){var q=String(arg).split('|');setSupplementStack(supplementStack().map(function(s){if(s.id===q[0])s.timing=q[1];return s;}));renderSheet();renderAll();});
+registerAction('supp.customOpen',function(){if(_SHEET&&_SHEET.buf){_SHEET.buf.custom={label:'',per:{}};renderSheet();}});
+registerAction('supp.customField',function(arg,ev,el){var b=_SHEET&&_SHEET.buf;if(!b||!b.custom||!el)return;if(arg==='label')b.custom.label=el.value;else b.custom.per[arg]=el.value;});
+registerAction('supp.customSave',function(){var b=_SHEET.buf,r=saveCustomSupplement(b.custom);if(r.status!=='ok'){toast(r.note);return;}var S=supplementStack().slice();if(!S.some(function(x){return x.id===r.id;}))S.push({id:r.id,when:'daily',timing:'morning'});
+  setSupplementStack(S);b.custom=null;renderSheet();renderAll();toast('Saved your product with '+r.nutrients+' nutrient'+(r.nutrients===1?'':'s')+' from its label');});
+var LABEL_NUTRIENTS=['vita','vitc','vitd','vite','vitk','thiamin','riboflavin','niacin','vitb6','folate','vitb12','biotin','pantothenic','calcium','iron','iodine','magnesium','zinc','selenium','copper','manganese','chromium','molybdenum','potassium','choline'];
+function _customProductForm(c){return '<div class="card-title" style="margin-top:12px">Your product, from its label</div><div class="hint">Amounts per serving, in the units shown. Leave blank what the label does not list.</div>'+
+  '<label class="fld"><span>Name</span><input value="'+attrEsc(c.label||'')+'" data-act="supp.customField" data-arg="label" data-ev="input" placeholder="e.g. Brand X Men\u2019s Multi"></label><div class="form-trio">'+
+  LABEL_NUTRIENTS.map(function(k){var m=MICRONUTRIENTS[k];return '<label class="fld"><span>'+esc(m.label)+' ('+esc(m.unit)+')</span><input inputmode="decimal" value="'+attrEsc(c.per[k]||'')+'" data-act="supp.customField" data-arg="'+k+'" data-ev="input"></label>';}).join('')+
+  '</div><div class="btn-row">'+uiBtn('Save product','supp.customSave',null,'btn-sm btn-primary')+'</div>';}
 registerAction('supp.open',function(){openSheet('edit',{form:'supplements',title:'Supplements and vitamins',desc:'',buf:{q:''}});});
 registerAction('supp.q',function(a,ev,el){if(_SHEET&&_SHEET.buf)_SHEET.buf.q=el?el.value:'';renderSheet();});
 registerAction('supp.add',function(id){var S=supplementStack().slice();if(!S.some(function(s){return s.id===id;}))S.push({id:id,when:'daily'});setSupplementStack(S);renderSheet();renderAll();toast(SUPPLEMENT_CATALOGUE[id].label+' added to your regimen');});
@@ -320,7 +346,9 @@ SHEETS.supplements=function(b){
   var S=supplementStack(),cov=micronutrientCoverage(7),adv=supplementAdvice(),eff=supplementEfficacy(),out='<div class="card-title">Your regimen</div>';
   out+=S.length?S.map(function(s){var c=SUPPLEMENT_CATALOGUE[s.id];return '<div class="feat">'+uiIcon('pill',{size:20})+'<div class="feat-body"><b>'+esc(c.label)+'</b>'+
     '<label class="fld"><span>Dose ('+esc(c.unit)+'; usual '+c.dose[0]+'\u2013'+c.dose[1]+')</span><input inputmode="decimal" value="'+attrEsc(s.dose)+'" data-act="supp.dose" data-arg="'+attrEsc(s.id)+'" data-ev="change"></label>'+
-    '<div class="btn-row">'+['daily','training days'].map(function(w){return uiBtn(w,'supp.when',s.id+'|'+w,'btn-sm '+(s.when===w?'btn-primary':'btn-ghost'));}).join('')+uiBtn('Remove','supp.remove',s.id,'btn-sm btn-ghost')+'</div></div></div>';}).join(''):'<div class="hint">Nothing yet. Add from the list below.</div>';
+    '<div class="btn-row">'+['daily','training days'].map(function(w){return uiBtn(w,'supp.when',s.id+'|'+w,'btn-sm '+(s.when===w?'btn-primary':'btn-ghost'));}).join('')+uiBtn('Remove','supp.remove',s.id,'btn-sm btn-ghost')+'</div>'+
+    '<div class="btn-row wrap">'+Object.keys(SUPP_TIMINGS).map(function(t){return uiBtn(SUPP_TIMINGS[t],'supp.timing',s.id+'|'+t,'btn-sm '+((s.timing||'any')===t?'btn-primary':'btn-ghost'));}).join('')+'</div></div></div>';}).join(''):'<div class="hint">Nothing yet. Add from the list below.</div>';
+  out+=b.custom?_customProductForm(b.custom):'<div class="btn-row" style="margin-top:8px">'+uiBtn('Add your own product from its label','supp.customOpen',null,'btn-sm btn-secondary')+'</div>';
   var q=String(b.q||'').toLowerCase();
   out+='<div class="card-title" style="margin-top:12px">Add a supplement <span class="hint">('+Object.keys(SUPPLEMENT_CATALOGUE).length+' in the catalogue)</span></div><label class="fld"><span>Search</span><input id="suppQ" value="'+attrEsc(b.q||'')+'" data-act="supp.q" data-ev="input" placeholder="creatine, vitamin D, magnesium\u2026"></label>'+
     Object.keys(SUPPLEMENT_CATALOGUE).filter(function(id){var c=SUPPLEMENT_CATALOGUE[id];return !q||c.label.toLowerCase().indexOf(q)>=0||c.aliases.some(function(a){return a.indexOf(q)>=0;});}).map(function(id){var c=SUPPLEMENT_CATALOGUE[id],top=c.evidence[0];
@@ -335,3 +363,18 @@ SHEETS.supplements=function(b){
   if(eff.status==='ok')out+='<div class="card-title" style="margin-top:12px">Does it work for you?</div>'+eff.supplements.map(function(x){return uiRow(esc(x.name),esc(x.verdict||x.status),{sub:esc(x.why||x.outcome||(x.need||''))});}).join('');
   return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('weather.auto',function(){DB.settings.weatherAuto=!weatherAutoEnabled();save('settings');if(_SHEET)renderSheet();if(weatherAutoEnabled())weatherAutoRefresh('switched on');toast(weatherAutoEnabled()?'Weather updates automatically':'Weather updates only when you refresh');});
+registerAction('weather.expand',function(){DB.settings.weatherExpanded=!DB.settings.weatherExpanded;save('settings');renderAll();});
+registerAction('sched.override',function(d){var M=scheduleModel(),c=M.overrides[d]||'auto',nx={auto:'train',train:'short',short:'rest',rest:'auto'}[c];_sched({override:{date:d,choice:nx}});});
+registerAction('sched.cycleTrain',function(i){var M=scheduleModel(),c=M.cycleTrain[i]||'auto',nx={auto:'train',train:'rest',rest:'auto'}[c];_sched({cycleChoice:{index:+i,choice:nx}});});
+/* HYDRATION on the Food tab: today against need in the person's unit, one-tap amounts, sweat, sodium, status */
+function hydrationCard(){var H=hydrationModel(todayISO()),wu=waterUnitDefault(),Q=(WATER_QUICK[wu]||[]).slice(0,4);
+  var add='<div class="chips">'+Q.map(function(q){return '<button type="button" class="chip" data-act="qa.waterAmt" data-arg="'+q+'|'+wu+'">+'+q+' '+WATER_UNITS[wu].short+'</button>';}).join('')+'</div>';
+  if(H.status!=='ok')return uiCard({title:'Hydration',sub:'nothing logged today',body:add+'<div class="btn-row">'+uiBtn('Sweat test','log.open','sweattest','btn-sm btn-ghost')+uiBtn('Urine colour','log.open','urine','btn-sm btn-ghost')+'</div>'});
+  var pct=Math.min(100,Math.round(100*H.intakeL/Math.max(0.1,H.needL)));
+  var body='<div class="hyd-bar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><span style="width:'+pct+'%"></span></div>'+
+    uiRow('Today',fmtWater(H.intakeL)+' of '+fmtWater(H.needL),{sub:esc('drinks '+fmtWater(H.fromDrinksL)+' \u00b7 food '+fmtWater(H.fromFoodL)+(H.foodWaterEstimatedShare>0.5?' (estimated)':'')+' \u00b7 '+H.verdict),rsub:H.remainingL>0?fmtWater(H.remainingL)+' to go':'met'})+add;
+  if(H.sessions.length)body+=uiRow('Sweat today',fmtWater(H.sweatL),{sub:esc(H.sessions.map(function(x){return x.modality+' '+x.minutes+' min: '+fmtWater(x.litres)+' ('+x.basis+(x.weather?', '+x.weather:'')+')';}).join('; '))});
+  if(H.sodium.note)body+='<div class="hint">'+esc(H.sodium.note)+'</div>';if(H.urine)body+=uiRow('Urine colour',String(H.urine.value),{sub:esc(H.urine.reading)});if(H.morningDrop)body+='<div class="hint">'+esc(H.morningDrop)+'</div>';
+  body+='<div class="btn-row">'+uiBtn('Sweat test','log.open','sweattest','btn-sm btn-ghost')+uiBtn('Urine colour','log.open','urine','btn-sm btn-ghost')+'</div><div class="prov">'+esc(H.method)+'</div>';
+  return uiCard({title:'Hydration',sub:pct+'% of today\u2019s need',body:body});}
+registerAction('qa.waterAmt',function(arg){var q=String(arg).split('|'),L=toLitres(+q[0],q[1]);if(L==null)return;addObservation({type:'water',date:todayISO(),value:round(L,3),source:'manual',meta:{entered:+q[0],unit:q[1],quick:true}});renderAll();toast('+'+q[0]+' '+WATER_UNITS[q[1]].short,{undo:true});});

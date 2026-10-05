@@ -600,7 +600,8 @@ var TYPE_ALIASES={
   bodyfat:'adherence',rhr:'cardioFitness',
   soreness:'readiness',fatigue:'readiness',stress:'readiness',motivation:'readiness',
   hunger:'readiness',fullness:'readiness',cravings:'readiness',difficulty:'readiness',
-  sleepq:'sleep',water:'intake',cardio:'sleep',mobility:'sleep',supplement:'adherence'
+  sleepq:'sleep',water:'intake',cardio:'sleep',mobility:'sleep',supplement:'adherence',
+  urine:'readiness',sweatrate:'intake'   /* a 1-8 scored scale; a volume of fluid (per hour) */
 };
 function typeForQuantity(q){
   return typeOf(q)||(TYPE_ALIASES[q]?typeOf(TYPE_ALIASES[q]):null);
@@ -1361,3 +1362,8 @@ function setTintFriendly(hue,strength){
   return {status:'ok',hue:hue,strength:allowed,limited:allowed<strength,
     note:allowed<strength?('Kept at '+allowed+'% so text stays easy to read on this theme.'):null};
 }
+/* the person's appearance as a record format (export and import) */
+registerExportAdapter('appearance',{version:1,formats:['json'],
+    object:function(){return appearanceSpec();},
+    validate:function(d){var v=validateAppearanceSpec(d);return v.ok?[]:v.errors;},
+    apply:function(d){return importAppearanceSpec(JSON.stringify(Object.assign({kind:'physique-os-appearance'},d)));}});

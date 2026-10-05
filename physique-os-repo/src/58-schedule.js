@@ -28,7 +28,7 @@ function scheduleModel(){
   var rules=Object.assign({D:'short',N:'none',O:'full',E:'short'},s.rules||{});
   var mins=Object.assign({short:Math.min(30,p.sessionMinutes||30),full:p.sessionMinutes||60},s.minutes||{});
   return {mode:mode,pattern:s.pattern||null,preset:s.preset||null,anchor:s.anchor||null,rules:rules,minutes:mins,protectAfterNights:s.protectAfterNights!==false,
-    available:s.available||{},weekdays:(DB.settings.trainingDays||[]).slice()};
+    available:s.available||{},weekdays:(DB.settings.trainingDays||[]).slice(),overrides:s.overrides||{},cycleTrain:s.cycleTrain||{}};
 }
 function shiftOn(date,M){M=M||scheduleModel();if(M.mode!=='rotation'||!M.pattern||!isValidISO(M.anchor))return null;
   var L=M.pattern.length,i=((daysBetween(M.anchor,date)%L)+L)%L;return M.pattern.charAt(i);}
@@ -47,14 +47,28 @@ function _liftSequence(prog){var order=['Mon','Tue','Wed','Thu','Fri','Sat','Sun
   order.forEach(function(d){var p=prog.week&&prog.week[d];if(p&&p.kind==='lift')seq.push(p);});return seq;}
 /* Deterministic placement from the anchor: past days keep their assignments. */
 function scheduledPlan(date,prog){
-  var M=scheduleModel();if(M.mode==='weekly')return (prog.week||{})[_DOW[new Date(date+'T12:00:00Z').getUTCDay()]]||null;
-  var seq=_liftSequence(prog);if(!seq.length)return null;
+  /* YOUR CHOICE FIRST: a day set to Train, Rest or Short beats the automatic placement (an off day could be forced to
+     rest with no way to say otherwise). Weekly mode follows the schedule's training days \u2014 they were ignored, so two
+     places set the days and only the programme's grid counted \u2014 taking the programme's sessions in order. */
+  var M=scheduleModel(),seq=_liftSequence(prog),ov=M.overrides[date];
+  var shortDay=function(){return {label:'Short session: cardio or mobility',kind:'cardio',minutes:M.minutes.short,chosen:true};};
+  if(M.mode==='weekly'){var order=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dow=_DOW[new Date(date+'T12:00:00Z').getUTCDay()],T=M.weekdays.slice().sort(function(a,b){return order.indexOf(a)-order.indexOf(b);});
+    var base=null;if(T.length&&seq.length){var pos=T.indexOf(dow);if(pos>=0){var x=seq[pos%seq.length];base={label:x.label,kind:'lift',template:x.template,minutes:M.minutes.full};}else{var w=(prog.week||{})[dow];base=w&&w.kind!=='lift'?w:null;}}
+    else base=(prog.week||{})[dow]||null;
+    if(ov==='rest')return null;if(ov==='short')return shortDay();
+    if(ov==='train'){if(base&&base.kind==='lift')return Object.assign({},base,{chosen:true});var n=0;for(var k=1;k<=6;k++){var dd=addDays(date,-k);if(order.indexOf(_DOW[new Date(dd+'T12:00:00Z').getUTCDay()])>order.indexOf(dow))break;var dw=_DOW[new Date(dd+'T12:00:00Z').getUTCDay()];if(T.length?T.indexOf(dw)>=0:(((prog.week||{})[dw]||{}).kind==='lift'))n++;}   /* the next session in order, by the same source as the week */
+      var y=seq.length?seq[n%seq.length]:null;return y?{label:y.label,kind:'lift',template:y.template,minutes:M.minutes.full,chosen:true}:null;}
+    return base;}
+  if(!seq.length)return null;
   var anchor=M.mode==='rotation'&&isValidISO(M.anchor)?M.anchor:(Object.keys(M.available).sort()[0]||addDays(todayISO(),-28));
   if(date<anchor)return null;
-  var key='sched:'+JSON.stringify([M.mode,M.pattern,M.anchor,M.rules,M.minutes,M.protectAfterNights,Object.keys(M.available).length,prog.id||prog.label,seq.length]);
-  var map=memo(key,function(){var out={},k=0,run=0,recent=[],end=addDays(todayISO(),60),perWeek=seq.length;
+  var key='sched:'+JSON.stringify([M.mode,M.pattern,M.anchor,M.rules,M.minutes,M.protectAfterNights,Object.keys(M.available).length,prog.id||prog.label,seq.length,M.overrides,M.cycleTrain]);
+  var map=memo(key,function(){var out={},k=0,run=0,recent=[],end=addDays(todayISO(),60),perWeek=seq.length,plen=(M.pattern||'').length;
     for(var d=anchor;d<=end;d=addDays(d,1)){var av=availabilityOn(d,M);recent=recent.filter(function(x){return daysBetween(x,d)<7;});
-      if(av.level==='full'&&recent.length<perWeek&&run<3){out[d]={label:seq[k%seq.length].label,kind:'lift',template:seq[k%seq.length].template,shift:av.shift||null,minutes:av.minutes};k++;run++;recent.push(d);}
+      var choice=M.overrides[d]||(M.mode==='rotation'&&plen?M.cycleTrain[daysBetween(anchor,d)%plen]:null);
+      if(choice==='rest'){run=0;continue;}
+      if(choice==='short'){out[d]=Object.assign(shortDay(),{shift:av.shift||null});run=0;continue;}
+      if(choice==='train'||(av.level==='full'&&recent.length<perWeek&&run<3)){out[d]={label:seq[k%seq.length].label,kind:'lift',template:seq[k%seq.length].template,shift:av.shift||null,minutes:choice==='train'?M.minutes.full:av.minutes,chosen:choice==='train'};k++;run++;recent.push(d);}
       else{if(av.level==='short')out[d]={label:'Short session: cardio or mobility',kind:'cardio',shift:av.shift||null,minutes:av.minutes};run=0;}}
     return out;});
   return map[date]||null;
@@ -69,6 +83,8 @@ function setSchedule(o){
   if(o.anchor&&isValidISO(o.anchor))s.anchor=o.anchor;if(o.rules)s.rules=Object.assign({},s.rules||{},o.rules);
   if(o.minutes)s.minutes=Object.assign({},s.minutes||{},o.minutes);if(o.protectAfterNights!=null)s.protectAfterNights=!!o.protectAfterNights;
   if(o.available)s.available=Object.assign({},s.available||{},o.available);
+  if(o.override){s.overrides=Object.assign({},s.overrides||{});if(o.override.choice&&o.override.choice!=='auto')s.overrides[o.override.date]=o.override.choice;else delete s.overrides[o.override.date];}
+  if(o.cycleChoice){s.cycleTrain=Object.assign({},s.cycleTrain||{});if(o.cycleChoice.choice&&o.cycleChoice.choice!=='auto')s.cycleTrain[o.cycleChoice.index]=o.cycleChoice.choice;else delete s.cycleTrain[o.cycleChoice.index];}
   DB.settings.schedule=s;_memoInvalidate();save('settings');
   if(typeof notePlanChange==='function')notePlanChange('constraint change',{reason:'Your schedule changed.'});
   return {status:'ok',schedule:s};

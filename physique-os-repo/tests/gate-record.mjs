@@ -12,6 +12,8 @@ const file=path.join('docs','release','gate-results.json');fs.mkdirSync(path.dir
 let rec={};try{rec=JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){}
 if(rec.build!==after)rec={build:after,gates:{}};
 /* A gate that rebuilt dist mid-run (build) records against the build it produced; any other change of build voids it. */
-rec.gates[gate]={ok:r.status===0&&(gate==='build'||build===after),summary,at:new Date().toISOString()};
+/* a skipped gate is not a passed gate (audit R-006): a browser gate exited 0 when jsdom or Playwright were missing */
+const skipped=/\bSKIPPED\b/.test(out);
+rec.gates[gate]={ok:!skipped&&r.status===0&&(gate==='build'||build===after),skipped,summary:skipped?'SKIPPED \u2014 not verified: '+summary:summary,at:new Date().toISOString()};
 fs.writeFileSync(file,JSON.stringify(rec,null,1));
 console.log(gate.padEnd(12),rec.gates[gate].ok?'pass':'FAIL',' ',summary.slice(0,120));process.exit(rec.gates[gate].ok?0:1);

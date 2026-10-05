@@ -277,3 +277,19 @@ function sessionHistory(id){
   return out.sort(function(a,b){return String(a.createdAt)<String(b.createdAt)?-1:1;});
 }
 function sessionsOf(opts){opts=opts||{};var date=opts.asOf||asOf();return (DB.sessions||[]).filter(function(s){return _sessionVisible(s,date)&&(!opts.from||s.date>=opts.from);}).sort(function(a,b){return a.date<b.date?-1:1;});}
+/* read models for stores that views read inline (each now used by those views) */
+function recipesOf(){return (DB.recipes||[]).slice();}
+function archiveOf(){return (DB.archive||[]).slice();}
+function snapshotsOf(asOfDate){var d=asOfDate||asOf();return (DB.snapshots||[]).filter(function(x){return x.date<=d;});}
+
+/* moved from 85-log-sheet.js: an engine function that lived in an interface file */
+function applyProfileFields(b){var p=DB.profile;
+  if('name' in b)p.name=String(b.name||'').trim();if('age' in b)p.age=num(b.age);if('sex' in b)p.sex=b.sex||'';
+  if('height' in b||'heightFt' in b||'heightIn' in b)p.heightIn=unitPref()==='metric'?(num(b.height)!=null?cmToIn(num(b.height)):null):((num(b.heightFt)||0)*12+(num(b.heightIn)||0)||null);
+  if('startWeight' in b)p.startWeightLb=toCanonicalWeight(b.startWeight);if('goalWeight' in b)p.goalWeightLb=toCanonicalWeight(b.goalWeight);
+  ['targetDate','trainingExperience','dietPreference','schedule'].forEach(function(k){if(k in b)p[k]=b[k]||'';});
+  if('activityBaseline' in b)p.activityBaseline=b.activityBaseline||'light';if('equipment' in b)if(b.equipment||b._eq)p.equipment=(Array.isArray(b.equipment)?b.equipment:b._eq).slice();   /* a list: saving the profile turned it into one string */
+  if('sleepTargetH' in b)p.sleepTargetH=num(b.sleepTargetH);if('goalType' in b)p.goalType=canonicalGoalType(b.goalType)||'';
+  if('sessionMinutes' in b)p.sessionMinutes=num(b.sessionMinutes);if('cookingTime' in b)p.cookingTime=b.cookingTime||'';
+  if('foodBudget' in b)p.foodBudget=b.foodBudget||'';if('dietRestrictions' in b)p.dietRestrictions=Array.isArray(b.dietRestrictions)?b.dietRestrictions.slice():[];
+  p.updatedAt=nowISO();emitEvent('profile.changed',JSON.parse(JSON.stringify(DB.profile)));save('profile');_memoInvalidate();}

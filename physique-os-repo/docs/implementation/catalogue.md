@@ -4,18 +4,18 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 38 |
+| models | 40 |
 | capabilities | 22 |
-| entity contracts | 11 |
-| commands | 489 |
-| sheets | 115 |
-| event types | 45 |
-| observation types | 32 |
+| entity contracts | 23 |
+| commands | 537 |
+| sheets | 120 |
+| event types | 47 |
+| observation types | 34 |
 | exercises | 159 |
 | movement patterns | 28 |
 | progression families | 18 |
 | mobility items | 43 |
-| classified panels (rules) | 111 |
+| classified panels (rules) | 115 |
 
 ## Entity contracts
 
@@ -27,7 +27,19 @@ Produced from the running registries on every governance run. Do not edit by han
 - **Intervention**: implemented
 - **Execution**: implemented
 - **Observation**: implemented
+- **Experiment**: implemented
+- **NegativeKnowledge**: implemented
+- **Recipe**: implemented
+- **Food**: implemented
+- **Prediction**: implemented
+- **Snapshot**: implemented
+- **Archive**: implemented
+- **Source**: implemented
+- **IndividualState**: projection
+- **InterventionLifecycle**: projection
+- **Evidence**: reference
 - **Response**: implemented
+- **LearningCycle**: implemented
 - **Decision**: implemented
 - **Adaptation**: implemented
 

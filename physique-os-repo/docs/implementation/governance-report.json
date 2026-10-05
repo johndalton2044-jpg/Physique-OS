@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-30T07:21:21.477Z",
-  "build": "e7bd36cfde",
+  "generatedAt": "2026-10-05T16:24:49.811Z",
+  "build": "de9d967236",
   "counts": {
     "hard": {},
     "soft": {}
@@ -62,11 +62,11 @@
     },
     {
       "cat": "entity-contracts",
-      "msg": "all 11 entity contracts hold, and every store in the record is owned or explained"
+      "msg": "all 23 entity contracts hold, and every store in the record is owned or explained"
     },
     {
       "cat": "model-without-version",
-      "msg": "33 models, each versioned"
+      "msg": "40 models, each versioned"
     },
     {
       "cat": "model-without-provenance",

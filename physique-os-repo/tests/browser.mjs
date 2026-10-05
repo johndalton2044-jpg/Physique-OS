@@ -326,6 +326,20 @@ for(const vp of VIEWPORTS){
         else if(st.top>400)f.push(layout+'/'+t+': the panel starts '+Math.round(st.top)+' px down');}}
     await page.evaluate(()=>document.documentElement.setAttribute('data-layout',window.DB.settings.layout||'auto'));
     if(f.length)add('P0','navigation',`switching panels shows the wrong views on ${vp.name}`,f.slice(0,4).join('; '));else good('navigation','one view at a time, at the top, in both layouts','panel switching');}
+  /* PAGE LAYOUT: any section hidden or moved, kept through a full re-render, undone by reset (every page; Tools too) */
+  if(vp.name==='iPhone 15'){const f=[];
+    for(const tab of ['today','tools']){await page.evaluate(t=>{window.closeSheet&&window.closeSheet();window.switchTab(t);},tab);await page.waitForTimeout(250);
+      const P=await page.evaluate(t=>window.pagePanels(t).map(x=>({k:x.key,z:x.parent.id})),tab);if(P.length<2){f.push(tab+': fewer than two sections');continue;}
+      if(!(await page.evaluate(t=>!!document.querySelector('#view-'+t+' > .page-custom [data-act="page.customize"]'),tab)))f.push(tab+': no Customize this page');
+      await page.evaluate(a=>window.dispatchAct('page.toggle',a.t+'|'+a.k),{t:tab,k:P[0].k});
+      const same=P.filter(x=>x.z===P[P.length-1].z);if(same.length>=2)await page.evaluate(a=>window.dispatchAct('page.move',a.t+'|'+a.k+'|-1'),{t:tab,k:same[1].k});
+      await page.evaluate(()=>window.renderAll());await page.waitForTimeout(250);
+      const st=await page.evaluate(a=>{const Q=window.pagePanels(a.t);const h=Q.find(x=>x.key===a.h);const z=Q.filter(x=>x.parent.id===a.z);return {hidden:!!h&&getComputedStyle(h.el).display==='none',first:z[0]&&z[0].key};},{t:tab,h:P[0].k,z:same[0].z});
+      if(!st.hidden)f.push(tab+': a hidden section came back after a re-render');if(same.length>=2&&st.first!==same[1].k)f.push(tab+': a moved section did not stay moved');
+      await page.evaluate(t=>window.dispatchAct('page.reset',t),tab);await page.waitForTimeout(200);
+      if(await page.evaluate(a=>{const h=window.pagePanels(a.t).find(x=>x.key===a.h);return h&&getComputedStyle(h.el).display==='none';},{t:tab,h:P[0].k}))f.push(tab+': reset did not bring the section back');}
+    await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.switchTab('today');});
+    if(f.length)add('P1','layout','customizing a page does not work through its controls',f.join('; '));else good('layout','hide, move, re-render and reset on Today and Tools','page layout');}
   /* SOURCES: from the palette; removing previews first, and cancelling removes nothing. */
   if(vp.name==='iPhone 15'){const f=[];
     await page.evaluate(()=>{window.closeSheet&&window.closeSheet();window.openCmdk();});await page.waitForTimeout(100);await page.fill('#cmdkInput','your data sources');await page.waitForTimeout(150);await page.keyboard.press('Enter');await page.waitForTimeout(300);

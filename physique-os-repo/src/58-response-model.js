@@ -21,7 +21,8 @@ function _perUnit(r){var P=r.primary;if(!P||r.dose==null||!r.dose||P.se==null||r
 function _posterior(prior,obs){var pm=prior?prior.perUnit:0,pv=prior?prior.sdAbs*prior.sdAbs:1;
   var prec=1/pv,num=pm/pv;obs.forEach(function(o){prec+=1/(o.se*o.se);num+=o.y/(o.se*o.se);});
   var dataPrec=obs.reduce(function(a,o){return a+1/(o.se*o.se);},0);return {mean:num/prec,sd:Math.sqrt(1/prec),personalWeight:dataPrec/prec};}
-function personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by={};
+function personalResponseModel(opts){opts=opts||{};if(typeof memo==='function')return memo('prm:'+(opts.excludeId||'')+':'+(DB.responses||[]).map(function(r){return r.id+'/'+r.stage+'/'+(r.primary&&r.primary.effect)+'/'+(r.primary&&r.primary.se)+'/'+(r.adherence&&r.adherence.share)+'/'+r.dose;}).join('|'),function(){   /* keyed by content: a count went stale when a response changed */return _personalResponseModel(opts);});return _personalResponseModel(opts);}
+function _personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by={};
   (DB.responses||[]).forEach(function(r){if(opts.excludeId&&(r.id===opts.excludeId||r.interventionId===opts.excludeId))return;var u=_perUnit(r);if(!u)return;(by[_respKey(r)]=by[_respKey(r)]||[]).push(u);});
   var keys=Object.keys(PR).concat(Object.keys(by).filter(function(k){return !PR[k];}));
   var rows=keys.map(function(k){var prior=PR[k]||{perUnit:0,sdAbs:null,scale:1,label:'per unit',unit:'',basis:'no population figure'},obs=by[k]||[];

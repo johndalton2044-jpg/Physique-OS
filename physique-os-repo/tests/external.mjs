@@ -43,7 +43,11 @@ const E=await S(()=>{const f=(window.DB.environment||[]).find(b=>b.dataset==='fo
   return {f:!!f,hours:f&&f.hourly.times.length,days:f&&f.daily.dates.length,kinds:f&&[...new Set(f.daily.kinds)],src:f&&f.source,ret:f&&f.retrievedAt,air:a&&Object.keys(a.current.values).length};});
 line(E.f&&E.hours===504&&E.days===21&&E.kinds.includes('recent past')&&E.kinds.includes('forecast')&&E.src==='open-meteo'&&!!E.ret,'the forecast is ingested: 7 past and 14 forecast days, hourly, each labelled, with its source and retrieval time',JSON.stringify(E));
 line(E.air===8,'air quality is ingested (PM2.5, PM10, ozone, NO\u2082, SO\u2082, CO and both AQIs)',JSON.stringify(E.air));
-await S(()=>{window.closeSheet&&window.closeSheet();window.switchTab('today');});await p.waitForTimeout(300);
+await S(()=>{window.closeSheet&&window.closeSheet();window.DB.settings.weatherExpanded=false;window.switchTab('today');});await p.waitForTimeout(300);
+/* a glance by default: temperature, condition, today's range and rain, with More to open the rest */
+const G=await S(()=>{const c=[...document.querySelectorAll('#view-today .card')].find(x=>window.panelTitle(x)==='Weather');return c?{t:c.textContent.replace(/\s+/g,' '),glance:!!c.querySelector('.wx-glance'),more:!!c.querySelector('[data-act="weather.expand"]')}:null;});
+line(!!G&&G.glance&&G.more&&/rain \d+% in the next 6 hours/.test(G.t)&&!/Humidity/.test(G.t),'Today shows a weather glance by default, with More for the rest',G&&G.t.slice(0,160));
+await S(()=>window.dispatchAct('weather.expand'));await p.waitForTimeout(200);
 const C=await S(()=>{const c=[...document.querySelectorAll('#view-today .card')].find(x=>window.panelTitle(x)==='Weather');return c?{t:c.textContent.replace(/\s+/g,' '),days:c.querySelectorAll('.wx-day').length}:null;});
 line(!!C&&/feels like/.test(C.t)&&/Humidity/.test(C.t)&&/gusts/.test(C.t)&&/UV index/.test(C.t)&&/daylight/.test(C.t)&&/AQI/.test(C.t)&&C.days>=12,'Today shows current weather, wind with gusts, UV, sun and daylight, air quality and the next 14 days',C&&C.t.slice(0,200));
 /* AUTO-UPDATING: a small request, a silent refresh when stale, none when fresh or switched off, and one on launch */
