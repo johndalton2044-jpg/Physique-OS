@@ -2637,6 +2637,7 @@
     "updatePhase",
     "setProgram",
     "addSession",
+    "updateSession",
     "sessionsOf"
    ],
    "40-models.js": [
@@ -3038,6 +3039,7 @@
     "eventArchiveState",
     "compactEvents",
     "deviceId",
+    "emitEvent",
     "resetEventLog",
     "eventLog",
     "eventStats",
@@ -4461,6 +4463,7 @@
    "50-decision.js": [
     "diagnose",
     "decide",
+    "recordDecision",
     "decisionsOf",
     "stampPredictions",
     "scorePredictions",

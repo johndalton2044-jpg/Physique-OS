@@ -354,7 +354,7 @@
    ],
    "writers": {
     "adoptMergedEvents": [
-     "24-events.js:483"
+     "24-events.js:500"
     ],
     "action:data.restoreApply": [
      "90-actions.js:649"
@@ -388,7 +388,7 @@
      "30-observations.js:78"
     ],
     "syncNutritionObservations": [
-     "62-food.js:244"
+     "62-food.js:246"
     ],
     "importObservations": [
      "65-import.js:270"
@@ -411,10 +411,10 @@
    ],
    "writers": {
     "addSession": [
-     "30-observations.js:235"
+     "30-observations.js:236"
     ],
     "updateSession": [
-     "30-observations.js:260"
+     "30-observations.js:261"
     ]
    }
   },
@@ -470,7 +470,7 @@
      "62-food.js:226"
     ],
     "copyFoodLog": [
-     "62-food.js:257"
+     "62-food.js:259"
     ]
    }
   },
@@ -548,7 +548,7 @@
    ],
    "writers": {
     "createExperiment": [
-     "50-decision.js:332"
+     "50-decision.js:336"
     ]
    }
   },
@@ -563,10 +563,10 @@
    ],
    "writers": {
     "updatePhase": [
-     "30-observations.js:204"
+     "30-observations.js:205"
     ],
     "createExperiment": [
-     "50-decision.js:334"
+     "50-decision.js:338"
     ]
    }
   },
@@ -579,7 +579,7 @@
    ],
    "writers": {
     "addNegative": [
-     "50-decision.js:415"
+     "50-decision.js:421"
     ]
    }
   },
@@ -632,8 +632,8 @@
    ],
    "writers": {
     "captureSnapshot": [
-     "50-decision.js:500",
-     "50-decision.js:501"
+     "50-decision.js:506",
+     "50-decision.js:507"
     ]
    }
   },
@@ -647,10 +647,10 @@
    ],
    "writers": {
     "evaluateExperiment": [
-     "50-decision.js:399"
+     "50-decision.js:405"
     ],
     "archivePhase": [
-     "50-decision.js:513"
+     "50-decision.js:519"
     ]
    }
   }
