@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "2f16ead21c",
+ "build": "ff3eec8b6e",
  "models": [
   {
    "id": "adherence",
@@ -2803,6 +2803,7 @@
   "decision.applied",
   "decision.recorded",
   "equipment.changed",
+  "events.revoked",
   "execution.marked",
   "experiment.created",
   "experiment.evaluated",
