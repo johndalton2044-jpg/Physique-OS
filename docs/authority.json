@@ -354,7 +354,7 @@
    ],
    "writers": {
     "adoptMergedEvents": [
-     "24-events.js:500"
+     "24-events.js:502"
     ],
     "action:data.restoreApply": [
      "90-actions.js:649"

@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "de9d967236",
+ "build": "ad620e6fcf",
  "models": [
   {
    "id": "adherence",
@@ -2800,6 +2800,7 @@
   "archive.recorded",
   "copilot.authorized",
   "cycle.recorded",
+  "decision.applied",
   "decision.recorded",
   "equipment.changed",
   "execution.marked",
@@ -2836,6 +2837,7 @@
   "record.snapshot",
   "response.recorded",
   "session.added",
+  "session.rated",
   "session.retracted",
   "session.superseded",
   "settings.changed",
