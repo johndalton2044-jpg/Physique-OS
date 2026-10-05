@@ -4787,6 +4787,7 @@
     "foodFrequency"
    ],
    "70-demo.js": [
+    "_rng",
     "generateRecord",
     "loadDemo",
     "withFixture"
@@ -4946,6 +4947,7 @@
    ],
    "86-identification.js": [
     "frontDoorSet",
+    "linearFrontDoor",
     "instrumentalEstimate",
     "eValue",
     "identificationStrategy",
