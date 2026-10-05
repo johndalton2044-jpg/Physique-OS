@@ -57,6 +57,24 @@ function frontDoorSet(treatment,outcome){
        'No usable front-door mediator.'),
     caveat:'The front door needs the treatment-to-mediator step unconfounded AND the mediator-to-outcome step unconfounded given the treatment. Both are claims about the graph, and a mediator that leaks some of the effect around itself invalidates the whole strategy.'};
 }
+/* LINEAR FRONT DOOR. With linear legs the front-door formula reduces to a·b: a is the slope of the mediator on the
+   treatment, and b is the mediator's coefficient in a regression of the outcome on the mediator AND the treatment. The
+   first version took b from the outcome on the mediator alone. The treatment opens a backdoor between the two
+   (mediator ← treatment ← confounder → outcome), so that leg carried exactly the confounding the front door exists to
+   route around: on data with a known effect of 1.0 it reported about 1.7. The interval is the delta method for a
+   product of two estimated coefficients. Rows are {T, M, Y}; null when the legs cannot be estimated. */
+function linearFrontDoor(rows){
+  var n=(rows||[]).length;if(n<5)return null;
+  var mT=mean(rows.map(function(r){return r.T;})),mM=mean(rows.map(function(r){return r.M;})),mY=mean(rows.map(function(r){return r.Y;}));
+  var stt=0,stm=0,smm=0,sty=0,smy=0,syy=0;
+  rows.forEach(function(r){var t=r.T-mT,m=r.M-mM,y=r.Y-mY;stt+=t*t;stm+=t*m;smm+=m*m;sty+=t*y;smy+=m*y;syy+=y*y;});
+  var det=smm*stt-stm*stm;if(!stt||!(det>1e-12*smm*stt))return null;   /* no variation, or the mediator is the treatment */
+  var a=stm/stt,seA=Math.sqrt(Math.max(0,smm-a*stm)/(n-2)/stt);
+  var b=(smy*stt-sty*stm)/det,c=(sty*smm-smy*stm)/det;
+  var seB=Math.sqrt(Math.max(0,syy-b*smy-c*sty)/(n-3)*stt/det);
+  var est=a*b,se=Math.sqrt(b*b*seA*seA+a*a*seB*seB);
+  return {a:a,b:b,directGivenMediator:c,estimate:est,se:se,lo:est-1.96*se,hi:est+1.96*se,n:n};
+}
 function frontDoorEstimate(treatment,outcome,opts){
   opts=opts||{};
   var fd=frontDoorSet(treatment,outcome);
@@ -72,25 +90,25 @@ function frontDoorEstimate(treatment,outcome,opts){
     if(byM[d.date]!=null&&byY[d.date]!=null)rows.push({T:d.value,M:byM[d.date],Y:byY[d.date]});});
   if(rows.length<25)return {status:'insufficient',mediator:m,have:rows.length,
     need:['at least 25 days with '+treatment+', '+m+' and '+outcome+' all recorded']};
-  var slope=function(xs,ys){
-    var mx=mean(xs),my=mean(ys);
-    var cov=mean(xs.map(function(x,i){return (x-mx)*(ys[i]-my);}));
-    var vx=mean(xs.map(function(x){return Math.pow(x-mx,2);}));
-    return vx?cov/vx:null;};
-  /* Front door: the effect is the product of the two legs. */
-  var a=slope(rows.map(function(r){return r.T;}),rows.map(function(r){return r.M;}));
-  var b=slope(rows.map(function(r){return r.M;}),rows.map(function(r){return r.Y;}));
-  var direct=slope(rows.map(function(r){return r.T;}),rows.map(function(r){return r.Y;}));
-  var fdEst=(a!=null&&b!=null)?a*b:null;
-  return {status:'ok',cls:'EMPIRICAL',treatment:treatment,mediator:m,outcome:outcome,
+  var lf=linearFrontDoor(rows);
+  if(!lf)return {status:'insufficient',mediator:m,have:rows.length,need:['variation in '+treatment+' and in '+m+' that is not just '+treatment+' again']};
+  var mx=mean(rows.map(function(r){return r.T;})),my=mean(rows.map(function(r){return r.Y;}));
+  var vx=mean(rows.map(function(r){return Math.pow(r.T-mx,2);}));
+  var direct=vx?mean(rows.map(function(r){return (r.T-mx)*(r.Y-my);}))/vx:null;
+  return {status:'ok',cls:'EMPIRICAL',approximation:'linear',treatment:treatment,mediator:m,outcome:outcome,
     n:rows.length,
-    legTreatmentToMediator:a!=null?round(a,4):null,
-    legMediatorToOutcome:b!=null?round(b,4):null,
-    frontDoorEstimate:fdEst!=null?round(fdEst,5):null,
+    legTreatmentToMediator:round(lf.a,4),
+    legMediatorToOutcome:round(lf.b,4),
+    frontDoorEstimate:round(lf.estimate,5),
+    se:round(lf.se,5),lo:round(lf.lo,5),hi:round(lf.hi,5),
     naiveDirect:direct!=null?round(direct,5):null,
-    difference:(fdEst!=null&&direct!=null)?round(fdEst-direct,5):null,
+    difference:direct!=null?round(lf.estimate-direct,5):null,
+    method:'linear front-door approximation: the '+treatment+'\u2192'+m+' slope times the '+m+'\u2192'+outcome+' coefficient adjusted for '+treatment,
+    assumptions:['the whole effect of '+treatment+' on '+outcome+' passes through '+m,'nothing unmeasured confounds '+treatment+' and '+m,
+      'nothing unmeasured confounds '+m+' and '+outcome+' once '+treatment+' is accounted for','both legs are linear and the same on every day'],
+    decisionUse:'exploratory: the decision engine does not act on it',
     note:'Estimated through '+m+' rather than around the confounders of '+treatment+
-      '. The two legs are multiplied, which is what the front-door formula reduces to when everything is linear.',
+      '. A linear approximation of the front-door formula: the two legs are multiplied, the second adjusted for '+treatment+'.',
     caveat:'Linear legs are an assumption this makes and does not test. The difference from the naive estimate is the confounding the front door is routing around \u2014 or evidence the mediator leaks, and nothing here distinguishes those two.'};
 }
 /* ---------------- instrumental variables ---------------- */
@@ -340,10 +358,11 @@ function causalAnalysis(treatment,outcome,opts){
     var fd=frontDoorEstimate(treatment,outcome,opts);
     if(fd.status!=='ok')return stop('estimator','front-door estimate: '+(fd.note||fd.status));
     out.treatmentModel={method:'mediator '+fd.mediator+' on '+treatment,leg:fd.legTreatmentToMediator};stages.push('treatment-model');
-    out.estimator={method:'front-door: product of the two legs',estimand:'ATE'};stages.push('estimator');
+    out.estimator={method:fd.method,estimand:'ATE',approximation:'linear',assumptions:fd.assumptions,decisionUse:fd.decisionUse};stages.push('estimator');
     out.balance={note:'the front door requires no confounding of either leg, which the graph asserts and the data cannot check'};stages.push('balance');
     out.effect={estimate:fd.frontDoorEstimate,n:fd.n};stages.push('effect');
-    out.uncertainty={source:'causal',se:null,lo:null,hi:null,basis:'not computed for the product of two estimated legs at this sample size'};stages.push('uncertainty');
+    out.uncertainty={source:'causal',se:fd.se,lo:fd.lo,hi:fd.hi,
+      basis:'delta method for the product of the two estimated legs; it reflects sampling noise only, not the untested assumptions'};stages.push('uncertainty');
     out.sensitivity={note:fd.caveat};stages.push('sensitivity');
     return Object.assign({status:'ok',stages:stages,cls:'EMPIRICAL',strategy:strat},out);
   }

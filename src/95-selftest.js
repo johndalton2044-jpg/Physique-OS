@@ -2635,6 +2635,17 @@ function runSelfTest(opts){
         fd.status!=='none'||/around whatever mediator|no mediator/.test(fd.note));
       ok('a front-door mediator must itself be unconfounded with the outcome',
         /mediator-to-outcome step unconfounded/.test(fd.caveat||'')||fd.status==='none');
+      /* the linear front door on data with a known effect: a hidden confounder drives both the treatment and the outcome,
+         the treatment moves the mediator by 2 and the mediator moves the outcome by 0.5, so the effect is 1.0 */
+      (function(){var r=_rng(41),g=function(){return Math.sqrt(-2*Math.log(r()||1e-9))*Math.cos(2*Math.PI*r());},rows=[];
+        for(var i=0;i<600;i++){var u=g(),t=u+g(),m2=2*t+g(),y=0.5*m2+1.5*u+g();rows.push({T:t,M:m2,Y:y});}
+        var lf=linearFrontDoor(rows);
+        var mm=mean(rows.map(function(x){return x.M;})),my=mean(rows.map(function(x){return x.Y;}));
+        var bMarginal=mean(rows.map(function(x){return (x.M-mm)*(x.Y-my);}))/mean(rows.map(function(x){return Math.pow(x.M-mm,2);}));
+        ok('the linear front door recovers a known effect through a confounded treatment',lf&&Math.abs(lf.estimate-1)<0.15&&lf.lo<1&&lf.hi>1,
+          lf?(round(lf.estimate,3)+' ['+round(lf.lo,3)+', '+round(lf.hi,3)+']'):'none');
+        ok('taking the mediator\u2192outcome leg without the treatment would have been biased by that confounding',lf&&Math.abs(lf.a*bMarginal-1)>0.4,
+          lf?String(round(lf.a*bMarginal,3)):'none');})();
       /* instrumental variables */
       var iv=instrumentalEstimate('dayOfWeek','steps','weight');
       ok('instrument strength is reported as a first-stage F against the conventional minimum',
