@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-30T07:28:26.053Z",
-  "sourceBuildId": "e7bd36cfde",
-  "releaseId": "9d3a2f8f6320",
+  "generatedAt": "2026-10-05T16:24:54.133Z",
+  "sourceBuildId": "de9d967236",
+  "releaseId": "c440f34a0de1",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -23,7 +23,7 @@
     "fndds": null,
     "dsld": null
   },
-  "sourceCount": 82,
+  "sourceCount": 97,
   "gates": [
     {
       "gate": "engine",
@@ -81,13 +81,13 @@
       "jsdom": true,
       "playwright-core": true
     },
-    "browser": "/opt/google/chrome/chrome"
+    "browser": "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
   },
   "registries": {
     "quantities": 38,
     "quantitySingleSource": true,
-    "models": 33,
-    "actions": 446,
+    "models": 40,
+    "actions": 497,
     "capabilities": 22
   },
   "note": "Generated from the running build. Do not edit by hand — regenerate with node scripts/baseline.mjs."

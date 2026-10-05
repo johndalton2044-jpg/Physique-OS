@@ -631,3 +631,122 @@ Appended by `node scripts/baseline.mjs`. Each entry is generated from the runnin
 - capabilities: 22 — surfaced 16, validated 5, integrated 1
 - production-ready: 0; implemented but unsurfaced: none
 - dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T11:23:21.640Z — build 8fd604b278
+
+- sources: 89, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T11:49:00.027Z — build cdabd52def
+
+- sources: 89, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T17:14:14.084Z — build 04f7b12dc2
+
+- sources: 90, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T18:12:45.898Z — build eb82b79633
+
+- sources: 90, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T19:14:56.751Z — build ecd9636511
+
+- sources: 90, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T22:06:20.930Z — build 61443a15d7
+
+- sources: 90, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T23:27:47.090Z — build f703397e30
+
+- sources: 90, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-03T23:56:09.498Z — build a83bf631d0
+
+- sources: 90, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-04T08:36:37.183Z — build 25e9935f0f
+
+- sources: 91, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 93 nodes, 246 edges
+
+## 2026-10-04T09:00:51.558Z — build 919db0158d
+
+- sources: 93, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 94 nodes, 251 edges
+
+## 2026-10-04T15:17:19.615Z — build 3b126e9944
+
+- sources: 94, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-04T22:10:35.563Z — build 8c6061a8ed
+
+- sources: 95, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T02:06:46.921Z — build dcdbcca1ee
+
+- sources: 95, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T03:28:19.261Z — build dcdbcca1ee
+
+- sources: 95, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T04:01:35.455Z — build e8bf5158ff
+
+- sources: 95, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T13:35:36.036Z — build 11bbf10590
+
+- sources: 97, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges
+
+## 2026-10-05T16:24:54.133Z — build de9d967236
+
+- sources: 97, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 95 nodes, 254 edges

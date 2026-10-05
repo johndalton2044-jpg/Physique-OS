@@ -191,3 +191,8 @@ function confTone(c){return c==='high'?'good':(c==='medium'?'neutral':(c==='low'
 /* ---- html escaping ---- */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function attrEsc(s){return esc(s);}
+
+/* moved from 90-automation.js: an engine function that lived in an interface file */
+function _medianOf(a){var s=a.slice().sort(function(x,y){return x-y;}),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+/* "1 set", "2 sets": counts were pluralised by hand and read "1 sets", "1 sessions" (found by tests/blackbox.mjs) */
+function plural(n,word,many){return n+' '+(n===1?word:(many||word+'s'));}

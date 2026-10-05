@@ -97,18 +97,41 @@ function cardioFitnessModel(){
    total water (2.5 L men, 2.0 L women, 2.25 L unspecified) plus sweat: a base rate rising with exercise intensity
    (\u2248 0.4 L/h at 4 MET, +0.08 L/h per MET) and with heat (+3% per \u00b0C above 20 \u00b0C, from the weather at that hour when
    known). A contextual signal, not a measurement of body water; uncertainty \u00b10.8 L/day. */
-function hydrationBalance(date){
-  date=date||todayISO();var water=_dayValue('water',date),kcal=_dayValue('calories',date);
-  var a=_ageSex(),need=a.sex==='female'?2.0:(a.sex==='male'?2.5:2.25),sweat=0,notes=[];
-  var cs=cardioSessions(2);(cs&&cs.rows||[]).filter(function(r){return r.date===date;}).forEach(function(r){var met=(normaliseCardioSession(r).abs||{}).met||(typeof CARDIO_MET_TABLE!=='undefined'&&CARDIO_MET_TABLE[r.modality])||5;
-    var t=null;try{var wx=typeof weatherContextAt==='function'?weatherContextAt(date+'T12'):null;t=wx&&wx.temperature;}catch(e){}
-    var rate=Math.max(0.2,0.4+0.08*(met-4))*(t!=null&&t>20?1+0.03*(t-20):1);sweat+=rate*(r.minutes||0)/60;if(t!=null)notes.push('session at '+Math.round(t)+' \u00b0C');});
-  if(!water&&!kcal)return {status:'insufficient',need:['water intake','food logged'],cls:'HEURISTIC',note:'Nothing logged for '+date+'.'};
-  var food=kcal?kcal*0.3/1000:null,intake=water+(food||0),total=need+sweat,bal=intake-total;
-  return {status:'ok',cls:'HEURISTIC',date:date,intakeL:round(intake,2),fromDrinksL:round(water,2),fromFoodL:food!=null?round(food,2):null,needL:round(total,2),sweatL:round(sweat,2),balanceL:round(bal,2),sd:0.8,
-    verdict:water===0?'no drinks logged \u2014 the balance only counts food':(bal<-0.8?'probably under your needs today':(bal>0.8?'above your estimated needs':'within the uncertainty of your needs')),
-    notes:notes,method:'EFSA adequate intake + sweat by intensity and heat; food water \u2248 0.3 ml/kcal',limits:'Contextual, not a measure of body water; thirst and urine colour are better guides day to day.'};
+/* HYDRATION, matured. Intake: drinks logged as water, plus the water in what was eaten and drunk as food, from each food's
+   own water content (FoodData Central carries it; entries without it fall back to 0.3 ml/kcal). Needs: EFSA's adequate
+   intake of total water (2.5 L men, 2.0 L women), plus sweat: each session by intensity, scaled by the weather at the
+   time (temperature above 20 \u00b0C, humidity above 60%), or by the person's own sweat rate from a sweat test. Sodium lost
+   in sweat (about 0.9 g/L) is set against what was eaten. Status: urine colour, and a morning weight drop of more than
+   1% after a heavy-sweat day. */
+function _foodWaterL(date){var L=foodLogsOn(date),ml=0,estimated=0;L.forEach(function(l){var per=(l.food&&l.food.per100)||{},q=l.quantity!=null?l.quantity:(l.grams||0);
+    if(per.water!=null&&(l.basis==='g'||l.basis==='ml'))ml+=per.water*q/100;else{var k=(l.nutrients||{}).kcal||0;ml+=0.3*k;estimated+=0.3*k;}});
+  return {litres:ml/1000,estimatedShare:ml?estimated/ml:0,items:L.length};}
+function personalSweatRate(modality){var S=obsOf('sweatrate').filter(function(o){return !modality||o.method===modality||!o.method;}).slice(-5);return S.length?{rate:mean(S.map(function(o){return o.value;})),n:S.length}:null;}
+function hydrationModel(date){
+  date=date||todayISO();var water=_dayValue('water',date)||0,fw=_foodWaterL(date),a=_ageSex(),base=a.sex==='female'?2.0:(a.sex==='male'?2.5:2.25),sweat=0,sessions=[],sodiumLoss=0;
+  var add=function(minutes,met,modality,at){var wx=null;try{wx=typeof weatherContextAt==='function'?weatherContextAt(at||date+'T12'):null;}catch(e){}var t=wx&&wx.temperature,h=wx&&wx.humidity;
+    var own=personalSweatRate(modality),rate=own?own.rate:Math.max(0.2,0.4+0.08*((met||5)-4));
+    var heat=(t!=null&&t>20?1+0.03*(t-20):1)*(h!=null&&h>60?1+0.005*(h-60):1),L=rate*heat*(minutes||0)/60;sweat+=L;sodiumLoss+=L*0.9;
+    sessions.push({modality:modality,minutes:minutes,litres:round(L,2),basis:own?'your sweat rate ('+round(own.rate,2)+' L/h from '+own.n+' test'+(own.n===1?'':'s')+')':'estimated from intensity',weather:t!=null?Math.round(t)+' \u00b0C'+(h!=null?', '+Math.round(h)+'% humidity':''):null});};
+  var cs=cardioSessions(2);(cs&&cs.rows||[]).filter(function(r){return r.date===date;}).forEach(function(r){var met=(normaliseCardioSession(r).abs||{}).met||(typeof CARDIO_MET_TABLE!=='undefined'&&CARDIO_MET_TABLE[r.modality])||5;add(r.minutes,met,r.modality);});
+  (DB.sessions||[]).filter(function(x){return x.date===date&&!x.retracted;}).forEach(function(x){add(x.durationMin||Math.max(30,(x.sets||[]).length*3),5,'lifting');});
+  if(!water&&!fw.items)return {status:'insufficient',cls:'HEURISTIC',need:['drinks or food logged'],note:'Nothing logged for '+date+'.'};
+  var intake=water+fw.litres,need=base+sweat,bal=intake-need,uc=_dayValue('urine',date);
+  var sod=(dayNutrition(date).totals||{}).sodium;
+  var prev=seriesWindow('weight',3).filter(function(x){return x.date===addDays(date,-1)||x.date===date;}),drop=prev.length===2?(prev[0].value-prev[1].value)/prev[0].value:null;
+  var kg=typeof _kgNow==='function'?_kgNow():null;
+  return {status:'ok',cls:'HEURISTIC',date:date,intakeL:round(intake,2),fromDrinksL:round(water,2),fromFoodL:round(fw.litres,2),foodWaterEstimatedShare:round(fw.estimatedShare,2),
+    baseL:base,sweatL:round(sweat,2),needL:round(need,2),balanceL:round(bal,2),remainingL:round(Math.max(0,need-intake),2),sd:0.6,sessions:sessions,
+    sodium:{lostMg:Math.round(sodiumLoss*1000),eatenMg:sod!=null?Math.round(sod):null,note:sodiumLoss>1&&sod!=null&&sod<1500?'heavy sweating on a low-sodium day: consider salting food or an electrolyte drink':null},
+    urine:uc!=null?{value:uc,reading:uc<=3?'well hydrated':(uc<=5?'could drink a little more':'drink more')}:null,
+    morningDrop:drop!=null&&drop>0.01&&sweat>1?'your weight fell '+round(drop*100,1)+'% overnight after a heavy-sweat day: much of that is water':null,
+    training:kg?{before:'about '+Math.round(5*kg)+'\u2013'+Math.round(7*kg)+' ml in the 4 hours before training',after:'replace 125\u2013150% of what you lose (about 1.25\u20131.5 L per kg lost)'}:null,
+    verdict:water===0?'no drinks logged: only the water in food is counted':(bal<-0.6?'probably under your needs today':(bal>0.6?'above your estimated needs':'within the uncertainty of your needs')),
+    method:'EFSA adequate intake of total water + sweat by intensity, temperature and humidity (or your measured sweat rate); food water from each food\u2019s content',
+    limits:'An estimate of balance, not a measure of body water; thirst and urine colour are better guides from day to day.'};
 }
+/* earlier name, kept for its consumers */
+function hydrationBalance(date){return hydrationModel(date);}
 
 /* ---------- SUPPLEMENT PERSONAL EFFICACY (N-of-1) ----------
    For a supplement logged on some days and not others, the outcome it plausibly moves is compared on-days vs off-days,

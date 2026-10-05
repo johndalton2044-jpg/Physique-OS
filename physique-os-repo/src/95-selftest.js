@@ -4,7 +4,7 @@
    ============================================================================ */
 function runSelfTest(opts){
   opts=opts||{};var t0=Date.now();var results=[];var ok=function(name,cond,detail){results.push({name:name,ok:!!cond,detail:detail||''});};
-  var savedDB=DB,savedNow=_NOW_OVERRIDE,savedMemo=_MEMO;
+  var savedDB=DB,savedNow=_NOW_OVERRIDE,savedMemo=_MEMO,_stSettings=JSON.stringify(DB.settings||{});   /* settings restored exactly: the self-test reset appearance on iOS */
   /* The event log is restored too, and nothing is persisted while the tests run (see _PERSIST_SUSPENDED). */
   var _stEvents=(typeof _EVENTS!=='undefined')?_EVENTS.slice():null,_stSeq=(typeof _EVENT_SEQ!=='undefined')?_EVENT_SEQ:0;
   /* The widget registry is global too: a chart saved by a test stayed registered while the record was restored, so a
@@ -716,6 +716,59 @@ function runSelfTest(opts){
       ok('the archive reports its state honestly rather than implying a limit',
         /nothing was deleted|not been compacted/.test(eventArchiveState().note));
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
+    })();
+    /* EVERY PERSISTED COLLECTION survives every path a record takes through the log. The checks above counted observations
+       only, so snapshots, compaction and restore-merge each lost plans, executions, environment, responses and cycles
+       without a single failure. Each check here walks PERSIST_COLLECTIONS, so a collection added later is covered too. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ;
+      var T=todayISO();
+      var ids=function(db,k){return (db[k]||[]).map(function(x){return x&&x.id;}).sort().join(',');};
+      var lost=function(a,b){return PERSIST_COLLECTIONS.filter(function(k){return ids(a,k)!==ids(b,k);});};
+      var oneOfEach=function(tag){var db={};PERSIST_COLLECTIONS.forEach(function(k){db[k]=[{id:k+'-'+tag,date:T,week:tag,version:1,stage:'final',kind:'phase',item:'steps',status:'done',dataset:'forecast'}];});return db;};
+      var folds=Object.keys(EVENT_TYPES).map(function(t){return String(EVENT_TYPES[t].apply);}).join('\n');
+      var unfolded=PERSIST_COLLECTIONS.filter(function(k){return !new RegExp('db\\.'+k+'\\b').test(folds)&&UNEVENTED_COLLECTIONS.indexOf(k)<0;});
+      ok('every persisted collection is written by an event, or declared as kept outside the log',!unfolded.length,unfolded.join(', '));
+      ok('the collections kept outside the log are persisted ones',UNEVENTED_COLLECTIONS.every(function(k){return PERSIST_COLLECTIONS.indexOf(k)>=0;}));
+      /* 1. a reset snapshot carries every collection */
+      DB=emptyDB();var seed=oneOfEach('a');PERSIST_COLLECTIONS.forEach(function(k){DB[k]=JSON.parse(JSON.stringify(seed[k]));});
+      _EVENTS.length=0;_EVENT_SEQ=0;resetEventLog('collection round trip');_memoInvalidate();
+      var l1=lost(DB,projectEvents(_EVENTS).db);
+      ok('a reset snapshot carries every persisted collection',!l1.length,'lost: '+l1.join(', '));
+      /* 2. compaction folds every collection, including records written by events after the snapshot */
+      var evented=[['plan.created','plans'],['execution.marked','executions'],['response.recorded','responses'],['cycle.recorded','cycles'],['archive.recorded','archive']];
+      evented.forEach(function(p){var rec={id:p[1]+'-b',date:T,week:'b',version:2,stage:'final',kind:'phase',item:'steps',status:'done'};
+        DB[p[1]].push(JSON.parse(JSON.stringify(rec)));emitEvent(p[0],rec);});
+      for(var i=0;i<6;i++)addObservation({type:'steps',date:T,value:8000+i,source:'manual'},{silent:true,noSave:true});
+      var beforeC=projectEvents(_EVENTS).db,rc=compactEvents(true),afterC=projectEvents(_EVENTS).db,l2=lost(beforeC,afterC);
+      ok('compaction keeps every persisted collection in its snapshot',rc.compacted>0&&!l2.length,'compacted '+rc.compacted+'; lost: '+l2.join(', '));
+      ok('the record still matches its own log for every evented collection',projectionMatchesRecord().ok,JSON.stringify(projectionMatchesRecord().diffs));
+      /* 3. startup adoption (99-boot.js: the stored log merged into an empty one) keeps everything, archive entries
+            made after the snapshot and the weather kept outside the log included */
+      DB.environment.push({id:'environment-live',date:T,dataset:'forecast'});
+      var arc={id:'archive-c',kind:'experiment',archivedAt:nowISO()};DB.archive.push(arc);emitEvent('archive.recorded',JSON.parse(JSON.stringify(arc)));
+      var live=JSON.parse(JSON.stringify(DB)),stored=_EVENTS.slice();_EVENTS.length=0;
+      adoptMergedEvents(mergeEvents(_EVENTS,stored));
+      var l3=lost(live,DB);
+      ok('adopting the stored log at startup keeps every persisted collection',!l3.length,'lost: '+l3.join(', '));
+      /* 4. restore → merge adds the backup's records in every collection, and only the ones not already held */
+      var backup=oneOfEach('r');backup.snapshots[0].date=addDays(T,-1);
+      PERSIST_COLLECTIONS.forEach(function(k){if((DB[k]||[]).length)backup[k].push(JSON.parse(JSON.stringify(DB[k][0])));});
+      var keep=JSON.parse(JSON.stringify(DB)),mr=mergeRecordCollections(backup);
+      var missed=PERSIST_COLLECTIONS.filter(function(k){return !DB[k].some(function(x){return x.id===k+'-r';});});
+      var doubled=PERSIST_COLLECTIONS.filter(function(k){return DB[k].length!==keep[k].length+1;});
+      ok('restore → merge adds the backup’s records to every persisted collection',!missed.length&&mr.added===PERSIST_COLLECTIONS.length,'missed: '+missed.join(', ')+'; added '+mr.added);
+      ok('restore → merge does not add a record the record already holds',!doubled.length,'doubled: '+doubled.join(', '));
+      var sameDay=mergeRecordCollections({snapshots:[{id:'snapshots-other',date:T}]});
+      ok('restore → merge keeps one daily snapshot per date',sameDay.added===0);
+      var merged=JSON.parse(JSON.stringify(DB));resetEventLog('record restored from a backup');
+      var l4=lost(merged,projectEvents(_EVENTS).db);
+      ok('a merged restore survives the log restart that follows it',!l4.length,'lost: '+l4.join(', '));
+      /* 5. validation and migration know every collection */
+      ok('validation rejects a backup whose plans are not a list',!validateDB({schemaVersion:SCHEMA_VERSION,observations:[],plans:{}}).ok);
+      var mg=migrate({schemaVersion:SCHEMA_VERSION,observations:[],executions:{}});
+      ok('migration repairs every persisted collection to a list',mg.ok&&PERSIST_COLLECTIONS.every(function(k){return Array.isArray(mg.db[k]);}));
+      DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
@@ -3667,7 +3720,7 @@ function runSelfTest(opts){
       DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05),mk('b',-500,-2*500*PR.perUnit,0.05)];   /* this person loses twice what the arithmetic says */
       var r2=row();ok('precise personal responses move the estimate toward this person and say how much is theirs',r2.posterior.mean>1.6*pop&&r2.personalWeight>0.5);
       DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05,'provisional')];var wP=row().personalWeight;DB.responses=[mk('a',-500,-2*500*PR.perUnit,0.05,'final')];var wF=row().personalWeight;
-      ok('a provisional response counts for less than a final one',wP<wF);
+      ok('a provisional response counts for less than a final one',wP<wF,'provisional '+wP+', final '+wF);
       DB.responses=[mk('h',-500,-500*PR.perUnit,0.02,'final',0.5),mk('f',-500,-1000*PR.perUnit,0.04,'final',1)];
       var per=personalResponseModel().rows.filter(function(r){return r.key==='calories\u2192weight';})[0];
       ok('a change done on half the days is read as half the dose',Math.abs(_perUnit(DB.responses[0]).y-_perUnit(DB.responses[1]).y)<1e-9);
@@ -3727,6 +3780,130 @@ function runSelfTest(opts){
       MODEL_COMPETITIONS.__d={label:'decline',unit:'lb',horizons:[14],series:function(){return D;},candidates:['naive','theil_sen']};
       var H=evaluateCompetition('__d',{series:D,force:true});ok('on a steady decline the trend clearly beats the flat baseline',H.primaryBeatsBaseline===true);
       ['__good','__bad','__awful'].forEach(function(c){delete COMPETITION_CANDIDATES[c];});['__t','__f','__d'].forEach(function(c){delete MODEL_COMPETITIONS[c];});DB.settings.modelLifecycle=keepL;})();
+    /* ---- From use: logging and supplements ---- */
+    withFixture('successful_cut',function(){
+      var keepO=DB.observations,keepS=DB.settings.supplementStack,d=todayISO();DB.observations=DB.observations.filter(function(o){return !(o.type==='supplement'&&o.date===d);});_memoInvalidate();
+      setSupplementStack([{id:'creatine',dose:5,timing:'morning'},{id:'vitd',dose:50,timing:'morning'},{id:'magnesium',dose:300,timing:'night'}]);
+      var _pu=pushUndo,_calls=0;pushUndo=function(l){if(_UNDO_BATCH===0)_calls++;return _pu(l);};var r;try{r=logSupplementStack(d,{slot:'morning'});}finally{pushUndo=_pu;}   /* counts undo steps requested (the self-test suppresses snapshots) */
+      ok('logging morning supplements takes only the morning ones',r.logged===2&&!supplementIntakes(d,d).some(function(x){return x.id==='magnesium';}));
+      ok('a group of supplements is one undo step, not one per item',_calls===1);
+      var on=toggleSupplementToday('magnesium'),off=toggleSupplementToday('magnesium');ok('one supplement can be logged and removed on its own',on.taken===true&&off.taken===false&&!supplementIntakes(d,d).some(function(x){return x.id==='magnesium';}));
+      var c=saveCustomSupplement({label:'Test Multi',per:{vitd:25,zinc:'15',iron:''}});ok('a product from its label counts its own nutrients',c.status==='ok'&&supplementNutrients({id:c.id,dose:1}).zinc===15&&supplementNutrients({id:c.id,dose:1}).iron===undefined);
+      delete DB.settings.customSupplements;delete SUPPLEMENT_CATALOGUE[c.id];
+      ok('water is entered in any unit and stored in litres',Math.abs(toLitres(16,'floz')-0.4732)<0.001&&Math.abs(toLitres(2,'cup')-0.4732)<0.001&&toLitres(500,'ml')===0.5);
+      ok('self-rated adherence is no longer a log type (adherence is measured from what was done)',!LOG_TYPES.some(function(x){return x[0]==='adherence';}));
+      DB.observations=keepO;DB.settings.supplementStack=keepS;_memoInvalidate();});
+    /* ---- From use: setup, profile, phase criteria, context ---- */
+    withFixture('successful_cut',function(){
+      var ph=activePhase(),keepS=ph.startDate,keepSess=DB.sessions,keepP=JSON.stringify(DB.profile);ph.startDate=addDays(todayISO(),-71);
+      DB.sessions=[];for(var i=0;i<10;i++)DB.sessions.push({id:'cs'+i,date:addDays(todayISO(),-70+i*7),sets:[{exercise:'Squat',load:i<4?300:265,reps:5,rir:2}],createdAt:nowISO()});_memoInvalidate();
+      var C=phaseCriteriaStatus(ph),get=function(k,id){return C[k].filter(function(r){return r.id===id;})[0];};
+      ok('a cut of 10 weeks says a diet break is due',get('transition','diet_break').state==='met');
+      ok('strength down more than 10% meets the stop rule, with its evidence',get('stop','strength_drop').state==='met'&&/%/.test(get('stop','strength_drop').why));
+      ok('a met stop rule raises an action alert',attentionQueue().items.some(function(q){return /^crit-stop:/.test(q.id)&&q.severity==='action';}));
+      ok('every criterion reports met, not yet or unknown, with a reason',['success','stop','transition'].every(function(k){return C[k].every(function(r){return ['met','not yet','unknown'].indexOf(r.state)>=0&&r.why;});}));
+      ph.startDate=keepS;DB.sessions=keepSess;_memoInvalidate();
+      if(typeof document!=='undefined'&&document.body&&document.getElementById('editBackdrop')){   /* a real sheet: only where there is a page */
+        DB.profile.equipment=['barbell','dumbbells'];openProfile();dispatchAct('profile.eq','machine');saveProfile();
+        ok('saving the profile keeps equipment a list (it used to become one string)',Array.isArray(DB.profile.equipment)&&DB.profile.equipment.indexOf('barbell')>=0&&DB.profile.equipment.indexOf('machine')>=0);
+        closeSheet();}
+      DB.profile=JSON.parse(keepP);
+      ok('context tags are the words the models look for',CONTEXT_TAGS.some(function(c){return /new scale/.test(c[0]);})&&CONTEXT_TAGS.every(function(c){return c[1].length>10;}));});
+    /* ---- From use: your own schedule choices ---- */
+    withFixture('successful_cut',function(){
+      var keepS=JSON.stringify(DB.settings.schedule||{}),keepT=DB.settings.trainingDays,P=trainingProgram(),seq=_liftSequence(P).map(function(x){return x.label;});
+      var day=function(name){for(var i=0;i<7;i++){var d=addDays(todayISO(),i);if(dowShort(d)===name)return d;}};
+      var on=function(name){var x=scheduledPlan(day(name),P);return x&&x.kind==='lift'?x.label:null;};
+      DB.settings.schedule={mode:'weekly'};DB.settings.trainingDays=['Tue','Thu','Sat'];_memoInvalidate();
+      ok('the schedule\u2019s training days set the week (they were ignored), sessions in order',on('Tue')===seq[0]&&on('Thu')===seq[1]&&on('Sat')===seq[2]&&on('Mon')===null);
+      setSchedule({override:{date:day('Sun'),choice:'train'}});ok('a day you set to train gets the next session',on('Sun')===seq[3%seq.length]);
+      setSchedule({override:{date:day('Thu'),choice:'rest'}});ok('a day you set to rest has no session',on('Thu')===null);
+      setSchedule({override:{date:day('Thu'),choice:'auto'}});ok('auto gives the day back to the schedule',on('Thu')===seq[1]);
+      setSchedule({mode:'rotation',preset:'pitman-dn',anchor:todayISO()});var rot=function(i){var x=scheduledPlan(addDays(todayISO(),i),P);return x&&x.kind==='lift';};
+      var free=-1;for(var i=0;i<14;i++)if(!rot(i)){free=i;break;}
+      if(free>=0){setSchedule({cycleChoice:{index:free%((scheduleModel().pattern||'x').length),choice:'train'}});ok('a cycle day you set to train is trained every cycle',rot(free));}
+      DB.settings.schedule=JSON.parse(keepS);DB.settings.trainingDays=keepT;_memoInvalidate();});
+    /* ---- From use: workouts ---- */
+    withFixture('successful_cut',function(){var P=trainingProgram(),d=null;for(var i=2;i<14;i++){var x=addDays(todayISO(),i),pl=scheduledPlan(x,P);if(pl&&pl.kind==='lift'){d=x;break;}}
+      if(d){var W=buildWorkout(d);ok('a lifting day beyond the programme structure still builds its exercises (it built an empty session)',W.exercises.length>0&&W.label!=='Session');}
+      ok('a stepper is minus and plus around the field, going through its own action',/data-act="ui.step"[\s\S]*<input id="t1"[\s\S]*data-act="ui.step"/.test(uiStepper('<input id="t1" data-act="x.y">','t1',5,0,null,1)));
+      ok('a timer offers its choices before it starts',(uiTimer('tt',{choices:[30,60]}).match(/timer\.start/g)||[]).length===2);});
+    /* ---- From use: food portions ---- */
+    withFixture('successful_cut',function(){var keep=DB.foodLogs.slice(),f=seedFoods().filter(function(x){return (normalizeFood(x).portions||[]).length;})[0];
+      if(f){var pt=normalizeFood(f).portions[0],L=logFood({date:todayISO(),meal:'lunch',food:f,amount:1,unit:'portion:'+pt.label,portionLabel:pt.label,silent:true,noSave:true});L=L&&L.id?L:DB.foodLogs[DB.foodLogs.length-1];
+        ok('an entry keeps the portion it was logged in, and the food\u2019s portions',L.portion&&L.portion.unit==='portion:'+pt.label&&(L.food.portions||[]).length>0);
+        var r1=updateFoodLog(L.id,L.quantity,'dinner');var c1=DB.foodLogs.filter(function(x){return x.supersedes===L.id;})[0];
+        ok('changing only the meal keeps the portion label (it used to turn into grams)',c1&&c1.portionLabel===L.portionLabel&&c1.portion&&c1.portion.unit===L.portion.unit);
+        var res=portionResolve(_foodForEdit(c1),2,c1.portion.unit);updateFoodLog(c1.id,res.qty,c1.meal,{amount:2,unit:c1.portion.unit,label:'2 \u00d7 '+pt.label});var c2=DB.foodLogs.filter(function(x){return x.supersedes===c1.id;})[0];
+        ok('editing in the portion unit doubles the nutrients',c2&&Math.abs(c2.nutrients.kcal-2*c1.nutrients.kcal)<0.5&&c2.portion.amount===2);}
+      DB.foodLogs=keep;_memoInvalidate();});
+    /* ---- From use: hydration, and the larger catalogue ---- */
+    withFixture('successful_cut',function(){var keepO=DB.observations,keepF=DB.foodLogs,d=todayISO();
+      DB.observations=DB.observations.filter(function(o){return !(o.date===d&&/water|urine|sweatrate|cardio/.test(o.type));});DB.foodLogs=DB.foodLogs.filter(function(l){return l.date!==d;});
+      DB.foodLogs.push({id:'hw1',date:d,meal:'lunch',food:{name:'Cucumber',per100:{water:95,kcal:15},basis:'g'},basis:'g',quantity:200,nutrients:{kcal:30},createdAt:nowISO()});
+      DB.observations.push(makeObservation({type:'water',date:d,value:1.5,source:'test'}));_memoInvalidate();
+      var H=hydrationModel(d);ok('food water comes from each food\u2019s own water content (200 g of cucumber is 190 ml)',H.status==='ok'&&Math.abs(H.fromFoodL-0.19)<0.005&&H.fromDrinksL===1.5);
+      var r=_sweatRateFrom({pre:unitPref()==='metric'?80:fromCanonicalWeight(80/0.453592),post:unitPref()==='metric'?79:fromCanonicalWeight(79/0.453592),drank:toLitres(0.5,'L')/WATER_UNITS[waterUnitDefault()].l,minutes:60});
+      ok('a sweat test gives (weight lost + fluid drunk) per hour: 1 kg + 0.5 L over an hour is 1.5 L/h',r!=null&&Math.abs(r-1.5)<0.03);
+      DB.observations.push(makeObservation({type:'sweatrate',date:addDays(d,-3),value:1.5,source:'test',method:'run'}));DB.observations.push(makeObservation({type:'cardio',date:d,value:60,source:'test',method:'run'}));_memoInvalidate();
+      var H2=hydrationModel(d);ok('your own sweat rate replaces the estimate for that kind of training',H2.sessions.some(function(x){return /your sweat rate/.test(x.basis)&&x.litres>=1.4;}));
+      DB.observations.push(makeObservation({type:'urine',date:d,value:7,source:'test'}));_memoInvalidate();ok('a dark urine colour says to drink more',hydrationModel(d).urine.reading==='drink more');
+      DB.observations=keepO;DB.foodLogs=keepF;_memoInvalidate();});
+    ok('the supplement catalogue covers 120 or more products, each graded',Object.keys(SUPPLEMENT_CATALOGUE).length>=120);
+    ok('overlapping interaction rules say each warning once',(function(){var x=supplementInteractions(['greentea','ashwagandha','kava']).map(function(i){return i.text;});return x.length===x.filter(function(v,i,a){return a.indexOf(v)===i;}).length;})());
+    /* ---- Phase 11: the unified optimiser ---- */
+    withFixture('successful_cut',function(){var keepO=DB.observations,keepPref=DB.settings.optimiserPreference;_memoInvalidate();var O=unifiedOptimiser({minutesBudget:180});
+      if(O.status==='ok'&&O.pareto.length){
+        var dom=function(a,b){return a.toward>=b.toward&&a.burden<=b.burden&&a.minutes<=b.minutes&&a.riskScore<=b.riskScore&&(a.toward>b.toward||a.burden<b.burden||a.minutes<b.minutes||a.riskScore<b.riskScore);};
+        ok('no option in the Pareto set is beaten on every count by another',O.pareto.every(function(r){return !O.pareto.some(function(s){return s!==r&&dom(s,r);});}));
+        ok('in a cut every option on offer moves weight down',O.pareto.every(function(r){return r.effective<0;}));
+        ok('the expected effect allows for the chance of not carrying it out',O.pareto.every(function(r){return Math.abs(r.effective)<=Math.abs(r.effect)+1e-9;}));
+        var ph=activePhase(),before=ph.calorieTarget,row=O.pareto.filter(function(r){return r.changes.calories;})[0];
+        if(row){applyOptimiserChoice(row);ok('choosing an option changes the phase targets through the same path as editing them',activePhase().calorieTarget===before+row.changes.calories);updatePhase(ph.id,{calorieTarget:before},{noUndo:true,noSave:true});}
+        DB.settings.optimiserPreference='effort';_memoInvalidate();var e=unifiedOptimiser({minutesBudget:180}).recommended;DB.settings.optimiserPreference='fastest';_memoInvalidate();var f=unifiedOptimiser({minutesBudget:180}).recommended;
+        ok('least effort never asks for more time than fastest',e&&f&&e.minutes<=f.minutes);}
+      DB.observations=DB.observations.filter(function(o){return o.type!=='fatigue';});for(var i=0;i<7;i++)DB.observations.push(makeObservation({type:'fatigue',date:addDays(todayISO(),-i),value:8,source:'test'}));_memoInvalidate();
+      var F=unifiedOptimiser({minutesBudget:180});ok('with fatigue at 8, nothing on offer adds training or cardio',F.status!=='ok'||F.pareto.every(function(r){return !(r.changes.cardio>0||r.changes.training>0);}));
+      DB.observations=keepO;DB.settings.optimiserPreference=keepPref;_memoInvalidate();});
+    /* ---- Phase 12: the learning loop ---- */
+    withFixture('successful_cut',function(){var keepC=DB.cycles,keepX=DB.experiments;DB.cycles=[];_memoInvalidate();
+      var c1=runLearningCycle(),c2=runLearningCycle();ok('one learning cycle a week: asking again returns the same record',c1.id===c2.id&&DB.cycles.length===1&&/^cycle:\d{4}-W\d{2}$/.test(c1.id));
+      ok('every stage of the loop reports, observe to personalize',['observe','understand','decide','act','measure','explain','learn','adapt','predict','test','personalize'].every(function(id){return c1.stages.some(function(s){return s.id===id&&s.figure;});}));
+      var db={cycles:[]};EVENT_TYPES['cycle.recorded'].apply(db,{type:'cycle.recorded',data:c1});ok('a cycle replays from its event',db.cycles.length===1&&db.cycles[0].id===c1.id);
+      var prev={responses:{'steps\u2192weight':{mean:-0.1,sd:0.05,personal:0.1,n:1,label:'per 1,000 steps a day',unit:'lb/week'}},friction:[],forecast:{primary:'theil_sen'},lagging:['Chest'],adherence:60};
+      var now={responses:{'steps\u2192weight':{mean:-0.25,sd:0.05,personal:0.6,n:3,label:'per 1,000 steps a day',unit:'lb/week'},'calories\u2192weight':{mean:0.2,sd:0.05,personal:0.5,n:1,label:'per 100 kcal a day',unit:'lb/week'}},friction:['cardio: under 6 hours of sleep the night before'],forecast:{primary:'damped'},lagging:[],adherence:80};
+      var L=_loopDeltas(prev,now).join(' | ');
+      ok('what was learned names a moved estimate, a first estimate, a new friction, a new forecast, a muscle no longer lagging and adherence',/moved from -0.1 to -0.25/.test(L)&&/first estimate of your calories/.test(L)&&/clearly gets in the way/.test(L)&&/forecast now trusts/.test(L)&&/no longer lagging/.test(L)&&/80%/.test(L));
+      DB.experiments=(DB.experiments||[]).concat([{id:'xx',variable:nextTest().variable,status:'running'}]);var n2=nextTest();ok('the next test skips a lever already being tested',n2.status!=='ok'||n2.variable!==DB.experiments[DB.experiments.length-1].variable);
+      DB.cycles=keepC;DB.experiments=keepX;_memoInvalidate();});
+    /* ---- Engineering control: canonical Response, one lifecycle, IndividualState ---- */
+    withFixture('successful_cut',function(){
+      /* a real intervention to judge: a steps experiment begun 25 days ago (a vacuous pass over no responses proves nothing) */
+      createExperiment({variable:'steps',baselineValue:8000,interventionValue:10000,intervention:'steps +2,000/day',startDate:addDays(todayISO(),-25),durationDays:14,question:'do more steps move my trend?'});
+      _memoInvalidate();recordResponses();var R=responsesOf();
+      ok('every Response carries the canonical field set (audit A-002)',R.length>0&&R.every(function(r){return ['interventionId','executionIds','exposureWindow','expectedOutcome','observedOutcome','delta','uncertainty','confounders','attribution','confidence','applicability','evidence','modelVersion','status'].every(function(k){return k in r;});}));
+      ok('an intervention\u2019s own context tag is not a confounder of itself',R.every(function(r){return r.confounders.every(function(c){return !/context: intervention:/.test(c);});}));
+      var L=interventionLifecycles();ok('every intervention has one state from the one lifecycle (audit A-003)',L.length>0&&L.every(function(l){return INTERVENTION_STATES.indexOf(l.state)>=0&&l.transitions[0].state==='proposed';}));
+      ok('a lifecycle never claims a later state without the earlier ones',L.every(function(l){var idx=l.transitions.map(function(t){return INTERVENTION_STATES.indexOf(t.state);});return idx.every(function(v,i){return i===0||v>idx[i-1];});}));
+      var S=individualState();ok('IndividualState composes every part and is read-only (audit A-005)',['goal','constraints','plan','training','nutrition','activity','recovery','bodyComposition','execution','response','evidence','adaptation'].every(function(k){return k in S;})&&Object.isFrozen(S));
+      var threw=false;try{(function(){'use strict';S.goal=null;})();}catch(e){threw=true;}ok('writing through IndividualState is refused',threw);});
+    /* ---- Engineering control: the plan authority (audit A-004, rule 7) ---- */
+    withFixture('successful_cut',function(){ensurePlan();var ph=activePhase(),n0=plansOf().length,k0=ph.calorieTarget,s0=ph.stepTarget;
+      var r=changePlan({kind:'targets',source:'your edit',reason:'test: two targets at once',expected:'as you set',apply:function(){updatePhase(ph.id,{calorieTarget:k0-100},{noUndo:true});updatePhase(ph.id,{stepTarget:(s0||8000)+1000},{noUndo:true});}});
+      ok('a plan change touching two targets makes exactly one plan version, carrying its reason and source',plansOf().length===n0+1&&r.version&&r.version.trigger.reason==='test: two targets at once'&&r.version.trigger.source==='your edit');
+      var refused=function(c){try{changePlan(c);return false;}catch(e){return true;}};
+      ok('a plan change without a reason is refused',refused({kind:'targets',source:'your edit',apply:function(){}}));
+      ok('an adaptive change without an expected outcome is refused (rule 7)',refused({kind:'adaptation',source:'adaptation',reason:'x',apply:function(){}})&&refused({kind:'decision',source:'decision',reason:'x',apply:function(){}}));
+      var n1=plansOf().length;changePlan({kind:'targets',source:'your edit',reason:'outer',expected:'as you set',apply:function(){changePlan({kind:'targets',source:'your edit',reason:'inner',expected:'as you set',apply:function(){updatePhase(ph.id,{calorieTarget:k0-200},{noUndo:true});}});}});
+      ok('a change nested in another joins it: still one version, with the outer reason',plansOf().length===n1+1&&plansOf().slice(-1)[0].trigger.reason==='outer');
+      updatePhase(ph.id,{calorieTarget:k0,stepTarget:s0},{noUndo:true});});
+    /* ---- Acute recovery (black-box V-004 found a new person at fatigue 9 on 4.5 h read "recovery unknown") ---- */
+    withFixture('successful_cut',function(){var keep=DB.observations,d=todayISO(),at=function(o){DB.observations=keep.filter(function(x){return !(x.date===d&&/^(fatigue|sleep|soreness)$/.test(x.type));});Object.keys(o).forEach(function(k){DB.observations.push(makeObservation({type:k,date:d,value:o[k],source:'test'}));});_memoInvalidate();return acuteRecovery(d);};
+      ok('fatigue 9 means rest or very light; fatigue 8 means lighter; 7 is not flagged',at({fatigue:9}).level==='poor'&&at({fatigue:8}).level==='strained'&&!at({fatigue:7}).flag);
+      ok('under 4.5 h of sleep means rest or very light; under 5 h lighter; 6 h is not flagged',at({sleep:4.4}).level==='poor'&&at({sleep:4.8}).level==='strained'&&!at({sleep:6}).flag);
+      ok('the acute advice names its readings',/fatigue 9\/10/.test(at({fatigue:9,sleep:4.4}).reasons.join(','))&&/4\.4 h/.test(at({fatigue:9,sleep:4.4}).reasons.join(',')));
+      at({fatigue:9});ok('a severe reading raises a safety item, ranked above everything else',attentionQueue().items[0].id.indexOf('acute-recovery:')===0&&attentionQueue().items[0].severity==='safety');
+      DB.observations=keep;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
@@ -4097,7 +4274,7 @@ function runSelfTest(opts){
     withFixture('successful_cut',function(){var csv=exportCSV('weight');ok('CSV export has header and rows',csv.split('\n').length>10&&/^date,weight_lb/.test(csv));var rep=stateReport();ok('state report contains decision and learning sections',/DECISION:/.test(rep)&&/WHAT WE KNOW/.test(rep));var b=JSON.parse(backupJSON());ok('backup JSON carries schema/app/counts',b.backup&&b.backup.schemaVersion===SCHEMA_VERSION&&b.backup.counts.observations>0);var ics=icsExport();ok('ICS export is well-formed',/BEGIN:VCALENDAR/.test(ics)&&/END:VCALENDAR/.test(ics));});
     });
   }catch(err){results.push({name:'self-test harness',ok:false,detail:err.message+' '+(err.stack||'').split('\n')[1]});}
-  finally{DB=savedDB;_NOW_OVERRIDE=savedNow;_MEMO=savedMemo;
+  finally{DB=savedDB;_NOW_OVERRIDE=savedNow;_MEMO=savedMemo;try{DB.settings=JSON.parse(_stSettings);if(typeof applyPresentationAppearance==='function')applyPresentationAppearance(DB.settings);}catch(e){}
     /* The live event log is put back exactly as it was, and saving is released. Without the first, tests against the
        live record left their events in the real log for the next save to persist. */
     if(_stEvents){_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,_stEvents);_EVENT_SEQ=_stSeq;}

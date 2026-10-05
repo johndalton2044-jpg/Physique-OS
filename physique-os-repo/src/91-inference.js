@@ -618,3 +618,6 @@ function modelHealthInContext(modelId){
     why:'In '+here+' its range held '+Math.round(cur.hitRate*100)+'% of the time on '+cur.n+' checks.'};
   return {model:modelId,state:'performing',context:true,label:'Performing in this situation',why:'In '+here+' its range held '+Math.round((cur.hitRate||0)*100)+'% of the time on '+cur.n+' checks.'};
 }
+
+/* moved from 89-presentation-governance.js: an engine function that lived in an interface file */
+function canonicalUncertainty(kind){return UNCERTAINTY_ALIASES[kind]||kind;}

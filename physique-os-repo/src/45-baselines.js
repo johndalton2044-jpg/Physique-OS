@@ -46,7 +46,7 @@ function personalBaselines(days){
     // strength volatility: coefficient of variation of e1RM across exposures per tracked lift
     var st=strengthTrend();if(st.status==='ok'){var cvs=[];st.per.forEach(function(p){if(p.status!=='ok'||!p.history)return;var v=p.history.map(function(h){return h.best.value;});var m=mean(v),sdv=sd(v);if(m&&sdv!=null)cvs.push({exercise:p.exercise,cv:sdv/m});});if(cvs.length)out.streams.strength={status:'ok',cls:'EMPIRICAL',metric:'e1RM coefficient of variation',baseline:median(cvs.map(function(c){return c.cv;})),per:cvs,n:cvs.length,note:'session-to-session e1RM noise; a decline smaller than this is not a decline'};}
     // maintenance history from snapshots (TDEE as estimated on each day)
-    var snaps=(DB.snapshots||[]).filter(function(x){return x.date<=asOf()&&x.tdee!=null&&(x.tdeeCls==='EMPIRICAL'||x.tdeeCls==='CALIBRATED');});
+    var snaps=snapshotsOf().filter(function(x){return x.tdee!=null&&(x.tdeeCls==='EMPIRICAL'||x.tdeeCls==='CALIBRATED');});
     if(snaps.length>=7)out.streams.tdee={status:'ok',cls:'EMPIRICAL',metric:'estimated maintenance over time',baseline:median(snaps.map(function(x){return x.tdee;})),spread:mad(snaps.map(function(x){return x.tdee;})),n:snaps.length,first:snaps[0].date,last:snaps[snaps.length-1].date,latest:snaps[snaps.length-1].tdee};
     out.summary=Object.keys(out.streams).filter(function(k){return out.streams[k].status==='ok';}).length+' of '+(Object.keys(BASELINE_STREAMS).length+2)+' baselines established';
     return out;
@@ -104,4 +104,25 @@ function attributeChange(cp){
   var top=ranked[0];var strength=ranked.length===1?(top.lag<=2?'supported':'weakly supported'):(ranked[0].score-ranked[1].score>1?'weakly supported':'confounded');
   if(/discontinuity/.test(top.verdict))strength='artifact';
   return {strength:strength,text:top.cand.text+' ('+top.cand.kind+', '+(top.lag===0?'same day':top.lag+' days apart')+') \u2014 '+top.verdict,ranked:ranked,cls:'HEURISTIC'};
+}
+
+/* moved from 94-navigation.js: an engine function that lived in an interface file */
+function missingDataReport(){
+  var rows=[];
+  var streams=[['weight','weight'],['calories','intake'],['protein','protein'],['steps','steps'],['sleep','sleep'],['waist','waist']];
+  streams.forEach(function(pair){
+    var type=pair[0],label=pair[1];
+    var have=obsOf(type,{from:addDays(asOf(),-13)}).length;
+    var missing=[];for(var i=0;i<14;i++){var d=addDays(asOf(),-i);if(!obsOf(type,{from:d,to:d}).length)missing.push(d);}
+    rows.push({type:type,label:label,have:have,of:14,missingDays:missing,
+      limits:type==='weight'?'the weight trend interval, and every energy number that depends on it':
+             (type==='calories'?'the personal maintenance estimate and the energy-balance interval':
+             (type==='waist'?'the fat-versus-other reading':'adherence and recovery context')),
+      action:{label:'Log '+label,act:'log.type',arg:type}});
+  });
+  var sessions=sessionsOf({from:addDays(asOf(),-13)}).length;
+  rows.push({type:'session',label:'training sessions',have:sessions,of:(activePhase()||{}).trainingSessions?Math.round((activePhase().trainingSessions)*2):6,missingDays:[],
+    limits:'the strength trend, which is the only muscle-retention proxy available without a lab',action:{label:'Log a session',act:'session.new'}});
+  rows.sort(function(a,b){return (a.have/a.of)-(b.have/b.of);});
+  return {rows:rows,asOf:asOf(),note:'An unlogged day is unknown, not zero. Every model states what it needs before it states a number.'};
 }

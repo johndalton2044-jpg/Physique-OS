@@ -418,3 +418,57 @@ function _planLabel(c,s,k){
   if(k)p.push('+'+k+' cardio');
   return p.join(', ')||'no change';
 }
+
+/* moved from 76-visual-complete.js: an engine function that lived in an interface file */
+function programStructure(weeks){
+  weeks=weeks||4;
+  var prog=null;try{prog=trainingProgram();}catch(e){}
+  if(!prog||!prog.week)return {status:'no-program',note:'No training program is set.'};
+  var today=todayISO();
+  var dow=new Date(today+'T12:00:00Z').getUTCDay();
+  var monday=addDays(today,-((dow+6)%7));
+  var start=addDays(monday,-(weeks-1)*7);
+  var byDate={};(DB.sessions||[]).forEach(function(s){(byDate[s.date]=byDate[s.date]||[]).push(s);});
+  var micro=[],planned=0,done=0,missed=0,setsPlanned=0,setsDone=0;
+  for(var w=0;w<weeks;w++){
+    var days=[];
+    for(var d=0;d<7;d++){
+      var date=addDays(start,w*7+d),dn=_DOW[new Date(date+'T12:00:00Z').getUTCDay()];
+      var plan=typeof scheduledPlan==='function'?scheduledPlan(date,prog):(prog.week[dn]||null);   /* weekly, rotating or irregular */
+      var exs=plan&&plan.template&&prog.templates?(prog.templates[plan.template]||[]).map(function(t){
+        return {name:t[0],sets:t[1],reps:t[2]};}):[];
+      var sp=exs.reduce(function(a,e){return a+(+e.sets||0);},0);
+      var sess=byDate[date]||[];
+      var sd=sess.reduce(function(a,s){return a+(s.sets||[]).length;},0);
+      var liftPlanned=plan&&plan.kind==='lift';
+      /* A planned lifting day with no session is NOT "missed" on its own: the first version matched by exact
+         weekday and reported 12 of 14 sessions missed in a record that trained 13 times in the window — on
+         different days. Moving a session is not skipping it. The day-level status only says what happened
+         on that day; whether the week was kept is judged per week, below. */
+      var status=date>today?'upcoming':(sess.length?(liftPlanned?'done':'done-other-day'):(liftPlanned?'not-on-this-day':(plan?'rest-or-other':'rest')));
+      setsDone+=date<=today?sd:0;
+      days.push({date:date,dow:dn,planned:plan?{label:plan.label,kind:plan.kind,exercises:exs,sets:sp}:null,
+        completed:sess.length?{sessions:sess.length,sets:sd,
+          exercises:Object.keys(sess.reduce(function(a,s){(s.sets||[]).forEach(function(st){a[st.exercise]=1;});return a;},{}))}:null,
+        status:status});
+    }
+    /* The week is the unit of adherence: sessions done against sessions planned in the same microcycle, on
+       whichever days they fell. Only days already past count, so the current week is not penalised for
+       days that have not happened yet. */
+    var past=days.filter(function(x){return x.date<=today;});
+    var wkPlanned=past.filter(function(x){return x.planned&&x.planned.kind==='lift';}).length;
+    var wkDone=past.filter(function(x){return !!x.completed;}).length;
+    var wkSetsPlanned=past.reduce(function(a,x){return a+(x.planned&&x.planned.kind==='lift'?x.planned.sets:0);},0);
+    planned+=wkPlanned;done+=Math.min(wkDone,wkPlanned);missed+=Math.max(0,wkPlanned-wkDone);setsPlanned+=wkSetsPlanned;
+    micro.push({index:w,weekStart:addDays(start,w*7),days:days,sessionsPlanned:wkPlanned,sessionsDone:wkDone,
+      onPlannedDay:past.filter(function(x){return x.status==='done';}).length,
+      setsDone:days.reduce(function(a,x){return a+(x.completed?x.completed.sets:0);},0)});
+  }
+  return {status:'ok',program:{id:prog.key,label:prog.label},
+    mesocycles:[{id:'current',label:prog.label,implicit:true,microcycles:micro}],
+    summary:{sessionsPlanned:planned,sessionsDone:done,sessionsMissed:missed,setsPlanned:setsPlanned,setsDone:setsDone,
+      onPlannedDay:micro.reduce(function(a,m){return a+m.onPlannedDay;},0),
+      totalSessions:micro.reduce(function(a,m){return a+m.sessionsDone;},0)},
+    cls:'MEASURED',
+    note:'The plan, and what was actually done, over '+weeks+' weeks. The program has no explicit block structure, so the window is one implicit mesocycle.'};
+}

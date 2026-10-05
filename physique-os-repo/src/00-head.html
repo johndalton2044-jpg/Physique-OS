@@ -845,5 +845,18 @@ tr.wx-today td{font-weight:700}
 .next-up{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px}/* chips keep their width and the row scrolls: shrinking made a label spill into its neighbour on small phones */
 .qa-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--border);background:var(--surface);color:var(--text);white-space:nowrap;font:inherit}
 .qa-chip .ic{color:var(--accent)}.qa-more{color:var(--text-2)}
+.num-sm{width:4.5em;min-height:40px;padding:4px 6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;text-align:right}
+.log-group{border:1px solid var(--border);border-radius:10px;margin:8px 0;padding:0 8px}.log-group>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+.log-filter{margin:6px 0 10px}
+.wx-glance{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+.sched-choose{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.sched-choose .pw-day{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:58px;padding:4px 2px;font:inherit;font-size:calc(11px*var(--ts,1));border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);overflow:hidden;text-align:center}
+.sched-choose .pw-day span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pw-day.ch-train,.pat-day.ch-train{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.pw-day.ch-rest,.pat-day.ch-rest{opacity:.75}.pw-day.ch-short{border-style:dashed}
+.stepper{display:flex;align-items:stretch;gap:4px}.stepper input{flex:1;min-width:0;text-align:center}.st-b{min-width:44px;min-height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font:inherit;font-size:calc(18px*var(--ts,1));line-height:1}
+.step-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}.ui-timer{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}.t-clock{font-variant-numeric:tabular-nums;font-weight:600;min-width:3.2em}
+.search-row{display:flex;gap:6px;align-items:stretch}.search-row input{flex:1;min-width:0}
+.hyd-bar{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden;margin:4px 0 8px}.hyd-bar span{display:block;height:100%;background:var(--accent)}
+[data-user-hidden="1"]{display:none!important}.page-custom{display:flex;justify-content:center;margin:18px 0 8px;order:999}   /* last even where a page orders its parts with CSS */
+.loop-stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}.loop-stage{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:8px;border:1px solid var(--border);font-size:calc(11.5px*var(--ts,1));min-width:0}
+.loop-stage span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}.loop-stage.st-ok{border-color:var(--good,#3a8f5c)}.loop-stage.st-attention{border-style:dashed}.loop-stage.st-starved{border-color:var(--neg,#c0504d)}
 </style>
 </head>

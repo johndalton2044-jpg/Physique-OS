@@ -224,6 +224,9 @@ function cloudSync(opts){
     return page;
   }).then(function(page){
     DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{serverEpoch:page.epoch||stored.serverEpoch||null});
+    /* A pulled row is on the server already. Not counting it as sent uploaded every event received from another device
+       straight back, so each device stored its own copy of everyone else's history. */
+    page.events.forEach(function(r){if(r&&r.id)pushed[r.id]=1;});
     if(!page.events.length)return {maxSeq:reset?0:(c.lastPullSeq||0),events:[],serverSeq:page.serverSeq};
     return Promise.all(page.events.map(_decryptEvent)).then(function(list){
       var good=list.filter(Boolean);received=good.length;
@@ -236,7 +239,7 @@ function cloudSync(opts){
     var toSend=_EVENTS.filter(function(e){return !pushed[e.id];});
     var sendBatch=function(k){var chunk=toSend.slice(k,k+CLOUD_PUSH_BATCH);if(!chunk.length)return Promise.resolve();
       return Promise.all(chunk.map(_encryptEvent)).then(function(rows){return _api('/v1/events',{method:'POST',body:{events:rows}}).then(function(r){
-        sent+=(r.accepted||rows.length);rows.forEach(function(row){pushed[row.id]=1;});return sendBatch(k+CLOUD_PUSH_BATCH);});});};
+        sent+=(r.accepted!=null?r.accepted:rows.length);rows.forEach(function(row){pushed[row.id]=1;});return sendBatch(k+CLOUD_PUSH_BATCH);});});};
     return sendBatch(0).then(function(){return {pull:pull,sent:sent};});
   }).then(function(res){
     clearTimeout(waking);

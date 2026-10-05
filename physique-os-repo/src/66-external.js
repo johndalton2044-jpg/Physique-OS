@@ -360,28 +360,7 @@ function fmtEnv(id,v){
   var u=(ENV_VARIABLES[id]||{}).unit;return round(v,1)+(u?' '+u:'');
 }
 var ENV_KIND_TEXT={current:'now',forecast:'forecast','recent past':'recent past (model analysis, not a station reading)',historical:'historical (reanalysis)'};
-function renderWeatherCard(){
-  var L=weatherLocation();if(!L)return '';
-  var N=environmentNow(),D=environmentDaily();
-  if(N.status!=='ok')return uiCard({title:'Weather',sub:esc(L.label||'your place'),body:'<div class="hint">'+(weatherUpdating()?'Fetching the weather\u2026':esc(N.note))+'</div><div class="btn-row">'+uiBtn('Get the weather','weather.refresh',null,'btn-sm btn-primary')+uiBtn('Details','weather.open',null,'btn-sm btn-ghost')+'</div>'});
-  var v=N.values,T=todayISO(),today=(D.days||[]).filter(function(d){return d.date===T;})[0],fc=(D.days||[]).filter(function(d){return d.date>=T;}).slice(0,14);
-  var cond=weatherCondition(v,v.isDay);
-  var top='<div class="wx-now">'+weatherIcon(v,v.isDay,44)+'<div><div class="wx-temp">'+fmtEnv('temperature',v.temperature)+'</div><div class="wx-cond">'+esc(cond?cond.label:'')+(cond&&cond.derived?' <span class="hint">(from cloud cover and rain)</span>':'')+'</div>'+
-    '<div class="hint">feels like '+fmtEnv('apparentTemperature',v.apparentTemperature)+' \u00b7 '+fmtEnv('isDay',v.isDay)+(N.derived.indexOf('isDay')>=0?' (from sunrise and sunset)':'')+'</div></div></div>'+
-    '<div class="wx-facts">'+[['drop','Rain now',fmtEnv('precipitation',v.precipitation)],['cloud','Cloud cover',fmtEnv('cloudCover',v.cloudCover)],['wind','Wind',fmtEnv('windSpeed',v.windSpeed)],['uv','UV',fmtEnv('uvIndex',v.uvIndex)]]
-      .map(function(f){return '<div class="wx-fact">'+uiIcon(f[0],{size:18})+'<span class="hint">'+esc(f[1])+'</span><b>'+esc(f[2])+'</b></div>';}).join('')+'</div>';
-  var HH=environmentHourly().filter(function(h){return h.kind==='forecast';}).slice(0,12);
-  var hourly=HH.length?'<div class="card-title" style="margin-top:8px">Next hours</div><div class="wx-strip">'+HH.map(function(h){return '<div class="wx-day"><b>'+esc(h.time.slice(11,16))+'</b>'+weatherIcon(h.values,h.values.isDay,22)+
-      '<span>'+fmtEnv('temperature',h.values.temperature)+'</span><span class="hint">'+(h.values.precipitationProbability!=null?uiIcon('drop',{size:11})+Math.round(h.values.precipitationProbability)+'%':'')+'</span></div>';}).join('')+'</div>':'';
-  var rows=uiRow('Humidity',fmtEnv('humidity',v.humidity),{sub:v.vpd!=null?('vapour pressure deficit '+fmtEnv('vpd',v.vpd)+(N.derived.indexOf('vpd')>=0?' (derived from temperature and humidity)':'')):''})+
-    uiRow('Wind',fmtEnv('windSpeed',v.windSpeed)+' '+(v.windDirection!=null?fmtEnv('windDirection',v.windDirection).split(' ')[0]:''),{sub:'gusts '+fmtEnv('windGusts',v.windGusts)})+
-    uiRow('UV index',fmtEnv('uvIndex',v.uvIndex))+(today?uiRow('Sun',fmtEnv('sunrise',today.values.sunrise)+' \u2013 '+fmtEnv('sunset',today.values.sunset),{sub:'daylight '+fmtEnv('daylightHours',today.values.daylightHours)}):'')+
-    (v.usAqi!=null||v.europeanAqi!=null?uiRow('Air quality',v.usAqi!=null?('US AQI '+fmtEnv('usAqi',v.usAqi)):('European AQI '+fmtEnv('europeanAqi',v.europeanAqi)),{sub:'PM2.5 '+fmtEnv('pm2_5',v.pm2_5)}):'');
-  var strip='<div class="wx-strip">'+fc.map(function(d){return '<div class="wx-day"><b>'+esc(dowShort(d.date))+'</b>'+weatherIcon(d.values,true,22)+'<span>'+fmtEnv('temperatureMax',d.values.temperatureMax)+'</span><span class="hint">'+fmtEnv('temperatureMin',d.values.temperatureMin)+'</span>'+
-    '<span class="hint">'+(d.values.precipitationSum?fmtEnv('precipitationSum',d.values.precipitationSum):'\u00a0')+(d.values.precipitationProbabilityMax!=null?' '+Math.round(d.values.precipitationProbabilityMax)+'%':'')+'</span></div>';}).join('')+'</div>';
-  return uiCard({title:'Weather',sub:esc(L.label||'your place')+' \u00b7 '+esc(EXTERNAL_SOURCES[N.source]?EXTERNAL_SOURCES[N.source].name:N.source)+' \u00b7 '+(N.ageMinutes<60?N.ageMinutes+' min ago':Math.round(N.ageMinutes/60)+' h ago')+(weatherUpdating()?' \u00b7 updating\u2026':(N.stale?' (out of date)':'')),
-    body:top+hourly+rows+'<div class="card-title" style="margin-top:8px">Next 14 days</div>'+strip+'<div class="btn-row">'+uiBtn('Details','weather.open',null,'btn-sm btn-secondary')+uiBtn('Refresh','weather.refresh',null,'btn-sm btn-ghost')+'</div>'});
-}
+/* renderWeatherCard moved to 90-weather-ui.js (engine layer) */
 /* SHEETS.weather lives in 90-workout.js: SHEETS is defined in 85-log-sheet.js, after this file, and assigning to it here
    threw at load — the load-order trap, a third time. Governance now fails any top-level use of a registry before its definition. */
 
@@ -400,8 +379,8 @@ function weatherAutoRefresh(reason){
   if(!weatherAutoEnabled()||_WX_INFLIGHT||!weatherNeedsRefresh())return null;
   if(typeof document!=='undefined'&&document.hidden)return null;
   var air=_ageMinutes(_envBatches('air-quality')[0])>=WEATHER_AUTO.airMinutes;
-  _WX_INFLIGHT=refreshEnvironment({air:air,auto:true,reason:reason}).then(function(r){_WX_INFLIGHT=null;try{renderAll();}catch(e){}return r;},function(e){_WX_INFLIGHT=null;try{renderAll();}catch(x){}});
-  try{renderAll();}catch(e){}return _WX_INFLIGHT;
+  _WX_INFLIGHT=refreshEnvironment({air:air,auto:true,reason:reason}).then(function(r){_WX_INFLIGHT=null;try{(typeof renderAll==='function'&&renderAll());}catch(e){}return r;},function(e){_WX_INFLIGHT=null;try{(typeof renderAll==='function'&&renderAll());}catch(x){}});
+  try{(typeof renderAll==='function'&&renderAll());}catch(e){}return _WX_INFLIGHT;
 }
 function startWeatherAuto(){if(_WX_STARTED||typeof document==='undefined'||typeof window==='undefined')return;_WX_STARTED=true;
   if(weatherLocation()&&extServerBase())_rawGet('/v1/health');   /* wake a sleeping server while the saved forecast shows */
@@ -409,3 +388,14 @@ function startWeatherAuto(){if(_WX_STARTED||typeof document==='undefined'||typeo
   window.addEventListener('online',function(){weatherAutoRefresh('online');});
   setInterval(function(){weatherAutoRefresh('timer');},WEATHER_AUTO.checkEveryMs);
   setTimeout(function(){weatherAutoRefresh('launch');},800);}
+/* _weatherGlance moved to 90-weather-ui.js (engine layer) */
+
+/* moved from 80-icons.js: an engine function that lived in an interface file */
+function weatherCondition(v,isDay){var code=v&&v.weatherCode!=null?v.weatherCode:null,derived=false;if(code==null){code=conditionCodeFrom(v);derived=code!=null;}
+  if(code==null||!WEATHER_CONDITIONS[code])return null;var c=WEATHER_CONDITIONS[code],day=isDay==null?(v&&v.isDay!=null?!!v.isDay:true):!!isDay;
+  return {code:code,label:c[0],icon:day?c[1]:c[2],derived:derived};}
+
+/* moved from 80-icons.js: an engine function that lived in an interface file */
+function conditionCodeFrom(v){if(!v)return null;var pr=v.precipitation!=null?v.precipitation:v.precipitationSum,cc=v.cloudCover;
+  if(pr!=null&&pr>=0.1){var cold=v.temperature!=null&&v.temperature<=0;return cold?73:(pr>=4?65:(pr>=1?63:61));}
+  if(cc==null)return null;return cc<15?0:(cc<40?1:(cc<75?2:3));}

@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build 058f0ade05. Every status is derived from evidence the build can check; none is assigned by hand.
+Build 11bbf10590. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -56,6 +56,7 @@ Build 058f0ade05. Every status is derived from evidence the build can check; non
 | response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | assigned |
 | exercise_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | uncertainty_chain | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| learning_loop | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | model_competition | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | intervention_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | personal_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
@@ -69,5 +70,6 @@ Build 058f0ade05. Every status is derived from evidence the build can check; non
 | micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| unified_optimiser | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 
 Production-ready capabilities: 0. Experimentally validated engines: 0.

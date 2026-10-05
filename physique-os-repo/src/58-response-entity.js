@@ -38,7 +38,8 @@ function _expectedWeightChange(iv){var kg=typeof _kgNow==='function'?_kgNow():nu
   return null;}
 
 /* ---- evaluation: before, during, after, and the counterfactual ---- */
-function evaluateResponse(iv){
+function evaluateResponse(iv){return canonicalResponse(_evaluateResponseCore(iv),iv);}
+function _evaluateResponseCore(iv){
   var d=iv.date,B=[addDays(d,-21),addDays(d,-1)],A=[d,todayISO()<addDays(d,20)?todayISO():addDays(d,20)],afterDays=daysBetween(d,todayISO())+1;
   var rec={id:'resp:'+iv.id,interventionId:iv.id,kind:iv.kind,variable:iv.variable,dose:(typeof iv.to==='number'&&typeof iv.from==='number')?round(iv.to-iv.from,1):null,
     from:iv.from!=null?iv.from:null,to:iv.to!=null?iv.to:null,start:d,windows:{before:B,after:A},stage:afterDays>=21?'final':(afterDays>=7?'provisional':'pending'),
@@ -97,3 +98,59 @@ function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){retu
     assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
     failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)'],
     output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual',consumers:['responsesOf'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
+/* ============================================================================
+   CANONICAL RESPONSE (audit A-002): every Response record carries the canonical field set explicitly, whatever produced
+   the intervention (plan change, experiment, adaptation, supplement, optimiser choice), pending records included.
+   ============================================================================ */
+var RESPONSE_MODEL_VERSION='response-1.1';
+function canonicalResponse(r,iv){if(!r)return r;var A=r.windows&&r.windows.after,P=r.primary||null,today=todayISO();
+  r.exposureWindow=A?{from:A[0],to:A[1],days:Math.max(0,daysBetween(A[0],A[1]<today?A[1]:today)+1)}:null;
+  r.executionIds=A?(DB.executions||[]).filter(function(x){return x.date>=A[0]&&x.date<=A[1]&&(!r.variable||!x.item||x.item===r.variable||x.item==='nutrition'&&r.variable==='calories'||x.item==='steps'&&r.variable==='steps');}).map(function(x){return x.id;}):[];
+  r.expectedOutcome=r.expected?{mean:r.expected.mean,lo:r.expected.lo,hi:r.expected.hi,basis:r.expected.basis||null,unit:P&&P.unit||null}:null;
+  r.observedOutcome=P?{quantity:P.quantity,before:P.before,after:P.after,unit:P.unit||null,n:P.n}:null;
+  r.delta=P?P.effect:null;
+  r.uncertainty=P?{se:P.se,interval95:[round(P.effect-2*P.se,2),round(P.effect+2*P.se,2)]}:null;
+  /* context in the window, except the tag that records this intervention itself (it is not a confounder of itself) */
+  var ctx=A?obsOf('context').filter(function(o){return o.date>=A[0]&&o.date<=A[1]&&!/^intervention:/i.test(String(o.value));}).map(function(o){return String(o.value);}):[];
+  r.confounders=[].concat(r.placebo&&r.placebo.alreadyUnderWay?['the change was already under way before it started']:[],ctx.map(function(c){return 'context: '+c;}),
+    (r.unintended||[]).filter(function(u){return u.flag;}).map(function(u){return 'also changed: '+u.quantity;}),r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5?['carried out on only '+Math.round(r.adherence.share*100)+'% of days']:[]);
+  r.attribution=!P?'nothing to attribute':(r.placebo&&r.placebo.alreadyUnderWay?'a trend already under way, not the change':(Math.abs(P.effect)>2*P.se&&!(r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5)?'the change':'uncertain'));
+  var ph=null;try{ph=activePhase(r.start);}catch(e){}r.applicability={phase:ph?ph.type:null,conditions:ctx,note:'what this says about you applies to a '+(ph?ph.type:'similar')+' phase under similar conditions'};
+  r.evidence=[].concat(P?[{kind:P.quantity,method:P.method,n:P.n}]:[],r.placebo?[{kind:'placebo check',effect:r.placebo.effect,se:r.placebo.se}]:[],r.expectedOutcome?[{kind:'expectation',basis:r.expectedOutcome.basis}]:[]);
+  r.modelVersion=RESPONSE_MODEL_VERSION;r.status=r.stage;r.confidence=r.confidence||'none';return r;}
+/* ============================================================================
+   ONE INTERVENTION LIFECYCLE (audit A-003), for every domain: proposed \u2192 accepted \u2192 scheduled \u2192 attempted \u2192 executed \u2192
+   exposed \u2192 evaluated \u2192 completed \u2192 learned. A projection from existing records, never a second store.
+   ============================================================================ */
+var INTERVENTION_STATES=['proposed','accepted','scheduled','attempted','executed','exposed','evaluated','completed','learned'];
+function interventionLifecycle(iv){var today=todayISO(),R=responsesOf().filter(function(r){return r.interventionId===iv.id;})[0]||null,t=[];
+  var reach=function(state,at,evidence){t.push({state:state,at:at||null,evidence:evidence});};
+  reach('proposed',iv.proposedAt||iv.start,iv.source||'recorded');
+  reach('accepted',iv.start,'applied to the plan');
+  if(iv.start<=today)reach('scheduled',iv.start,'in effect from '+iv.start);
+  var S=iv.variable?seriesWindow(iv.variable,Math.max(1,daysBetween(iv.start,today)+1)).filter(function(x){return x.date>=iv.start;}):[];
+  if(S.length||(R&&R.executionIds&&R.executionIds.length))reach('attempted',S.length?S[0].date:null,S.length+' day'+(S.length===1?'':'s')+' logged since');
+  var share=R&&R.adherence?R.adherence.share:null;if(share!=null?share>=0.5:S.length>=3)reach('executed',null,share!=null?'carried out on '+Math.round(share*100)+'% of days':'logged on '+S.length+' days');
+  if(daysBetween(iv.start,today)>=7)reach('exposed',addDays(iv.start,7),'a week of exposure');
+  if(R&&(R.stage==='provisional'||R.stage==='final'))reach('evaluated',String(R.evaluatedAt||'').slice(0,10),'provisional verdict: '+R.verdict);
+  if(R&&R.stage==='final')reach('completed',String(R.evaluatedAt||'').slice(0,10),'final verdict: '+R.verdict);
+  if(R&&R.stage==='final'){var M=_safeLearned(R);if(M)reach('learned',null,M);}
+  var reached=t.map(function(x){return x.state;}),state=INTERVENTION_STATES.filter(function(s){return reached.indexOf(s)>=0;}).slice(-1)[0];
+  return {id:iv.id,kind:iv.kind,variable:iv.variable,state:state,transitions:t,next:INTERVENTION_STATES[INTERVENTION_STATES.indexOf(state)+1]||null};}
+function _safeLearned(R){try{var M=personalResponseModel(),row=M.rows.filter(function(x){return x.variable===R.variable&&x.n>0;})[0];return row?'in the personal response model ('+Math.round(row.personalWeight*100)+'% your own data)':null;}catch(e){return null;}}
+function interventionLifecycles(){return responseInterventions().map(interventionLifecycle);}
+/* ============================================================================
+   INDIVIDUAL STATE (audit A-005): one read-only projection of the person, composed from each domain's own read model.
+   Frozen: nothing may write through it.
+   ============================================================================ */
+function individualState(){var g=function(f,d){try{return f();}catch(e){return d;}};
+  var st={asOf:asOf(),goal:g(canonicalGoal,null),constraints:g(constraintModel,null),plan:g(function(){var p=currentPlan();return p?{id:p.id,version:p.version,effectiveFrom:p.effectiveFrom}:null;},null),phase:g(activePhase,null),
+    training:g(function(){var ps=programStructure();return {program:(trainingProgram()||{}).label||null,status:ps.status};},null),nutrition:g(function(){var d=dayNutrition(todayISO());return {today:d.totals||null};},null),
+    activity:g(function(){var s=seriesWindow('steps',7);return {stepsAvg7:s.length?Math.round(mean(s.map(function(x){return x.value;}))):null};},null),
+    recovery:g(function(){return {fatigueAvg7:(function(v){return v.length?round(mean(v),1):null;})(seriesWindow('fatigue',7).map(function(x){return x.value;}))};},null),
+    bodyComposition:g(function(){var r=physiqueRate();return {rate:r.status==='ok'?{pctPerWeek:r.pctPerWeek,range:r.range}:null};},null),
+    execution:g(function(){return adherenceState(14);},null),response:g(function(){return personalResponseModel().rows.filter(function(r){return r.n>0;}).map(function(r){return {key:r.key,mean:r.posterior.mean,personal:r.personalWeight};});},[]),
+    evidence:g(function(){return {responses:responsesOf().length,final:responsesOf().filter(function(r){return r.stage==='final';}).length};},null),
+    adaptation:g(function(){return {planVersions:plansOf().length,interventions:interventionLifecycles().map(function(l){return {id:l.id,state:l.state};})};},null)};
+  return _deepFreeze(st);}
+function _deepFreeze(o){if(o&&typeof o==='object'&&!Object.isFrozen(o)){Object.freeze(o);Object.keys(o).forEach(function(k){_deepFreeze(o[k]);});}return o;}

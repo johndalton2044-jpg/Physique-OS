@@ -7,7 +7,7 @@ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pos-srv-'));
 /* a real P-256 pair in web-push's format */
 const kp=crypto.generateKeyPairSync('ec',{namedCurve:'prime256v1'});const jw=kp.privateKey.export({format:'jwk'});
 const PUB=Buffer.concat([Buffer.from([4]),Buffer.from(jw.x,'base64url'),Buffer.from(jw.y,'base64url')]).toString('base64url'),PRIV=jw.d;
-Object.assign(process.env,{PHYSIQUE_SERVER_TEST:'1',DATA_DIR:tmp,VAPID_PUBLIC_KEY:PUB,VAPID_PRIVATE_KEY:PRIV,NODE_TLS_REJECT_UNAUTHORIZED:'0'});
+Object.assign(process.env,{PHYSIQUE_SERVER_TEST:'1',DATA_DIR:tmp,LEDGER_INDEX_IDS:'8',VAPID_PUBLIC_KEY:PUB,VAPID_PRIVATE_KEY:PRIV,NODE_TLS_REJECT_UNAUTHORIZED:'0'});
 const S=await import('../server/server.mjs?'+Date.now());
 /* 1. the push-key invariant */
 line(S.vapidKeys().publicKey===PUB&&/BEGIN PRIVATE KEY/.test(S.vapidKeys().privateKeyPem),'web-push format keys (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) are accepted and converted');
@@ -47,5 +47,39 @@ line(p2.rows.length===204&&p2.rows[0].serverSeq===1001&&p2.more===false,'reading
 line(Object.keys(v3.offsets||{}).length>=2&&v3.eventCount===1204,'the vault keeps an offset index and a count, so reads need not scan the file',JSON.stringify({offsets:Object.keys(v3.offsets||{}),count:v3.eventCount}));
 /* 7. the proxy boundary: a per-socket ceiling that a forged forwarded address cannot escape */
 let n=0;for(let i=0;i<30;i++)if(S.rateOk('sock:test',25))n++;line(n===25,'the socket limit holds whatever addresses are forwarded through it');
+/* 8. event ids are idempotent: a re-send is acknowledged and not stored again. Each encryption draws a fresh IV, so a
+      re-sent event arrives as different bytes — the id decides, and the first stored copy stands. */
+{const vid=crypto.randomBytes(16).toString('hex');S.writeVault({id:vid,serverSeq:0,devices:[],createdAt:new Date().toISOString()});
+  const tok='t-'+crypto.randomBytes(8).toString('hex');S.tokens.set(tok,{vaultId:vid,deviceId:'d1',exp:Date.now()+60000});
+  const srv=S.server.listen(0,'127.0.0.1');await new Promise(r=>srv.on('listening',r));const base='http://127.0.0.1:'+srv.address().port;
+  const post=evs=>fetch(base+'/v1/events',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify({events:evs})}).then(r=>r.json());
+  const ev=id=>({id,ciphertext:'ct-'+id+'-'+crypto.randomBytes(6).toString('hex'),iv:'iv',device:'d1'});
+  const ledger=()=>S.readEvents(S.readVault(vid),0,1000).rows;
+  const first=ev('x1');const a=await post([first,ev('x2'),ev('x1')]);
+  line(a.accepted===2&&a.duplicates===1&&a.serverSeq===2,'an id repeated within one batch is stored once',JSON.stringify(a));
+  const b=await post([ev('x1'),ev('x2'),ev('x3')]);
+  line(b.accepted===1&&b.duplicates===2&&b.serverSeq===3,'a re-sent id is acknowledged and not stored again, though its ciphertext differs',JSON.stringify(b));
+  const L=ledger();
+  line(L.map(r=>r.id).join()==='x1,x2,x3'&&S.readVault(vid).eventCount===3,'the ledger holds each id once and the count matches it',JSON.stringify({ids:L.map(r=>r.id),count:S.readVault(vid).eventCount}));
+  line(L[0].ciphertext===first.ciphertext,'the first copy stored for an id stands');
+  const p=path.join(tmp,'vaults',vid,'events.ndjson');
+  fs.appendFileSync(p,JSON.stringify({id:'x9',ciphertext:'c',iv:'',serverSeq:4})+'\n');
+  const c=await post([ev('x9'),ev('x4')]);
+  line(c.accepted===1&&c.duplicates===1&&c.serverSeq===5,'an id written to the ledger outside this process is still recognised',JSON.stringify(c));
+  fs.appendFileSync(p,'{"id":"x6","cipher');
+  const d=await post([ev('x6')]);
+  line(d.accepted===1&&ledger().filter(r=>r.id==='x6').length===1,'an id in a torn last line is not claimed, so its re-send is stored',JSON.stringify(d));
+  const long=await fetch(base+'/v1/events',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify({events:[ev('y'.repeat(300))]})});
+  line(long.status===400,'an event id longer than any client makes is refused',String(long.status));
+  /* the id index is bounded by ids held (8 in this test): a second vault pushes the first out, and the first still
+     recognises its ids afterwards, read again from its ledger */
+  const vid2=crypto.randomBytes(16).toString('hex');S.writeVault({id:vid2,serverSeq:0,devices:[],createdAt:new Date().toISOString()});
+  const tok2='t-'+crypto.randomBytes(8).toString('hex');S.tokens.set(tok2,{vaultId:vid2,deviceId:'d2',exp:Date.now()+60000});
+  const post2=evs=>fetch(base+'/v1/events',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok2},body:JSON.stringify({events:evs})}).then(r=>r.json());
+  await post2([ev('z1'),ev('z2'),ev('z3')]);const held=S.ledgerIndexSize();
+  line(held.vaults===1&&held.ids===3,'the id index drops the least recently used vault once it holds more ids than its budget',JSON.stringify(held));
+  const again=await post([ev('x1'),ev('x9'),ev('x6')]);
+  line(again.accepted===0&&again.duplicates===3,'a vault dropped from the index still recognises its ids',JSON.stringify(again));
+  srv.close();}
 fs.rmSync(tmp,{recursive:true,force:true});
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

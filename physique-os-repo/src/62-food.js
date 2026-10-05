@@ -164,6 +164,8 @@ function saveUserFood(f){normalizeFood(f);pushUndo('save food');if(!f.id){f.id=u
 /* ---- meals + food logs ---- */
 var MEALS=['breakfast','lunch','dinner','snacks'];
 function foodSnapshot(f){f=normalizeFood(f);var snap={kind:f.kind,id:f.id,fdcId:f.fdcId||null,name:f.name,brand:f.brand||'',source:f.source,version:f.version,category:f.category||'',basis:f.basis,per100:JSON.parse(JSON.stringify(f.per100||{})),perServing:f.perServing?JSON.parse(JSON.stringify(f.perServing)):null,servingGrams:f.servingGrams||null,servingMl:f.servingMl||null,density:f.density||null,conversionConfidence:f.conversionConfidence,energySource:f.energySource||null};
+  /* portions travel with the entry, so it can be edited in its own unit (they were dropped, and edits fell back to grams) */
+  snap.portions=JSON.parse(JSON.stringify((f.portions||[]).slice(0,12)));
   if(f.basis==='g')snap.per100g=snap.per100;if(f.basis==='ml')snap.per100ml=snap.per100;return snap;}
 function _qtyLabel(qty,basis){return basis==='serving'?(fmtNum(qty,qty%1?2:0)+' serving'+(qty===1?'':'s')):(fmtNum(qty,qty%1?1:0)+(basis==='ml'?' mL':' g'));}
 /* logFood({food, grams}) (gram-basis only), logFood({food, quantity, basis}) or logFood({food, amount, unit}) */
@@ -173,7 +175,8 @@ function logFood(o){
   else if(o.quantity!=null){var basis=o.basis||food.basis;if(basis!==food.basis)throw new Error('quantity basis '+basis+' does not match the food basis '+food.basis);res={qty:num(o.quantity),basis:basis,grams:basis==='g'?num(o.quantity):null,ml:basis==='ml'?num(o.quantity):null,servings:basis==='serving'?num(o.quantity):null,label:_qtyLabel(num(o.quantity),basis)};}
   else if(o.grams!=null){if(food.basis!=='g')throw new Error('grams cannot be logged for a '+food.basis+'-basis food without a density');res={qty:num(o.grams),basis:'g',grams:num(o.grams),ml:null,servings:null,label:fmtNum(num(o.grams),0)+' g'};}
   if(!res||!res.qty||res.qty<=0)throw new Error('portion resolves to zero '+(food.basis==='serving'?'servings':food.basis));
-  var rec={id:uid('fl'),date:o.date||todayISO(),meal:MEALS.indexOf(o.meal)>=0?o.meal:'snacks',food:foodSnapshot(food),quantity:round(res.qty,2),basis:res.basis,grams:res.grams!=null?round(res.grams,1):null,ml:res.ml!=null?round(res.ml,1):null,servings:res.servings!=null?round(res.servings,3):null,portionLabel:o.portionLabel||res.label,approx:!!res.approx,nutrients:nutrientsFor(food,res.qty),createdAt:nowISO(),source:o.source||'manual'};
+  var rec={id:uid('fl'),date:o.date||todayISO(),meal:MEALS.indexOf(o.meal)>=0?o.meal:'snacks',food:foodSnapshot(food),quantity:round(res.qty,2),basis:res.basis,grams:res.grams!=null?round(res.grams,1):null,ml:res.ml!=null?round(res.ml,1):null,servings:res.servings!=null?round(res.servings,3):null,portionLabel:o.portionLabel||res.label,portion:(o.amount!=null&&o.unit)?{amount:num(o.amount),unit:o.unit}:null,   /* the portion as chosen, so it can be edited in its own unit */
+    approx:!!res.approx,nutrients:nutrientsFor(food,res.qty),createdAt:nowISO(),source:o.source||'manual'};
   if(!o.silent)pushUndo('log food');
   DB.foodLogs.push(rec);emitEvent('food.logged',rec,{at:rec.createdAt});syncNutritionObservations(rec.date);if(!o.noSave)save('food-log');return rec;
 }
@@ -205,7 +208,7 @@ function changeMeal(id,meal){
   if(!old||old.meal===meal)return null;
   return updateFoodLog(id,null,meal);
 }
-function updateFoodLog(id,quantity,meal){
+function updateFoodLog(id,quantity,meal,portion){
   var old=DB.foodLogs.filter(function(f){return f.id===id;})[0];if(!old)return null;
   pushUndo('edit food');
   var q=num(quantity);var basis=old.basis||'g';
@@ -213,7 +216,9 @@ function updateFoodLog(id,quantity,meal){
   var at=nowISO();
   var rec={id:uid('fl'),date:old.date,meal:meal||old.meal,food:JSON.parse(JSON.stringify(old.food)),
     quantity:qty,basis:basis,grams:basis==='g'?qty:null,ml:basis==='ml'?qty:null,servings:basis==='serving'?qty:null,
-    portionLabel:_qtyLabel(qty,basis),approx:!!old.approx,nutrients:nutrientsFor(old.food,qty),
+    /* the portion stays as chosen: an edit used to turn "2 slices" into grams even when only the meal changed */
+    portionLabel:portion&&portion.label?portion.label:(qty===(old.quantity!=null?old.quantity:old.grams)&&old.portionLabel?old.portionLabel:_qtyLabel(qty,basis)),
+    portion:portion?{amount:portion.amount,unit:portion.unit}:(qty===(old.quantity!=null?old.quantity:old.grams)?(old.portion||null):null),approx:!!old.approx,nutrients:nutrientsFor(old.food,qty),
     createdAt:at,source:'edit',supersedes:old.id,
     edit:{of:old.id,at:at,fromQuantity:old.quantity!=null?old.quantity:old.grams,toQuantity:qty,fromMeal:old.meal,toMeal:meal||old.meal}};
   old.supersededBy=rec.id;old.supersededAt=at;
@@ -247,11 +252,14 @@ function frequentFoods(limit){var c={},ref={};_liveFoodLogs().forEach(function(l
 function portionsFromSnapshot(l){var live=localFoods().filter(function(f){return f.id===l.food.id;})[0];if(live)return live.portions;var p={label:l.portionLabel};if((l.basis||'g')==='g')p.g=l.grams;else if(l.basis==='ml')p.ml=l.ml;else p.servings=l.servings;return [p];}
 function favorites(){return (DB.settings.favorites||[]).map(normalizeFood);}
 function toggleFavorite(food){var favs=DB.settings.favorites||[];var i=favs.findIndex(function(f){return f.id===food.id;});if(i>=0)favs.splice(i,1);else favs.push(foodSnapshot(food));DB.settings.favorites=favs;save('favorite');return i<0;}
+/* THE one way to copy a logged food (copy a day or a meal, a template, a multi-select copy): four places cloned, pushed,
+   emitted and synced on their own, a second food-log authority. Nutrition sync is the caller's, once per batch. */
+function copyFoodLog(l,toDate,meal){var c=_cloneLog(l,toDate,meal);DB.foodLogs.push(c);emitEvent('food.logged',c,{at:c.createdAt});return c;}
 function _cloneLog(l,toDate,meal){return {id:uid('fl'),date:toDate,meal:meal||l.meal,food:JSON.parse(JSON.stringify(l.food)),quantity:l.quantity!=null?l.quantity:l.grams,basis:l.basis||'g',grams:l.grams!=null?l.grams:null,ml:l.ml!=null?l.ml:null,servings:l.servings!=null?l.servings:null,portionLabel:l.portionLabel,approx:!!l.approx,nutrients:JSON.parse(JSON.stringify(l.nutrients)),createdAt:nowISO(),source:'repeat'};}
 /* recent/frequent lists read the ledger, so a retracted or superseded entry must not resurface as a suggestion */
 function _liveFoodLogs(){return (DB.foodLogs||[]).filter(function(l){return !l.retracted&&!l.supersededBy;});}
-function repeatDay(fromDate,toDate){var logs=foodLogsOn(fromDate);if(!logs.length)return 0;pushUndo('repeat day');logs.forEach(function(l){var c=_cloneLog(l,toDate);DB.foodLogs.push(c);emitEvent('food.logged',c,{at:c.createdAt});});syncNutritionObservations(toDate);save('food-log:repeat');return logs.length;}
-function repeatMeal(fromDate,meal,toDate){var logs=foodLogsOn(fromDate).filter(function(l){return l.meal===meal;});if(!logs.length)return 0;pushUndo('repeat meal');logs.forEach(function(l){var c=_cloneLog(l,toDate,meal);DB.foodLogs.push(c);emitEvent('food.logged',c,{at:c.createdAt});});syncNutritionObservations(toDate);save('food-log:repeat');return logs.length;}
+function repeatDay(fromDate,toDate){var logs=foodLogsOn(fromDate);if(!logs.length)return 0;pushUndo('repeat day');logs.forEach(function(l){copyFoodLog(l,toDate);});syncNutritionObservations(toDate);save('food-log:repeat');return logs.length;}
+function repeatMeal(fromDate,meal,toDate){var logs=foodLogsOn(fromDate).filter(function(l){return l.meal===meal;});if(!logs.length)return 0;pushUndo('repeat meal');logs.forEach(function(l){copyFoodLog(l,toDate,meal);});syncNutritionObservations(toDate);save('food-log:repeat');return logs.length;}
 /* ---- reference comparison for a day's intake ---- */
 function nutritionReference(day){
   var p=prof();var kg=weightKgNow();var out=[];var ph=activePhase()||{};

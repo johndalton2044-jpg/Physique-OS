@@ -148,7 +148,7 @@ function switchTab(tab){if(typeof applyRailInsets==='function'&&typeof requestAn
   if(typeof presentationViewGuard==='function'){var _pv=presentationViewGuard(tab);if(!_pv.ok)return;}
   if(!document.getElementById('view-'+tab))return;try{rememberScroll();}catch(e){}_TAB=tab;document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('active',v.id==='view-'+tab);});document.querySelectorAll('nav.primary .tab').forEach(function(b){var on=b.getAttribute('data-tab')===tab;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');if(on&&b.scrollIntoView)try{b.scrollIntoView({block:'nearest',inline:'center'});}catch(e){}});try{history.replaceState(null,'','#'+tab);}catch(e){}renderAll();
   /* returning to a view restores where the user was reading rather than resetting to the top */
-  try{if(!_NAV_SUPPRESS){restoreScroll(_SCROLL[tab]||0);navPush();}}catch(e){_q(e);}
+  try{if(!_NAV_SUPPRESS){restoreScroll(0);navPush();}}catch(e){_q(e);}   /* a tab always opens at the top, not where it was left */
   makeDelegatedControlsFocusable();}
 registerAction('nav.tab',function(arg){switchTab(arg);});
 registerAction('ui.skipToMain',function(){var m=document.getElementById('main');if(m)m.focus();});
@@ -161,7 +161,7 @@ registerAction('ui.fold',function(id,ev,el){setTimeout(function(){
      active view re-renders, and the open state is restored from settings, so nothing else moves. */
   if(d.open&&wasEmpty){try{if(_SHEET)renderSheet();else renderAll();}catch(e){_q(e,'P2');}}
 },0);});
-registerAction('ui.openAbout',function(){switchTab('tools');setTimeout(function(){var d=document.querySelector('details[data-fold="tools-about"]');if(d){d.open=true;d.scrollIntoView({block:'start'});}},50);});
+registerAction('ui.openAbout',function(){openSheet('edit',{form:'about',title:'About Physique OS',desc:'',buf:{}});});
 registerAction('undo.last',function(){var label=undoLabel();if(!label)return;if(undo()){_memoInvalidate();renderAll();toast('Undid: '+esc(label));}});
 /* ---- log sheet ---- */
 registerAction('log.open',function(arg){openLog(arg||'weight');});
@@ -175,10 +175,16 @@ registerAction('device.test',function(arg){var p=String(arg).split('|');setDevic
 registerAction('plan.whatif',function(arg){_WHATIF=(_WHATIF===+arg?null:+arg);renderAll();});
 registerAction('log.day',function(arg){_LOG_DAY=arg;renderAll();});
 registerAction('log.foodDay',function(arg){_FOOD_DAY=arg;switchTab('food');});
-registerAction('sheet.logType',function(arg){_SHEET.buf.type=arg;delete _SHEET.buf._warn;renderSheet();});
+/* a new type starts with empty fields: the weight typed before used to stay in the buffer and appear in the next type */
+registerAction('sheet.logType',function(arg){var d=_SHEET.buf.date;_SHEET.buf={type:arg,date:d};renderSheet();});
+registerAction('sheet.suppTiming',function(arg){var b=_SHEET.buf;b.timing=arg;b.pick=null;renderSheet();});
+registerAction('sheet.suppPick',function(id){var b=_SHEET.buf;b.pick=b.pick||{};b.pick[id]=!b.pick[id];renderSheet();});
+registerAction('sheet.suppDose',function(id,ev,el){var b=_SHEET.buf;b.doses=b.doses||{};if(el)b.doses[id]=el.value;});
+registerAction('sheet.urine',function(v){_SHEET.buf.value=+v;renderSheet();});
+registerAction('sheet.waterQuick',function(arg){var b=_SHEET.buf;b.value=(num(b.value)||0)+(+arg);renderSheet();});
 registerAction('sheet.field',function(arg,ev,el){setField(arg,el.value);if(_SHEET&&_SHEET.opts.form==='foodAdd'&&(arg==='amount'||arg==='unit'))renderSheet();if(_SHEET&&(_SHEET.opts.form==='phase')&&MAJOR_VARS.indexOf(arg)>=0)renderSheet();if(_SHEET&&_SHEET.opts.form==='customFood'&&arg==='basis')renderSheet();if(_SHEET&&_SHEET.kind==='log'&&arg==='modality')renderSheet();if(_SHEET&&_SHEET.opts.form==='profile'&&arg==='sex')renderSheet();});
 registerAction('sheet.scale',function(arg){var p=arg.split('|');setField(p[0],p[1]);renderSheet();});
-registerAction('sheet.ctx',function(arg){var v=_SHEET.buf.value||'';setField('value',(v?v+'; ':'')+arg);renderSheet();});
+registerAction('sheet.ctx',function(arg){var b=_SHEET.buf;b.tags=b.tags||{};b.tags[arg]=!b.tags[arg];renderSheet();});   /* several tags, each its own entry */
 registerAction('sheet.set',function(arg,ev,el){var p=arg.split('|');var s=_SHEET.buf.sets[+p[0]];if(s){s[p[1]]=el.value;if(p[1]!=='exercise'){var row=el.closest('.set-grid');var hint=row&&row.nextElementSibling&&row.nextElementSibling.classList.contains('hint')?row.nextElementSibling:null;var e=e1rm(num(s.load),num(s.reps));if(hint)hint.textContent=e?('e1RM \u2248'+fmtNum(e.value,0)+' ('+e.reliability+')'):'';}}});
 registerAction('sheet.setDel',function(arg){_SHEET.buf.sets.splice(+arg,1);renderSheet();});
 registerAction('sheet.setAdd',function(){_SHEET.buf.sets.push({exercise:'',load:'',reps:'',rir:2});renderSheet();setTimeout(function(){var inputs=sheetBodyEl().querySelectorAll('.set-grid input[data-arg$="|exercise"]');if(inputs.length)inputs[inputs.length-1].focus();},30);});
@@ -195,8 +201,8 @@ registerAction('phase.start',function(arg){openPhase(null,arg||'cut');});
 /* Edit means the current phase when none is named; without this, phase.edit with no id opened "Start a phase". */
 registerAction('phase.edit',function(id){openPhase(id||((activePhase()||{}).id)||null);});
 registerAction('phase.save',function(){savePhase();});
-registerAction('phase.end',function(id){return promptDialog({title:'End this phase',label:'Outcome in a sentence (archived with the phase)',value:''}).then(function(v){if(v==null)return;endPhase(id,v);_memoInvalidate();renderAll();toast('Phase archived');});});
-registerAction('program.set',function(arg){if(!PROGRAMS[arg])return;pushUndo('program');if(setProgram(arg,{source:'program control'})){_memoInvalidate();renderAll();toast('Program: '+PROGRAMS[arg].label);}});
+registerAction('phase.end',function(id){return promptDialog({title:'End this phase',label:'Outcome in a sentence (archived with the phase)',value:''}).then(function(v){if(v==null)return;changePlan({kind:'phase end',source:'your edit',reason:'You ended the phase'+(v?': '+v:''),expected:'as you set',apply:function(){return endPhase(id,v);}});_memoInvalidate();renderAll();toast('Phase archived');});});
+registerAction('program.set',function(arg){if(!PROGRAMS[arg])return;pushUndo('program');if(changePlan({kind:'programme',source:'your edit',reason:'You chose the '+PROGRAMS[arg].label+' programme',expected:'as you set',apply:function(){return setProgram(arg,{source:'program control'});}}).result){_memoInvalidate();renderAll();toast('Program: '+PROGRAMS[arg].label);}});
 registerAction('edit.close',function(){closeSheet();});
 registerAction('edit.backdrop',function(arg,ev){if(ev&&ev.target&&ev.target.id==='editBackdrop')closeSheet();});
 /* ---- sessions ---- */
@@ -206,7 +212,7 @@ registerAction('session.save',function(){saveSession();});
 registerAction('session.retract',function(id){return confirmDialog({title:'Delete this session?',msg:'The session is marked retracted and removed from strength and volume models. Undo is available.',okLabel:'Delete',danger:true}).then(function(ok){if(!ok)return;retractSession(id);_memoInvalidate();renderAll();toast('Session deleted',{undo:true});});});
 registerAction('train.sub',function(arg,ev,el){var q=el.value;var out=document.getElementById('subResults');if(!out)return;if(!q||q.length<3){out.innerHTML='<div class="muted">Type an exercise to see alternatives.</div>';return;}var e=resolveExercise(q);if(!e){out.innerHTML='<div class="muted">Not in the ontology yet; log it anyway \u2014 free-text exercises still count for volume.</div>';return;}var subs=substitutesFor(q);out.innerHTML=uiRow(esc(e.name),uiPill(e.pattern),{sub:'primary '+e.primary.map(function(m){return MUSCLE_GROUPS[m];}).join(', ')+' \u00b7 '+e.equipment.join('/')+' \u00b7 fatigue '+e.fatigue+' \u00b7 skill '+e.skill})+subs.map(function(s){return uiRow(esc(s.exercise.name),'',{sub:s.why});}).join('');});
 /* ---- decisions / experiments ---- */
-registerAction('decision.apply',function(){var dec=decide();if(!dec.intervention){toast('Today\u2019s decision has no intervention to apply; it is a hold.');return;}var iv=dec.intervention;return confirmDialog({title:'Apply: '+dec.verb,msg:'<b>'+esc(iv.variable)+'</b> '+(iv.from!=null?esc(String(iv.from))+' \u2192 ':'')+(iv.to!=null?esc(String(iv.to)):'')+'.<br><br>This updates the phase target, records the decision, and creates an experiment with the prediction <i>'+esc(iv.expected)+'</i> to be checked in '+iv.recheckDays+' days. Undo is available.',okLabel:'Apply'}).then(function(ok){if(!ok)return;var exp=applyDecisionIntervention(dec);_memoInvalidate();renderAll();toast('Applied \u00b7 experiment recheck '+shortDate(exp.recheckDate),{undo:true});});});
+registerAction('decision.apply',function(){var dec=decide();if(!dec.intervention){toast('Today\u2019s decision has no intervention to apply; it is a hold.');return;}var iv=dec.intervention;return confirmDialog({title:'Apply: '+dec.verb,msg:'<b>'+esc(iv.variable)+'</b> '+(iv.from!=null?esc(String(iv.from))+' \u2192 ':'')+(iv.to!=null?esc(String(iv.to)):'')+'.<br><br>This updates the phase target, records the decision, and creates an experiment with the prediction <i>'+esc(iv.expected)+'</i> to be checked in '+iv.recheckDays+' days. Undo is available.',okLabel:'Apply'}).then(function(ok){if(!ok)return;var exp=changePlan({kind:'decision',source:'decision',reason:dec.lede||dec.verb||'Today\u2019s decision',expected:(iv&&(iv.expected||iv.prediction))||dec.action||'the outcome the decision names',apply:function(){return applyDecisionIntervention(dec);}}).result;_memoInvalidate();renderAll();toast('Applied \u00b7 experiment recheck '+shortDate(exp.recheckDate),{undo:true});});});
 registerAction('decision.user',function(){openSheet('edit',{form:'userDecision',title:'Record my decision',desc:'',buf:{verb:'',note:'',recheckDays:14}});});
 registerAction('decision.userSave',function(){var b=_SHEET.buf;if(!b.verb){toast('Say what you decided',{tone:'negative'});return;}recordUserDecision(b);closeSheet();_memoInvalidate();renderAll();toast('Decision recorded');});
 /* "New experiment" opens the ready-made options first; an open-ended form was the only way in (usage review). */
@@ -239,8 +245,13 @@ registerAction('foodsheet.pick',function(arg){var f=foodByRef(arg);if(!f)return;
 registerAction('foodsheet.back',function(){_FOODSHEET.picked=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q)q.focus();},30);});
 registerAction('foodsheet.save',function(){saveFoodSheet();});
 registerAction('food.fav',function(arg){var f=_FOODSHEET.picked||foodByRef(arg);if(!f)return;var added=toggleFavorite(f);renderSheet();toast(added?'Added to favorites':'Removed from favorites');});
-registerAction('food.edit',function(id){var l=DB.foodLogs.filter(function(x){return x.id===id;})[0];if(!l)return;openSheet('edit',{form:'foodEdit',title:'Edit entry',desc:'',buf:{log:l,quantity:l.quantity!=null?l.quantity:l.grams,meal:l.meal}});});
-registerAction('food.editSave',function(){var b=_SHEET.buf;updateFoodLog(b.log.id,b.quantity,b.meal);_memoInvalidate();closeSheet();renderAll();toast('Updated',{undo:true});});
+registerAction('food.edit',function(id){var l=DB.foodLogs.filter(function(x){return x.id===id;})[0];if(!l)return;var basis=l.basis||'g',pt=l.portion||{amount:l.quantity!=null?l.quantity:l.grams,unit:basis==='ml'?'ml':(basis==='serving'?'serving':'g')};
+  openSheet('edit',{form:'foodEdit',title:'Edit entry',desc:'',buf:{log:l,amount:pt.amount,unit:pt.unit,quantity:l.quantity!=null?l.quantity:l.grams,meal:l.meal}});});
+registerAction('food.editSave',function(){var b=_SHEET.buf,f=_foodForEdit(b.log),res=portionResolve(f,b.amount,b.unit);if(!res||!res.qty){toast('That amount does not resolve for this food',{tone:'negative'});return;}
+  var lab=(b.unit.indexOf('portion:')===0||b.unit==='serving')?((num(b.amount)===1?'':fmtNum(num(b.amount),num(b.amount)%1?2:0)+' \u00d7 ')+(b.unit.indexOf('portion:')===0?b.unit.slice(8):'serving')+' ('+_qtyLabel(res.qty,res.basis)+')'):res.label;
+  updateFoodLog(b.log.id,res.qty,b.meal,{amount:num(b.amount),unit:b.unit,label:lab});_memoInvalidate();closeSheet();renderAll();toast('Updated',{undo:true});});
+registerAction('foodsheet.clear',function(){_FOODSHEET.q='';_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';_FOODSHEET.picked=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q){q.value='';q.focus();}},30);});
+registerAction('foodsheet.saveAnother',function(){saveFoodSheet({another:true});});
 registerAction('food.remove',function(id){removeFoodLog(id);_memoInvalidate();closeSheet();renderAll();toast('Removed',{undo:true});});
 registerAction('food.repeatDay',function(arg){var p=arg.split('|');var n=repeatDay(p[0],p[1]);_memoInvalidate();renderAll();toast('Repeated '+n+' items',{undo:true});});
 registerAction('food.repeatMeal',function(arg){var p=arg.split('|');var n=repeatMeal(p[0],p[1],p[2]);_memoInvalidate();renderAll();toast('Repeated '+n+' items',{undo:true});});
@@ -357,6 +368,7 @@ function _routineBody(r){
   return '<div class="hint">'+esc(r.why)+' About '+r.minutes+' minute'+(r.minutes===1?'':'s')+'.</div>'+r.items.map(function(m,i){
     var pic='';if(m.pose){try{pic='<div class="mob-pose">'+renderPose(poseModel(m.pose))+'</div>';}catch(e){}}
     return '<div class="mob-step"><div class="mob-num">'+(i+1)+'</div><div><div class="mob-name">'+esc(m.name)+' <span class="mob-dose">'+esc(m.dose)+'</span></div>'+
+      (function(){var sec=/(\d+)\s*s(ec)?\b/.exec(String(m.dose||''));return uiTimer('mob-'+(m.id||i),sec?{duration:+sec[1]}:{choices:[30,45,60]});})()+
       '<ul class="cue-list">'+m.cues.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul>'+pic+'</div></div>';}).join('');
 }
 SHEETS.routine=function(){var r=_ROUTINE;if(!r)return {body:'',foot:''};
@@ -634,25 +646,13 @@ registerAction('data.restoreFile',function(arg,ev,el){var file=el.files&&el.file
   var v=validateDB(obj);var preview={schemaVersion:obj.schemaVersion,appVersion:obj.appVersion,createdAt:obj.createdAt,valid:v.ok,errors:v.errors||[],counts:{observations:(obj.observations||[]).length,sessions:(obj.sessions||[]).length,foodLogs:(obj.foodLogs||[]).length,phases:(obj.phases||[]).length,predictions:(obj.predictions||[]).length,experiments:(obj.experiments||[]).length}};openSheet('edit',{form:'restore',title:'Restore from backup',desc:'',buf:{fileName:file.name,preview:preview,obj:obj,mode:'merge'}});};reader.readAsText(file);});
 registerAction('data.restoreApply',function(){var b=_SHEET.buf;var obj=b.obj;var mode=b.mode||'merge';var m=migrate(JSON.parse(JSON.stringify(obj)));if(!m.ok){toast('Cannot restore: '+esc(m.reason),{tone:'negative'});return;}pushUndo('restore');writeAutoBackup();var incoming=m.db;var added=0;
   if(mode==='replace'){incoming.instance=DB.instance;DB=incoming;added=DB.observations.length;}
-  else{['observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','phases'].forEach(function(k){var have={};(DB[k]||[]).forEach(function(x){if(x&&x.id)have[x.id]=1;if(x&&x.date&&k==='snapshots')have['d:'+x.date]=1;});(incoming[k]||[]).forEach(function(x){if(!x)return;if(x.id&&have[x.id])return;if(k==='snapshots'&&have['d:'+x.date])return;DB[k].push(x);added++;});});if(!DB.profile.age&&incoming.profile)DB.profile=incoming.profile;}
+  else{added=mergeRecordCollections(incoming).added;if(!DB.profile.age&&incoming.profile)DB.profile=incoming.profile;}
   DB.ledger.migrations=(DB.ledger.migrations||[]).concat((m.applied||[]).map(function(x){return {at:nowISO(),step:'restore: '+x};}));
   try{resetEventLog('record restored from a backup');}catch(e){_q(e,'P1');}
   save('restore');_memoInvalidate();closeSheet();applySettings();renderAll();toast((mode==='replace'?'Record replaced':'Merged '+added+' records'),{undo:true});});
 function csvEscape(v){if(v==null)return '';var s=String(v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
-function toCSV(rows,header){return [header].concat(rows).map(function(r){return r.map(csvEscape).join(',');}).join('\n')+'\n';}
-function exportCSV(kind){
-  var rows=[],header=[];var obs=DB.observations.filter(function(o){return !o.retracted;});
-  if(kind==='weight'){header=['date','weight_lb','method','source','quality','flags','note','id'];rows=obs.filter(function(o){return o.type==='weight';}).map(function(o){return [o.date,o.value,o.method,o.source,o.quality,(o.flags||[]).join('; '),o.note,o.id];});}
-  else if(kind==='nutrition'){header=['date','type','value','unit','source','quality','note'];rows=obs.filter(function(o){return /calories|protein|carbs|fat|fiber|water|adherence|hunger|fullness|cravings|difficulty/.test(o.type);}).map(function(o){return [o.date,o.type,o.value,o.unit,o.source,o.quality,o.note];});}
-  else if(kind==='activity'){header=['date','type','value','unit','method','source'];rows=obs.filter(function(o){return /steps|cardio|sleep|sleepq|fatigue|stress|soreness|motivation/.test(o.type);}).map(function(o){return [o.date,o.type,o.value,o.unit,o.method,o.source];});}
-  else if(kind==='training'){header=['date','session','exercise','load_lb','reps','rir','e1rm'];DB.sessions.filter(function(s){return !s.retracted;}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=e1rm(x.load,x.reps);rows.push([s.date,s.name,x.exercise,x.load,x.reps,x.rir,e?round(e.value,1):'']);});});}
-  else if(kind==='measurements'){header=['date','type','value','unit','method'];rows=obs.filter(function(o){return /waist|neck|hip|chest|arm|thigh|bodyfat|rhr/.test(o.type);}).map(function(o){return [o.date,o.type,o.value,o.unit,o.method];});}
-  else if(kind==='predictions'){header=['made','subject','due','point','lo','hi','confidence','actual','error','covered','status','model_version'];rows=DB.predictions.map(function(p){return [p.madeAt,p.subject,p.dueDate,p.point,p.lo,p.hi,p.confidence,p.actual,p.error,p.covered,p.status,p.modelVersion];});}
-  else if(kind==='decisions'){header=['date','source','code','verb','confidence','recheck','rules'];rows=DB.decisions.map(function(d){return [d.date,d.source,d.code,d.verb,d.confidence,d.recheckDate,d.rulesVersion];});}
-  else if(kind==='experiments'){header=['start','recheck','variable','from','to','prediction','pred_lo','pred_hi','conclusion','confidence','observed'];rows=DB.experiments.map(function(e){return [e.startDate,e.recheckDate,e.variable,e.baselineValue,e.interventionValue,e.prediction,e.predLo,e.predHi,e.conclusion,e.confidence,e.outcome?e.outcome.observed:''];});}
-  else if(kind==='observations'){header=['date','type','value','unit','method','source','quality','phase','flags','retracted','supersedes','id'];rows=DB.observations.map(function(o){return [o.date,o.type,o.value,o.unit,o.method,o.source,o.quality,o.phaseId,(o.flags||[]).join('; '),o.retracted?1:0,o.supersedes,o.id];});}
-  return toCSV(rows,header);
-}
+/* toCSV moved to 65-import.js (engine layer) */
+/* exportCSV moved to 65-import.js (engine layer) */
 registerAction('data.csv',function(kind){var csv=exportCSV(kind);if(downloadText('physique-'+kind+'-'+todayISO()+'.csv',csv,'text/csv'))toast('Exported '+kind+' CSV');});
 function stateReport(){var S=getCurrentState();var dec=decide();var L=learningSummary();var lines=[];var add=function(s){lines.push(s);};
   add(APP_NAME+' \u2014 state report \u00b7 '+longDate(todayISO())+' \u00b7 rules v'+DECISION_RULES_VERSION);add('');
@@ -1227,7 +1227,18 @@ registerAction('log.type',function(arg){openLog(arg);});
 registerAction('obs.inspect',function(arg){openObsInspect(arg);});
 registerAction('obs.inspectDecision',function(arg){openDecisionInspect(arg);});
 registerAction('obs.retract',function(arg){confirmDialog({title:'Retract this observation?',msg:'It stays in the record and remains visible in replays of the days before now. Trends from today forward will exclude it.',okLabel:'Retract',danger:true}).then(function(yes){if(yes&&retractObservation(arg,'user')){_memoInvalidate();closeSheet();renderAll();toast('Retracted',{undo:true});}});});
-registerAction('attention.go',function(arg){var q=attentionQueue().items.filter(function(i){return i.id===arg;})[0];if(!q)return;closeSheet();if(q.tab)switchTab(q.tab);if(q.act&&q.act!=='nav.tab')setTimeout(function(){dispatchAct(q.act,q.arg);},90);});
+/* An alert that only switched tabs left the person at the top (or bottom) of a page with nothing pointing at it; it now
+   opens its own sheet: what happened, why, the details, and Show me / Done / Later. Done dismisses it for good. */
+registerAction('attention.go',function(arg){var q=attentionQueue().items.filter(function(i){return i.id===arg;})[0];if(!q)return;
+  if(!q.act||q.act==='nav.tab'){openSheet('edit',{form:'attentionItem',title:q.what.split(':')[0],desc:'',buf:{id:q.id}});return;}
+  closeSheet();if(q.tab)switchTab(q.tab);setTimeout(function(){dispatchAct(q.act,q.arg);},90);});
+registerAction('attention.dismiss',function(id){DB.settings.attentionDismissed=Object.assign({},DB.settings.attentionDismissed||{});DB.settings.attentionDismissed[id]=todayISO();save('settings');closeSheet();renderAll();toast('Done',{undo:false});});
+registerAction('attention.show',function(id){var q=attentionQueue().items.filter(function(i){return i.id===id;})[0];closeSheet();if(!q)return;if(q.tab)switchTab(q.tab);
+  if(q.section)setTimeout(function(){var el=document.getElementById(q.section)||document.querySelector('[data-fold="'+q.section+'"]');if(el){if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({block:'start'});}},120);});
+SHEETS.attentionItem=function(b){var q=attentionQueue().items.filter(function(i){return i.id===b.id;})[0];if(!q)return {body:'<div class="hint">This has been dealt with.</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
+  var out='<p>'+esc(q.what)+'</p>'+(q.why?'<div class="hint">'+esc(q.why)+'</div>':'');
+  if(q.detail&&q.detail.length)out+='<div class="card-title" style="margin-top:10px">What changed</div>'+q.detail.map(function(d){return uiRow(esc(d.what),esc(d.to!=null?String(d.to):''),{sub:esc(d.from!=null?'was '+d.from:(d.why||''))});}).join('');
+  return {body:out,foot:'<button class="btn btn-ghost" data-act="attention.snooze" data-arg="'+attrEsc(q.id)+'">Later</button>'+(q.tab?'<button class="btn btn-secondary" data-act="attention.show" data-arg="'+attrEsc(q.id)+'">Show me</button>':'')+'<button class="btn btn-primary" data-act="attention.dismiss" data-arg="'+attrEsc(q.id)+'">Done</button>'};};
 registerAction('timeline.filter',function(arg){_TIMELINE_KIND=(_TIMELINE_KIND===arg?null:arg);renderSheet();});
 
 /* ---- navigation sheets. Each is a sheet, so it inherits the focus trap, Escape handling and focus return. ---- */
@@ -1236,9 +1247,9 @@ function openAttention(){openSheet('edit',{form:'attention',title:'Attention',de
 SHEETS.attention=function(b){var q=b.q;
   if(!q.items.length)return {body:uiEmpty('Nothing needs attention','No overdue forecasts, unevaluated experiments, data-quality problems or system issues.',''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   return {body:q.items.map(function(i){
-    return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(i.what)+'</div><div class="li-meta">'+uiPill(i.severity,i.severity==='action'?'attention':(i.severity==='system'?'negative':'neutral'))+'</div></div>'+
+    return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(i.what)+'</div><div class="li-meta">'+uiPill(i.severity,i.severity==='safety'?'negative':i.severity==='action'?'attention':(i.severity==='system'?'negative':'neutral'))+'</div></div>'+
       '<div class="li-body"><div class="muted">'+esc(i.why)+'</div><div class="btn-row">'+(i.cando?uiBtn(i.cando,'attention.go',i.id,'btn-sm btn-primary'):'')+
-        (i.canSnooze!==false?uiBtn('Not now','attention.snooze',i.id,'btn-sm btn-ghost'):'<span class="hint">Snoozed three times \u2014 it stays for a day now</span>')+'</div></div></div>';}).join('')+
+        (i.canSnooze!==false?uiBtn('Not now','attention.snooze',i.id,'btn-sm btn-ghost'):'<span class="hint">Snoozed three times \u2014 it stays for a day now</span>')+uiBtn('Done','attention.dismiss',i.id,'btn-sm btn-ghost')+'</div></div></div>';}).join('')+
       ((q.snoozed||[]).length?'<div class="hint" style="margin-top:8px">'+q.snoozed.length+' snoozed \u2014 they come back on their own.</div>':''),
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openTimeline(){_TIMELINE_KIND=null;openSheet('edit',{form:'timeline',title:'Timeline',desc:'Observation \u2192 decision \u2192 intervention \u2192 prediction \u2192 outcome \u2192 calibration. Every event links to the record it came from.',buf:{}});}
@@ -2323,8 +2334,8 @@ SHEETS.injuryAdd=function(b){
       return '<button class="chip'+(b.region===k?' active':'')+'" data-act="injury.region" data-arg="'+k+'" aria-pressed="'+(b.region===k)+'">'+esc(BODY_REGIONS[k].label)+'</button>';}).join('')+'</div>'+
     '<div class="fld"><span>How much, 1 to 5</span><div class="sym-grid">'+[1,2,3,4,5].map(function(n){
       return '<button class="chip sm'+(b.severity===n?' active':'')+'" data-act="injury.sev" data-arg="'+n+'" aria-pressed="'+(b.severity===n)+'">'+n+'</button>';}).join('')+'</div></div>'+
-    '<label class="fld"><span>Since</span><input type="date" data-act="edit.field" data-arg="since" value="'+attrEsc(b.since||todayISO())+'"></label>'+
-    '<label class="fld"><span>Note</span><input type="text" data-act="edit.field" data-arg="note" placeholder="what provokes it" value="'+attrEsc(b.note||'')+'"></label>'+
+    '<label class="fld"><span>Since</span><input type="date" data-act="sheet.field" data-arg="since" value="'+attrEsc(b.since||todayISO())+'"></label>'+
+    '<label class="fld"><span>Note</span><input type="text" data-act="sheet.field" data-arg="note" placeholder="what provokes it" value="'+attrEsc(b.note||'')+'"></label>'+
     (b.region?('<div class="prov">Movements in your plan that load the '+esc(BODY_REGIONS[b.region].label.toLowerCase())+': '+
       (exercisesLoading(b.region).map(function(e){return esc(e.exercise);}).join(', ')||'none found')+'</div>'):''),
     foot:'<button class="btn btn-secondary" data-act="edit.close">Cancel</button><button class="btn btn-primary" data-act="injury.save">Record</button>'};};
@@ -2352,7 +2363,10 @@ SHEETS.planEdit=function(){
     '<div class="btn-row">'+Object.keys(SITUATIONS).map(function(sid){
       return uiBtn(SITUATIONS[sid].label,'plan.adapt',key+'|'+sid,'btn-sm btn-ghost');}).join('')+
       (programIsCustom(key)?uiBtn('Reset to built-in','plan.reset',key,'btn-sm btn-danger'):'')+'</div>';
-  body+='<div class="card-title" style="margin-top:12px">Week</div>';
+  body+='<div class="card-title" style="margin-top:12px">Your next 7 days</div><div class="hint">Which days you train comes from your schedule; this plan sets the sessions and their order.</div><div class="sched-choose">'+
+    Array.apply(null,{length:7}).map(function(_,i){var d=addDays(todayISO(),i),pl=null;try{pl=scheduledPlan(d,p);}catch(e){}return '<div class="pw-day'+(pl?'':' rest')+'"><b>'+esc(dowShort(d))+'</b><span>'+esc(pl?(pl.kind==='lift'?pl.label:(pl.label||'short')):'rest')+'</span></div>';}).join('')+
+    '</div><div class="btn-row">'+uiBtn('Change which days','nav.schedule',null,'btn-sm btn-secondary')+'</div>';
+  body+='<div class="card-title" style="margin-top:12px">Session for each weekday (used when no training days are set)</div>';
   DAY_KEYS.forEach(function(d){
     var day=p.week[d];
     body+=uiRow(d,uiBtn(day?esc(day.label||DAY_KINDS[day.kind]||day.kind):'Rest','plan.day',key+'|'+d+'|'+attrEsc(day?(day.label||''):'')+'|'+(day?day.kind:'lift'),'btn-sm btn-ghost'),
@@ -2701,10 +2715,10 @@ var WZ_DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function openWelcome(step){
   var p=DB.profile||{};
   _WZ={step:step||0,b:{units:unitPref(),sex:p.sex||'',age:p.age||'',heightFt:p.heightIn?Math.floor(p.heightIn/12):'',heightIn:p.heightIn?round(p.heightIn%12,1):'',
-    height:p.heightIn?round(inToCm(p.heightIn),0):'',startWeight:fromCanonicalWeight(p.startWeightLb)||'',goalWeight:fromCanonicalWeight(p.goalWeightLb)||'',
+    height:p.heightIn?round(inToCm(p.heightIn),0):'',startWeight:fromCanonicalWeight(p.startWeightLb||((latestObs('weight')||{}).value))||'',   /* from the record when the profile has none */goalWeight:fromCanonicalWeight(p.goalWeightLb)||'',
     goal:canonicalGoal().type||'',trainingExperience:p.trainingExperience||'',
     equipment:Array.isArray(p.equipment)?p.equipment.slice():(p.equipment?String(p.equipment).split(/\s*,\s*/):[]),days:(DB.settings.trainingDays||[]).slice(),
-    sessionMinutes:p.sessionMinutes||'',cookingTime:p.cookingTime||'',foodBudget:p.foodBudget||'',dietRestrictions:Array.isArray(p.dietRestrictions)?p.dietRestrictions.slice():[]}};
+    sessionMinutes:p.sessionMinutes||((typeof scheduleModel==='function'&&scheduleModel().minutes)||{}).full||'',cookingTime:p.cookingTime||'',foodBudget:p.foodBudget||'',dietRestrictions:Array.isArray(p.dietRestrictions)?p.dietRestrictions.slice():[]}};
   openSheet('edit',{form:'welcome',title:'Welcome',desc:'',buf:{}});
 }
 function _wzChips(list,cur,field,multi){return '<div class="btn-row wrap">'+list.map(function(x){
@@ -2777,7 +2791,7 @@ function _wzCommit(){var st=WELCOME_STEPS[_WZ.step],b=_WZ.b;
     if(eq.indexOf('bodyweight')<0)eq.push('bodyweight');
     applyProfileFields({trainingExperience:b.trainingExperience,equipment:eq.filter(function(x,i){return eq.indexOf(x)===i;})});
     DB.settings.trainingDays=WZ_DAYS.filter(function(d){return b.days.indexOf(d)>=0;});save('settings');
-    applyProfileFields({sessionMinutes:b.sessionMinutes});if(b.scheduleMode&&b.scheduleMode!=='weekly')setSchedule({mode:b.scheduleMode,preset:b.scheduleMode==='rotation'?'pitman-dn':undefined,anchor:todayISO()});
+    applyProfileFields({sessionMinutes:b.sessionMinutes});if(b.scheduleMode&&b.scheduleMode!=='weekly')changePlan({kind:'setup',source:'your edit',reason:'Your schedule from setup',expected:'as you set',apply:function(){return setSchedule({mode:b.scheduleMode,preset:b.scheduleMode==='rotation'?'pitman-dn':undefined,anchor:todayISO()});}});
     notePlanChange('constraint change',{reason:'Your training days, equipment or session length changed.'});}
   if(st==='food'){applyProfileFields({cookingTime:b.cookingTime,foodBudget:b.foodBudget,dietRestrictions:b.dietRestrictions});
     notePlanChange('constraint change',{reason:'Your cooking time, food budget or diet restrictions changed.'});}
@@ -2840,7 +2854,8 @@ registerAction('food.again',function(arg){var p=String(arg).split('|'),ref=p[0]+
   catch(e){dispatchAct('food.pick',arg);return;}
   _memoInvalidate();renderAll();toast(f.name+' logged \u00b7 '+(f.lastLabel||(fmtNum(f.lastQuantity,0)+' '+(f.lastBasis||'g'))),{undo:true});});
 /* ---- adaptations (H3) ---- */
-registerAction('adapt.apply',function(id){var r=applyAdaptation(id);if(r.status!=='ok'){toast(r.note||'That suggestion no longer applies',{tone:'attention'});renderAll();return;}
+registerAction('adapt.apply',function(id){var _ap=(adaptationProposals().proposals||[]).filter(function(x){return x.id===id;})[0];
+  var r=changePlan({kind:'adaptation',source:'adaptation',reason:_ap?_ap.title:'An adaptation you accepted',expected:_ap&&(_ap.expected||_ap.why)||'the outcome the adaptation was proposed for',apply:function(){return applyAdaptation(id);}}).result;if(r.status!=='ok'){toast(r.note||'That suggestion no longer applies',{tone:'attention'});renderAll();return;}
   _memoInvalidate();renderAll();toast('Plan updated to version '+r.version+' \u2014 the reason and evidence are kept with it',{undo:true});});
 registerAction('adapt.dismiss',function(id){dismissAdaptation(id);renderAll();toast('Not now \u2014 it may be suggested again in two weeks if the pattern holds');});
 
@@ -2946,16 +2961,81 @@ function featureGuide(){var P=DB.settings.photos||[],C=DB.settings.cloud||{},S=t
 }
 function renderFeatureRow(f){return '<div class="feat">'+uiIcon(f.icon,{size:22})+'<div class="feat-body"><b>'+esc(f.label)+'</b> '+uiPill(f.state||(f.on?'set up':'not set up'),f.on?'good':'neutral')+
   '<div class="hint">'+esc(f.what)+'</div></div>'+(f.na?'':uiBtn(f.on?'Open':f.cta,'features.go',f.act,'btn-sm '+(f.on?'btn-ghost':'btn-secondary')))+'</div>';}
-function renderSetupMore(){var F=featureGuide(),todo=F.filter(function(f){return !f.on&&!f.na;});if(!todo.length)return '';
+var REVIEW_ONLY_FEATURES={automation:1,sources:1,physique:1,charts:1,features:1};
+function renderSetupMore(){var seen=DB.settings.featureSeen||{},hid=DB.settings.setupHidden||{},F=featureGuide(),todo=F.filter(function(f){return !f.on&&!f.na&&!hid[f.id]&&!(REVIEW_ONLY_FEATURES[f.id]&&seen[f.id]);});if(!todo.length)return '';
   return uiCard({fold:'today-setup',foldOpen:true,hideable:true,hideLabel:'Hide this list',title:'Set up more',sub:todo.length+' feature'+(todo.length===1?'':'s')+' not set up yet',
-    body:todo.slice(0,4).map(renderFeatureRow).join('')+'<div class="btn-row">'+uiBtn('Everything this app can do','features.open',null,'btn-sm btn-ghost')+'</div>'});}
+    body:todo.slice(0,4).map(function(f){return renderFeatureRow(f).replace(/<\/div>$/,uiBtn('Not now','setup.hide',f.id,'btn-sm btn-ghost')+'</div>');}).join('')+'<div class="btn-row">'+uiBtn('Everything this app can do','features.open',null,'btn-sm btn-ghost')+'</div>'});}
+registerAction('setup.hide',function(id){DB.settings.setupHidden=Object.assign({},DB.settings.setupHidden||{});DB.settings.setupHidden[id]=todayISO();save('settings');renderAll();toast('Hidden from this list. Everything this app can do still has it.');});
 registerAction('features.open',function(){openSheet('edit',{form:'features',title:'Everything this app can do',desc:'',buf:{}});});
 SHEETS.features=function(){return {body:featureGuide().map(renderFeatureRow).join(''),foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 /* A feature opened from the guide opened BEHIND it (usage review): the guide closes first, then the feature opens. */
-registerAction('features.go',function(act){if(typeof closeSheet==='function')closeSheet();setTimeout(function(){dispatchAct(act);},30);});
+registerAction('features.go',function(act){try{var _f=featureGuide().filter(function(x){return x.act===act;})[0];if(_f){DB.settings.featureSeen=Object.assign({},DB.settings.featureSeen||{});DB.settings.featureSeen[_f.id]=todayISO();}}catch(e){}   /* opened = set up, for features that are a page to review */
+if(typeof closeSheet==='function')closeSheet();setTimeout(function(){dispatchAct(act);},30);});
 /* Tools layout: any section can be pinned to the top; External server is first by default (usage review). */
 function toolsPinned(){var p=DB.settings.toolsPinned;return Array.isArray(p)?p:['tools-server'];}
 registerAction('tools.pin',function(id){var p=toolsPinned().slice(),i=p.indexOf(id);if(i>=0)p.splice(i,1);else p.unshift(id);DB.settings.toolsPinned=p;save('settings');renderAll();toast(i>=0?'Unpinned':'Pinned to the top of Tools');});
 function applyToolsOrder(){var v=document.getElementById('toolsZone');if(!v)return;v.style.display='flex';v.style.flexDirection='column';
   [].slice.call(v.children).forEach(function(c){c.style.order='';});var p=toolsPinned();
   p.forEach(function(id,i){var d=v.querySelector('[data-fold="'+id+'"]');var host=d?(d.closest('#toolsZone > *')||d):null;if(host&&host.parentElement===v)host.style.order=String(-100+i);else if(d&&d.parentElement===v)d.style.order=String(-100+i);});}
+/* the Log page's filter: search, kind, and whether to show corrections and derived entries */
+registerAction('log.q',function(a,ev,el){var LF=window._LOG_FILTER||(window._LOG_FILTER={q:'',group:'all',showHidden:false});LF.q=el?el.value:'';var pos=el?el.selectionStart:null;renderAll();
+  var inp=document.querySelector('[data-act="log.q"]');if(inp){inp.focus();try{inp.setSelectionRange(pos,pos);}catch(e){}}});
+registerAction('log.group',function(g){var LF=window._LOG_FILTER||(window._LOG_FILTER={q:'',group:'all',showHidden:false});LF.group=g;renderAll();});
+registerAction('log.hidden',function(){var LF=window._LOG_FILTER||(window._LOG_FILTER={q:'',group:'all',showHidden:false});LF.showHidden=!LF.showHidden;renderAll();});
+/* ABOUT: built from the live registries, so its numbers cannot go stale */
+SHEETS.about=function(){var v={};try{v=JSON.parse(document.getElementById('appVersion')?document.getElementById('appVersion').textContent:'{}');}catch(e){}
+  var n=function(o){return o?Object.keys(o).length:0;},row=function(k,val,sub){return uiRow(esc(k),esc(String(val)),{sub:sub?esc(sub):''});};
+  var out='<p>Physique OS is a private, offline-first system for changing your body composition: it records what you observe and do, models what is happening, decides what to change, predicts what will follow, and learns from what actually did.</p>'+
+    '<div class="card-title" style="margin-top:10px">This version</div>'+row('Version',APP_NAME+' '+APP_VERSION)+row('Build',typeof BUILD_ID!=='undefined'?BUILD_ID:'\u2014')+
+    '<div class="card-title" style="margin-top:10px">What it knows</div>'+row('Models',(typeof MODELS!=='undefined'?MODELS.length:0),'each with its method, assumptions, failure conditions and uncertainty')+
+    row('Things you can record',n(OBS_TYPES))+row('Exercises',typeof EXERCISES!=='undefined'?(EXERCISES.length||n(EXERCISES)):'\u2014')+row('Supplements in the catalogue',n(typeof SUPPLEMENT_CATALOGUE!=='undefined'?SUPPLEMENT_CATALOGUE:null))+
+    row('Vitamins and minerals tracked',n(typeof MICRONUTRIENTS!=='undefined'?MICRONUTRIENTS:null))+row('Actions',n(ACTIONS))+
+    '<div class="card-title" style="margin-top:10px">Your data</div><div class="hint">Everything lives on this device. Sync, if you turn it on, stores only ciphertext the server cannot read; connected services keep their sign-ins encrypted on the server. Nothing is sold or shared.</div>'+
+    '<div class="card-title" style="margin-top:10px">How it decides</div><div class="hint">Every number states its evidence: measured, derived, fitted to you, a population prior or a rule of thumb. Forecasts compete and are scored against what happened; changes are judged against the trend before them; your own record outranks population figures.</div>'+
+    '<div class="card-title" style="margin-top:10px">Sources</div><div class="hint">Food: USDA FoodData Central and Open Food Facts. Reference intakes: US National Academies. Weather: Open-Meteo. Supplement evidence: NIH Office of Dietary Supplements and ISSN position stands.</div>';
+  return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+registerAction('profile.eq',function(k){if(!_SHEET||!_SHEET.opts||_SHEET.opts.form!=='profile')return;var b=_SHEET.buf;b.equipment=Array.isArray(b.equipment)?b.equipment:(b._eq||[]).slice();var i=b.equipment.indexOf(k);if(i>=0)b.equipment.splice(i,1);else b.equipment.push(k);renderSheet();});
+registerAction('profile.diet',function(k){if(!_SHEET||!_SHEET.opts||_SHEET.opts.form!=='profile')return;var b=_SHEET.buf;b.dietRestrictions=Array.isArray(b.dietRestrictions)?b.dietRestrictions:(b._diet||[]).slice();var i=b.dietRestrictions.indexOf(k);if(i>=0)b.dietRestrictions.splice(i,1);else b.dietRestrictions.push(k);renderSheet();});
+registerAction('phase.crit',function(arg){var q=String(arg).split('|'),b=_SHEET.buf;b.criteria=b.criteria||{success:[],stop:[],transition:[]};var L=b.criteria[q[0]],i=L.indexOf(q[1]);if(i>=0)L.splice(i,1);else L.push(q[1]);renderSheet();});
+registerAction('phase.suggest',function(){var b=_SHEET.buf,sg=(_SHEET.opts&&_SHEET.opts.suggest)||{};if(sg.cs&&sg.cs.value)b.calorieTarget=sg.cs.value;if(sg.ps)b.proteinTarget=Math.round((sg.ps.lo+sg.ps.hi)/2);
+  if(b.calorieTarget)b.fiberTarget=Math.round(14*b.calorieTarget/1000);var w=weightAverages().avg7||currentWeight().value;if(w)b.fatFloor=Math.round(w*0.3);renderSheet();toast('Filled in from your current estimates; adjust anything before saving');});
+function scheduleSummary(){var M=typeof scheduleModel==='function'?scheduleModel():{},d=DB.settings.trainingDays||[];
+  if(M.mode&&M.mode!=='weekly')return (M.mode==='rotation'?'rotating shifts'+(M.preset?' ('+M.preset+')':''):M.mode)+(M.minutes?' \u00b7 sessions '+(M.minutes.full||'?')+' min, short '+(M.minutes.short||'?')+' min':'');
+  return 'weekly'+(d.length?': '+d.join(', '):'')+(M.minutes?' \u00b7 sessions '+(M.minutes.full||'?')+' min':'');}
+/* ============================================================================
+   STEPPERS AND TIMERS, app-wide. A stepper is \u2212 and + around an ordinary input: each tap changes the input and then
+   runs the input's own action, so it goes through the same wiring as typing. A field can still be typed into.
+   Timers: countdowns and stopwatches that vibrate when done and write their result into a field when asked.
+   ============================================================================ */
+var _LAST_NUM=null;
+if(typeof document!=='undefined')document.addEventListener('focusin',function(ev){var t=ev.target;if(t&&t.tagName==='INPUT'&&(t.type==='number'||/decimal|numeric/.test(t.getAttribute('inputmode')||'')))_LAST_NUM=t;});
+function uiStepper(inputHtml,id,step,min,max,dec){var a=function(sign,label){return '<button type="button" class="st-b" data-act="ui.step" data-arg="'+id+'|'+(sign*step)+'|'+(min==null?'':min)+'|'+(max==null?'':max)+'|'+(dec||0)+'" aria-label="'+label+'">'+(sign<0?'\u2212':'+')+'</button>';};
+  return '<div class="stepper">'+a(-1,'less')+inputHtml+a(1,'more')+'</div>';}
+registerAction('ui.step',function(arg){var q=String(arg).split('|'),el=q[0]==='@focus'?_LAST_NUM:document.getElementById(q[0]);if(!el)return toast('Tap a number first');
+  var v=num(el.value);v=(v==null?0:v)+(+q[1]);if(q[2]!=='')v=Math.max(+q[2],v);if(q[3]!=='')v=Math.min(+q[3],v);var d=+q[4]||0;v=round(v,d);el.value=String(v);
+  var act=el.getAttribute('data-act');if(act)dispatchAct(act,el.getAttribute('data-arg'),{type:'input',target:el},el);
+  try{el.dispatchEvent(new Event('input',{bubbles:false}));}catch(e){}});
+var _TIMERS={};
+function _timerText(T){var secs=T.duration!=null?Math.max(0,T.duration-T.elapsed()):T.elapsed();return _fmtClockSafe(secs);}
+function _fmtClockSafe(s){s=Math.round(s);var m=Math.floor(s/60),r=s%60;return m+':'+(r<10?'0':'')+r;}
+function uiTimer(id,opts){opts=opts||{};var T=_TIMERS[id];var running=T&&T.running;
+  return '<div class="ui-timer" role="timer"><span class="t-clock" data-timer="'+id+'">'+(T?_timerText(T):_fmtClockSafe(opts.duration||0))+'</span>'+
+    (opts.choices&&!running?opts.choices.map(function(c){return '<button type="button" class="chip sm" data-act="timer.start" data-arg="'+id+'|'+c+'|'+(opts.then||'')+'">'+c+' s</button>';}).join(''):'')+
+    (!opts.choices&&!running?'<button type="button" class="chip sm" data-act="timer.start" data-arg="'+id+'|'+(opts.duration||'')+'|'+(opts.then||'')+'">'+(opts.duration?'Start '+opts.duration+' s':'Start')+'</button>':'')+
+    (running?'<button type="button" class="chip sm active" data-act="timer.stop" data-arg="'+id+'">Stop</button>':'')+'</div>';}
+registerAction('timer.start',function(arg){var q=String(arg).split('|'),id=q[0],dur=q[1]?+q[1]:null,then=q.slice(2).join('|');var t0=Date.now();
+  _TIMERS[id]={running:true,duration:dur,then:then||null,start:t0,elapsed:function(){return (Date.now()-t0)/1000;}};if(_SHEET)renderSheet();else renderAll();});
+registerAction('timer.stop',function(id){_timerFinish(id,true);});
+function _timerFinish(id,stopped){var T=_TIMERS[id];if(!T||!T.running)return;var secs=Math.round(T.duration!=null?Math.min(T.duration,T.elapsed()):T.elapsed());
+  T.running=false;var e=T.elapsed();T.elapsed=function(){return e;};
+  if(!stopped||T.duration==null){try{navigator.vibrate&&navigator.vibrate([200,80,200]);}catch(err){}}
+  if(T.then){var p=T.then.split('|');try{dispatchAct(p[0],p.slice(1).join('|')+'|'+secs);}catch(err){_q(err,'P2');}}
+  if(_SHEET)renderSheet();else renderAll();if(!stopped)toast('Time');}
+if(typeof setInterval==='function'&&typeof document!=='undefined')setInterval(function(){Object.keys(_TIMERS).forEach(function(id){var T=_TIMERS[id];if(!T.running)return;
+    if(T.duration!=null&&T.elapsed()>=T.duration){_timerFinish(id,false);return;}var el=document.querySelector('[data-timer="'+id+'"]');if(el)el.textContent=_timerText(T);});
+  var c=document.querySelector('[data-clock="wo"]');if(c&&typeof _WORKOUT!=='undefined'&&_WORKOUT&&_WORKOUT.startedAt)c.textContent=_fmtClockSafe((Date.now()-_WORKOUT.startedAt)/1000)+' elapsed';},500);
+/* timer results written where they belong */
+registerAction('timer.cardioMinutes',function(arg){var secs=+String(arg).split('|').pop();if(_SHEET&&_SHEET.buf){_SHEET.buf.value=Math.max(1,Math.round(secs/60));renderSheet();}});
+registerAction('timer.setSeconds',function(arg){var q=String(arg).split('|'),k=+q[0],secs=+q[q.length-1];if(!_WORKOUT)return;var s=_WORKOUT.exercises[_WORKOUT.current].sets[k];if(s){s.seconds=secs;if(s.reps==null)s.reps=1;_saveDraft();}});
+/* an entry logged before portions travelled with it borrows them from the live food */
+function _foodForEdit(l){var f=normalizeFood(l.food);if(!(f.portions&&f.portions.length)){try{var live=foodByRef((l.food.source||'')+'|'+(l.food.id||''))||(typeof localFoods==='function'?localFoods().filter(function(x){return x.id===l.food.id;})[0]:null);if(live)f=Object.assign({},f,{portions:normalizeFood(live).portions||[]});}catch(e){}}return f;}

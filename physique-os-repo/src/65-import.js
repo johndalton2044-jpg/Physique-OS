@@ -447,24 +447,11 @@ function _md(rows,header){
   return '| '+header.map(esc2).join(' | ')+' |\n|'+header.map(function(){return '---';}).join('|')+'|\n'+
     rows.map(function(r){return '| '+r.map(esc2).join(' | ')+' |';}).join('\n')+'\n';
 }
+/* a layer above registers its own formats here: the record module calls what is registered, and never names them */
+function registerExportAdapter(name,adapter){EXPORT_ADAPTERS[name]=adapter;}
 var EXPORT_ADAPTERS={
-  dashboard:{version:1,formats:['json'],
-    object:function(o){return currentDashboard();},
-    validate:function(d){var v=validateDashboardSpec(d);return v.ok?[]:v.errors;},
-    /* Imported under its own id so it can never silently replace a dashboard already here. */
-    apply:function(d){var c=JSON.parse(JSON.stringify(d));c.id='imported-'+String(d.id||'dashboard').replace(/[^a-z0-9-]/gi,'-').slice(0,24);
-      c.builtin=false;var r=commitDashboard(c);return {status:r.status,id:r.id};}},
-  appearance:{version:1,formats:['json'],
-    object:function(){return appearanceSpec();},
-    validate:function(d){var v=validateAppearanceSpec(d);return v.ok?[]:v.errors;},
-    apply:function(d){return importAppearanceSpec(JSON.stringify(Object.assign({kind:'physique-os-appearance'},d)));}},
-  visualizationPreset:{version:1,formats:['json'],
-    object:function(){return Object.keys(WIDGET_REGISTRY).filter(function(k){return WIDGET_REGISTRY[k].userDefined;})
-      .map(function(k){var w=WIDGET_REGISTRY[k];return {modelId:w.chartModel,chartType:w.chartType,title:w.title};});},
-    validate:function(d){var e=[];if(!Array.isArray(d))return ['presets must be a list'];
-      d.forEach(function(p,i){if(!modelContract(p.modelId))e.push('preset '+i+': unknown model "'+p.modelId+'"');
-        else if(!chartRenderable(p.chartType))e.push('preset '+i+': "'+p.chartType+'" cannot be drawn');});return e;},
-    apply:function(d){var out=d.map(function(p){return saveChartAsWidget(p).status;});return {status:'ok',results:out};}},
+  /* dashboard, appearance and visualizationPreset are registered by the presentation layer (registerExportAdapter):
+     the record module no longer names presentation functions */
   experiment:{version:1,formats:['json','md'],
     object:function(o){var ex=(o&&o.id)?(DB.experiments||[]).filter(function(x){return x.id===o.id;})[0]:(DB.experiments||[])[0];
       return ex?experimentStructure(ex):null;},
@@ -542,46 +529,42 @@ function importArtifact(text){
    A chart's colours come from CSS custom properties that exist only inside the app, so an SVG copied out as-is
    renders with invisible lines. Export inlines each element's computed presentation properties. PNG is drawn
    from that SVG where a canvas exists, which is to say in a browser. */
-var _SVG_INLINE=['fill','fill-opacity','stroke','stroke-width','stroke-opacity','stroke-dasharray','opacity','font-size','font-family','font-weight','text-anchor'];
-function visualizationSVG(opts){
-  var v=buildVisualization(opts||{});
-  if(v.status!=='ok')return {status:'refused',stage:v.stage,note:v.note};
-  if(typeof document==='undefined')return {status:'ok',svg:v.html,inlined:false};
-  var host=document.createElement('div');host.style.cssText='position:absolute;left:-10000px;top:0;width:640px';
-  host.innerHTML=v.html;document.body.appendChild(host);
-  var svg=host.querySelector('svg');
-  if(!svg){document.body.removeChild(host);return {status:'refused',stage:'renderer',note:'no SVG produced'};}
-  [svg].concat([].slice.call(svg.querySelectorAll('*'))).forEach(function(el){
-    var cs=getComputedStyle(el),st=[];
-    _SVG_INLINE.forEach(function(p){var val=cs.getPropertyValue(p);if(val&&val!=='normal'&&val!=='auto')st.push(p+':'+val);});
-    if(st.length)el.setAttribute('style',st.join(';')+';'+(el.getAttribute('style')||''));
-  });
-  svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
-  var vb=(svg.getAttribute('viewBox')||'0 0 640 160').split(/\s+/);
-  svg.setAttribute('width',vb[2]);svg.setAttribute('height',vb[3]);
-  var bg=getComputedStyle(document.body).backgroundColor;
-  var out=new XMLSerializer().serializeToString(svg).replace('>','><rect width="100%" height="100%" fill="'+bg+'"/>');
-  document.body.removeChild(host);
-  return {status:'ok',svg:out,inlined:true,runId:v.runId,
-    note:'Colours and strokes are written into the file, so it looks the same outside the app.'};
-}
-function visualizationPNG(opts){
-  var s=visualizationSVG(opts);
-  if(s.status!=='ok')return Promise.resolve(s);
-  if(typeof Image==='undefined'||typeof document==='undefined'||!document.createElement('canvas').getContext)
-    return Promise.resolve({status:'unsupported',note:'PNG needs a canvas, which this environment does not have. The SVG export works everywhere.'});
-  return new Promise(function(resolve){
-    var img=new Image(),scale=2;
-    img.onload=function(){try{
-      var c=document.createElement('canvas');c.width=img.width*scale;c.height=img.height*scale;
-      var g=c.getContext('2d');if(!g){resolve({status:'unsupported',note:'no 2D canvas'});return;}
-      g.scale(scale,scale);g.drawImage(img,0,0);resolve({status:'ok',png:c.toDataURL('image/png'),width:c.width,height:c.height});
-    }catch(e){resolve({status:'failed',note:String(e&&e.message||e)});}};
-    img.onerror=function(){resolve({status:'failed',note:'the SVG could not be rasterised'});};
-    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s.svg);
-  });
-}
+/* visualizationSVG moved to 89-presentation-governance.js (engine layer) */
+/* visualizationPNG moved to 89-presentation-governance.js (engine layer) */
 /* Every type an importer can emit must be a registered observation type: resting heart rate was emitted as restingHR,
    which does not exist, so every reading from every source was refused. */
 var IMPORT_EMITS=['weight','bodyfat','steps','sleep','rhr','calories','waist','protein'];
 function importTypesAudit(){var bad=IMPORT_EMITS.filter(function(t){return !OBS_TYPES[t];});return {ok:!bad.length,unknown:bad};}
+
+/* moved from 90-sources.js: an engine function that lived in an interface file */
+function sourceKeyOf(o){var m=o&&o.meta||{};if(m.importSource)return 'import:'+m.importSource;if(m.provider)return 'provider:'+m.provider;if(m.device)return 'device:'+m.device;return (o&&o.source)||'unknown';}
+
+/* moved from 90-sources.js: an engine function that lived in an interface file */
+function sourceLabel(key){var k=String(key);if(k.indexOf('import:')===0){var id=k.slice(7);return ((typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[id])||{}).label||_prettyId(id);}
+  if(k.indexOf('provider:')===0||k.indexOf('device:')===0)return _prettyId(k.split(':').slice(1).join(':'));
+  var fixed={manual:'You (typed in)',demo:'Demo record','food-log':'Food log (totals)',test:'Test',import:'An import'}[k];if(fixed)return fixed;
+  /* a bare provider or import id is the source itself (normalizeImported sets source to it) */
+  if(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]&&IMPORT_SOURCES[k].label)return IMPORT_SOURCES[k].label;
+  if(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])return WEARABLE_PROVIDERS[k].label;
+  return PROVIDER_NAMES[k]||k;}
+
+/* moved from 90-actions.js: an engine function that lived in an interface file */
+function toCSV(rows,header){return [header].concat(rows).map(function(r){return r.map(csvEscape).join(',');}).join('\n')+'\n';}
+
+/* moved from 90-sources.js: an engine function that lived in an interface file */
+function _prettyId(id){return PROVIDER_NAMES[id]||String(id).replace(/[-_]+/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+
+/* moved from 90-actions.js: an engine function that lived in an interface file */
+function exportCSV(kind){
+  var rows=[],header=[];var obs=DB.observations.filter(function(o){return !o.retracted;});
+  if(kind==='weight'){header=['date','weight_lb','method','source','quality','flags','note','id'];rows=obs.filter(function(o){return o.type==='weight';}).map(function(o){return [o.date,o.value,o.method,o.source,o.quality,(o.flags||[]).join('; '),o.note,o.id];});}
+  else if(kind==='nutrition'){header=['date','type','value','unit','source','quality','note'];rows=obs.filter(function(o){return /calories|protein|carbs|fat|fiber|water|adherence|hunger|fullness|cravings|difficulty/.test(o.type);}).map(function(o){return [o.date,o.type,o.value,o.unit,o.source,o.quality,o.note];});}
+  else if(kind==='activity'){header=['date','type','value','unit','method','source'];rows=obs.filter(function(o){return /steps|cardio|sleep|sleepq|fatigue|stress|soreness|motivation/.test(o.type);}).map(function(o){return [o.date,o.type,o.value,o.unit,o.method,o.source];});}
+  else if(kind==='training'){header=['date','session','exercise','load_lb','reps','rir','e1rm'];DB.sessions.filter(function(s){return !s.retracted;}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=e1rm(x.load,x.reps);rows.push([s.date,s.name,x.exercise,x.load,x.reps,x.rir,e?round(e.value,1):'']);});});}
+  else if(kind==='measurements'){header=['date','type','value','unit','method'];rows=obs.filter(function(o){return /waist|neck|hip|chest|arm|thigh|bodyfat|rhr/.test(o.type);}).map(function(o){return [o.date,o.type,o.value,o.unit,o.method];});}
+  else if(kind==='predictions'){header=['made','subject','due','point','lo','hi','confidence','actual','error','covered','status','model_version'];rows=DB.predictions.map(function(p){return [p.madeAt,p.subject,p.dueDate,p.point,p.lo,p.hi,p.confidence,p.actual,p.error,p.covered,p.status,p.modelVersion];});}
+  else if(kind==='decisions'){header=['date','source','code','verb','confidence','recheck','rules'];rows=DB.decisions.map(function(d){return [d.date,d.source,d.code,d.verb,d.confidence,d.recheckDate,d.rulesVersion];});}
+  else if(kind==='experiments'){header=['start','recheck','variable','from','to','prediction','pred_lo','pred_hi','conclusion','confidence','observed'];rows=DB.experiments.map(function(e){return [e.startDate,e.recheckDate,e.variable,e.baselineValue,e.interventionValue,e.prediction,e.predLo,e.predHi,e.conclusion,e.confidence,e.outcome?e.outcome.observed:''];});}
+  else if(kind==='observations'){header=['date','type','value','unit','method','source','quality','phase','flags','retracted','supersedes','id'];rows=DB.observations.map(function(o){return [o.date,o.type,o.value,o.unit,o.method,o.source,o.quality,o.phaseId,(o.flags||[]).join('; '),o.retracted?1:0,o.supersedes,o.id];});}
+  return toCSV(rows,header);
+}

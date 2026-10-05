@@ -97,8 +97,10 @@ function supplementNutrients(x){var c=x&&x.id?SUPPLEMENT_CATALOGUE[x.id]:null,ou
   return out;}
 
 /* ---- THE REGIMEN (stack) and adherence ---- */
-function supplementStack(){return (DB.settings.supplementStack||[]).filter(function(s){return SUPPLEMENT_CATALOGUE[s.id];});}
-function setSupplementStack(list){DB.settings.supplementStack=list.filter(function(s){return SUPPLEMENT_CATALOGUE[s.id];}).map(function(s){return {id:s.id,dose:s.dose!=null?+s.dose:SUPPLEMENT_CATALOGUE[s.id].dose[0],unit:SUPPLEMENT_CATALOGUE[s.id].unit,when:s.when||'daily'};});save('settings');return {status:'ok'};}
+function supplementStack(){if(typeof mergeCustomSupplements==='function'&&DB.settings&&DB.settings.customSupplements)mergeCustomSupplements();
+  return _supplementStack();}
+function _supplementStack(){return (DB.settings.supplementStack||[]).filter(function(s){return SUPPLEMENT_CATALOGUE[s.id];});}
+function setSupplementStack(list){DB.settings.supplementStack=list.filter(function(s){return SUPPLEMENT_CATALOGUE[s.id];}).map(function(s){return {id:s.id,dose:s.dose!=null?+s.dose:SUPPLEMENT_CATALOGUE[s.id].dose[0],unit:SUPPLEMENT_CATALOGUE[s.id].unit,when:s.when||'daily',timing:s.timing||'any'};});save('settings');return {status:'ok'};}
 /* a training day is whatever the schedule places a lifting session on — weekly, rotating shifts or irregular */
 function _stackDue(s,date){if(s.when==='training days'){var p=typeof scheduledPlan==='function'&&typeof trainingProgram==='function'?scheduledPlan(date,trainingProgram()):null;return !!(p&&p.kind==='lift');}return true;}
 function supplementAdherence(days){days=days||14;var S=supplementStack();if(!S.length)return {status:'none',note:'No regimen set.'};
@@ -106,10 +108,28 @@ function supplementAdherence(days){days=days||14;var S=supplementStack();if(!S.l
     for(var i=0;i<days;i++){var d=addDays(todayISO(),-i);if(!_stackDue(s,d))continue;due++;if(taken.some(function(t){return t.date===d&&t.id===s.id;}))hit++;}
     return {id:s.id,label:SUPPLEMENT_CATALOGUE[s.id].label,dose:s.dose,unit:s.unit,when:s.when,due:due,taken:hit,pct:due?Math.round(100*hit/due):null,today:taken.some(function(t){return t.date===todayISO()&&t.id===s.id;})};});
   return {status:'ok',cls:'DERIVED',days:days,rows:rows,overall:rows.reduce(function(a,r){return a+r.taken;},0)/Math.max(1,rows.reduce(function(a,r){return a+r.due;},0))};}
-function logSupplementStack(date){date=date||todayISO();var already=supplementIntakes(date,date),n=0;
-  supplementStack().forEach(function(s){if(!_stackDue(s,date)||already.some(function(t){return t.id===s.id;}))return;
-    addObservation({type:'supplement',date:date,value:SUPPLEMENT_CATALOGUE[s.id].label+' '+s.dose+' '+s.unit,source:'manual',meta:{supplementId:s.id,dose:s.dose,unit:s.unit,fromStack:true}});n++;});
+/* TIME OF DAY: each regimen item has a time; logging takes only what is due now, as one undo step */
+var SUPP_TIMINGS={any:'any time',morning:'morning',midday:'midday',evening:'evening',night:'before bed','pre-workout':'before training','with meals':'with meals'};
+function supplementSlot(h){h=h!=null?h:(typeof _hourNow==='function'?_hourNow():new Date().getHours());return h<11?'morning':(h<15?'midday':(h<20?'evening':'night'));}
+function _slotMatches(s,slot,date){var t=s.timing||'any';if(!slot||slot==='all'||t==='any'||t==='with meals')return true;if(t==='pre-workout'){var p=typeof scheduledPlan==='function'?scheduledPlan(date||todayISO(),trainingProgram()):null;return !!(p&&p.kind==='lift');}return t===slot;}
+function supplementsDue(date,slot){date=date||todayISO();var already=supplementIntakes(date,date);
+  return supplementStack().filter(function(s){return _stackDue(s,date)&&_slotMatches(s,slot,date)&&!already.some(function(t){return t.id===s.id;});});}
+function logSupplementStack(date,opts){date=date||todayISO();opts=opts||{};var list=opts.ids?supplementStack().filter(function(s){return opts.ids.indexOf(s.id)>=0;}):supplementsDue(date,opts.slot||'all'),n=0;
+  if(!list.length)return {status:'ok',logged:0};
+  var go=function(){list.forEach(function(s){if(supplementIntakes(date,date).some(function(t){return t.id===s.id;}))return;var dose=opts.doses&&opts.doses[s.id]!=null?+opts.doses[s.id]:s.dose;
+    addObservation({type:'supplement',date:date,value:SUPPLEMENT_CATALOGUE[s.id].label+' '+dose+' '+s.unit,source:'manual',meta:{supplementId:s.id,dose:dose,unit:s.unit,timing:opts.timing||s.timing||'any',fromStack:true}});n++;});};
+  if(typeof undoBatch==='function')undoBatch('log '+(opts.slot&&opts.slot!=='all'?opts.slot+' ':'')+'supplements',go);else go();   /* one undo for the group */
   return {status:'ok',logged:n};}
+/* one item, on or off for today */
+function toggleSupplementToday(id,date){date=date||todayISO();var t=supplementIntakes(date,date).filter(function(x){return x.id===id;})[0];
+  if(t){retractObservation(t.obsId,'unticked');return {status:'ok',taken:false};}var r=logSupplementStack(date,{ids:[id]});return {status:'ok',taken:r.logged>0};}
+/* YOUR OWN PRODUCTS, from their labels: multivitamins differ, so a product carries its own amounts per serving */
+function mergeCustomSupplements(){var C=DB.settings&&DB.settings.customSupplements||{};Object.keys(C).forEach(function(id){var c=C[id];
+  SUPPLEMENT_CATALOGUE[id]={label:c.label,aliases:[String(c.label).toLowerCase()],unit:c.unit||'serving',dose:[c.serving||1,c.serving||1],per:c.per||{},custom:true,
+    evidence:[['your product, by its label','D']],cautions:c.cautions||[],source:'your label',test:null};});}
+function saveCustomSupplement(o){if(!o||!o.label)return {status:'refused',note:'a name is needed'};var id='custom_'+String(o.label).toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30);
+  var per={};Object.keys(o.per||{}).forEach(function(k){var v=num(o.per[k]);if(MICRONUTRIENTS[k]&&v!=null&&v>0)per[k]=v;});
+  DB.settings.customSupplements=Object.assign({},DB.settings.customSupplements||{});DB.settings.customSupplements[id]={label:o.label,unit:'serving',serving:1,per:per};mergeCustomSupplements();save('settings');return {status:'ok',id:id,nutrients:Object.keys(per).length};}
 
 /* ---- MICRONUTRIENT COVERAGE: food + supplements, 7 days, against reference intakes and upper limits ----
    Refused, not guessed, when most logged food carries no vitamin data (branded foods often do not): a "shortfall"
@@ -238,6 +258,55 @@ Object.assign(SUPPLEMENT_CATALOGUE,{
   yohimbine:_S('Yohimbine',['yohimbine','yohimbe'],'mg',[5,10],[['fat loss','D']],['Raises blood pressure and heart rate; anxiety. Heart conditions: do not take. Restricted in some countries.'],'NIH NCCIH'),
   cla:_S('CLA',['cla','conjugated linoleic acid'],'g',[3,4],[['fat loss','D']],['Gut upset; may worsen insulin sensitivity.'],'NIH ODS')
 });
+/* EXPANSION 2: cognition and mood, metabolic and general health, joints, immune, herbs, performance. Grades stay honest;
+   the caution that matters most travels with each entry. */
+Object.assign(SUPPLEMENT_CATALOGUE,{
+  tyrosine:_S('L-tyrosine',['tyrosine','l-tyrosine'],'mg',[500,2000],[['focus under acute stress or sleep loss','C'],['performance','D']],['With MAO inhibitors or thyroid medicine: ask a clinician.'],'NIH NCCIH'),
+  bacopa:_S('Bacopa monnieri',['bacopa','brahmi'],'mg',[300,600],[['memory after 8\u201312 weeks','C']],['Often causes gut upset; take with food. Adds to thyroid and sedative medicines.'],'NIH NCCIH'),
+  phosphatidylserine:_S('Phosphatidylserine',['phosphatidylserine'],'mg',[100,300],[['memory in older adults','C'],['cortisol after exercise','D']],[],'NIH NCCIH'),
+  huperzine:_S('Huperzine A',['huperzine','huperzine a'],'\u00b5g',[50,200],[['memory','D']],['Acts like cholinesterase-inhibitor drugs: do not combine with them; slow heart rate, seizures, asthma: ask a clinician.'],'NIH NCCIH'),
+  saffron:_S('Saffron extract',['saffron','affron'],'mg',[28,30],[['mild low mood','B']],['High doses can cause uterine contractions: avoid in pregnancy.'],'NIH NCCIH'),
+  citicoline:_S('Citicoline (CDP-choline)',['citicoline','cdp-choline','cdp choline'],'mg',[250,500],[['attention','C']],[],'NIH NCCIH',{per:{choline:0.18}}),
+  gaba:_S('GABA',['gaba'],'mg',[100,750],[['calm or sleep','D']],['Taken by mouth, little reaches the brain.'],'NIH NCCIH',{test:['sleep','sleep duration']}),
+  lemonbalm:_S('Lemon balm',['lemon balm','melissa'],'mg',[300,600],[['calm and sleep','C']],['Adds to sedatives; thyroid medicine: ask a clinician.'],'NIH NCCIH',{test:['sleep','sleep duration']}),
+  passionflower:_S('Passionflower',['passionflower','passiflora'],'mg',[250,500],[['anxiety before procedures','C']],['Adds to sedatives and alcohol.'],'NIH NCCIH',{test:['sleep','sleep duration']}),
+  chamomile:_S('Chamomile',['chamomile'],'mg',[200,1100],[['sleep quality','C']],['Ragweed allergy; may add to blood thinners.'],'NIH NCCIH',{test:['sleep','sleep duration']}),
+  kava:_S('Kava',['kava','kava kava'],'mg',[100,250],[['anxiety','B']],['Rare but serious liver injury: not with alcohol, liver disease or other liver-straining medicines; restricted in some countries.'],'NIH NCCIH; LiverTox'),
+  ala:_S('Alpha-lipoic acid',['alpha lipoic acid','alpha-lipoic acid','r-ala'],'mg',[300,600],[['diabetic nerve pain','B'],['fat loss','D']],['Can lower blood sugar: diabetes medicine needs watching.'],'NIH NCCIH'),
+  cinnamon:_S('Cinnamon extract',['cinnamon'],'g',[1,3],[['blood sugar control','C']],['Cassia cinnamon is high in coumarin, which can harm the liver at high doses.'],'NIH NCCIH'),
+  glucomannan:_S('Glucomannan',['glucomannan','konjac'],'g',[2,4],[['fullness and modest weight loss','C'],['cholesterol','B']],['Take with plenty of water: dry powder or tablets can swell and choke. Separate from medicines by 2 hours.'],'NIH NCCIH; EFSA'),
+  acv:_S('Apple cider vinegar',['apple cider vinegar','acv'],'ml',[15,30],[['weight loss','D'],['blood sugar after meals','C']],['Dilute it: undiluted vinegar damages tooth enamel and the throat.'],'NIH NCCIH'),
+  quercetin:_S('Quercetin',['quercetin'],'mg',[500,1000],[['performance','D']],['May interact with some antibiotics and blood thinners.'],'NIH NCCIH'),
+  resveratrol:_S('Resveratrol',['resveratrol'],'mg',[150,500],[['longevity or performance in people','D']],['May add to blood thinners; may blunt training adaptations.'],'NIH NCCIH'),
+  nad:_S('NMN or nicotinamide riboside',['nmn','nicotinamide mononucleotide','nicotinamide riboside','niagen','nad+'],'mg',[250,1000],[['healthy ageing or performance in people','D']],['Mostly animal evidence; long-term safety in people is not established.'],'NIH NCCIH'),
+  astaxanthin:_S('Astaxanthin',['astaxanthin'],'mg',[4,12],[['recovery','D']],[],'NIH NCCIH'),
+  pqq:_S('PQQ',['pqq','pyrroloquinoline quinone'],'mg',[10,20],[['energy or cognition','D']],[],'NIH NCCIH'),
+  garlic:_S('Garlic extract',['garlic','aged garlic'],'mg',[600,1200],[['blood pressure','B'],['cholesterol','C']],['Adds to blood thinners; stop before surgery.'],'NIH NCCIH'),
+  blackseed:_S('Black seed oil',['black seed','nigella','black cumin'],'g',[1,3],[['blood pressure and blood sugar','C']],['May add to diabetes and blood-pressure medicine.'],'NIH NCCIH'),
+  betacarotene:_S('Beta-carotene',['beta-carotene','beta carotene'],'mg',[3,15],[['correcting low vitamin A intake','B']],['Smokers and former smokers: high-dose beta-carotene raised lung cancer risk in large trials (ATBC, CARET). Avoid.'],'NIH ODS; ATBC; CARET',{per:{vita:83}}),
+  codliver:_S('Cod liver oil',['cod liver oil'],'ml',[5,5],[['omega-3 and vitamin D intake','B']],['Carries preformed vitamin A: count it against the 3,000 \u00b5g upper limit; avoid high doses in pregnancy.'],'NIH ODS',{per:{vita:270,vitd:2}}),
+  d3k2:_S('Vitamin D3 with K2',['d3 k2','d3+k2','d3/k2','vitamin d3 k2'],'\u00b5g D3',[25,50],[['correcting a measured vitamin D deficiency','A']],['On warfarin: the K2 changes how it works.'],'NASEM DRI; NIH ODS',{per:{vitd:1,vitk:4}}),
+  msm:_S('MSM',['msm','methylsulfonylmethane'],'g',[1.5,3],[['joint pain','C']],[],'NIH NCCIH'),
+  boswellia:_S('Boswellia',['boswellia','frankincense'],'mg',[100,500],[['osteoarthritis pain','C']],['Gut upset; may interact with some medicines.'],'NIH NCCIH'),
+  hyaluronic:_S('Hyaluronic acid (oral)',['hyaluronic acid','hyaluronan'],'mg',[80,200],[['knee joint pain','C']],[],'NIH NCCIH'),
+  elderberry:_S('Elderberry',['elderberry','sambucus'],'ml',[10,15],[['shortening a cold or flu','C']],['Raw berries, leaves and stems are toxic: prepared products only.'],'NIH NCCIH'),
+  echinacea:_S('Echinacea',['echinacea'],'mg',[500,1000],[['preventing or shortening colds','C']],['Allergy to daisies or ragweed; autoimmune conditions.'],'NIH NCCIH'),
+  colostrum:_S('Bovine colostrum',['colostrum'],'g',[10,20],[['gut permeability in hard training','C'],['performance','D']],['Dairy allergy.'],'NIH ODS 2024'),
+  ginseng:_S('Panax ginseng',['ginseng','panax ginseng','korean ginseng'],'mg',[200,400],[['fatigue','C'],['performance','D']],['May interact with blood thinners, diabetes medicine and some antidepressants.'],'NIH NCCIH'),
+  maca:_S('Maca',['maca'],'g',[1.5,3],[['libido','C'],['testosterone','D']],[],'NIH NCCIH'),
+  shilajit:_S('Shilajit',['shilajit'],'mg',[250,500],[['testosterone or fatigue','D']],['Unpurified products may carry heavy metals and mould.'],'NIH NCCIH'),
+  tribulus:_S('Tribulus terrestris',['tribulus'],'mg',[250,750],[['testosterone or strength in men','D']],['Banned-substance contamination has been found in some products.'],'NIH NCCIH'),
+  mucuna:_S('Mucuna pruriens',['mucuna','velvet bean'],'mg',[200,500],[['mood or hormones','D']],['Contains L-dopa: not with Parkinson\u2019s medicine or MAO inhibitors.'],'NIH NCCIH'),
+  dim:_S('DIM (diindolylmethane)',['dim','diindolylmethane'],'mg',[100,200],[['hormone balance','D']],['Hormone-sensitive conditions: ask a clinician.'],'NIH NCCIH'),
+  milkthistle:_S('Milk thistle',['milk thistle','silymarin'],'mg',[140,420],[['liver health','C']],['Ragweed allergy; may lower blood sugar.'],'NIH NCCIH'),
+  ginkgo:_S('Ginkgo biloba',['ginkgo','ginkgo biloba'],'mg',[120,240],[['memory or preventing dementia','D']],['Adds to blood thinners; stop before surgery; seizures.'],'NIH NCCIH'),
+  reishi:_S('Reishi mushroom',['reishi','ganoderma'],'g',[1,3],[['immunity or sleep','D']],['Rare liver injury; adds to blood thinners.'],'NIH NCCIH'),
+  chaga:_S('Chaga mushroom',['chaga'],'g',[1,3],[['health claims','D']],['High in oxalate (kidney stones); adds to blood thinners and diabetes medicine.'],'NIH NCCIH'),
+  turkeytail:_S('Turkey tail mushroom',['turkey tail','coriolus'],'g',[1,3],[['immune support alongside cancer treatment','C']],['Only alongside, never instead of, medical treatment.'],'NIH NCI'),
+  agmatine:_S('Agmatine',['agmatine'],'g',[1,2.5],[['performance','D']],['Blood-pressure medicine: ask a clinician.'],'NIH ODS 2024'),
+  ornithine:_S('L-ornithine',['ornithine','l-ornithine'],'g',[2,6],[['fatigue or performance','D']],['Gut upset at higher doses.'],'NIH ODS 2024'),
+  theacrine:_S('Theacrine',['theacrine','teacrine'],'mg',[100,200],[['energy without tolerance','D']],['Stimulant: count it with caffeine; heart rhythm problems: ask a clinician.'],'NIH ODS 2024')
+});
 /* INTERACTIONS among what is in the regimen (or logged this week). Medicines are not tracked here, so medicine cautions
    stay with each supplement as "if you take \u2026". */
 var SUPPLEMENT_INTERACTIONS=[
@@ -252,6 +321,12 @@ var SUPPLEMENT_INTERACTIONS=[
   {all:['yohimbine','caffeine'],level:'caution',text:'Yohimbine with caffeine stacks increases in heart rate and blood pressure.'},
   {any:['melatonin','valerian','glycine','ashwagandha'],min:2,level:'note',text:'Several sleep aids together: start one at a time to know which helps.'},
   {all:['biotin'],level:'caution',text:'Biotin distorts many blood tests: stop it 2\u20133 days before a test, or tell the lab.'},
+  {any:['kava','greentea','ashwagandha','curcumin','reishi','niacin'],min:2,level:'caution',text:'More than one supplement with reports of liver injury: watch for yellowing skin or dark urine.'},
+  {all:['huperzine','alphagpc'],level:'caution',text:'Huperzine A with another choline booster stacks cholinergic effects (nausea, slow heart rate).'},
+  {all:['mucuna','htp'],level:'caution',text:'Mucuna (L-dopa) with 5-HTP changes brain chemistry in two directions at once: avoid without a clinician.'},
+  {any:['ginkgo','garlic','omega3','vite','ginger','curcumin'],min:3,level:'caution',text:'Three or more supplements that thin the blood: stop them a week before surgery and tell your clinician.'},
+  {all:['codliver','vita'],level:'caution',text:'Cod liver oil and vitamin A together: count both against the 3,000 \u00b5g upper limit.'},
+  {any:['caffeine','theacrine','yohimbine'],min:2,level:'caution',text:'More than one stimulant: count their effects together, and keep them away from bedtime.'},
   {any:['vitk1','vitk2'],min:1,level:'caution',text:'Vitamin K changes how warfarin works: keep it steady and tell your clinician.'}
 ];
 function supplementInteractions(ids){
@@ -259,7 +334,8 @@ function supplementInteractions(ids){
   supplementStack().forEach(function(s){var c=SUPPLEMENT_CATALOGUE[s.id];if(!c)return;var n=supplementNutrients({id:s.id,dose:s.dose});Object.keys(n).forEach(function(k){doses[k]=(doses[k]||0)+n[k];});});
   if(set.zinc||set.zma)doses.zinc=doses.zinc||0;if(set.copper)doses.copper=doses.copper||1;
   return SUPPLEMENT_INTERACTIONS.filter(function(r){if(r.all&&!r.all.every(function(i){return set[i]||(i==='coffee'&&set.caffeine);}))return false;
-    if(r.any&&r.any.filter(function(i){return set[i];}).length<(r.min||1))return false;return r.test?r.test(doses):true;}).map(function(r){return {level:r.level,text:r.text};});
+    if(r.any&&r.any.filter(function(i){return set[i];}).length<(r.min||1))return false;return r.test?r.test(doses):true;}).map(function(r){return {level:r.level,text:r.text};})
+    .filter(function(x,i,a){return a.findIndex(function(y){return y.text===x.text;})===i;});   /* overlapping rules say each thing once */
 }
 
 /* ---- registration ---- */

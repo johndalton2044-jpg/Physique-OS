@@ -91,13 +91,43 @@ function writeVault(v){
   fs.writeFileSync(tmp,JSON.stringify(v));
   fs.renameSync(tmp,vaultMetaPath(v.id));   // atomic: a crash mid-write never leaves a half-vault
 }
+/* EVENT IDS ARE IDEMPOTENT. A device re-sends what it cannot show was stored: after a lost response, after a server reset,
+   once its list of sent ids is trimmed, and (until the client stopped) every event it had only pulled from another device.
+   Each re-send was stored as a new row with a new sequence number, so the ledger grew with no new facts, every device
+   pulled the copy again, and the copies counted toward the vault's event limit. An id the ledger already holds is now
+   acknowledged and not stored again. The ciphertext cannot decide it: each encryption draws a fresh IV, so the same event
+   re-sent is different bytes, and this server cannot read either copy. The first row stored for an id stands, which is
+   what the client's merge already does with a duplicate id. The ids are indexed in memory per vault and rebuilt from the
+   ledger whenever the file is not the one the index last saw (a restore, a crash recovery, another process). The index
+   is bounded by ids held, not by vaults, since one vault may hold MAX_EVENTS_PER_VAULT of them: the least recently used
+   vaults are dropped first, never the one in use, and a dropped vault is simply read from its ledger again. */
+const _ledgerIndex=new Map(),LEDGER_INDEX_IDS=+(process.env.LEDGER_INDEX_IDS||500000),MAX_EVENT_ID=200;
+function _ledgerStamp(p){try{const st=fs.statSync(p);return st.size+':'+st.mtimeMs+':'+st.ino;}catch(e){return null;}}
+function ledgerIds(v){
+  const p=eventsPath(v.id),stamp=_ledgerStamp(p),hit=_ledgerIndex.get(v.id);
+  _ledgerIndex.delete(v.id);   /* re-inserted below, so the map runs least recently used first */
+  if(hit&&hit.stamp===stamp){_ledgerIndex.set(v.id,hit);return hit.ids;}
+  const ids=new Set(),add=l=>{if(!l)return;try{const r=JSON.parse(l);if(r&&typeof r.id==='string')ids.add(r.id);}catch(e){}};
+  if(stamp){const fd=fs.openSync(p,'r'),size=fs.statSync(p).size;let pos=0,rest='';
+    try{while(pos<size){const n=Math.min(1<<20,size-pos),buf=Buffer.alloc(n);fs.readSync(fd,buf,0,n,pos);pos+=n;
+        const lines=(rest+buf.toString('utf8')).split('\n');rest=lines.pop();lines.forEach(add);}
+      add(rest);}   /* a torn last line does not parse, so its id is not claimed and its re-send is stored */
+    finally{fs.closeSync(fd);}}
+  _ledgerIndex.set(v.id,{stamp,ids});_trimLedgerIndex(v.id);
+  return ids;
+}
+const ledgerIndexSize=()=>{let ids=0;for(const x of _ledgerIndex.values())ids+=x.ids.size;return {vaults:_ledgerIndex.size,ids};};
+function _trimLedgerIndex(keep){let held=ledgerIndexSize().ids;
+  for(const [k,x] of _ledgerIndex){if(held<=LEDGER_INDEX_IDS||k===keep)break;_ledgerIndex.delete(k);held-=x.ids.size;}}
 function appendEvents(v,rows){
   const p=eventsPath(v.id);let size=fs.existsSync(p)?fs.statSync(p).size:0;
+  const idx=_ledgerIndex.get(v.id),current=!!idx&&idx.stamp===_ledgerStamp(p);
   let prefix='';if(size>0){const t=_tailRows(p,1);if(!t.endsWithNewline)prefix='\n';}   // fence off a torn line
   size+=Buffer.byteLength(prefix);v.offsets=v.offsets||{};
   const parts=rows.map(r=>{const line=JSON.stringify(r)+'\n';if(r.serverSeq%IDX_EVERY===1)v.offsets[r.serverSeq]=size;size+=Buffer.byteLength(line);return line;});
   fs.appendFileSync(p,prefix+parts.join(''));
   v.eventCount=(v.eventCount||0)+rows.length;
+  if(current){rows.forEach(r=>idx.ids.add(r.id));idx.stamp=_ledgerStamp(p);_trimLedgerIndex(v.id);}else _ledgerIndex.delete(v.id);
 }
 function countEventsSlow(id){const p=eventsPath(id);if(!fs.existsSync(p))return 0;let n=0;
   for(const line of fs.readFileSync(p,'utf8').split('\n')){if(!line)continue;try{JSON.parse(line);n++;}catch(e){}}return n;}
@@ -405,7 +435,7 @@ async function _fetchWindow(p,token,start,end){
 /* ============================================================================
    OPERATIONS (audit §63\u2013§69, §111 phase 3): storage verified, metrics, backup, key rotation.
    ============================================================================ */
-const METRICS={startedAt:Date.now(),requests:{},errors:0,rateLimited:0,push:{sent:0,failed:0,removed:0}};
+const METRICS={startedAt:Date.now(),requests:{},errors:0,errorsByRoute:{},recentErrors:[],rateLimited:0,push:{sent:0,failed:0,removed:0},sync:{appended:0,duplicates:0},backup:{configured:false,lastAt:null,ok:null,verified:null,bytes:null,key:null,error:null}};
 function _dirBytes(d){let n=0;try{for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,f.name);n+=f.isDirectory()?_dirBytes(p):fs.statSync(p).size;}}catch(e){}return n;}
 function storageStatus(){let free=null,total=null,writable=false;try{const st=fs.statfsSync(DATA);free=st.bavail*st.bsize;total=st.blocks*st.bsize;}catch(e){}
   try{const f=path.join(DATA,'.probe-'+process.pid);fs.writeFileSync(f,'ok');writable=fs.readFileSync(f,'utf8')==='ok';fs.unlinkSync(f);}catch(e){}
@@ -422,7 +452,7 @@ const opsRoutes={
   'GET /v1/metrics':async(req)=>{if(!process.env.METRICS_TOKEN)return {code:404,body:{error:'metrics are off (set METRICS_TOKEN)'}};if(!_bearerIs(req,'METRICS_TOKEN'))return {code:401,body:{error:'unauthorized'}};
     let vaults=0,events=0;try{for(const id of fs.readdirSync(path.join(DATA,'vaults'))){const v=readVault(id);if(v){vaults++;events+=v.eventCount||0;}}}catch(e){}
     return {service:'physique-os-sync',uptimeSeconds:Math.round((Date.now()-METRICS.startedAt)/1000),epoch:DATA_EPOCH,requests:METRICS.requests,errors:METRICS.errors,rateLimited:METRICS.rateLimited,
-      push:METRICS.push,vaults,events,dataBytes:_dirBytes(DATA),storage:storageStatus()};},
+      push:METRICS.push,sync:METRICS.sync,vaults,events,dataBytes:_dirBytes(DATA),storage:storageStatus(),errorsByRoute:METRICS.errorsByRoute,recentErrors:METRICS.recentErrors,backup:METRICS.backup,health:healthStatus()};},
   'GET /v1/admin/backup':async(req)=>{if(!process.env.ADMIN_TOKEN)return {code:404,body:{error:'admin is off (set ADMIN_TOKEN)'}};if(!_bearerIs(req,'ADMIN_TOKEN'))return {code:401,body:{error:'unauthorized'}};
     const f=path.join(os.tmpdir(),'physique-backup-'+DATA_EPOCH+'-'+Date.now()+'.tar.gz');execFileSync('tar',['-czf',f,'-C',DATA,'--exclude=./.probe-*','.']);
     log('info','backup taken',{bytes:fs.statSync(f).size});return {file:f,type:'application/gzip',name:'physique-backup-'+new Date().toISOString().slice(0,10)+'-'+DATA_EPOCH+'.tar.gz'};},
@@ -531,7 +561,11 @@ const routes={
   /* The base address answers with an index, not "no such endpoint": people open it to check the server. */
   'GET /':async()=>({ok:true,service:'physique-os-sync',health:'/v1/health',note:'This is the Physique OS server. The app talks to it; there is nothing to see here.'}),
   'GET /v1':async()=>({ok:true,service:'physique-os-sync',health:'/v1/health'}),
-  'GET /v1/health':async()=>({ok:true,service:'physique-os-sync',version:1,ext:EXT_VERSION,epoch:DATA_EPOCH,startedAt:STARTED_AT,storage:STORAGE_NOTE,storageCheck:storageStatus(),
+  'GET /v1/ai/status':async()=>{const c=aiConfig();return {enabled:!!c,provider:c?c.provider:null,model:c?c.model:null,local:c?c.local:false};},
+  'POST /v1/ai/complete':async(req,body)=>{const auth=authFor(req);if(!auth)return {code:401,body:{error:'unlock your vault first'}};
+    const now=Date.now(),w=(_AI_RATE.get(auth.vaultId)||[]).filter(t=>now-t<60000);if(w.length>=+(process.env.AI_RATE_PER_MINUTE||20))return {code:429,body:{error:'too many AI requests; wait a minute'}};
+    w.push(now);_AI_RATE.set(auth.vaultId,w);return aiComplete(body);},
+  'GET /v1/health':async()=>({ok:true,status:healthStatus().status,degraded:healthStatus().reasons,service:'physique-os-sync',version:1,ext:EXT_VERSION,epoch:DATA_EPOCH,startedAt:STARTED_AT,storage:STORAGE_NOTE,storageCheck:storageStatus(),
     vaults:fs.readdirSync(path.join(DATA,'vaults')).length,
     vapidPublicKey:VAPID.publicKey,
     note:'this server stores ciphertext it cannot read'}),
@@ -591,7 +625,8 @@ const routes={
   },
 
   /* Append encrypted events. The server assigns a monotonic sequence so clients can pull incrementally.
-     It never inspects, reorders or merges: merge is the client's job, on plaintext it alone can read. */
+     It never inspects, reorders or merges: merge is the client's job, on plaintext it alone can read.
+     An id already stored, or repeated in the batch, is acknowledged without a new row (see ledgerIds). */
   'POST /v1/events':async(req,body)=>{
     const auth=authFor(req);
     if(!auth)return {code:401,body:{error:'authenticate first'}};
@@ -599,19 +634,22 @@ const routes={
     if(!v)return {code:404,body:{error:'no such vault'}};
     if(!Array.isArray(body.events))return {code:400,body:{error:'events must be an array'}};
     if(body.events.length>5000)return {code:400,body:{error:'batch too large'}};
-    const existing=v.eventCount||0;
-    if(existing+body.events.length>MAX_EVENTS_PER_VAULT)return {code:507,body:{error:'vault event limit reached'}};
-    const rows=[];
     for(const e of body.events){
-      if(!e||typeof e.id!=='string'||typeof e.ciphertext!=='string')
+      if(!e||typeof e.id!=='string'||!e.id||typeof e.ciphertext!=='string')
         return {code:400,body:{error:'each event needs an id and a ciphertext'}};
+      if(e.id.length>MAX_EVENT_ID)return {code:400,body:{error:'event id too long'}};
       if(e.ciphertext.length>256*1024)return {code:400,body:{error:'event too large'}};
-      rows.push({id:e.id,ciphertext:e.ciphertext,iv:String(e.iv||''),device:String(e.device||'').slice(0,64),
-        serverSeq:++v.serverSeq,receivedAt:new Date().toISOString()});
     }
+    const known=ledgerIds(v),seen=new Set();
+    const fresh=body.events.filter(e=>{if(known.has(e.id)||seen.has(e.id))return false;seen.add(e.id);return true;});
+    const duplicates=body.events.length-fresh.length;
+    if((v.eventCount||0)+fresh.length>MAX_EVENTS_PER_VAULT)return {code:507,body:{error:'vault event limit reached'}};
+    const rows=fresh.map(e=>({id:e.id,ciphertext:e.ciphertext,iv:String(e.iv||''),device:String(e.device||'').slice(0,64),
+      serverSeq:++v.serverSeq,receivedAt:new Date().toISOString()}));
     if(rows.length){appendEvents(v,rows);writeVault(v);}   /* the ledger first; the metadata is recoverable from it */
-    log('info','events appended',{vault:v.id.slice(0,8),count:rows.length,serverSeq:v.serverSeq});
-    return {code:200,body:{ok:true,accepted:rows.length,serverSeq:v.serverSeq}};
+    METRICS.sync.appended+=rows.length;METRICS.sync.duplicates+=duplicates;
+    log('info','events appended',{vault:v.id.slice(0,8),count:rows.length,duplicates,serverSeq:v.serverSeq});
+    return {code:200,body:{ok:true,accepted:rows.length,duplicates,serverSeq:v.serverSeq}};
   },
 
   'GET /v1/events':async(req,body,url)=>{
@@ -664,12 +702,130 @@ const routes={
     const v=readVault(auth.vaultId);
     if(!v)return {code:404,body:{error:'no such vault'}};
     if(body.confirm!==v.id)return {code:400,body:{error:'send confirm with the vault id to delete it'}};
-    fs.rmSync(vaultDir(v.id),{recursive:true,force:true});
+    fs.rmSync(vaultDir(v.id),{recursive:true,force:true});_ledgerIndex.delete(v.id);
     log('info','vault deleted',{vault:v.id.slice(0,8)});
     return {code:200,body:{ok:true,deleted:true}};
   }
 };
 
+/* ============================================================================
+   PRODUCTION DURABILITY (audit S-001, S-003, S-004, S-006, S-011, S-012).
+   \u2022 PHYSIQUE_PRODUCTION=1 refuses to start on storage not declared persistent, on a data folder in the temp folder,
+     without off-host backups, or with a short admin or metrics token: a production server must not run on a disk that a
+     restart wipes with nothing elsewhere.
+   \u2022 Off-host backups to any S3-compatible bucket (BACKUP_S3_ENDPOINT, _BUCKET, _REGION, _ACCESS_KEY, _SECRET_KEY), signed
+     with AWS Signature V4 written here (checked against AWS's published test vector), every BACKUP_INTERVAL_HOURS
+     (default 24); each backup is read back and its checksum and contents verified; BACKUP_KEEP (default 14) are kept.
+   \u2022 node server.mjs --restore-from-s3 <key|latest> restores into an empty data folder after verifying the checksum.
+   \u2022 /v1/health says degraded, with reasons, when backups are stale or failing or storage is not persistent.
+   ============================================================================ */
+function productionPreflight(env){env=env||process.env;const p=[];
+  if(env.PHYSIQUE_PERSISTENT_DATA!=='1')p.push('storage is not declared persistent: mount a persistent disk and set PHYSIQUE_PERSISTENT_DATA=1');
+  const rel=path.relative(os.tmpdir(),DATA);if(!rel.startsWith('..')&&!path.isAbsolute(rel))p.push('the data folder is inside the temp folder ('+DATA+')');
+  if(!env.BACKUP_S3_BUCKET||!env.BACKUP_S3_ENDPOINT||!env.BACKUP_S3_ACCESS_KEY||!env.BACKUP_S3_SECRET_KEY)p.push('no off-host backups: set BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY');
+  ['ADMIN_TOKEN','METRICS_TOKEN'].forEach(k=>{if(env[k]&&env[k].length<32)p.push(k+' is shorter than 32 characters');});
+  return p;}
+/* AWS Signature Version 4 (no SDK). sigv4() is pure, so it is tested against AWS's published vectors. */
+const _hmac=(k,d)=>crypto.createHmac('sha256',k).update(d).digest(),_sha=d=>crypto.createHash('sha256').update(d).digest('hex');
+function sigv4({method,path:uri,query,headers,payloadHash,region,service,accessKey,secretKey,amzDate}){
+  const date=amzDate.slice(0,8),names=Object.keys(headers).map(h=>h.toLowerCase()).sort();
+  const canonHeaders=names.map(n=>n+':'+String(headers[Object.keys(headers).find(h=>h.toLowerCase()===n)]).trim().replace(/\s+/g,' ')+'\n').join('');
+  const signed=names.join(';'),canonQuery=Object.keys(query||{}).sort().map(k=>encodeURIComponent(k)+'='+encodeURIComponent(query[k])).join('&');
+  const creq=[method,uri,canonQuery,canonHeaders,signed,payloadHash].join('\n'),scope=date+'/'+region+'/'+service+'/aws4_request';
+  const sts=['AWS4-HMAC-SHA256',amzDate,scope,_sha(creq)].join('\n');
+  const kSig=_hmac(_hmac(_hmac(_hmac('AWS4'+secretKey,date),region),service),'aws4_request');
+  return {authorization:'AWS4-HMAC-SHA256 Credential='+accessKey+'/'+scope+', SignedHeaders='+signed+', Signature='+crypto.createHmac('sha256',kSig).update(sts).digest('hex'),signedHeaders:signed};}
+const _s3cfg=env=>{env=env||process.env;return env.BACKUP_S3_BUCKET&&env.BACKUP_S3_ENDPOINT?{endpoint:env.BACKUP_S3_ENDPOINT.replace(/\/$/,''),bucket:env.BACKUP_S3_BUCKET,region:env.BACKUP_S3_REGION||'us-east-1',accessKey:env.BACKUP_S3_ACCESS_KEY||'',secretKey:env.BACKUP_S3_SECRET_KEY||''}:null;};
+async function s3Request(cfg,method,key,body,query){const u=new URL(cfg.endpoint);const uri='/'+[cfg.bucket].concat(key?String(key).split('/'):[]).map(encodeURIComponent).join('/');
+  const amzDate=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''),payloadHash=_sha(body||'');
+  const headers={host:u.host,'x-amz-content-sha256':payloadHash,'x-amz-date':amzDate};
+  const {authorization}=sigv4({method,path:uri,query,headers,payloadHash,region:cfg.region,service:'s3',accessKey:cfg.accessKey,secretKey:cfg.secretKey,amzDate});
+  const qs=Object.keys(query||{}).sort().map(k=>encodeURIComponent(k)+'='+encodeURIComponent(query[k])).join('&');
+  const r=await fetch(cfg.endpoint+uri+(qs?'?'+qs:''),{method,headers:Object.assign({},headers,{authorization}),body:body||undefined});
+  const buf=Buffer.from(await r.arrayBuffer());if(!r.ok&&r.status!==204)throw new Error('S3 '+method+' '+(key||'')+' failed: HTTP '+r.status+' '+buf.toString('utf8').slice(0,160));return buf;}
+async function runBackup(env){env=env||process.env;const cfg=_s3cfg(env);METRICS.backup.configured=!!cfg;if(!cfg)return {status:'not configured'};
+  const f=path.join(os.tmpdir(),'physique-backup-'+DATA_EPOCH+'-'+Date.now()+'.tar.gz');
+  try{execFileSync('tar',['-czf',f,'-C',DATA,'--exclude=./.probe-*','.']);const buf=fs.readFileSync(f),sum=_sha(buf);
+    const key='backups/'+new Date().toISOString().replace(/[:.]/g,'-')+'-'+DATA_EPOCH+'.tar.gz';
+    await s3Request(cfg,'PUT',key,buf);
+    /* verified, not assumed: read it back, compare the checksum, and list what it holds */
+    const back=await s3Request(cfg,'GET',key);if(_sha(back)!==sum)throw new Error('the uploaded backup does not match what was sent');
+    const vf=f+'.verify';fs.writeFileSync(vf,back);const list=execFileSync('tar',['-tzf',vf],{encoding:'utf8'});fs.unlinkSync(vf);
+    if(!/epoch\.json/.test(list))throw new Error('the backup does not contain the data folder');
+    await fs.promises.writeFile(path.join(DATA,'last-backup.json'),JSON.stringify({key,sha256:sum,bytes:buf.length,at:new Date().toISOString()}));
+    const keep=+(env.BACKUP_KEEP||14);let pruned=0;
+    try{const xml=(await s3Request(cfg,'GET','',null,{'list-type':'2',prefix:'backups/'})).toString('utf8');const keys=[...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map(m=>m[1]).sort();
+      for(const k of keys.slice(0,Math.max(0,keys.length-keep))){await s3Request(cfg,'DELETE',k);pruned++;}}catch(e){log('warn','backup retention failed',{error:String(e.message)});}
+    Object.assign(METRICS.backup,{lastAt:new Date().toISOString(),ok:true,verified:true,bytes:buf.length,key,sha256:sum,error:null,pruned});log('info','backup stored and verified',{key,bytes:buf.length,pruned});
+    return {status:'ok',key,sha256:sum,bytes:buf.length,pruned};}
+  catch(e){Object.assign(METRICS.backup,{lastAt:new Date().toISOString(),ok:false,verified:false,error:String(e.message).slice(0,200)});log('error','backup failed',{error:String(e.message)});return {status:'failed',error:String(e.message)};}
+  finally{try{fs.unlinkSync(f);}catch(e){}}}
+async function restoreFromS3(which,env,opts){env=env||process.env;opts=opts||{};const cfg=_s3cfg(env);if(!cfg)throw new Error('restore needs BACKUP_S3_* settings');
+  const existing=fs.existsSync(DATA)?fs.readdirSync(DATA).filter(n=>!/^\.probe-|^epoch\.json$/.test(n)):[];if(existing.length&&!opts.force)throw new Error('the data folder is not empty ('+existing.slice(0,3).join(', ')+'); restore refuses to overwrite without --force');
+  let key=which;if(!key||key==='latest'){const xml=(await s3Request(cfg,'GET','',null,{'list-type':'2',prefix:'backups/'})).toString('utf8');key=[...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map(m=>m[1]).sort().pop();if(!key)throw new Error('no backups in the bucket');}
+  const buf=await s3Request(cfg,'GET',key),f=path.join(os.tmpdir(),'physique-restore-'+Date.now()+'.tar.gz');fs.writeFileSync(f,buf);
+  try{const list=execFileSync('tar',['-tzf',f],{encoding:'utf8'});if(!/epoch\.json/.test(list))throw new Error('that object is not a Physique OS backup');fs.mkdirSync(DATA,{recursive:true});execFileSync('tar',['-xzf',f,'-C',DATA]);_ledgerIndex.clear();}finally{try{fs.unlinkSync(f);}catch(e){}}
+  return {status:'ok',key,sha256:_sha(buf),bytes:buf.length};}
+function healthStatus(env){env=env||process.env;const reasons=[],st=storageStatus(),hours=+(env.BACKUP_INTERVAL_HOURS||24);
+  if(!st.writable)reasons.push('the data folder cannot be written');(st.warnings||[]).forEach(w=>reasons.push(w));
+  const cfg=_s3cfg(env);if(cfg){const b=METRICS.backup;let last=b.lastAt;try{last=last||JSON.parse(fs.readFileSync(path.join(DATA,'last-backup.json'),'utf8')).at;}catch(e){}
+    if(b.ok===false)reasons.push('the last backup failed: '+b.error);else if(!last||(Date.now()-Date.parse(last))>2*hours*3600e3)reasons.push('no verified backup in the last '+(2*hours)+' hours');}
+  else if(env.PHYSIQUE_PRODUCTION==='1')reasons.push('no off-host backups are configured');
+  return {status:reasons.length?'degraded':'ok',reasons};}
+/* ============================================================================
+   AI PROXY (audit AI-001). The app's content-security policy lets it talk only to its own origin, so it can never post
+   the record anywhere else; model calls therefore come through here, and the provider key stays on the server.
+   One normalised request \u2014 {system, messages, tools, maxTokens}, messages being user / assistant (with toolCalls) /
+   tool (toolCallId, name, content) \u2014 is translated for Anthropic, OpenAI (and any OpenAI-compatible local server:
+   Ollama, LM Studio) or Gemini, and the reply normalised back to {text, toolCalls, stop}. Prompt and reply content are
+   never logged. Configure: AI_PROVIDER (anthropic | openai | gemini), AI_MODEL, AI_API_KEY, AI_BASE_URL (optional).
+   ============================================================================ */
+const AI_DEFAULT_BASE={anthropic:'https://api.anthropic.com',openai:'https://api.openai.com',gemini:'https://generativelanguage.googleapis.com'};
+function aiConfig(env){env=env||process.env;const p=env.AI_PROVIDER;if(!p||!AI_DEFAULT_BASE[p])return null;const base=(env.AI_BASE_URL||AI_DEFAULT_BASE[p]).replace(/\/$/,'');
+  if(!env.AI_MODEL)return null;if(!env.AI_API_KEY&&!(p==='openai'&&env.AI_BASE_URL))return null;   /* a local OpenAI-compatible server may need no key */
+  /* OpenAI's own API wants max_completion_tokens; other OpenAI-compatible servers (local, gateways) want max_tokens.
+     Decided by the host, not by whether a base URL was set; AI_TOKEN_FIELD overrides. */
+  const official=/^https:\/\/api\.openai\.com$/.test(base);
+  return {provider:p,model:env.AI_MODEL,key:env.AI_API_KEY||'',base,local:p==='openai'&&!official,tokenField:env.AI_TOKEN_FIELD||(official?'max_completion_tokens':'max_tokens')};}
+const aiTranslate={
+  anthropic:{request(c,r){const msgs=[];for(const m of r.messages){if(m.role==='tool'){const block={type:'tool_result',tool_use_id:m.toolCallId,content:String(m.content)};
+        const last=msgs[msgs.length-1];if(last&&last.role==='user'&&Array.isArray(last.content)&&last.content.every(b=>b.type==='tool_result'))last.content.push(block);else msgs.push({role:'user',content:[block]});}
+      else if(m.role==='assistant'&&m.toolCalls&&m.toolCalls.length)msgs.push({role:'assistant',content:(m.content?[{type:'text',text:m.content}]:[]).concat(m.toolCalls.map(t=>({type:'tool_use',id:t.id,name:t.name,input:t.input||{}})))});
+      else msgs.push({role:m.role,content:String(m.content)});}
+    return {url:c.base+'/v1/messages',headers:{'content-type':'application/json','x-api-key':c.key,'anthropic-version':'2023-06-01'},
+      body:{model:c.model,max_tokens:r.maxTokens||1024,system:r.system||undefined,messages:msgs,tools:(r.tools||[]).length?r.tools.map(t=>({name:t.name,description:t.description,input_schema:t.schema})):undefined}};},
+    response(j){const parts=j.content||[];return {text:parts.filter(b=>b.type==='text').map(b=>b.text).join(''),toolCalls:parts.filter(b=>b.type==='tool_use').map(b=>({id:b.id,name:b.name,input:b.input||{}})),
+      stop:j.stop_reason==='tool_use'?'tool':(j.stop_reason==='max_tokens'?'length':'end'),usage:j.usage?{input:j.usage.input_tokens,output:j.usage.output_tokens}:null};}},
+  openai:{request(c,r){const msgs=[];if(r.system)msgs.push({role:'system',content:r.system});
+      for(const m of r.messages){if(m.role==='tool')msgs.push({role:'tool',tool_call_id:m.toolCallId,content:String(m.content)});
+        else if(m.role==='assistant'&&m.toolCalls&&m.toolCalls.length)msgs.push({role:'assistant',content:m.content||null,tool_calls:m.toolCalls.map(t=>({id:t.id,type:'function',function:{name:t.name,arguments:JSON.stringify(t.input||{})}}))});
+        else msgs.push({role:m.role,content:String(m.content)});}
+      const body={model:c.model,messages:msgs};body[c.tokenField||'max_tokens']=r.maxTokens||1024;
+      if((r.tools||[]).length)body.tools=r.tools.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.schema}}));
+      return {url:c.base+'/v1/chat/completions',headers:Object.assign({'content-type':'application/json'},c.key?{authorization:'Bearer '+c.key}:{}),body};},
+    response(j){const ch=(j.choices||[])[0]||{},m=ch.message||{};return {text:m.content||'',toolCalls:(m.tool_calls||[]).map(t=>{let input={};try{input=JSON.parse(t.function&&t.function.arguments||'{}');}catch(e){input={__unparsed:String(t.function&&t.function.arguments)};}return {id:t.id,name:t.function&&t.function.name,input};}),
+      stop:ch.finish_reason==='tool_calls'?'tool':(ch.finish_reason==='length'?'length':'end'),usage:j.usage?{input:j.usage.prompt_tokens,output:j.usage.completion_tokens}:null};}},
+  gemini:{request(c,r){const contents=[];for(const m of r.messages){if(m.role==='tool'){const part={functionResponse:{name:m.name,response:{content:String(m.content)}}};const last=contents[contents.length-1];
+        if(last&&last.role==='user'&&last.parts.every(p=>p.functionResponse))last.parts.push(part);else contents.push({role:'user',parts:[part]});}
+      else if(m.role==='assistant')contents.push({role:'model',parts:(m.content?[{text:m.content}]:[]).concat((m.toolCalls||[]).map(t=>({functionCall:{name:t.name,args:t.input||{}}})))});
+      else contents.push({role:'user',parts:[{text:String(m.content)}]});}
+      const body={contents,generationConfig:{maxOutputTokens:r.maxTokens||1024}};if(r.system)body.systemInstruction={parts:[{text:r.system}]};
+      if((r.tools||[]).length)body.tools=[{functionDeclarations:r.tools.map(t=>({name:t.name,description:t.description,parameters:t.schema}))}];
+      return {url:c.base+'/v1beta/models/'+encodeURIComponent(c.model)+':generateContent',headers:{'content-type':'application/json','x-goog-api-key':c.key},body};},
+    response(j){const cand=(j.candidates||[])[0]||{},parts=(cand.content&&cand.content.parts)||[];const calls=parts.filter(p=>p.functionCall).map((p,i)=>({id:'call_'+i+'_'+p.functionCall.name,name:p.functionCall.name,input:p.functionCall.args||{}}));
+      return {text:parts.filter(p=>typeof p.text==='string').map(p=>p.text).join(''),toolCalls:calls,stop:calls.length?'tool':(cand.finishReason==='MAX_TOKENS'?'length':'end'),usage:j.usageMetadata?{input:j.usageMetadata.promptTokenCount,output:j.usageMetadata.candidatesTokenCount}:null};}}};
+function _aiRequestOk(r){if(!r||!Array.isArray(r.messages)||!r.messages.length||r.messages.length>40)return 'messages: 1 to 40';
+  const size=JSON.stringify(r).length;if(size>120000)return 'request too large';if((r.tools||[]).length>16)return 'at most 16 tools';
+  for(const m of r.messages)if(['user','assistant','tool'].indexOf(m.role)<0)return 'unknown role '+m.role;return null;}
+const _AI_RATE=new Map();
+async function aiComplete(r,env){const c=aiConfig(env);if(!c)return {code:503,body:{error:'AI is not configured on this server (AI_PROVIDER, AI_MODEL, AI_API_KEY)'}};
+  const bad=_aiRequestOk(r);if(bad)return {code:400,body:{error:bad}};const T=aiTranslate[c.provider],q=T.request(c,r),t0=Date.now();
+  const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),+(env&&env.AI_TIMEOUT_MS||process.env.AI_TIMEOUT_MS||60000));
+  try{const resp=await fetch(q.url,{method:'POST',headers:q.headers,body:JSON.stringify(q.body),signal:ac.signal});const j=await resp.json().catch(()=>({}));
+    if(!resp.ok){log('warn','ai provider error',{provider:c.provider,status:resp.status,ms:Date.now()-t0});return {code:502,body:{error:'the model provider returned HTTP '+resp.status,detail:String((j.error&&(j.error.message||j.error))||'').slice(0,200)}};}
+    const out=T.response(j);log('info','ai call',{provider:c.provider,model:c.model,ms:Date.now()-t0,tools:out.toolCalls.length,usage:out.usage});   /* sizes and timing only, never content */
+    return Object.assign({provider:c.provider,model:c.model},out);}
+  catch(e){return {code:504,body:{error:e.name==='AbortError'?'the model provider timed out':'the model provider could not be reached'}};}finally{clearTimeout(timer);}}
 const server=http.createServer(async(req,res)=>{
   /* Behind a reverse proxy (Vercel's /api/sync rewrite) every request arrives from the proxy, so a per-socket limit would
      throttle everyone together. With TRUST_PROXY=1 the client address comes from X-Forwarded-For. Only set it behind a
@@ -684,7 +840,10 @@ const server=http.createServer(async(req,res)=>{
   let url;try{url=new URL(req.url,'http://'+(req.headers.host||'localhost'));}catch(e){return json(res,400,{error:'bad url'});}
   const key=req.method+' '+url.pathname;
   const handler=routes[key];
-  res.on('finish',()=>{const k=(handler?key:'unknown')+' '+res.statusCode;METRICS.requests[k]=(METRICS.requests[k]||0)+1;if(res.statusCode>=500)METRICS.errors++;});
+  /* request tracing (audit S-009): a caller's id is kept if it is safe, otherwise one is made; echoed and logged */
+  const rid=/^[A-Za-z0-9_-]{8,64}$/.test(String(req.headers['x-request-id']||''))?String(req.headers['x-request-id']):crypto.randomBytes(9).toString('base64url');
+  res.setHeader('x-request-id',rid);req._rid=rid;
+  res.on('finish',()=>{const k=(handler?key:'unknown')+' '+res.statusCode;METRICS.requests[k]=(METRICS.requests[k]||0)+1;if(res.statusCode>=500){METRICS.errors++;METRICS.errorsByRoute[k]=(METRICS.errorsByRoute[k]||0)+1;}});
   if(!handler)return json(res,404,{error:'no such endpoint',endpoints:Object.keys(routes)});
   let body={};
   if(key==='POST /v1/ext/webhook'){   /* signatures cover the exact bytes: the raw body is kept */
@@ -701,16 +860,22 @@ const server=http.createServer(async(req,res)=>{
     if(out&&out.code)return json(res,out.code,out.body);
     return json(res,200,out);
   }catch(e){
-    log('error','handler failed',{route:key,error:String(e&&e.message)});
+    log('error','handler failed',{route:key,error:String(e&&e.message),requestId:rid});
+    /* error aggregation (audit S-010): the latest failures with their route and request id */
+    METRICS.recentErrors.push({at:new Date().toISOString(),route:key,error:String(e&&e.message).slice(0,200),requestId:rid});if(METRICS.recentErrors.length>20)METRICS.recentErrors.shift();
     return json(res,500,{error:'internal error'});
   }
 });
 
-if(process.env.PHYSIQUE_SERVER_TEST!=='1')server.listen(PORT,HOST,()=>{
+const _restoreArg=process.argv.indexOf('--restore-from-s3');
+if(process.env.PHYSIQUE_SERVER_TEST!=='1'&&_restoreArg>=0){restoreFromS3(process.argv[_restoreArg+1],process.env,{force:process.argv.includes('--force')}).then(r=>{log('info','restored',r);process.exit(0);},e=>{log('error','restore failed',{error:String(e.message)});process.exit(1);});}
+else if(process.env.PHYSIQUE_SERVER_TEST!=='1'&&process.env.PHYSIQUE_PRODUCTION==='1'&&productionPreflight().length){productionPreflight().forEach(x=>log('error','production preflight: '+x));log('error','refusing to start in production mode');process.exit(1);}
+else if(process.env.PHYSIQUE_SERVER_TEST!=='1'&&_s3cfg()){const h=+(process.env.BACKUP_INTERVAL_HOURS||24);setTimeout(()=>runBackup(),60e3).unref();setInterval(()=>runBackup(),h*3600e3).unref();}
+if(process.env.PHYSIQUE_SERVER_TEST!=='1'&&_restoreArg<0)server.listen(PORT,HOST,()=>{
   log('info','listening',{host:HOST,port:PORT,data:DATA,
     note:'put TLS in front of this before it leaves localhost'});
 });
 export {server};
 /* for tests: load with PHYSIQUE_SERVER_TEST=1 (nothing listens) */
-export {sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,rateOk,tokens,readConns,writeConns,storageStatus,rotateConnectKeys};
+export {aiConfig,aiTranslate,aiComplete,productionPreflight,sigv4,runBackup,restoreFromS3,healthStatus,METRICS,sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,ledgerIds,ledgerIndexSize,rateOk,tokens,readConns,writeConns,storageStatus,rotateConnectKeys};
 export const _sealForDrill=o=>_seal(o),_openForDrill=e=>_open(e);

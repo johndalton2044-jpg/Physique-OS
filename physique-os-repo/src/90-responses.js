@@ -36,3 +36,11 @@ function competitionCard(){var out=[];Object.keys(MODEL_COMPETITIONS).forEach(fu
   if(!out.length)return '';
   return uiFold('learn-competition','Which forecast to trust',Object.keys(MODEL_COMPETITIONS).map(function(id){var L=(DB.settings.modelLifecycle||{})[id];return MODEL_COMPETITIONS[id].label.split(' ')[0]+': '+(L?COMPETITION_CANDIDATES[L.primary].label.split(' (')[0]:'not scored');}).join(' \u00b7 '),
     out.join('')+'<div class="prov">Each forecast is replayed every 3 days over the last 90, using only what was known then. A challenger replaces the primary only when clearly better and calibrated; newer is not assumed better.</div>');}
+/* THE LEARNING LOOP on Learn */
+function loopCard(){var C=runLearningCycle(),tone={ok:'good',attention:'attention',starved:'negative'};
+  var body='<div class="loop-stages">'+C.stages.map(function(s){return '<div class="loop-stage st-'+s.status+'" title="'+attrEsc(s.figure)+'"><b>'+esc(s.id)+'</b><span>'+esc(s.figure)+'</span></div>';}).join('')+'</div>';
+  body+='<div class="card-title" style="margin-top:8px">What I learned about you this week</div>'+C.learned.map(function(x){return '<div class="hint">\u2022 '+esc(x)+'</div>';}).join('');
+  var H=C.health;body+='<div class="card-title" style="margin-top:8px">Is the loop closing?</div>'+uiRow('Changes judged',H.judged!=null?Math.round(H.judged*100)+'% of '+H.interventions:'\u2014',{sub:H.medianDaysToVerdict!=null?'a verdict about '+H.medianDaysToVerdict+' days after a change':''})+
+    (C.starved.length?'<div class="hint">Short of data: '+esc(C.starved.join(', '))+'.</div>':'');
+  if(C.next&&C.next.status==='ok')body+='<div class="card-title" style="margin-top:8px">Next test</div><div class="feat"><div class="feat-body">'+esc(C.next.why)+'</div>'+uiBtn('Start','exp.fromTemplate',C.next.template,'btn-sm btn-primary')+'</div>';
+  return uiFold('learn-loop','The learning loop','week '+esc(C.week.split('-W')[1])+' \u00b7 '+C.stages.filter(function(s){return s.status==='ok';}).length+' of '+C.stages.length+' stages working',body+'<div class="prov">observe \u2192 understand \u2192 decide \u2192 act \u2192 measure \u2192 explain \u2192 learn \u2192 adapt \u2192 predict \u2192 test \u2192 personalize, recorded once a week</div>');}

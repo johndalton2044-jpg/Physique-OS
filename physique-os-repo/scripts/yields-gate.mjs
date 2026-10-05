@@ -6,9 +6,10 @@
  * --check exits non-zero instead of rewriting, for use as a build gate.
  */
 import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';
-const OUT=path.resolve('dist/data/reference/yields.json');
+/* the controlled input in data/reference, never the distribution (a gate that wrote into dist made it unreproducible) */
+const OUT=path.resolve(process.env.YIELDS_PATH||'data/reference/yields.json');
 const CHECK=process.argv.includes('--check');
-if(!fs.existsSync(OUT)){console.log('no yields.json; nothing to gate');process.exit(0);}
+if(!fs.existsSync(OUT)){console.error('yields gate: '+OUT+' is missing; it is a controlled input of the build');process.exit(1);}
 const y=JSON.parse(fs.readFileSync(OUT,'utf8'));
 const failures=[];
 const kept={};

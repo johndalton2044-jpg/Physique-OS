@@ -8,7 +8,7 @@
    ============================================================================ */
 var PHYSIQUE_RANGE={setsLow:10,setsHigh:20,minFrequency:2,source:'dose\u2013response meta-analyses (Schoenfeld 2017; Pelland 2024): about 10\u201320 hard sets a week, at least twice a week'};
 var REGION_MEASURE={chest:'chest',biceps:'arm',triceps:'arm',quads:'thigh',hamstrings:'thigh',glutes:'hip'};
-var BODYFAT_METHOD_SE={DEXA:1.5,'Bod Pod':2,hydrostatic:2,calipers:3,'BIA scale':3.5,'visual estimate':4,other:4,unspecified:4};
+var BODYFAT_METHOD_SE={DEXA:1.5,'Bod Pod':2,hydrostatic:2,calipers:3,'BIA scale':3.5,circumference:3.5,'visual estimate':4,other:4,unspecified:4};
 function _setsByMuscle(from,to){var out={},freq={};sessionsOf({from:from}).filter(function(s){return s.date<=to;}).forEach(function(s){var seen={};
   (s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e)return;e.primary.forEach(function(m){out[m]=(out[m]||0)+1;seen[m]=1;});e.secondary.forEach(function(m){out[m]=(out[m]||0)+0.5;});});
   Object.keys(seen).forEach(function(m){freq[m]=(freq[m]||0)+1;});});return {sets:out,freq:freq};}
@@ -60,7 +60,9 @@ function physiqueRate(){var ph=typeof activePhase==='function'?activePhase():(DB
     (type==='bulk'?(pct>R[1]?'faster than the range: more of the gain is fat':(pct<R[0]?'slower than the range':'within the range')):(pct<R[0]||pct>R[1]?'drifting outside maintenance':'within the range'));
   return {status:'ok',phase:type,pctPerWeek:round(pct,2),se:round(100*f.se/w,2),range:R,state:state,basis:'cut 0.5\u20131% of body weight a week; lean gain 0.1\u20130.25% a week (about 0.5\u20131% a month); maintenance within \u00b10.1%'};}
 /* body composition, one trend per method; methods are compared by their offset on near dates, never mixed */
-function bodyCompositionByMethod(){var by={};obsOf('bodyfat').forEach(function(o){var m=o.method||(o.meta&&o.meta.method)||'unspecified';(by[m]=by[m]||[]).push(o);});
+/* the form saves dexa/bia/calipers/bodpod/navy/other: mapped to the method names whose errors are known */
+var BODYFAT_METHOD_NAME={dexa:'DEXA',bia:'BIA scale',calipers:'calipers',bodpod:'Bod Pod',navy:'circumference',other:'other',hydrostatic:'hydrostatic',visual:'visual estimate'};
+function bodyCompositionByMethod(){var by={};obsOf('bodyfat').forEach(function(o){var raw=o.method||(o.meta&&o.meta.method)||'unspecified',m=BODYFAT_METHOD_NAME[String(raw).toLowerCase()]||raw;(by[m]=by[m]||[]).push(o);});
   var wAt=function(d){var W=obsOf('weight').filter(function(o){return Math.abs(daysBetween(o.date,d))<=3;});return W.length?W[W.length-1].value:null;};
   var methods=Object.keys(by).map(function(m){var L=by[m].slice().sort(function(a,b){return a.date<b.date?-1:1;}),se=BODYFAT_METHOD_SE[m]||4,f=_slopePerWeek(L.map(function(o){return {date:o.date,value:o.value};}));
     var pts=L.map(function(o){var w=wAt(o.date);return w?{date:o.date,bf:o.value,lean:round(w*(1-o.value/100),1),fat:round(w*o.value/100,1)}:{date:o.date,bf:o.value};});

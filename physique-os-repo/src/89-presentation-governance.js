@@ -340,7 +340,7 @@ function provenancePresentationModel(spec){
 var UNCERTAINTY_TAXONOMY=['measurement','sampling','parameter','model','structural','missingness','forecast',
   'causal','referenceData','userInput'];
 var UNCERTAINTY_ALIASES={'reference-data':'referenceData','missing-data':'missingness'};
-function canonicalUncertainty(kind){return UNCERTAINTY_ALIASES[kind]||kind;}
+/* canonicalUncertainty moved to 91-inference.js (engine layer) */
 var UNCERTAINTY_TYPES=UNCERTAINTY_TAXONOMY;   // the same list, not a copy
 var UNCERTAINTY_STYLES={
   measurement:'measurement',sampling:'hatched',model:'hatched',parameter:'dashed',
@@ -1285,3 +1285,60 @@ CHART_RENDERERS.stackedBar=function(pm){
 /* Available or planned, from whether a renderer exists \u2014 the catalogue says which. */
 function chartTypeStatus(k){return chartRenderable(k)?'available':'planned';}
 function chartCatalogueSummary(){var ks=Object.keys(CHART_TYPES);var av=ks.filter(chartRenderable);return {total:ks.length,available:av.length,planned:ks.filter(function(k){return !chartRenderable(k);})};}
+
+/* moved from 65-import.js: an engine function that lived in an interface file */
+function visualizationSVG(opts){
+  var v=buildVisualization(opts||{});
+  if(v.status!=='ok')return {status:'refused',stage:v.stage,note:v.note};
+  if(typeof document==='undefined')return {status:'ok',svg:v.html,inlined:false};
+  var host=document.createElement('div');host.style.cssText='position:absolute;left:-10000px;top:0;width:640px';
+  host.innerHTML=v.html;document.body.appendChild(host);
+  var svg=host.querySelector('svg');
+  if(!svg){document.body.removeChild(host);return {status:'refused',stage:'renderer',note:'no SVG produced'};}
+  [svg].concat([].slice.call(svg.querySelectorAll('*'))).forEach(function(el){
+    var cs=getComputedStyle(el),st=[];
+    _SVG_INLINE.forEach(function(p){var val=cs.getPropertyValue(p);if(val&&val!=='normal'&&val!=='auto')st.push(p+':'+val);});
+    if(st.length)el.setAttribute('style',st.join(';')+';'+(el.getAttribute('style')||''));
+  });
+  svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  var vb=(svg.getAttribute('viewBox')||'0 0 640 160').split(/\s+/);
+  svg.setAttribute('width',vb[2]);svg.setAttribute('height',vb[3]);
+  var bg=getComputedStyle(document.body).backgroundColor;
+  var out=new XMLSerializer().serializeToString(svg).replace('>','><rect width="100%" height="100%" fill="'+bg+'"/>');
+  document.body.removeChild(host);
+  return {status:'ok',svg:out,inlined:true,runId:v.runId,
+    note:'Colours and strokes are written into the file, so it looks the same outside the app.'};
+}
+
+/* moved from 65-import.js: an engine function that lived in an interface file */
+function visualizationPNG(opts){
+  var s=visualizationSVG(opts);
+  if(s.status!=='ok')return Promise.resolve(s);
+  if(typeof Image==='undefined'||typeof document==='undefined'||!document.createElement('canvas').getContext)
+    return Promise.resolve({status:'unsupported',note:'PNG needs a canvas, which this environment does not have. The SVG export works everywhere.'});
+  return new Promise(function(resolve){
+    var img=new Image(),scale=2;
+    img.onload=function(){try{
+      var c=document.createElement('canvas');c.width=img.width*scale;c.height=img.height*scale;
+      var g=c.getContext('2d');if(!g){resolve({status:'unsupported',note:'no 2D canvas'});return;}
+      g.scale(scale,scale);g.drawImage(img,0,0);resolve({status:'ok',png:c.toDataURL('image/png'),width:c.width,height:c.height});
+    }catch(e){resolve({status:'failed',note:String(e&&e.message||e)});}};
+    img.onerror=function(){resolve({status:'failed',note:'the SVG could not be rasterised'});};
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s.svg);
+  });
+}
+var _SVG_INLINE=['fill','fill-opacity','stroke','stroke-width','stroke-opacity','stroke-dasharray','opacity','font-size','font-family','font-weight','text-anchor'];
+/* dashboards and saved chart presets as record formats (export and import) */
+registerExportAdapter('dashboard',{version:1,formats:['json'],
+    object:function(o){return currentDashboard();},
+    validate:function(d){var v=validateDashboardSpec(d);return v.ok?[]:v.errors;},
+    /* Imported under its own id so it can never silently replace a dashboard already here. */
+    apply:function(d){var c=JSON.parse(JSON.stringify(d));c.id='imported-'+String(d.id||'dashboard').replace(/[^a-z0-9-]/gi,'-').slice(0,24);
+      c.builtin=false;var r=commitDashboard(c);return {status:r.status,id:r.id};}});
+registerExportAdapter('visualizationPreset',{version:1,formats:['json'],
+    object:function(){return Object.keys(WIDGET_REGISTRY).filter(function(k){return WIDGET_REGISTRY[k].userDefined;})
+      .map(function(k){var w=WIDGET_REGISTRY[k];return {modelId:w.chartModel,chartType:w.chartType,title:w.title};});},
+    validate:function(d){var e=[];if(!Array.isArray(d))return ['presets must be a list'];
+      d.forEach(function(p,i){if(!modelContract(p.modelId))e.push('preset '+i+': unknown model "'+p.modelId+'"');
+        else if(!chartRenderable(p.chartType))e.push('preset '+i+': "'+p.chartType+'" cannot be drawn');});return e;},
+    apply:function(d){var out=d.map(function(p){return saveChartAsWidget(p).status;});return {status:'ok',results:out};}});

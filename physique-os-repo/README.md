@@ -6,6 +6,39 @@ at a time with a prediction stamped before the outcome; and it keeps what did no
 
 Not medical advice. It interprets a training and nutrition record; it does not diagnose disease.
 
+## Capability maturity
+
+What is finished, what is partial and what is not built, with the evidence for each. Levels: not implemented → specified → implemented → integrated → surfaced → validated → production-ready.
+
+<!-- maturity:begin (generated from docs/capabilities.json by tests/maturity.mjs --write) -->
+| Capability | Maturity | Evidence | Note |
+|---|---|---|---|
+| Local persistence (IndexedDB, incremental writes) | validated | gate persistence |  |
+| Backup and restore | validated | workflow V-010 |  |
+| Erase everything | validated | workflow V-009 |  |
+| Food logging with portions | validated | workflow V-002 |  |
+| Training sessions and sets | validated | workflow V-003 |  |
+| Corrections and deletions with history | validated | workflow V-005 |  |
+| Phase targets reaching Today | validated | workflow V-001 |  |
+| Recovery readings changing today's training advice | validated | workflow V-004 |  |
+| One plan authority (every plan change through changePlan, one version each) | integrated | gate authority |  |
+| What was known on a past date | validated | workflow V-011, gate engine |  |
+| Encrypted sync between devices | integrated | gate cloud:e2e, gate server | needs a persistent disk; production mode refuses to start without one and without off-host backups |
+| Verified off-host server backups, restore and health | integrated | gate server | tested against a mock S3 that checks signatures and payload hashes; not yet against a real provider |
+| Adaptive plan | surfaced | gate adapt |  |
+| Personal response model | surfaced | gate engine |  |
+| Forecasts that compete for accuracy | surfaced | gate engine |  |
+| Unified optimiser | surfaced | gate engine |  |
+| State model (the 'digital twin') | surfaced | gate engine | a mathematical state model, not a validated twin |
+| Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | gate integration |  |
+| Live connections to Fitbit, Withings and Oura | implemented | gate connect | tested against simulated providers only, never a real account |
+| Garmin, WHOOP, Strava, Polar, Samsung Health, Health Connect, HealthKit | specified | — |  |
+| LLM providers (Anthropic, OpenAI, Gemini, local OpenAI-compatible) through the server | integrated | gate ai | tested against mock providers that check each protocol; not yet against a real provider. Apple Foundation Models need a native app |
+| AI proposals: describe a log entry or a meal, suggest a session, explain the plan | integrated | gate ai | off until consent; read-only tools; validated output; nothing is written until the person confirms |
+| OCR of labels and photos | not implemented | — |  |
+| Body shape from photos | not implemented | — |  |
+<!-- maturity:end -->
+
 ## Run it
 
 * **Simplest:** open `index.html`. Everything works: logging, models, decisions, experiments, replay, exports,
@@ -214,9 +247,10 @@ Lose the phrase and the data is gone. A server able to recover it would be a ser
   mishears, and a misheard number landing unseen is a silent corruption.
 * **Nutrition panels** — paste the text (camera live text, a photo app, or by hand) and it parses into a
   food, flagging any panel whose macros cannot produce its stated calories. No OCR engine is bundled.
-* **Wearables** — Fitbit, Withings and Oura response adapters are implemented and tested; the OAuth
-  credentials identify the deployment and are supplied by whoever runs it. Every one of those vendors also
-  exports a file, and file import is complete.
+* **Wearables** — Fitbit, Withings and Oura connection adapters are implemented and tested against simulated providers
+  only: no real account has been connected yet, so live connections are not proven. The OAuth credentials identify the
+  deployment and are supplied by whoever runs it. Every one of those vendors also exports a file, and file import is
+  complete and tested.
 
 ## Asking a number where it came from
 

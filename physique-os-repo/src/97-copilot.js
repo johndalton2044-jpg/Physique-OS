@@ -317,7 +317,7 @@ function validateAssistantReply(reply,pack){
   var issues=[];
   var text=String(reply&&reply.text||reply||'');
   if(!text.trim())issues.push('empty reply');
-  var known={};(pack.numbers||[]).forEach(function(n){known[n]=1;});
+  var known={};(pack.numbers||[]).concat((reply&&reply.allowedNumbers)||[]).forEach(function(n){known[n]=1;});   /* the context, and figures the model's own tool calls returned */
   /* Any figure in the reply must already exist in the context. Percentages and small integers are allowed
      through as prose ("three of them"), which is why the threshold is on specificity rather than presence. */
   var invented=[];

@@ -79,7 +79,7 @@ function createPlanVersion(trigger){
   var rec={id:uid('plan'),version:prev?prev.version+1:1,createdAt:nowISO(),effectiveFrom:todayISO(),supersedes:prev?prev.id:null,
     content:snap,changes:diff,
     trigger:{kind:trigger.kind||'your edit',reason:trigger.reason||null,evidence:(trigger.evidence||[]).slice(0,8),
-      alternatives:(trigger.alternatives||[]).slice(0,6),decisionCode:trigger.decisionCode||null,expected:trigger.expected||null},
+      alternatives:(trigger.alternatives||[]).slice(0,6),decisionCode:trigger.decisionCode||null,expected:trigger.expected||null,source:trigger.source||null},
     provenance:{source:'createPlanVersion',goal:'canonicalGoal',targets:'active phase',training:'programStructure',adaptation:'decision lattice'}};
   DB.plans=DB.plans||[];DB.plans.push(rec);
   emitEvent('plan.created',JSON.parse(JSON.stringify(rec)),{at:rec.createdAt});
@@ -104,6 +104,7 @@ function notePlanChange(kind,extra){
     t.evidence=(d.why?String(d.why).split(/,(?![^(]*\))/):[]).map(function(x){return x.trim();}).filter(Boolean);
     t.alternatives=(d.alternatives||[]).map(function(a){return typeof a==='string'?a:(a.label||a.verb||a.code||JSON.stringify(a));});
     t.expected=d.action||null;}catch(e){}}
+  if(_PLAN_TXN){_PLAN_TXN.notes.push(t);return null;}   /* inside changePlan: gathered into its one version */
   return createPlanVersion(t);
 }
 
@@ -338,6 +339,11 @@ function planAttentionItems(){
   try{if(typeof possibleDuplicateWorkouts==='function')possibleDuplicateWorkouts().slice(0,3).forEach(function(d){out.push({id:'dup:'+d.imported.id,severity:'review',
     what:'The same workout twice? '+d.imported.value+' min ('+sourceLabel(sourceKeyOf(d.imported))+') and '+d.manual.value+' min (logged by you) on '+shortDate(d.imported.date),
     why:'Counting both would double that day\u2019s cardio. Keep the imported one, or keep both if they were different workouts.',cando:'Keep the imported one',act:'dup.keepImported',arg:d.imported.id,tab:'today'});});}catch(e){}
+  try{var CS=phaseCriteriaStatus();if(CS.status==='ok'){CS.stop.filter(function(r){return r.state==='met';}).forEach(function(r){out.push({id:'crit-stop:'+CS.phase+':'+r.id,severity:'action',what:'A stop rule for this phase is met: '+r.label,why:r.why+'. Review the phase before continuing.',cando:'See the criteria',act:'nav.tab',arg:'plan',tab:'plan',section:'plan-criteria'});});
+    CS.success.concat(CS.transition).filter(function(r){return r.state==='met';}).slice(0,2).forEach(function(r){out.push({id:'crit:'+CS.phase+':'+r.id,severity:'review',what:'Phase milestone: '+r.label,why:r.why+'.',cando:'See the criteria',act:'nav.tab',arg:'plan',tab:'plan',section:'plan-criteria'});});}}catch(e){}
+  /* acute recovery: today's readings, acted on today (works from the first day; needs no baseline) */
+  try{var AC=acuteRecovery(todayISO());if(AC.flag)out.push({id:'acute-recovery:'+todayISO(),severity:'safety',what:(AC.level==='poor'?'Rest or go very light today':'Go lighter today')+': '+AC.reasons.join(', '),
+    why:AC.advice.charAt(0).toUpperCase()+AC.advice.slice(1)+'. '+AC.basis+'.',cando:'See recovery',act:'nav.tab',arg:'body',tab:'body'});}catch(e){}
   if(!plan)return out;
   var F=planFeasibility();
   if(F.status==='ok'&&!F.ok)out.push({id:'plan-fit',severity:'action',what:'Your plan does not fit your circumstances ('+F.conflicts.length+')',
@@ -345,7 +351,7 @@ function planAttentionItems(){
   var P=plansOf(),last=P[P.length-1];
   if(last&&last.version>1&&daysBetween(last.effectiveFrom,todayISO())<=3){var X=explainPlanChange(last.id);
     out.push({id:'plan-changed:'+last.version,severity:'review',what:'Your plan changed: '+X.changes.map(function(c){return c.what;}).slice(0,3).join(', '),
-      why:X.reason||'See the evidence behind it.',cando:'See why',act:'nav.tab',arg:'plan',tab:'plan'});}
+      why:X.reason||'See the evidence behind it.',cando:'See why',act:'nav.tab',arg:'plan',tab:'plan',section:'plan-history',detail:X.changes});}
   try{var AP=adaptationProposals();if(AP.proposals.length)out.push({id:'adapt:'+AP.proposals[0].id,severity:'review',what:'Your plan could fit you better: '+AP.proposals[0].title.toLowerCase(),
     why:AP.proposals[0].why,cando:'See the suggestion',act:'nav.tab',arg:'plan',tab:'plan'});}catch(e){}
   var C=constraintModel(),key=C.missing.filter(function(m){return m==='training days'||m==='session length';});
@@ -488,3 +494,26 @@ function recoverySuggestion(){
   var I=intendedFor(todayISO());if(!(I.items||[]).some(function(x){return x.item==='training';}))return null;
   return {suggest:'reduced',why:'Recovery reads '+r.band+' today, from '+((r.stressorState&&r.stressorState.loadBasis)||'recent training load')+' and what you logged.',cls:r.cls};
 }
+/* ============================================================================
+   THE PLAN AUTHORITY (audit A-004): every user-facing change to the plan \u2014 targets, schedule, programme, a phase
+   starting or ending, an experiment, a decision, an adaptation, an optimiser choice \u2014 goes through changePlan. The
+   underlying mutators still do the work; their version notes are gathered into exactly one plan version, which carries
+   the change's reason and, for an adaptive change, its expected outcome (rule 7). tests/authority.mjs fails on a
+   user-facing call to an underlying mutator outside changePlan (its list of mutators lives in that check).
+   ============================================================================ */
+var _PLAN_TXN=null,PLAN_ADAPTIVE_SOURCES={decision:1,adaptation:1,optimiser:1,experiment:1};
+function changePlan(c){if(!c||typeof c.apply!=='function')throw new Error('changePlan needs the change to apply');
+  if(!c.reason)throw new Error('changePlan: a plan change states its reason (rule 7)');
+  if(PLAN_ADAPTIVE_SOURCES[c.source]&&(c.expected==null||c.expected===''))throw new Error('changePlan: an adaptive change ('+c.source+') states its expected outcome (rule 7)');
+  if(_PLAN_TXN)return {result:c.apply(),version:null,nested:true};   /* part of an outer change */
+  _PLAN_TXN={notes:[]};var result,ok=false,notes;
+  try{result=c.apply();ok=true;}finally{notes=_PLAN_TXN.notes;_PLAN_TXN=null;}
+  /* whether there is a new version is decided by the plan itself (createPlanVersion compares the content), not by
+     whether the mutators left notes: they record nothing while persistence is suspended, and only add evidence here */
+  var v=null;if(ok&&_PLAN_HOOKS_OFF<=0&&(activePhase()||plansOf().length)){var ev=[];notes.forEach(function(n){(n.evidence||[]).forEach(function(e){if(ev.indexOf(e)<0)ev.push(e);});});
+    var dn=notes.filter(function(n){return n.decisionCode;})[0],prev=plansOf().slice(-1)[0]||null;
+    /* the first plan is the setup version whatever path made it, and keeps the reason its mutator gave */
+    var first=!prev,setupNote=notes.filter(function(n){return n.kind==='setup';})[0];
+    var made=createPlanVersion({kind:first?'setup':(c.kind||(notes[0]&&notes[0].kind)||'your edit'),reason:first&&setupNote&&setupNote.reason?setupNote.reason:c.reason,evidence:ev,alternatives:c.alternatives||(dn&&dn.alternatives)||[],decisionCode:c.decisionCode||(dn&&dn.decisionCode)||null,expected:c.expected,source:c.source||null});
+    v=made&&(!prev||made.id!==prev.id)?made:null;}
+  return {result:result,version:v};}

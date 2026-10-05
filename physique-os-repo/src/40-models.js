@@ -590,6 +590,9 @@ function recoveryState(){
   /* deviation from this person's own baseline, not only from a fixed threshold */
   var dev=[];try{dev=recoveryBaselineDeviation();}catch(e){_q(e);}
   dev.forEach(function(d){if(!signals.some(function(x){return x.key===d.key;}))signals.push({key:d.key,text:d.text,severity:Math.abs(d.z)>2?2:1,personal:true});});
+  /* one severe reading today is enough to act on, without a baseline (a new person at fatigue 9 on 4.5 h of sleep read
+     “recovery unknown”): acute status from today's readings alone; the weekly picture still needs three ratings */
+  var ac=acuteRecovery();if(n<3&&ac.flag)return {status:'acute',cls:'HEURISTIC',label:'Today\u2019s recovery readings',level:ac.level,signals:ac.reasons.map(function(r){return {key:'acute',text:r,severity:2};}),n:n,advice:ac.advice,note:'from today\u2019s readings alone; the weekly picture needs '+(3-n)+' more ratings',sleep:sl,fatigue:fa,soreness:so,stress:st,sleepq:sq,target:target,personalDeviation:dev};
   if(n<3)return {status:'insufficient',level:'unknown',signals:signals,n:n,need:[(3-n)+' more recovery ratings this week'],sleep:sl,fatigue:fa,soreness:so,stress:st,sleepq:sq,target:target,personalDeviation:dev};
   var score=signals.reduce(function(a,s){return a+s.severity;},0);
   var level=score===0?'good':(score===1?'acceptable':(score<=3?'strained':'poor'));
@@ -1137,3 +1140,15 @@ function priorSensitivity(){
     note:'About '+Math.round(share*100)+'% of any error in the population starting estimate still carries into this one, from '+emp.n+' logged days; it shrinks as you log more. '+
       'Assuming a weaker or stronger prior moves the answer between '+fmtNum(roundTo(Math.min(v7,v28),10),0)+' and '+fmtNum(roundTo(Math.max(v7,v28),10),0)+' kcal.'};
 }
+/* ACUTE RECOVERY: today's readings alone. Autoregulation heuristics, labelled as such: very high fatigue or very short
+   sleep \u2192 rest or train very lightly; high fatigue, short sleep or high soreness \u2192 go lighter (a set fewer per exercise,
+   3 or more reps in reserve). */
+function acuteRecovery(date){date=date||asOf();var v=function(t){var o=obsOf(t).filter(function(x){return x.date===date;});return o.length?o[o.length-1].value:null;};
+  var fa=v('fatigue'),sl=v('sleep'),so=v('soreness'),reasons=[],sev=0;
+  if(fa!=null&&fa>=9){reasons.push('fatigue '+fa+'/10');sev=Math.max(sev,2);}else if(fa!=null&&fa>=8){reasons.push('fatigue '+fa+'/10');sev=Math.max(sev,1);}
+  if(sl!=null&&sl<4.5){reasons.push(fmtH(sl)+' of sleep');sev=Math.max(sev,2);}else if(sl!=null&&sl<5){reasons.push(fmtH(sl)+' of sleep');sev=Math.max(sev,1);}
+  if(so!=null&&so>=8){reasons.push('soreness '+so+'/10');sev=Math.max(sev,1);}
+  if(!sev)return {flag:false,reasons:[]};
+  return {flag:true,cls:'HEURISTIC',level:sev>=2?'poor':'strained',reasons:reasons,
+    advice:sev>=2?'rest today, or train very lightly (a walk, mobility, technique work)':'go lighter today: a set fewer per exercise, and keep 3 or more reps in reserve',
+    basis:'autoregulation heuristic on today\u2019s readings; not a diagnosis'};}

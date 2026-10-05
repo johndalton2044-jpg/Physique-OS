@@ -18,6 +18,8 @@ var OBS_TYPES={
   fat:{label:'Dietary fat',unit:'g',group:'nutrition',consumers:['macro summary','fat floor check'],min:0,max:500,step:1},
   fiber:{label:'Fiber',unit:'g',group:'nutrition',consumers:['fiber adequacy','satiety intervention'],min:0,max:200,step:1},
   water:{label:'Water',unit:'L',group:'nutrition',consumers:['hydration context'],min:0,max:15,step:0.1},
+  urine:{label:'Urine colour',unit:'1\u20138',group:'recovery',consumers:['hydration_balance'],min:1,max:8,step:1},
+  sweatrate:{label:'Sweat rate',unit:'L/h',group:'activity',consumers:['hydration_balance'],min:0,max:4,step:0.05},
   adherence:{label:'Plan adherence',unit:'%',group:'nutrition',consumers:['adherence confidence','model error vs execution error'],min:0,max:100,step:1},
   hunger:{label:'Hunger',unit:'/10',group:'appetite',consumers:['appetite burden','diet sustainability','over-aggressive check'],min:0,max:10,step:1},
   fullness:{label:'Fullness',unit:'/10',group:'appetite',consumers:['satiety efficiency'],min:0,max:10,step:1},
@@ -52,7 +54,7 @@ function emptyDB(){
     schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
     profile:{name:'',age:null,sex:'',heightIn:null,startWeightLb:null,goalWeightLb:null,goalType:'',targetDate:'',trainingExperience:'',activityBaseline:'',dietPreference:'',equipment:'',schedule:'',sleepTargetH:null,createdAt:nowISO(),updatedAt:null},
     phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
-    decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],environment:[],
+    decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],environment:[],
     models:{calibration:{},versions:{}},
     settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
     ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},
@@ -94,7 +96,8 @@ function migrate(db){
   // structural backfill for collections a same-version document may lack (partial exports, older minor builds)
   var fresh=emptyDB();
   Object.keys(fresh).forEach(function(k){if(db[k]===undefined)db[k]=fresh[k];});
-  ['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','responses'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
+  /* every persisted collection (PERSIST_COLLECTIONS, 22-persistence.js): a hand list here missed plans, executions and environment */
+  PERSIST_COLLECTIONS.forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
   if(!db.settings||typeof db.settings!=='object')db.settings=fresh.settings;
   Object.keys(fresh.settings).forEach(function(k){if(db.settings[k]===undefined)db.settings[k]=fresh.settings[k];});
   if(!db.profile||typeof db.profile!=='object')db.profile=fresh.profile;
@@ -115,7 +118,7 @@ function validateDB(obj){
   else if(obj.schemaVersion!=null&&obj.schemaVersion>SCHEMA_VERSION)errors.push('Schema version '+obj.schemaVersion+' is newer than this app supports ('+SCHEMA_VERSION+')');
   else if(obj.schemaVersion!=null&&obj.schemaVersion<SCHEMA_MIN_KNOWN)errors.push('Schema version '+obj.schemaVersion+' is older than any migration this app knows; migration unavailable');
   else if(obj.schemaVersion==null&&!_looksLikeV1(obj))errors.push('Document carries no schema version and its shape is not recognized');
-  var lists=['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes'];
+  var lists=PERSIST_COLLECTIONS;
   lists.forEach(function(k){if(obj[k]!=null&&!Array.isArray(obj[k]))errors.push(k+' must be a list');else counts[k]=(obj[k]||[]).length;});
   var seen={};var L=function(k){return Array.isArray(obj[k])?obj[k]:[];};
   L('observations').forEach(function(o,i){
@@ -282,7 +285,11 @@ function watchOtherTabs(){
    REGION: UNDO — reversible mutations via document snapshots. Operates on state, never the DOM.
    ============================================================================ */
 var _undoStack=[],UNDO_MAX=30;
-function pushUndo(label){try{_undoStack.push({label:label||'change',at:nowISO(),snap:serializeDB()});if(_undoStack.length>UNDO_MAX)_undoStack.shift();}catch(e){_q(e);}}
+/* UNDO BATCH: a group action (a quick log of several values, logging a set of supplements) records ONE undo step;
+   entries inside it do not record their own — undo used to remove them one at a time, each a full snapshot */
+var _UNDO_BATCH=0;
+function undoBatch(label,fn){pushUndo(label);_UNDO_BATCH++;try{return fn();}finally{_UNDO_BATCH--;}}
+function pushUndo(label){if(_UNDO_BATCH>0)return;try{_undoStack.push({label:label||'change',at:nowISO(),snap:serializeDB()});if(_undoStack.length>UNDO_MAX)_undoStack.shift();}catch(e){_q(e);}}
 function canUndo(){return _undoStack.length>0;}
 function undoLabel(){return _undoStack.length?_undoStack[_undoStack.length-1].label:null;}
 function undo(){
