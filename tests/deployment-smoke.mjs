@@ -42,6 +42,11 @@ async function certify(app,o){o=o||{};const R=[],rec=(layer,ok,detail)=>{R.push(
   if(o.out){fs.writeFileSync(o.out,JSON.stringify(cert,null,2));console.log('certificate written to '+o.out);}
   return cert;}
 async function local(){
+  /* The host builds the app and serves dist, never the repository root: without these Vercel looked for a "public"
+     folder after the build and refused to deploy ("No Output Directory named public"). */
+  {const vj=JSON.parse(fs.readFileSync('vercel.json','utf8'));
+    line(vj.outputDirectory==='dist'&&/\bnpm run build\b|\bnode build\.mjs\b/.test(vj.buildCommand||''),'vercel.json tells the host to run the build and serve dist',JSON.stringify({buildCommand:vj.buildCommand,outputDirectory:vj.outputDirectory}));
+    line(fs.existsSync('dist/index.html'),'the build put the app in dist');}
   const {chromium}=await import('playwright-core');const {findBrowser}=await import('./_browser-path.mjs');
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pos-deploy-'));const API=18801,wait=ms=>new Promise(r=>setTimeout(r,ms));
   const api=spawn(process.execPath,['server/server.mjs'],{env:Object.assign({},process.env,{PORT:String(API),HOST:'127.0.0.1',DATA_DIR:tmp,TRUST_PROXY:'1',METRICS_TOKEN:'met',PHYSIQUE_EXT_FIXTURES:path.resolve('tests/fixtures/ext')}),stdio:'ignore'});
