@@ -1,0 +1,94 @@
+{
+  "generatedAt": "2026-10-05T16:24:54.133Z",
+  "sourceBuildId": "de9d967236",
+  "releaseId": "c440f34a0de1",
+  "schemaVersion": 2,
+  "applicationVersion": "1.0.0",
+  "versionVector": {
+    "applicationVersion": "1.0.0",
+    "schemaVersion": 2,
+    "ontologyVersion": "2026.09.1",
+    "modelVersion": "1",
+    "referenceDataVersion": "ah102-537/fdc-354",
+    "foodDatabaseVersion": "fdc-2026-04",
+    "adapterVersion": "1"
+  },
+  "foodDatabase": {
+    "entries": {
+      "databaseVersion": "fdc-2026-04-30",
+      "branded": 455381,
+      "foundation": 354,
+      "totalBytes": 97518627
+    },
+    "fndds": null,
+    "dsld": null
+  },
+  "sourceCount": 97,
+  "gates": [
+    {
+      "gate": "engine",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "test",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "adversarial",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "audit",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "conformance",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "browser",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "yields:gate",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "cloud:e2e",
+      "declared": true,
+      "inCheckChain": true
+    },
+    {
+      "gate": "verify",
+      "declared": true,
+      "inCheckChain": true
+    }
+  ],
+  "dependencies": {
+    "build": [],
+    "gates": [
+      "jsdom",
+      "playwright-core"
+    ],
+    "installed": {
+      "jsdom": true,
+      "playwright-core": true
+    },
+    "browser": "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
+  },
+  "registries": {
+    "quantities": 38,
+    "quantitySingleSource": true,
+    "models": 40,
+    "actions": 497,
+    "capabilities": 22
+  },
+  "note": "Generated from the running build. Do not edit by hand — regenerate with node scripts/baseline.mjs."
+}

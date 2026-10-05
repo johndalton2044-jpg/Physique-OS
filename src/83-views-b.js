@@ -1,0 +1,374 @@
+/* ============================================================================
+   REGION: VIEWS B — Body, Progress, Diagnose, Experiments, Learn, Archive, Tools
+   ============================================================================ */
+RENDERERS.body=function(){
+  var S=getCurrentState();var w=S.weight;var wa=S.averages;var tr=S.trend;var out='';
+  var _photoMeta=photoMeta();
+  var _photoModel=photoProgressPresentationModel({photos:_photoMeta,privacy:'local-only'});
+  out+='<div class="vitals">'+uiMetric({label:'Last weigh-in',value:w.value!=null?fmtWeight(w.value,{bare:true}):null,unit:weightUnit(),cls:'MEASURED',source:w.obs?(w.obs.method||'scale'):'',date:w.date,type:'weight',need:'weigh in'})+uiMetric({label:'7-day average',value:wa.avg7!=null?fmtWeight(wa.avg7,{bare:true}):null,unit:weightUnit(),cls:'DERIVED',source:wa.n7+' of 7 days',date:w.date,type:'weight',need:wa.need?wa.need[0]:''})+uiMetric({label:'14-day trend',value:tr.status==='ok'?fmtRate(tr.slopePerWeek,{bare:true}):null,unit:weightUnit()+'/wk',cls:'DERIVED',source:tr.status==='ok'?(tr.n+' weigh-ins \u00b7 noise \u00b1'+fmtWeight(tr.residSd)):'',conf:tr.confidence,need:(tr.need||[])[0]||'',badge:tr.status==='ok'&&tr.lo!=null?uiPill(fmtRateRange(tr.lo,tr.hi,{bare:true}),'neutral'):''})+uiMetric({label:'Water-noise probability',value:S.waterNoise.status==='ok'?S.waterNoise.level:null,unit:'',cls:'HEURISTIC',source:S.waterNoise.reasons[0]||'',need:'5+ weigh-ins'})+'</div>';
+  /* The body map, surfaced where body questions are asked. */
+  (function(){
+    var m=bodyMapModel(14);
+    var top=m.status==='ok'?m.rows.filter(function(r){return r.state==='loaded';})
+      .sort(function(a,b){return b.value-a.value;}).slice(0,3).map(function(r){return r.label;}).join(', '):'';
+    out+=uiCard({title:'Where training lands',
+      sub:m.status==='ok'?('most load this fortnight: '+esc(top||'none')):'no training recorded yet',
+      body:'<div class="btn-row">'+uiBtn('Open body map','nav.bodymap',null,'btn-sm btn-secondary')+'</div>'});
+  })();
+  out+=uiCard({title:'Reading the scale',sub:'single weigh-ins are observations; the trend is the state',presentation:{kind:'body',spec:{view:'front',layers:['measurement','progress'],observation:w.obs||null}},body:uiRow('14-day trend',tr.status==='ok'?fmtRate(tr.slopePerWeek)+' '+confPill(tr.confidence):'insufficient',{sub:tr.status==='ok'?('95% interval '+fmtRateRange(tr.lo,tr.hi)+' \u00b7 R\u00b2 '+fmtNum(tr.r2,2)+(tr.deviceChange?' \u00b7 scale changed in window':'')):(tr.need||[]).join(', ')})+uiRow('28-day trend',S.trend28.status==='ok'?fmtRate(S.trend28.slopePerWeek)+' '+confPill(S.trend28.confidence):'insufficient',{sub:S.trend28.status==='ok'?S.trend28.n+' weigh-ins':''})+uiRow('Water noise',S.waterNoise.level,{sub:S.waterNoise.reasons.join('; ')})+(S.targetRate?uiRow('Rate band',fmtRateRange(S.targetRate.lo,S.targetRate.hi),{sub:S.targetRate.source+(S.targetRate.band?' \u00b7 '+S.targetRate.band.zone:'')}):'')});
+  var bc=S.bodyComp;var est=bc.estimate;
+  var compBody='';
+  if(bc.measured)compBody+=uiRow('Measured body fat','<strong>'+fmtPct(bc.measured.value,1)+'</strong>',{sub:'by '+esc(bc.measured.method)+' \u00b7 '+clsMark('MEASURED'),rsub:ageLabel(bc.measured.date)});
+  if(est&&est.status==='ok'){
+    compBody+='<div class="est-block" data-act="trace.open" data-arg="bodyfat" role="button" tabindex="0" aria-label="Body-fat estimate: where this number comes from"><div class="eb-head">'+esc(est.headline)+'</div><div class="eb-qual">'+esc(est.qualifier)+'</div><div class="eb-body">U.S. Navy circumference equation from waist '+fmtLength(est.waist.value)+' and neck '+fmtLength(est.neck.value)+'. Population fit, \u00b13\u20134 percentage points on an individual'+(est.stale?'; the measurements behind it are stale':'')+'. It tracks change over time better than it pins a number.</div></div>';
+    if(est.massAnchored)compBody+=uiRow('Fat mass (range)','<strong style="color:var(--inferred)">'+fmtWeight(est.fatLo,{bare:true})+'\u2013'+fmtWeight(est.fatHi)+'</strong>',{sub:esc(est.anchorNote),tone:'inferred'})+uiRow('Lean mass (range)','<strong style="color:var(--inferred)">'+fmtWeight(est.leanLo,{bare:true})+'\u2013'+fmtWeight(est.leanHi)+'</strong>',{sub:'everything that is not fat: muscle, bone, organs, water',tone:'inferred'});
+    else compBody+=uiRow('Fat and lean mass','not split out',{sub:esc(est.anchorNote)+' \u2014 multiplying an estimated percentage by weight would present two estimates as one measurement'});
+  }
+  else if(est)compBody+=uiRow('Circumference estimate','not available',{sub:'needs '+(est.need||[]).join(', ')});
+  var fvo=S.fatVsOther;
+  compBody+=uiRow('Fat vs other change',fvo.status==='ok'?esc(fvo.signal||''):'insufficient',{sub:fvo.status==='ok'?(esc(fvo.verdict)+' \u00b7 '+clsMark(fvo.cls||'HEURISTIC')):(fvo.need||[]).join(', ')});
+  if(fvo.status==='ok'&&!fvo.quantified)compBody+=uiRow('Why no numeric split','a scale and a tape cannot separate tissue',{sub:'a numeric fat/lean split needs two body-fat measurements by the same method at least 21 days apart; log one and the split appears here'});
+  compBody+=uiRow('Muscle-retention risk',S.muscleRisk.status==='ok'?uiPill(S.muscleRisk.level,S.muscleRisk.level==='low'?'good':(S.muscleRisk.level==='medium'?'attention':'negative')):esc(S.muscleRisk.level),{sub:(S.muscleRisk.factors||[]).map(function(f){return f.text;}).join('; ')||(S.muscleRisk.need||[]).join(', ')});
+  out+=uiCard({title:'Composition',sub:'an estimate never looks like a measurement here',presentation:{kind:'composition',spec:{weightTrend:S.trend,smoothedWeight:S.averages,bodyFatTrend:S.waistTrend,leanMassEstimate:est,measuredBodyFat:bc.measured}},body:compBody+'<div class="btn-row">'+uiBtn('Log waist / neck / hip','log.open','waist','btn-secondary btn-sm')+uiBtn('Log a body-fat measurement','log.open','bodyfat','btn-ghost btn-sm')+'</div>'});
+  var waist=dailySeries('waist',asOf(),120);
+  out+=uiCard({title:'Circumferences',sub:S.waistTrend.status==='ok'?('waist '+S.waistTrend.direction+' \u00b7 '+fmtSigned(S.waistTrend.perWeek,2)+' in/wk over 4 weeks'):'measure waist weekly, same time, relaxed, at the navel',body:(waist.length>=2?chartLegend([['obs','waist (in)'],['avg','path']])+svgChart({height:150,series:[{type:'line',cls:'avg',pts:waist.map(function(d){return {x:d.x,y:d.value};})},{type:'dots',pts:waist.map(function(d){return {x:d.x,y:d.value};})}],xLabels:xLabelsFor(waist,4),yFmt:function(v){return fmtNum(v,1);},aria:'waist over time'}):'')+['waist','neck','hip','chest','arm','thigh'].map(function(t){var l=latestObs(t);return l?uiRow(OBS_TYPES[t].label,'<strong>'+fmtLength(l.value)+'</strong>',{sub:(l.method||'tape')+' \u00b7 '+clsMark('MEASURED'),rsub:ageLabel(l.date)}):'';}).join('')});
+  var _photoPairs=photoPairs();
+  var _photoRows=_photoModel.photos.length?uiRow('Photo vault',_photoModel.photos.length+' stored locally',{sub:'metadata only in the record · '+_photoModel.privacy}):uiRow('Photo vault','no snapshots yet',{sub:'standardized monthly capture is optional'});
+  if(Array.isArray(_photoPairs)&&_photoPairs.length){_photoRows+=_photoPairs.slice(0,3).map(function(pair){var c=pair.comparability||{};return uiRow(esc(pair.label||'comparison'),pair.days+' days apart',{sub:esc(c.grade||'unknown')+(c.verdict?' · '+esc(c.verdict):'')});}).join('');}
+  out+=uiCard({title:'Progress photos',sub:'visual observation without turning appearance into a measurement',presentation:{kind:'photo',spec:{photos:_photoModel.photos,comparison:_photoPairs,privacy:_photoModel.privacy}},body:_photoRows+'<div class="btn-row">'+uiBtn('Open photo vault','nav.photos',null,'btn-secondary btn-sm')+'</div><div class="prov">Capture conditions are compared; the system does not infer body change from pixels.</div>'});
+  out+=uiFold('body-schedule','Measurement schedule','weight daily \u00b7 waist weekly \u00b7 photos monthly','<div class="lead" style="font-size:13px">Weight: every morning after the bathroom, before food, same scale. Waist: weekly at the navel, relaxed exhale; monthly neck and hip. Photos: monthly, same light and pose. Body-fat methods: DEXA quarterly at most; calipers and BIA are noisy and method-specific, so the record keeps the method with the value and never compares across methods.</div>');
+  try{
+    var bl=[];
+    var bc=bodyComp();
+    if(!bc.estimate||bc.estimate.status!=='ok')
+      bl.push(uiLocked('Body-fat estimate',(bc.estimate&&bc.estimate.need)||['a waist measurement','a neck measurement'],
+        {why:'The circumference equation needs both. It stays a heuristic even then \u2014 it is a population fit, not a measurement of you.',
+         act:'log.type',arg:'waist',actLabel:'Log a waist measurement'}));
+    if(!bc.measured)bl.push(uiLocked('Fat and lean mass split',['one measured body-fat reading (DXA, BodPod or same-operator calipers)'],
+      {why:'Without a measured anchor the split cannot be separated from the estimate\u2019s own error.'}));
+    if(bl.length)out+=uiCard({title:'Not available yet',sub:'what each needs, and why it matters',body:bl.join('')});
+  }catch(e){_q(e,'P2');}
+  try{out+=physiqueCard();}catch(e){_q(e,'P2');}   /* by region: exposure, progress, status */
+  setHTML('bodyZone',out);
+};
+/* ---- PROGRESS ---- */
+var _RANGE='30';
+RENDERERS.progress=function(){
+  var S=getCurrentState();var ph=S.phase;var today=asOf();
+  var days=_RANGE==='phase'?(ph?daysBetween(ph.startDate,today)+1:30):(_RANGE==='all'?365:parseInt(_RANGE,10));
+  var pills=['7','14','30','90','phase','all'].map(function(r){return '<button class="chip sm'+(_RANGE===r?' active':'')+'" data-act="progress.range" data-arg="'+r+'">'+(r==='phase'?'Phase':(r==='all'?'All':r+'D'))+'</button>';}).join('');
+  var out='<div class="range-pills">'+pills+'</div>';
+  // weight
+  var ws=dailySeries('weight',today,days);
+  var roll=rollingMean(ws.map(function(d){return d.value;}),7);
+  var series=[];
+  if(ws.length){series.push({type:'dots',pts:ws.map(function(d){return {x:d.x,y:d.value};})});series.push({type:'line',cls:'avg',pts:ws.map(function(d,i){return {x:d.x,y:roll[i]};})});
+    if(S.trend.status==='ok'){var last=ws[ws.length-1];var x0=last.x-13,x1=last.x;var y1=S.averages.avg7!=null?S.averages.avg7:last.value;series.push({type:'line',cls:'trend',pts:[{x:x0,y:y1-S.trend.slopePerWeek*2},{x:x1,y:y1}]});
+      var f=[S.forecast7,S.forecast14,S.forecast28].filter(function(x){return x.status==='ok';});if(f.length){var band=[{x:x1,lo:y1,hi:y1}].concat(f.map(function(x){return {x:x1+x.horizonDays,lo:x.lo,hi:x.hi};}));series.push({type:'band',uncertaintyType:'forecast',pts:band});series.push({type:'line',cls:'pred',epistemic:'PREDICTIVE',point:f[f.length-1].point,uncertainty:{lo:f[f.length-1].lo,hi:f[f.length-1].hi},pts:[{x:x1,y:y1}].concat(f.map(function(x){return {x:x1+x.horizonDays,y:x.point};}))});}}}
+  var markers=(DB.interventions||[]).filter(function(i){return ws.length&&i.date>=ws[0].date;}).map(function(i){var x=daysBetween(ws[0].date,i.date)+ws[0].x;return {x:x,label:i.variable};});
+  var _weightWidget=renderWidget('body.weightTrend',{height:220,series:series,xLabels:xLabelsFor(ws,5),xMarkers:markers,yFmt:function(v){return fmtNum(unitPref()==='metric'?lbToKg(v):v,0);},yLines:(function(){var t=canonicalGoal().activeTargetLb;return (t&&ws.length&&Math.abs(t-ws[ws.length-1].value)<25)?[{y:t}]:[];})(),aria:'weight over '+days+' days',model:presentationModel({result:{status:'ok',value:ws.length?ws[ws.length-1].value:null,cls:'MEASURED'},quantity:'weight',unit:weightUnit(),seriesSemantics:series.filter(function(x){return x.epistemic;}).map(function(x){return {cls:x.epistemic,pattern:x.epistemic==='PREDICTIVE'?'dotted':'solid'};})})});
+  var _weightChart=_weightWidget.status==='ok'?_weightWidget.html:'<div class="empty">'+esc((_weightWidget.violations||[_weightWidget.status]).join?(_weightWidget.violations||[_weightWidget.status]).join('; '):String(_weightWidget.status))+'</div>';
+  var interp=S.trend.status==='ok'?('Over the last 14 days weight is '+S.trend.direction+' at '+fmtRate(S.trend.slopePerWeek)+' ('+S.trend.confidence+' confidence, noise \u00b1'+fmtWeight(S.trend.residSd)+')'+(S.targetRate?(S.trend.slopePerWeek>=S.targetRate.lo&&S.trend.slopePerWeek<=S.targetRate.hi?', inside the '+fmtRateRange(S.targetRate.lo,S.targetRate.hi)+' band.':(S.trend.slopePerWeek<S.targetRate.lo?', faster than the band.':', slower than the band.')):'.')):'Not enough weigh-ins to state a trend; the dots are observations, not a verdict.';
+  out+=uiCard({title:'Weight',sub:interp,body:chartLegend([['obs','weigh-in'],['avg','7-day mean'],['trend','14-day trend'],['pred','forecast + 80% band']])+_weightChart+(ws.length?'<div class="prov">'+ws.length+' weigh-ins \u00b7 markers = interventions \u00b7 lavender = predicted</div>':'')});
+  // waist + composition
+  var wt=dailySeries('waist',today,days);
+  if(wt.length)out+=uiCard({title:'Waist',sub:S.waistTrend.status==='ok'?('Waist '+S.waistTrend.direction+' '+fmtSigned(S.waistTrend.delta,1)+' in over 4 weeks; '+(S.fatVsOther.status==='ok'?S.fatVsOther.verdict:'the fat-vs-water split needs 14+ days and 2 measurements.')):'two measurements 10+ days apart give a trend',body:svgChart({height:140,series:[{type:'line',cls:'avg',pts:wt.map(function(d){return {x:d.x,y:d.value};})},{type:'dots',pts:wt.map(function(d){return {x:d.x,y:d.value};})}],xLabels:xLabelsFor(wt,4),yFmt:function(v){return fmtNum(v,1);},aria:'waist'})});
+  // intake
+  var cs=dailySeries('calories',today,days);
+  if(cs.length){var target=ph&&ph.calorieTarget;var under=cs.filter(function(d){return target&&d.value<target*0.9;}).length,over=cs.filter(function(d){return target&&d.value>target*1.1;}).length;
+    out+=uiCard({title:'Intake',sub:'Logged on '+cs.length+' of '+days+' days, averaging '+fmtKcal(mean(cs.map(function(d){return d.value;})))+(target?('; within \u00b110% of '+fmtKcal(target)+' on '+(cs.length-under-over)+' days, under on '+under+', over on '+over+'.'):'.')+' Unlogged days are gaps, not zeros.',body:chartLegend([['obs','kcal/day'],['target','target']])+svgChart({height:150,series:[{type:'bars',pts:cs.map(function(d){return {x:d.x,y:d.value,cls:target&&d.value>target*1.1?'under':''};})}],xLabels:xLabelsFor(cs,5),yLines:target?[{y:target}]:[],zeroBase:true,yFmt:function(v){return fmtNum(v,0);},aria:'daily intake',presentation:{contractId:'MacroBar',model:presentationModel({result:{status:'ok',value:cs.length?mean(cs.map(function(d){return d.value;})):null,cls:'MEASURED'},quantity:'intake',unit:'kcal/day'})}})+(S.tdee.status==='ok'&&S.tdee.cls!=='PRIOR'?'<div class="prov">Estimated TDEE '+fmtKcal(S.tdee.value,{estimate:true})+' ('+fmtKcal(S.tdee.lo,{estimate:true,bare:true})+'\u2013'+fmtKcal(S.tdee.hi,{estimate:true,bare:true})+') '+clsMark(S.tdee.cls)+' \u00b7 observed deficit '+(S.energy.status==='ok'?fmtSigned(S.energy.balance,0):'\u2014')+' kcal/day</div>':'')});}
+  // steps + cardio
+  var ss=dailySeries('steps',today,days);
+  if(ss.length)out+=uiCard({title:'Activity',sub:'Steps average '+fmtNum(mean(ss.map(function(d){return d.value;})),0)+' over '+ss.length+' logged days'+(S.steps.baseline?('; 28-day baseline '+fmtNum(S.steps.baseline,0)):'')+(S.steps.compensation?'. '+S.steps.compensation+'.':'.'),body:svgChart({height:130,series:[{type:'bars',pts:ss.map(function(d){return {x:d.x,y:d.value,cls:ph&&ph.stepTarget&&d.value<ph.stepTarget*0.8?'under':''};})}],xLabels:xLabelsFor(ss,5),yLines:ph&&ph.stepTarget?[{y:ph.stepTarget}]:[],zeroBase:true,yFmt:function(v){return fmtNum(v/1000,0)+'k';},aria:'daily steps'})});
+  // strength
+  var st=S.training.strength;
+  if(st.status==='ok'){var top=st.per.filter(function(p){return p.status==='ok';}).slice(0,3);out+=uiCard({title:'Strength',sub:'Overall '+st.overall+' across '+st.tracked+' lifts. '+(st.overall==='declining'?'Falling strength during a cut is the earliest available muscle-retention warning; check recovery before assuming tissue loss.':(st.overall==='improving'?'Rising strength while losing weight is the signature of a well-run cut.':'Stable strength while losing weight means the stimulus is holding tissue.')),body:top.map(function(p){var pts=p.history.map(function(hh,i){return {x:i,y:hh.best.value};});return '<div class="prov" style="margin-top:6px">'+esc(p.exercise)+' \u00b7 e1RM '+fmtNum(p.last.value,0)+' \u00b7 '+p.direction+'</div>'+svgChart({height:70,series:[{type:'line',cls:'avg',pts:pts},{type:'dots',pts:pts,r:2}],yFmt:function(v){return fmtNum(v,0);},aria:p.exercise});}).join('')});}
+  // recovery + appetite
+  var sl=dailySeries('sleep',today,days),hu=dailySeries('hunger',today,days);
+  if(sl.length||hu.length)out+=uiCard({title:'Recovery and appetite',sub:(sl.length?('Sleep averages '+fmtH(mean(sl.map(function(d){return d.value;})))+' vs target '+fmtH(S.recovery.target)+'. '):'')+(hu.length?('Hunger averages '+fmtNum(mean(hu.map(function(d){return d.value;})),1)+'/10. '):'')+(S.recovery.status==='ok'?'Recovery is '+S.recovery.level+'.':''),body:(sl.length?chartLegend([['obs','sleep h'],['target','target']])+svgChart({height:110,series:[{type:'bars',pts:sl.map(function(d){return {x:d.x,y:d.value,cls:d.value<S.recovery.target-0.5?'under':''};})}],xLabels:xLabelsFor(sl,5),yLines:[{y:S.recovery.target}],zeroBase:true,yFmt:function(v){return fmtNum(v,0);},aria:'sleep'}):'')+(hu.length?chartLegend([['obs','hunger /10']])+svgChart({height:90,series:[{type:'line',cls:'avg',pts:hu.map(function(d){return {x:d.x,y:d.value};})},{type:'dots',pts:hu.map(function(d){return {x:d.x,y:d.value};}),r:2}],xLabels:xLabelsFor(hu,5),yFmt:function(v){return fmtNum(v,0);},yMin:0,aria:'hunger'}):'')});
+  // compliance vs outcome (weekly)
+  out+=uiCard({title:'Compliance vs outcome by week',sub:'did the plan happen, and did it work',presentation:{kind:'nutrition',spec:{calories:S.nutrition&&S.nutrition.avg7||null,macros:{protein:S.nutrition&&S.nutrition.protein7||null},adequacy:{weeks:Math.min(12,Math.ceil(days/7))}}},body:renderComplianceTable(days)});
+  // snapshot table
+  var snaps=(DB.snapshots||[]).filter(function(s){return daysBetween(s.date,today)<=days;}).slice(-12).reverse();
+  out+=uiFold('progress-snaps','Daily snapshots',snaps.length+' captured','<div class="table-wrap"><table class="data"><thead><tr><th>date</th><th class="num">avg7</th><th class="num">trend</th><th class="num">kcal</th><th class="num">steps</th><th>decision</th><th>trust</th></tr></thead><tbody>'+(snaps.map(function(s){return '<tr><td>'+shortDate(s.date)+'</td><td class="num">'+(s.avg7!=null?fmtWeight(s.avg7,{bare:true}):'\u2014')+'</td><td class="num">'+(s.trend!=null?fmtRate(s.trend,{bare:true}):'\u2014')+'</td><td class="num">'+(s.calories!=null?fmtNum(s.calories,0):'\u2014')+'</td><td class="num">'+(s.steps!=null?fmtNum(s.steps,0):'\u2014')+'</td><td>'+esc(s.decision||'')+'</td><td>'+esc(s.trust||'')+'</td></tr>';}).join('')||'<tr><td colspan="7" class="muted">no snapshots yet</td></tr>')+'</tbody></table></div>');
+  /* Rather than rendering less, say what is missing and how to supply it. */
+  try{
+    var locks=[];
+    var tr=weightTrend(14);
+    if(tr.status!=='ok')locks.push(uiLocked('Weight trend',tr.need||['more weigh-ins in the last 14 days'],
+      {why:'Every energy figure and the rate check depend on it.',act:'log.type',arg:'weight',actLabel:'Log a weigh-in'}));
+    var td=tdeePersonal();
+    if(td.status!=='ok')locks.push(uiLocked('Your own maintenance estimate',td.need||['intake logged over the same days as weigh-ins'],
+      {why:'Until then a population equation stands in, and it is labelled PRIOR wherever it appears.',act:'nav.missing',actLabel:'See what is missing'}));
+    var fc=null;try{fc=weightForecast(14);}catch(e){}
+    if(fc&&fc.status!=='ok')locks.push(uiLocked('Forecast',fc.need||['an established weight trend'],
+      {why:'A forecast extends the trend; without one there is nothing to extend.'}));
+    if(locks.length)out+=uiCard({title:'Not available yet',sub:'what each needs, and why it matters',body:locks.join('')});
+  }catch(e){_q(e,'P2');}
+  setHTML('progressZone',out);
+};
+function renderComplianceTable(days){
+  var today=asOf();var ph=activePhase()||{};var weeks=Math.min(12,Math.ceil(days/7));var rows=[];
+  for(var w=0;w<weeks;w++){var end=addDays(today,-w*7),start=addDays(end,-6);var cal=dailySeries('calories',end,7),pr=dailySeries('protein',end,7),st=dailySeries('steps',end,7),wt=dailySeries('weight',end,7),sess=sessionsOf({from:start}).filter(function(s){return s.date<=end;}).length;var tr=weightTrend(14,end);
+    rows.push('<tr><td>'+shortDate(start)+'\u2013'+shortDate(end)+'</td><td class="num">'+(cal.length?(ph.calorieTarget?Math.round(100*cal.filter(function(d){return Math.abs(d.value-ph.calorieTarget)/ph.calorieTarget<=0.1;}).length/cal.length)+'%':fmtNum(mean(cal.map(function(d){return d.value;})),0)):'\u2014')+'</td><td class="num">'+(pr.length&&ph.proteinTarget?Math.round(100*pr.filter(function(d){return d.value>=ph.proteinTarget*0.9;}).length/pr.length)+'%':'\u2014')+'</td><td class="num">'+(st.length?fmtNum(mean(st.map(function(d){return d.value;})),0):'\u2014')+'</td><td class="num">'+sess+'</td><td class="num">'+(wt.length>=3?fmtWeight(mean(wt.map(function(d){return d.value;})),{bare:true}):'\u2014')+'</td><td class="num">'+(tr.status==='ok'?fmtRate(tr.slopePerWeek,{bare:true}):'\u2014')+'</td></tr>');}
+  return '<div class="table-wrap"><table class="data"><thead><tr><th>week</th><th class="num">kcal adherence</th><th class="num">protein</th><th class="num">steps</th><th class="num">sessions</th><th class="num">avg wt</th><th class="num">trend</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div><div class="prov">kcal adherence = days within \u00b110% of target among logged days; trend = 14-day trend ending that week</div>';
+}
+/* ---- DIAGNOSE ---- */
+var _SYM=[];
+RENDERERS.diagnose=function(){
+  var d=diagnose();var S=getCurrentState();var out='';
+  out+=uiCard({title:'What is happening',sub:'ranked findings from the current record \u00b7 data trust '+S.trust.overall.level,body:d.findings.map(function(f){return '<div class="diag-hyp"><div class="dh-head"><div class="dh-title">'+esc(f.title)+'</div><div class="dh-lik">'+uiPill(f.likelihood,f.likelihood==='confirmed'?'neutral':(f.likelihood==='probable'?'attention':'inferred'))+' '+uiPill(f.severity)+'</div></div><div class="dh-body">'+esc(f.summary)+(f.evidence&&f.evidence.length?'<br><b>evidence</b> '+f.evidence.map(esc).join('; '):'')+(f.counter&&f.counter.length?'<br><b>against</b> '+f.counter.map(esc).join('; '):'')+(f.missing&&f.missing.length?'<br><b>missing</b> '+f.missing.map(esc).join('; '):'')+(f.causes&&f.causes.length?'<br><b>causes ranked</b> '+f.causes.map(function(c,i){return (i+1)+'. '+esc(c.cause)+' \u2192 '+esc(c.test);}).join(' \u00b7 '):'')+'<br><b>test</b> '+esc(f.test)+'</div></div>';}).join('')});
+  out+=uiCard({title:'Quick diagnosis',sub:'select what you are noticing; hypotheses come from the same record, not from a symptom table',body:'<div class="sym-grid">'+SYMPTOMS.map(function(s){return '<button class="chip'+(_SYM.indexOf(s.id)>=0?' active':'')+'" data-act="diag.sym" data-arg="'+s.id+'" aria-pressed="'+(_SYM.indexOf(s.id)>=0)+'">'+s.label+'</button>';}).join('')+'</div>'+(_SYM.length?'<div class="divider"></div>'+quickDiagnose(_SYM).map(function(q){return '<div class="diag-hyp"><div class="dh-head"><div class="dh-title">'+esc(q.title)+'</div></div><div class="dh-body"><ol style="padding-left:18px">'+q.hypotheses.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol><b>test</b> '+esc(q.test)+'</div></div>';}).join(''):'')});
+  var cps=changePoints();
+  if(cps.items.length)out+=uiCard({title:'What changed, and when',sub:'dated shifts across your streams \u00b7 '+clsMark('DERIVED'),body:cps.items.map(function(it){
+    var att=it.attribution||{};var tone=att.strength==='artifact'?'attention':(att.strength==='supported'?'good':'inferred');
+    return '<div class="diag-hyp"><div class="dh-head"><div class="dh-title">'+esc(it.text)+'</div><div class="dh-lik">'+uiPill(att.strength||'unattributed',tone)+'</div></div><div class="dh-body">'+esc(att.text||'')+(it.candidates&&it.candidates.length>1?'<br><b>other candidates</b> '+it.candidates.slice(1,4).map(function(c){return esc(c.text)+' ('+c.kind+')';}).join('; '):'')+'</div></div>';
+  }).join('')+'<div class="prov">A change point is a question, not a cause. \u201cArtifact\u201d means the measurement changed, not the body.</div>'});
+  var pcs=protocolChanges(90);
+  if(pcs.length)out+=uiFold('diag-protocol','Protocol changes','\u2018'+pcs.length+'\u2019 discontinuities in 90 days',pcs.map(function(pc){return uiRow(esc(pc.text),shortDate(pc.date),{sub:'affects: '+(pc.affects||[]).join(', ')});}).join('')+'<div class="prov">These are breaks in comparability. Models downstream of them are comparing two different measurement regimes.</div>');
+  var pb=personalBaselines();
+  out+=uiFold('diag-baselines','Your own baselines',pb.summary,Object.keys(pb.streams).map(function(k){var b2=pb.streams[k];
+    if(b2.status!=='ok')return uiRow(k,'not established',{sub:b2.need||''});
+    return uiRow(k,b2.metric==='day-to-day swing'?fmtWeight(b2.baseline):fmtNum(b2.baseline,1),{sub:b2.metric+(b2.drift?' \u00b7 last 7 days '+b2.drift+' your usual':'')+' \u00b7 n='+b2.n,rsub:b2.z!=null?('z '+fmtSigned(b2.z,1)):''});}).join('')+'<div class="prov">Normal is defined from your own record, not a population. A change smaller than your own spread is not a change.</div>');
+  out+=uiCard({title:'Where to look next',sub:'uncertainty as a path, not a disclaimer',body:
+    '<div class="btn-row">'+uiBtn('What data is missing','nav.missing',null,'btn-sm btn-secondary')+uiBtn('Data quality','nav.dataQuality',null,'btn-sm btn-secondary')+uiBtn('Timeline','nav.timeline',null,'btn-sm btn-ghost')+uiBtn('Attention','nav.attention',null,'btn-sm btn-ghost')+'</div>'+
+    '<div class="prov">Each opens the affected records directly rather than describing them.</div>'});
+  out+=uiFold('diag-trust','Data trust and anomalies',S.trust.overall.level+' \u00b7 '+S.trust.anomalies.length+' anomalies',renderTrust(S.trust)+(S.trust.anomalies.length?'<div class="divider"></div>'+S.trust.anomalies.map(function(a){return uiRow(a.kind,esc(String(a.detail)),{sub:a.obs&&a.obs.date?shortDate(a.obs.date):''});}).join(''):''));
+  out+=uiFold('diag-lattice','Priority lattice','safety \u203a data \u203a adherence \u203a rate \u203a performance \u203a plateau \u203a nutrition \u203a training \u203a activity','<ol style="padding-left:18px;font-size:13px;line-height:1.7">'+LATTICE.map(function(l){return '<li>'+l+'</li>';}).join('')+'</ol><div class="prov">Higher levels win. A plateau is never addressed while recovery is poor or data is untrustworthy. Hold steady is a legitimate outcome at every level.</div>');
+  setHTML('diagnoseZone',out);
+};
+/* ---- EXPERIMENTS ---- */
+RENDERERS.experiments=function(){
+  var today=asOf();var out='';var act=activeExperiments();var done=(DB.experiments||[]).filter(function(e){return e.status==='complete';}).sort(function(a,b){return a.recheckDate<b.recheckDate?1:-1;});
+  out+='<div class="btn-row" style="margin-top:0">'+uiBtn('New experiment','exp.new',null,'btn-primary')+uiBtn('Apply today\u2019s decision as an experiment','decision.apply',null,'btn-secondary')+'</div>';
+  if(act.length)out+=sectionH('Active',act.length)+act.map(function(e){var el=daysBetween(e.startDate,today),pct=Math.round(100*clamp(el/e.durationDays,0,1));var dry=el>=3?evaluateExperiment(e.id,{dryRun:true,asOf:today}):null;return uiCard({accent:'inferred',title:esc(e.intervention||e.variable)+' \u00b7 day '+el+' of '+e.durationDays,sub:esc(e.question),body:progressBar(pct,'inferred')+kv([['variable',esc(e.variable)+' '+(e.baselineValue!=null?esc(String(e.baselineValue))+' \u2192 ':'')+(e.interventionValue!=null?esc(String(e.interventionValue)):'')],['prediction (stamped '+shortDate(localDateOf(e.createdAt))+')',esc(e.prediction||'\u2014')+(e.predLo!=null?(' \u00b7 '+fmtRateRange(Math.min(e.predLo,e.predHi),Math.max(e.predLo,e.predHi))):'')],['baseline',e.baseline?('trend '+(e.baseline.trend!=null?fmtRate(e.baseline.trend):'\u2014')+' \u00b7 avg7 '+(e.baseline.avg7!=null?fmtWeight(e.baseline.avg7):'\u2014')+' \u00b7 steps '+(e.baseline.steps!=null?fmtNum(e.baseline.steps,0):'\u2014')+' \u00b7 kcal '+(e.baseline.calories!=null?fmtNum(e.baseline.calories,0):'\u2014')):'\u2014'],['recheck',shortDate(e.recheckDate)+(e.recheckDate<=today?' \u00b7 due':'')],['interim read',dry?(esc(dry.summary)+' (not final)'):'too early']])+'<div class="btn-row">'+(e.recheckDate<=today?uiBtn('Evaluate now','exp.evaluate',e.id,'btn-primary btn-sm'):uiBtn('Evaluate early','exp.evaluate',e.id,'btn-secondary btn-sm'))+uiBtn('Abandon','exp.abandon',e.id,'btn-ghost btn-sm')+'</div>'});}).join('');
+  else out+=uiEmpty('No active experiment','An experiment is one variable, one prediction stamped before the outcome, one recheck date. The decision engine creates one when you apply an intervention.','');
+  if(done.length)out+=sectionH('Completed',done.length)+done.map(function(e){var tone=e.conclusion==='supported'?'good':(e.conclusion==='unsupported'?'negative':'neutral');return uiCard({accent:tone,title:esc(e.intervention||e.variable)+' \u00b7 '+uiPill(e.conclusion,tone),sub:shortDate(e.startDate)+' \u2192 '+shortDate(e.recheckDate)+' \u00b7 conf '+e.confidence,body:'<div class="lead" style="font-size:13px">'+esc(e.outcome&&e.outcome.summary||'')+'</div>'+kv([['predicted',esc(e.prediction||'\u2014')],['observed',e.outcome&&e.outcome.observed!=null?(fmtRate(e.outcome.observed)+' change in trend ('+fmtRate(e.outcome.before)+' \u2192 '+fmtRate(e.outcome.after)+')'):'\u2014'],['confounders',(e.confounders||[]).map(esc).join('; ')||'none detected']])});}).join('');
+  var negs=getNegativeKnowledge();
+  out+=uiFold('exp-neg','Negative knowledge',negs.length+' records',negs.length?negs.map(function(n){return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(n.intervention)+'</div><div class="li-meta">'+shortDate(n.date)+' \u00b7 conf '+n.confidence+'</div></div><div class="li-body">Expected: '+esc(n.expected||'\u2014')+'<br>Observed: '+esc(n.observed||'\u2014')+'<br>Possible reasons: '+(n.reasons||[]).map(esc).join(', ')+(n.weightZone?'<br>Applies to: '+esc(n.weightZone):'')+'</div></div>';}).join('')+'<div class="btn-row">'+uiBtn('Record something that did not work','neg.new',null,'btn-secondary btn-sm')+'</div>':'<div class="muted">Nothing recorded as failed yet. Unsupported experiments land here automatically; you can also add one.</div><div class="btn-row">'+uiBtn('Record something that did not work','neg.new',null,'btn-secondary btn-sm')+'</div>',{open:negs.length>0});
+  out+=uiFold('exp-iv','Intervention log',(DB.interventions||[]).length+' changes',(DB.interventions||[]).slice().reverse().map(function(i){return uiRow(esc(i.variable)+' '+(i.from!=null?esc(String(i.from))+' \u2192 ':'')+(i.to!=null?esc(String(i.to)):''),'<strong>'+shortDate(i.date)+'</strong>',{sub:esc(i.expected||''),rsub:i.status+(i.outcome?' \u00b7 '+i.outcome:'')});}).join('')||'<div class="muted">No interventions recorded.</div>');
+  out+=uiFold('exp-dec','Decision history',(DB.decisions||[]).length+' recorded',(DB.decisions||[]).slice().reverse().slice(0,30).map(function(d){return uiRow(esc(d.verb)+' '+uiPill(d.source,d.source==='user'?'neutral':'inferred'),'<strong>'+shortDate(d.date)+'</strong>',{sub:esc(d.lede||'').slice(0,160),rsub:(d.confidence?'conf '+d.confidence:'')+(d.recheckDate?' \u00b7 recheck '+shortDate(d.recheckDate):'')});}).join('')||'<div class="muted">No decisions recorded.</div>');
+  setHTML('experimentsZone',out);
+};
+/* ---- LEARN ---- */
+RENDERERS.learn=function(){
+  var L=learningSummary();var S=getCurrentState();var acc=forecastAccuracy();var out='';
+  var block=function(title,items,tone,empty){return uiCard({accent:tone,title:title,sub:items.length+' items',body:items.length?items.map(function(i){return uiRow(esc(i.text),i.conf?confPill(i.conf):'',{sub:esc(i.prov||'')+(i.need?' \u00b7 needs: '+i.need.map(esc).join(', '):'')});}).join(''):'<div class="muted">'+empty+'</div>'});};
+  /* How much the maintenance estimate still leans on the population prior (H4). */
+  (function(){var PS=priorSensitivity();if(PS.status!=='ok')return;
+    out+=uiCard({title:'How much is still assumed',sub:'the maintenance estimate against its population starting point',body:uiRow('Starting estimate carried in',Math.round(PS.share*100)+'%',{sub:esc(PS.note)})});})();
+  /* PHYSIOLOGY: the models that closed the maturity gaps, each with its result, uncertainty and limits. */
+  try{out+=uiCard({fold:'learn-physiology',title:'Physiology models',sub:'fitness, hydration, energy availability, protein quality, learning, supplements',body:physiologyRows()+'<div class="btn-row">'+uiBtn('Details','physio.open',null,'btn-sm btn-secondary')+'</div>'});}catch(e){_q(e,'P2');}
+  out+=uiCard({title:'Model maturity',sub:'how personalized the energy model is right now',body:uiRow('Energy model',S.tdee.status==='ok'?(S.tdee.maturity+' '+clsMark(S.tdee.cls)):'none',{sub:S.tdee.status==='ok'?(fmtKcal(S.tdee.lo,{estimate:true,bare:true})+'\u2013'+fmtKcal(S.tdee.hi,{estimate:true})+' \u00b7 '+(S.tdee.n||0)+' logged days \u00b7 '+(S.tdee.calibration&&S.tdee.calibration.status==='ok'?((S.tdee.adjusted?'outcome adjustment applied: ':'outcome adjustment available: ')+fmtSigned(-clamp(S.tdee.calibration.bias,-300,300),0)+' kcal from '+S.tdee.calibration.n+' scored 14-day forecasts'):'no outcome adjustment yet (needs 3 scored 14-day forecasts)')):''})+uiRow('Path','PRIOR \u2192 BLENDED \u2192 EMPIRICAL \u2192 CALIBRATED',{sub:'prior weight fades as logged days accumulate (w = n/(n+14)); calibration needs 3+ scored 14-day forecasts'})});
+  out+=block('What we know',L.know,'good','Nothing is established yet. Knowledge here requires measured or empirically fitted evidence at medium confidence or better.');
+  out+=block('What we think',L.think,'inferred','No inferences yet.');
+  out+=block('What we don\u2019t know',L.unknown,'neutral','');
+  out+=block('What failed',L.failed,'negative','No failed interventions recorded. That is not the same as everything working.');
+  out+=block('What worked',L.worked,'good','No supported experiments yet.');
+  out+=uiFold('learn-acc','Forecast accuracy',['weight7','weight14','weight28'].map(function(k){return k.replace('weight','')+'d: '+(acc[k].status==='ok'?fmtWeight(acc[k].mae):'n<3');}).join(' \u00b7 '),'<div class="table-wrap"><table class="data"><thead><tr><th>horizon</th><th class="num">scored</th><th class="num">mean abs error</th><th class="num">bias</th><th class="num">coverage</th><th>verdict</th></tr></thead><tbody>'+['weight7','weight14','weight28'].map(function(k){var a=acc[k];return '<tr><td>'+k.replace('weight','')+' days</td><td class="num">'+a.n+'</td><td class="num">'+(a.status==='ok'?fmtWeight(a.mae):'\u2014')+'</td><td class="num">'+(a.status==='ok'?fmtSigned(a.bias,2):'\u2014')+'</td><td class="num">'+(a.status==='ok'?a.coverage+'% (nominal 80%)':'\u2014')+'</td><td>'+(a.status==='ok'?esc(a.verdict):esc(a.need))+'</td></tr>';}).join('')+'</tbody></table></div><div class="prov">bias = actual \u2212 predicted; positive means the system predicted more loss than happened</div>');
+  out+=uiFold('learn-models','Model library',MODELS.length+' models \u00b7 rules v'+DECISION_RULES_VERSION,renderModelLibrary());
+  var pr=personalResponse();
+  out+=uiCard({title:'What your body has actually done',sub:'effect per unit of change, learned from your own interventions \u00b7 '+clsMark('EMPIRICAL'),body:
+    (pr.rows.length?pr.rows.map(function(r){
+      return uiRow(esc(r.variable),'<strong>'+fmtSigned(r.effect,2)+'</strong> lb/wk per '+esc(r.unit),{sub:'n='+r.n+(r.clean<r.n?(' ('+(r.n-r.clean)+' confounded)'):'')+' \u00b7 confidence '+r.confidence+(r.caution?' \u00b7 '+esc(r.caution):''),rsub:r.spread!=null?('spread \u00b1'+fmtNum(r.spread,2)):''});
+    }).join(''):'<div class="muted">No completed experiment or clean intervention yet, so every effect size in this app is still a population prior. One 14-day single-variable experiment changes that.</div>')+
+    '<div class="prov">'+esc(pr.note)+'</div>'});
+  var cal=calibrationByContext();
+  out+=uiFold('learn-calib','Forecast calibration by context',cal.usable?('calibrated in this context (n='+cal.n+')'):'not enough forecasts in this context',
+    (cal.rows.length?'<div class="table-wrap"><table class="data"><thead><tr><th>context</th><th>n</th><th>bias</th><th>MAE</th><th>in range</th></tr></thead><tbody>'+
+      cal.rows.map(function(r){return '<tr'+(r.current?' style="font-weight:600"':'')+'><td>'+esc(r.context)+(r.current?' \u2190 now':'')+'</td><td>'+r.n+'</td><td>'+fmtSigned(r.bias,2)+'</td><td>'+fmtNum(r.mae,2)+'</td><td>'+(r.hitRate!=null?fmtNum(r.hitRate*100,0)+'%':'\u2014')+'</td></tr>';}).join('')+'</tbody></table></div>':'<div class="muted">No scored forecasts yet.</div>')+
+    '<div class="prov">'+esc(cal.basis)+'. Forecast error is not constant: a bias learned at 250 lb in a cut does not transfer to maintenance at 200 lb, so calibration is kept per context and only applied when at least three forecasts match.</div>');
+  var voi=valueOfInformationFormal();
+  try{out+=loopCard();}catch(e){_q(e,'P2');}   /* the loop that ties the rest together */
+  try{recordResponses();out+=responsesCard();}catch(e){_q(e,'P2');}
+  try{out+=frictionCard();}catch(e){_q(e,'P2');}
+  try{out+=competitionCard();}catch(e){_q(e,'P2');}   /* which forecast to trust */   /* why plan items are missed */   /* what happened because of each change */
+  /* Always drawn: when nothing is worth measuring the section says so, instead of vanishing (and taking every link to it,
+     such as nav.voi, with it). */
+  if(!voi.items.length)out+=uiFold('learn-voi','What is worth measuring next','nothing extra right now','<div class="hint">No measurement you could add would change the next decision much: the decisions are not limited by missing data at the moment.</div>');
+  else out+=uiFold('learn-voi','What is worth measuring next',voi.items[0].ask,
+    voi.items.map(function(i){return uiRow(esc(i.ask),'<strong>'+i.value.toFixed(2)+'</strong>',{sub:esc(i.why)+' \u00b7 cuts '+esc(i.reduces),rsub:'answer in '+i.timeToInfo+'d'});}).join('')+'<div class="prov">'+esc(voi.note)+'</span></div>');
+  setHTML('learnZone',out);
+};
+function renderModelLibrary(){return MODELS.map(function(m){return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(m.name)+' '+clsMark(m.cls)+'</div><div class="li-meta">v'+m.version+'</div></div><div class="li-body"><b>inputs</b> '+m.inputs.map(esc).join(', ')+' \u00b7 <b>min evidence</b> '+m.minN+'<br><b>assumes</b> '+m.assumes.map(esc).join('; ')+'<br><b>fails when</b> '+m.failsWhen.map(esc).join('; ')+'<br><b>output</b> '+esc(m.output)+'</div></div>';}).join('')+'<div class="prov" style="margin-top:8px">Epistemic classes: '+Object.keys(CLASSES).map(function(k){return '<b>'+k+'</b> '+esc(CLASSES[k]);}).join(' \u00b7 ')+'</div>';}
+/* ---- ARCHIVE + REPLAY ---- */
+var _REPLAY_DATE=null,_REPLAY=null;
+RENDERERS.archive=function(){
+  var out='';var today=todayISO();
+  var min=DB.observations.length?DB.observations.map(function(o){return o.date;}).sort()[0]:today;
+  out+=uiCard({title:'Replay mode',sub:'read the app as it was, not a summary of it',body:
+    '<div class="btn-row">'+uiBtn(replayActive()?('Replaying '+shortDate(replayMode().date)):'Replay a past day','replay.pick',null,'btn-sm btn-primary')+
+    uiBtn('Jump to a moment','replay.waypoints',null,'btn-sm btn-secondary')+uiBtn('Then and now','replay.compare',null,'btn-sm btn-secondary')+
+    (replayActive()?uiBtn('Back to today','replay.exit',null,'btn-sm btn-ghost'):'')+'</div>'+
+    '<div class="prov">Replay renders every view as of the chosen day. A banner stays on screen the whole time, because historical output read as current advice is the one serious hazard of looking backwards.</div>'});
+  out+=uiCard({title:'Replay a single day',sub:'what the system knew and would have decided on a past day \u2014 nothing after that day is visible to it',body:'<div class="form-pair"><div class="form-row"><label for="replayDate">Day</label><input id="replayDate" type="date" min="'+min+'" max="'+today+'" value="'+(_REPLAY_DATE||addDays(today,-14))+'"></div><div class="form-row"><label>&nbsp;</label>'+uiBtn('Replay','replay.run',null,'btn-primary')+'</div></div>'+(_REPLAY?renderReplay(_REPLAY):'<div class="muted">Pick a date and replay. The recorded decision from that day, if any, is shown beside the replayed one so drift in the rules is visible.</div>')});
+  var arc=archiveOf().reverse();
+  out+=sectionH('Archive',arc.length)+(arc.length?arc.map(function(a){var r=a.record||{};if(a.kind==='phase'){var s=r.summary||{};return uiCard({title:esc(a.summary),sub:'archived '+shortDate(localDateOf(a.archivedAt))+' \u00b7 rules v'+(r.rulesVersion||'?'),body:kv([['weight',(s.startWeight!=null?fmtWeight(s.startWeight):'\u2014')+' \u2192 '+(s.endWeight!=null?fmtWeight(s.endWeight):'\u2014')],['observed rate',s.observedRate!=null?fmtRate(s.observedRate):'\u2014'],['avg intake / protein',(s.avgIntake!=null?fmtKcal(s.avgIntake):'\u2014')+' / '+(s.avgProtein!=null?fmtG(s.avgProtein,0):'\u2014')],['training',s.trainingSessions+' sessions ('+(s.trainingPerWeek!=null?fmtNum(s.trainingPerWeek,1):'\u2014')+'/wk)'],['experiments',s.experiments+' \u00b7 '+s.supported+' supported \u00b7 '+s.unsupported+' unsupported'],['lessons',(s.lessons||[]).map(esc).join('; ')||'\u2014'],['outcome',esc(s.outcome||'\u2014')],['models',(r.modelVersions||[]).join(', ')]])});}return uiCard({title:'Experiment: '+esc(a.summary),sub:'archived '+shortDate(localDateOf(a.archivedAt)),body:kv([['conclusion',esc(r.conclusion||'')],['summary',esc(r.outcome&&r.outcome.summary||'')]])});}).join(''):uiEmpty('Nothing archived','Ended phases and completed experiments are frozen here with the model versions that produced them.',''));
+  var preds=(DB.predictions||[]).slice().reverse().slice(0,40);
+  out+=uiFold('arch-ledger','Prediction ledger',(DB.predictions||[]).length+' stamped \u00b7 '+(DB.predictions||[]).filter(function(p){return p.status==='scored';}).length+' scored','<div class="table-wrap"><table class="data"><thead><tr><th>made</th><th>subject</th><th>due</th><th class="num">point</th><th class="num">interval</th><th class="num">actual</th><th class="num">error</th><th>status</th></tr></thead><tbody>'+(preds.map(function(p){return '<tr><td>'+shortDate(localDateOf(p.madeAt))+'</td><td>'+esc(p.subject)+'</td><td>'+shortDate(p.dueDate)+'</td><td class="num">'+fmtWeight(p.point,{bare:true})+'</td><td class="num">'+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi,{bare:true})+'</td><td class="num">'+(p.actual!=null?fmtWeight(p.actual,{bare:true}):'\u2014')+'</td><td class="num">'+(p.error!=null?fmtSigned(p.error,2):'\u2014')+'</td><td>'+esc(p.status)+(p.covered===false?' \u00b7 outside':'')+'</td></tr>';}).join('')||'<tr><td colspan="8" class="muted">no predictions yet</td></tr>')+'</tbody></table></div><div class="prov">Predictions are written before outcomes exist and never edited. Expired = no weigh-in within 5 days of the due date.</div>');
+  setHTML('archiveZone',out);
+};
+function renderReplay(R){var recorded=(DB.decisions||[]).filter(function(d){return d.source==='system'&&d.date<=R.date;}).slice(-1)[0];var S=R.state;return '<div class="divider"></div>'+kv([['as of',longDate(R.date)],['weight / avg7',(S.weight.value!=null?fmtWeight(S.weight.value):'\u2014')+' / '+(S.averages.avg7!=null?fmtWeight(S.averages.avg7):'\u2014')],['trend',S.trend.status==='ok'?fmtRate(S.trend.slopePerWeek)+' ('+S.trend.confidence+')':'insufficient'],['TDEE',S.tdee.status==='ok'?fmtKcal(S.tdee.value,{estimate:true})+' '+S.tdee.cls:'\u2014'],['data trust',S.trust.overall.level],['predictions existing then',R.predictionsThen]])+'<div class="divider"></div><div class="card-title" style="font-size:14px">Replayed decision (rules v'+DECISION_RULES_VERSION+')</div><div class="lead" style="font-size:13px"><b>'+esc(R.decision.verb)+'</b> \u2014 '+esc(R.decision.lede)+' '+confPill(R.decision.confidence)+'</div>'+(recorded?'<div class="card-title" style="font-size:14px;margin-top:10px">Recorded at the time ('+shortDate(recorded.date)+', rules v'+(recorded.rulesVersion||'?')+')</div><div class="lead" style="font-size:13px"><b>'+esc(recorded.verb)+'</b> \u2014 '+esc(recorded.lede||'')+'</div>'+(recorded.code!==R.decision.code?'<div class="banner attention" style="margin-top:8px">The replayed decision differs from the recorded one: either the rules changed or observations were added later for that period.</div>':''):'<div class="muted" style="margin-top:8px">No decision was recorded on or before that day.</div>');}
+/* ---- TOOLS ---- */
+var _SELFTEST=null;
+RENDERERS.tools=function(){
+  var s=DB.settings;var out='';
+  var opt=function(list,cur,act){return '<div class="btn-row" style="margin-top:4px">'+list.map(function(l){return uiBtn(l[1],act,l[0],cur===l[0]?'btn-primary btn-sm':'btn-secondary btn-sm');}).join('')+'</div>';};
+  /* Appearance sits above Display: a profile is one decision, the individual switches are eight. */
+  (function(){
+    var ap=appearanceProfiles(),st=appearanceState();
+    var offer=ap.rows.filter(function(r){return r.offerable;});
+    var body=uiRow('Profile','',
+      {sub:opt(offer.map(function(r){return [r.id,r.label];}),st.profile||'',
+        'settings.profile')+
+        '<div class="hint">'+esc(st.profile?
+          (APPEARANCE_PROFILES[st.profile].note||''):
+          'no profile \u2014 settings have been changed individually')+'</div>'});
+    body+=colorsPicker();
+    body+=uiRow('Text','',{sub:uiBtn('Typeface and text options','settings.textCard',null,'btn-sm btn-secondary')+'<div class="hint">In the Text card below.</div>'});
+    body+=uiRow('Edges','',{sub:opt(Object.keys(SHAPE_LANGUAGES).map(function(k){
+      return [k,k.charAt(0).toUpperCase()+k.slice(1)];}),st.shape,'settings.shape')});
+    if(ap.withheld.length)body+='<div class="hint warn">Withheld for failing contrast: '+
+      esc(ap.withheld.join(', '))+'</div>';
+    body+='<div class="btn-row">'+uiBtn('Open Presentation Studio','nav.studio',null,'btn-sm btn-secondary')+'</div>';
+    out+=uiCard({fold:'tools-appearance',title:'Appearance',
+      sub:'every option is contrast-checked before it is offered \u2014 a combination that fails is withheld rather than warned about',
+      body:body});
+  })();
+  /* What this deployment needs, and a check of each layer (deployment repair plan \u00a711, \u00a715). */
+  (function(){var D=deploymentStatus(),L=DB.settings.lastServerCheck;
+    out+=uiCard({fold:'tools-server',title:'External server',sub:(L?(L.code==='OK'?'working':'not working')+' \u00b7 checked '+esc(String(L.at).slice(0,16).replace('T',' ')):'not checked yet'),body:
+      uiRow('Running build',esc((typeof BUILD_ID!=='undefined'?BUILD_ID:'?')),{sub:'compare with version.json on the site: a different build means this device has not updated yet'})+uiRow('This app',esc(D.client)+' site',{sub:esc(D.note)})+uiRow('Server path',esc(D.syncEndpoint||'none'),{sub:D.proxyRequired?'forwarded to the server by the deployment (a rewrite)':''})+
+      uiRow('Needs the server','weather, online food lookups, cloud sync')+'<div class="btn-row">'+uiBtn('Your data sources','sources.open',null,'btn-sm btn-ghost')+'</div>'+
+      (L?renderServerDiagnosis(L):'')+'<div class="btn-row">'+uiBtn('Test external server','diag.server',null,'btn-sm btn-primary')+'</div>'});})();
+  out+=uiCard({fold:'tools-display',title:'Display',sub:(Object.keys(DB.settings.hiddenFolds||{}).length?(Object.keys(DB.settings.hiddenFolds).length+' hidden section'+(Object.keys(DB.settings.hiddenFolds).length===1?'':'s')+' \u00b7 '):'')+'text size, density, contrast and motion apply immediately and persist',body:((DB.settings.photos||[]).length?uiRow('Latest photo on Today',DB.settings.showPhotoOnToday!==false?'on':'off',{sub:'a small icon of your newest progress photo'})+'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Hide it':'Show it','photo.todayToggle',null,'btn-sm btn-secondary')+'</div>':'')+(function(){var h=Object.keys(DB.settings.hiddenFolds||{}).length;return h?uiRow('Hidden sections',String(h),{sub:'finished sections you hid'})+'<div class="btn-row">'+uiBtn('Show all','fold.showAll',null,'btn-sm btn-secondary')+'</div>':'';})()+uiRow('Detail','',{sub:opt([['casual','Casual'],['insightful','Insightful'],['developer','Developer']],detailLevel(),'settings.detail')+'<div class="hint">'+esc(DETAIL_LEVELS[detailLevel()].desc)+'</div>'})+uiRow('Units','',{sub:opt([['imperial','lb / in'],['metric','kg / cm']],s.units,'settings.units')})+uiRow('Text size','',{sub:opt([['XS','XS'],['S','S'],['M','M'],['L','L'],['XL','XL']],s.textScale,'settings.textScale')})+uiRow('Density','',{sub:opt([['compact','Compact'],['cozy','Cozy'],['comfortable','Comfortable']],s.density,'settings.density')})+uiRow('Contrast','',{sub:opt([['normal','Normal'],['high','High']],s.contrast,'settings.contrast')})+uiRow('Motion','',{sub:opt([['auto','System'],['reduced','Reduced']],s.motion,'settings.motion')})+uiRow('Thumb rails','',{sub:opt([['on','Show'],['off','Hide \u2014 charts use the full width']],s.rails||'on','settings.rails')})+'<div data-level="developer">'+uiRow('Show model marks','',{sub:opt([['on','Show'],['off','Hide']],s.showModels===false?'off':'on','settings.showModels')})+'</div>'});
+  /* TEXT: one place for every text choice. There were three — a Typeface row here, a Web fonts row that fetched from
+     Google and only applied after a reload, and a typeface list in the Presentation Studio — and the accessibility faces
+     were named but never loaded. Every face is now bundled and shown in itself, and every change applies at once. */
+  out+=uiCard({fold:'tools-text',id:'textCard',title:'Text',sub:'the typeface and how text is spaced \u2014 changes apply immediately',body:(function(){
+    var cur=canonicalFont(s.font||'system');
+    var faces='<div class="face-list">'+Object.keys(FONT_REGISTRY).map(function(k){var f=FONT_REGISTRY[k];
+      return '<button class="face-btn'+(cur===k?' active':'')+'" data-act="settings.font" data-arg="'+k+'" aria-pressed="'+(cur===k)+'" style="font-family:'+attrEsc(fontFallbackStack(k))+'">'+
+        '<span class="face-name">'+esc(f.label)+'</span><span class="face-sample">The quick brown fox \u00b7 1234567890</span><span class="face-note">'+esc(f.note)+'</span></button>';}).join('')+'</div>';
+    var row=function(k){var o=TEXT_OPTIONS[k];return uiRow(o.label,'',{sub:opt(Object.keys(o.values).map(function(v){return [v,o.values[v].label];}),s[k]||o.def,'settings.'+k)});};
+    return faces+uiRow('Text size','',{sub:opt([['S','Small'],['M','Medium'],['L','Large'],['XL','Extra large']],s.textScale||'M','settings.textScale')})+
+      row('lineSpacing')+row('letterSpacing')+row('textWeight');})()});
+  var lastB=s.lastBackupAt;var est=(typeof _STORAGE_EST!=='undefined'&&_STORAGE_EST)?_STORAGE_EST:null;
+  try{out+=aiToolsCard();}catch(e){_q(e,'P2');}   /* optional; off until the person turns it on */
+  out+=uiCard({fold:'tools-data',accent:lastB?(daysBetween(lastB.slice(0,10),todayISO())>7?'attention':'good'):'attention',title:'Data',sub:'last backup '+(lastB?ageLabel(lastB.slice(0,10)):'never')+' \u00b7 '+DB.observations.filter(function(o){return !o.retracted;}).length+' observations \u00b7 '+DB.sessions.length+' sessions \u00b7 '+DB.foodLogs.length+' food items',body:'<div class="btn-row">'+uiBtn('Save a backup','data.backup',null,'btn-primary')+uiBtn('Restore / import','data.restore',null,'btn-secondary')+'</div><div class="btn-row">'+uiBtn('CSV: weight','data.csv','weight','btn-secondary btn-sm')+uiBtn('CSV: nutrition','data.csv','nutrition','btn-secondary btn-sm')+uiBtn('CSV: activity','data.csv','activity','btn-secondary btn-sm')+uiBtn('CSV: training','data.csv','training','btn-secondary btn-sm')+uiBtn('CSV: measurements','data.csv','measurements','btn-secondary btn-sm')+uiBtn('CSV: predictions','data.csv','predictions','btn-secondary btn-sm')+uiBtn('CSV: decisions','data.csv','decisions','btn-secondary btn-sm')+'</div><div class="btn-row">'+uiBtn('State report (text)','data.report',null,'btn-secondary btn-sm')+uiBtn('Calendar (ICS)','data.ics',null,'btn-secondary btn-sm')+'<span data-level="developer">'+uiBtn('Diagnostics file','data.diagnostics',null,'btn-secondary btn-sm')+'</span>'+'</div><input type="file" id="restoreFile" accept="application/json,.json" class="sr-only" data-act="data.restoreFile" data-ev="change" aria-label="Choose a backup file">'+'<div class="prov" style="margin-top:8px">Storage: '+idbStatus().durable+(est?(' \u00b7 '+fmtNum(est.usage/1048576,1)+' MB used of '+fmtNum(est.quota/1048576,0)+' MB'):'')+' \u00b7 auto-backups kept daily in IndexedDB \u00b7 undo depth '+(typeof _undoStack!=='undefined'?_undoStack.length:0)+'</div>'});
+  out+=uiCard({fold:'tools-demo',hideable:true,title:'Demo and reset',sub:DB.demo&&DB.demo.active?'demo record is active':'no demo data loaded',body:'<div class="btn-row">'+uiBtn('Load demo record','demo.load',null,'btn-secondary')+uiBtn(DB.demo&&DB.demo.active?'Clear demo (empty record)':'Erase everything','demo.reset',null,'btn-danger')+'</div><div class="prov" style="margin-top:6px">Demo: 24-year-old male, 6\u20320\u2033, 270 \u2192 180 lb, ten weeks of a cut with a stall, a step intervention with a stamped and scored prediction, a bad-sleep week, and a program change. Generated deterministically; marked demo throughout.</div>'});
+  out+=uiCard({fold:'tools-selftest',hideable:!!_SELFTEST&&!_SELFTEST.failed,hideLabel:'Hide until the next run',title:'Self-test',sub:_SELFTEST?(_SELFTEST.passed+' passed \u00b7 '+_SELFTEST.failed+' failed \u00b7 '+_SELFTEST.ms+' ms'):'runs the engine against the fixtures, the epistemic rules, the ledger and the UI wiring',body:'<div class="btn-row">'+uiBtn('Run self-test','selftest.run',null,'btn-primary')+uiBtn('Accessibility audit','a11y.audit',null,'btn-secondary')+(_SELFTEST?uiBtn('Clear results','selftest.clear',null,'btn-ghost'):'')+'</div>'+
+    /* The full report only when something failed, or on request: 1,400 passing lines is scroll, not information. */
+    '<div id="selfTestOut">'+(_SELFTEST?(_SELFTEST.failed||_SELFTEST_SHOW_ALL?renderSelfTest(_SELFTEST):'<div class="hint">All '+_SELFTEST.passed+' checks passed. '+uiBtn('Show every check','selftest.showAll',null,'btn-sm btn-ghost')+'</div>'):'')+'</div>'});
+  var sw=(typeof _SW_STATE!=='undefined')?_SW_STATE:'not registered';var errs=getSwallowedErrors();
+  out+=uiFold('tools-diag','System diagnostics',(errs.count?errs.count+' quarantined errors':'no quarantined errors')+' \u00b7 '+idbStatus().state,kv([['app',APP_NAME+' '+APP_VERSION+' \u00b7 schema '+SCHEMA_VERSION+' \u00b7 build '+BUILD_ID],['data','food DB '+FOUNDATION_RELEASE+' \u00b7 compendium 2024 \u00b7 DGA 2025\u20132030 \u00b7 NIH ODS 2024-04'],['storage',idbStatus().state+' \u00b7 queued '+idbStatus().queued+' \u00b7 last error '+esc(idbStatus().lastError||'none')],['saves',DB.ledger.saves+' \u00b7 revision '+DB.revision+' \u00b7 instance '+DB.instance],['service worker',esc(String(sw))],['online',typeof navigator!=='undefined'&&navigator.onLine===false?'no':'yes'],['migrations',(DB.ledger.migrations||[]).map(function(m){return esc(m.step||(m.from+'\u2192'+m.to));}).join('; ')||'none'],['corruption / rejection events',(DB.ledger.corruptions||[]).length+((DB.ledger.corruptions||[]).length?' \u00b7 '+(DB.ledger.corruptions||[]).slice(-1).map(function(c){return esc(c.note||'');})[0]:'')],['quarantined errors',errs.count+(errs.top.length?' \u00b7 '+errs.top.map(function(t){return esc(t.msg)+' \u00d7'+t.n;}).join('; '):'')],['anomalies',detectAnomalies().length],['memo',Object.keys(_MEMO).length+' cached results']])+'<div class="btn-row">'+uiBtn('Copy diagnostics','data.diagnostics',null,'btn-secondary btn-sm')+uiBtn('Reload app','pwa.reload',null,'btn-ghost btn-sm')+'</span></div>');
+  out+=uiFold('tools-food','Food database',_foodManifestState,renderFoodSources());
+  out+=uiFold('tools-models','Model library',MODELS.length+' models',renderModelLibrary());
+  out+=uiFold('tools-ref','Reference knowledge and attribution','DGA \u00b7 PAG \u00b7 FDA DV \u00b7 NIH ODS \u00b7 Compendium 2024 \u00b7 evidence registry',renderReferences());
+  out+=uiFold('tools-shortcuts','Keyboard and gestures','\u2318K \u00b7 \u2318Z \u00b7 / \u00b7 L \u00b7 Esc',kv([['\u2318/Ctrl K','command palette and global search'],['\u2318/Ctrl Z','undo the last change'],['/','search'],['L','quick log'],['Esc','close any sheet'],['1\u20139','switch views']]));
+  /* About moved to its own pop-up (the ⓘ button at the top) */
+  var jobs=jobsSummary();
+  out+=uiCard({fold:'tools-scheduled',hideable:true,title:'Scheduled checks',sub:'this app has no server; these run when you open it',body:
+    jobs.map(function(j){return uiRow(esc(j.label),j.lastRun?ageLabel(j.lastRun.slice(0,10)):'never',{sub:esc(j.lastText||'')+' \u00b7 every '+j.everyDays+'d \u00b7 '+esc(j.why),rsub:j.due?'due':'',tone:j.ok===false?'negative':''});}).join('')+
+    '<div class="btn-row">'+uiBtn('Run all due checks now','jobs.run',null,'btn-secondary btn-sm')+uiBtn('Verify the latest backup','jobs.runOne','backup-verify','btn-ghost btn-sm')+'</div>'});
+  var dev=deviceTestState();var untested=dev.filter(function(t){return t.status==='untested';}).length;
+  out+=uiFold('tools-device','Device test checklist',(dev.length-untested)+' of '+dev.length+' recorded',
+    dev.map(function(t){return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(t.label)+'</div><div class="li-meta">'+uiPill(t.status,t.status==='pass'?'good':(t.status==='fail'?'negative':'neutral'))+'</div></div><div class="li-body">'+esc(t.why)+(t.at?'<br><span class="muted">recorded '+shortDate(localDateOf(t.at))+'</span>':'')+'<div class="btn-row">'+uiBtn('Pass','device.test',t.id+'|pass','btn-sm btn-ghost')+uiBtn('Fail','device.test',t.id+'|fail','btn-sm btn-ghost')+'</div></div></div>';}).join('')+
+    '<div class="prov">A jsdom gate cannot prove any of these. They are the checks that need a physical device, and the record keeps what you found.</div>',
+    {hideable:untested===0,hideLabel:'All recorded \u2014 hide'});   /* hideable only once finished: hiding it earlier would hide work still to do */
+  var dg=dependencyGraph();
+  out+=uiFold('tools-graph','Data dependency graph',dg.nodes.length+' nodes \u00b7 '+dg.edges.length+' edges \u00b7 '+dg.issues.length+' contract issues',
+    (dg.issues.length?'<div class="hint warn">'+dg.issues.map(function(i){return esc(i.kind)+': '+esc(i.subject);}).join('<br>')+'</div>':'<div class="hint good">Every observation type reaches a consumer, every model input resolves, and every model declares its class, assumptions, failure conditions, uncertainty and consumers.</div>')+
+    '<div class="table-wrap"><table class="data"><thead><tr><th>from</th><th>feeds</th></tr></thead><tbody>'+
+    dg.nodes.filter(function(n){return n.kind==='model';}).map(function(n){var outs=dg.edges.filter(function(e){return e.from===n.id;}).map(function(e){return e.to;});return '<tr><td>'+esc(n.label)+' <span class="muted">'+esc(n.cls||'')+'</span></td><td>'+esc(outs.join(', ')||'\u2014')+'</td></tr>';}).join('')+'</tbody></table></div>');
+  var fc=foodCacheStats();var ad2=adapterState();
+  out+=uiFold('tools-food-internals','Food database internals',fc.entries+' shards in memory',
+    uiRow('Shard cache',fc.entries+' entries',{sub:Object.keys(fc.byClass).map(function(k){return k+' '+fc.byClass[k]+'/'+fc.limits[k];}).join(' \u00b7 ')+' \u00b7 least-recently-used eviction keeps memory bounded on a phone'})+
+    uiRow('Manifest',esc(_foodManifestState),{sub:_foodManifest?('database version '+esc(_foodManifest.databaseVersion)):''})+
+    Object.keys(ad2).map(function(k){return uiRow(k.toUpperCase()+' adapter',esc(ad2[k]),{sub:k==='fndds'?'scripts/fndds-build.mjs':(k==='dsld'?'scripts/dsld-build.mjs':'scripts/reference-build.mjs')});}).join(''));
+  var im=interactionMatrix();
+  /* Deferred: this table is 30 KB of DOM that was being built and inserted on every visit to Tools, for a
+     disclosure that is closed by default. */
+  out+=uiFold('tools-matrix','Interaction matrix',im.total+' commands \u00b7 '+im.issues.length+' unreachable',
+    function(){return (
+    (im.issues.length?'<div class="hint warn">'+im.issues.map(function(i){return esc(i.id)+': '+esc(i.kind);}).join('<br>')+'</div>':'<div class="hint good">Every command is reachable through at least one visible surface. A keyboard shortcut is an accelerator, never the only path.</div>')+
+    '<div class="table-wrap"><table class="data"><thead><tr><th>command</th><th>ui</th><th>rail</th><th>\u2318K</th><th>key</th><th>ctx</th></tr></thead><tbody>'+
+    im.rows.map(function(r){var m=function(b2){return b2?'\u2713':'\u2014';};
+      return '<tr><td>'+esc(r.label)+' <span class="muted">'+esc(r.group)+'</span></td><td>'+m(r.surfaces.ui)+'</td><td>'+m(r.surfaces.rail)+'</td><td>'+m(r.surfaces.palette)+'</td><td>'+m(r.surfaces.key)+'</td><td>'+m(r.surfaces.context)+'</td></tr>';}).join('')+
+    '</tbody></table></div><div class="prov">'+esc(im.note)+'</span></div>');});
+  var hh=systemHealth();
+  out+=uiCard({fold:'tools-health',title:'System health',sub:hh.ok?'no critical problems':hh.critical+' critical',body:
+    (hh.issues.length?hh.issues.map(function(i){return uiRow(esc(i.what),uiPill(i.severity,i.severity==='critical'?'negative':(i.severity==='warn'?'attention':'neutral')),{sub:esc(i.why)+' \u00b7 '+esc(i.cando)});}).join(''):uiRow('Storage, schema and error handling','all clear',{sub:'saves are persisting, no record was quarantined, and no errors were handled silently',tone:'good'}))+
+    '<div class="btn-row">'+uiBtn('Details','nav.health',null,'btn-sm btn-ghost')+uiBtn('Export a backup','data.backup',null,'btn-sm btn-secondary')+'</div>'});
+  var sm=storageManager();
+  var _lostNote=(typeof unsavedAtClose==='function'&&unsavedAtClose())?uiBanner('attention','On opening, the last '+unsavedAtClose().missing+' save(s) before the app closed were not found in storage (last claimed revision '+unsavedAtClose().lastClaimed+', recovered '+unsavedAtClose().recovered+').'):'';
+  out+=_lostNote;
+  out+=uiCard({fold:'tools-storage',title:'Storage and integrity',sub:(sm.persistence.ratio!=null?sm.persistence.ratio+'% of writes are incremental':'no writes yet'),body:
+    uiRow('Record size',sm.record?fmtNum(sm.record.bytes/1024,0)+' KB':'\u2014',{sub:'writes touch only the collections a change affects, plus a whole-record checkpoint every '+sm.persistence.checkpointEvery+' saves'})+
+    uiRow('Encrypted backup',_cryptoOk()?'available':'needs a secure context',{sub:'AES-GCM-256 with a PBKDF2-SHA256 key (310,000 iterations). There is no recovery for a lost passphrase.'})+
+    '<div class="btn-row">'+uiBtn('Storage','nav.storage',null,'btn-sm btn-secondary')+uiBtn('Integrity check','storage.integrity',null,'btn-sm btn-secondary')+uiBtn('Encrypted backup','data.backupEncrypted',null,'btn-sm btn-ghost')+'</div>'});
+  var es=eventStats();var st=syncState();
+  out+=uiCard({fold:'tools-events',title:'Event log and sync',sub:fmtNum(es.count,0)+' events \u00b7 '+esc(st.status),body:
+    uiRow('History is a log, not a snapshot','projection reproduces the record',{sub:'every change is recorded as a fact that happened; the document you see is a projection of them, which is what makes merging across tabs and devices well defined'})+
+    uiRow('This device',esc(deviceId()),{sub:st.merges+' merge'+(st.merges===1?'':'s')+' \u00b7 '+st.received+' events received'+(st.conflicts.length?(' \u00b7 '+st.conflicts.length+' concurrent edit'+(st.conflicts.length===1?'':'s')+' to review'):'')})+
+    '<div class="btn-row">'+uiBtn('History integrity','nav.integrity',null,'btn-sm btn-secondary')+uiBtn('Sync and devices','nav.sync',null,'btn-sm btn-secondary')+uiBtn('Encrypted sync','nav.cloud',null,'btn-sm btn-secondary')+uiBtn('Import from another app','nav.import',null,'btn-sm btn-ghost')+'</div>'});
+  var ds=domainSummary();
+  out+=uiCard({fold:'tools-areas',title:'Areas tracked',sub:ds.length+' domains on one loop',body:
+    ds.map(function(d){return uiRow(esc(d.label),esc(String(d.headline||d.status)),{sub:esc(d.status)});}).join('')+
+    '<div class="btn-row">'+uiBtn('What the system tracks','nav.domains',null,'btn-sm btn-secondary')+uiBtn('Record something sore','injury.add',null,'btn-sm btn-ghost')+'</div>'+
+    '<div class="prov">Every area runs the same observation \u2192 state \u2192 finding \u2192 proposal \u2192 knowledge loop, so a new one inherits the epistemic classes, uncertainty, replay and attention queue rather than reimplementing them.</div>'});
+  out+=uiCard({fold:'tools-evidence',title:'Evidence',sub:'what your record can actually support',body:
+    '<div class="btn-row">'+uiBtn('How it connects','nav.graph',null,'btn-sm btn-secondary')+uiBtn('What it can support','nav.causal',null,'btn-sm btn-secondary')+uiBtn('What to test next','nav.experiments2',null,'btn-sm btn-ghost')+'</div>'+
+    '<div class="prov">The strongest grade a personal record can reach is \u201csupported\u201d. Nothing here is randomised, so a repeated, clean, unconfounded response is the most that can honestly be claimed.</div>'});
+  out+=uiCard({fold:'tools-learning',title:'Learning',sub:'what the record has established, and what it cannot answer yet',body:
+    '<div class="btn-row">'+uiBtn('What it knows about you','nav.knowledge',null,'btn-sm btn-secondary')+uiBtn('Episodes','nav.episodes',null,'btn-sm btn-secondary')+uiBtn('Compare plans','nav.scenarios',null,'btn-sm btn-ghost')+uiBtn('Design an experiment','exp.design',null,'btn-sm btn-ghost')+uiBtn('Progress photos','nav.photos',null,'btn-sm btn-ghost')+'</div>'});
+  var lm=layoutMode();
+  out+=uiCard({fold:'tools-layout',title:'Layout',sub:lm.mode+' \u00b7 '+esc(lm.reason),body:
+    '<div class="btn-row">'+['auto','single','split'].map(function(k){
+      return uiBtn(k==='auto'?'Automatic':(k==='single'?'One column':'Two columns'),'ui.layout',k,'btn-sm '+(((DB.settings.layout||'auto')===k)?'btn-primary':'btn-ghost'));}).join('')+'</div>'+
+    '<div class="prov">Two columns need at least 1024px. Below that the mode collapses to one rather than leaving two half-columns with nothing readable in either.</div>'});
+  out+=uiCard({fold:'tools-navigation',title:'Navigation',sub:'the same capabilities the keyboard exposes',body:
+    '<div class="btn-row">'+uiBtn('Timeline','nav.timeline',null,'btn-sm btn-secondary')+uiBtn('Attention','nav.attention',null,'btn-sm btn-secondary')+uiBtn('Saved searches','nav.saved',null,'btn-sm btn-ghost')+uiBtn('Recent','nav.recent',null,'btn-sm btn-ghost')+uiBtn('Keyboard help','ui.keys',null,'btn-sm btn-ghost')+uiBtn('Undo history','ui.undoHistory',null,'btn-sm btn-ghost')+uiBtn(focusMode()?'Exit focus mode':'Focus mode','ui.focus',null,'btn-sm btn-ghost')+'</div>'});
+  setHTML('toolsZone',out);
+  if(typeof applyToolsOrder==='function')applyToolsOrder();   /* External server first by default; any section can be pinned */
+};
+function renderSelfTest(r){return '<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>result</th><th>test</th><th>detail</th></tr></thead><tbody>'+r.results.map(function(t){return '<tr><td>'+(t.ok?'<span class="good">pass</span>':'<span class="negative" style="color:var(--negative)">FAIL</span>')+'</td><td>'+esc(t.name)+'</td><td class="muted">'+esc(t.detail||'')+'</td></tr>';}).join('')+'</tbody></table></div>';}
+/* REF_PROTEIN was cited by the protein suggestion but missing here, so a cited source went unattributed. */
+function renderReferences(){return [REF_DGA,REF_PAG,REF_DV,REF_DRI,REF_PROTEIN,REF_SUPPLEMENTS].map(function(r){return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(r.name)+' '+clsMark('REFERENCE')+'</div><div class="li-meta">'+esc(r.organization||'')+' \u00b7 '+esc(r.published||'')+'</div></div><div class="li-body">'+(r.items?r.items.map(function(i){return '<b>'+esc(i.label)+'</b> '+esc(i.value);}).join(' \u00b7 '):'')+(r.values?Object.keys(r.values).map(function(k){return k+' '+esc(String(r.values[k]));}).join(' \u00b7 '):'')+(r.ingredients?r.ingredients.map(function(i){return '<b>'+esc(i.name)+'</b> ['+esc(i.tier)+'] '+esc(i.efficacy);}).join('<br>'):'')+'</div></div>';}).join('')+'<div class="list-item"><div class="li-head"><div class="li-title">Evidence registry</div><div class="li-meta">'+REF_EVIDENCE.length+' entries</div></div><div class="li-body">'+REF_EVIDENCE.map(function(e){return '<b>'+esc(e.topic)+'</b> '+esc(e.summary)+' <span class="muted">('+esc(e.citation)+(e.verify?' \u00b7 verify before citing':'')+')</span>';}).join('<br>')+'</div></div><div class="list-item"><div class="li-head"><div class="li-title">'+esc(REF_COMPENDIUM_INLINE.source)+'</div><div class="li-meta">'+REF_COMPENDIUM_INLINE.activities.length+' inline \u00b7 1,111 in data/reference</div></div><div class="li-body">'+esc(REF_COMPENDIUM_INLINE.note)+'</div></div>';}
+
+/* ---- COLOURS: pickers, not codes ---- */
+function _themeMini(id){
+  var p=presentationThemePalette(presentationThemeId(id)),acc=DB.settings.accentHue!=null?accentFromHue(DB.settings.accentHue,id):
+    (accentValue(DB.settings.accent||'sage',presentationThemeId(id))||p.text);
+  var half=id==='auto'?'background:linear-gradient(90deg,#0e1113 50%,#f7f7f5 50%)':'background:'+p.bg;
+  return '<span class="theme-mini" style="'+half+'"><span class="theme-mini-card" style="background:'+p.surface+'">'+
+    '<span style="background:'+p.text+'"></span><span style="background:'+p.text+';opacity:.5"></span><i style="background:'+acc+'"></i></span></span>';
+}
+function colorsPicker(){
+  var st=DB.settings,cur=presentationThemeId(st.theme||'dark'),co=st.colorOverrides||{},customOn=st.accentHue!=null;
+  var themes='<div class="theme-grid">'+Object.keys(THEMES).map(function(k){
+    return '<button class="theme-btn'+((st.theme||'dark')===k?' active':'')+'" data-act="colors.theme" data-arg="'+k+'" aria-pressed="'+((st.theme||'dark')===k)+'">'+
+      _themeMini(k)+'<span>'+esc(THEMES[k].label)+'</span></button>';}).join('')+'</div>';
+  var sw='<div class="swatch-row">'+Object.keys(ACCENTS).map(function(k){var v=accentValue(k,cur);
+    var on=!customOn&&(st.accent||'sage')===k;
+    return '<button class="swatch-btn'+(on?' active':'')+'" data-act="colors.accent" data-arg="'+k+'" aria-pressed="'+on+'" aria-label="'+attrEsc(ACCENTS[k].label)+'" title="'+attrEsc(ACCENTS[k].label)+'">'+
+      '<span class="swatch-dot" style="background:'+(v||'transparent')+(v?'':';border:2px dashed var(--text-3)')+'"></span><span class="swatch-label">'+esc(ACCENTS[k].label)+'</span></button>';}).join('')+
+    '<button class="swatch-btn'+(customOn?' active':'')+'" data-act="colors.custom" aria-pressed="'+customOn+'"><span class="swatch-dot" style="background:'+(customOn?accentFromHue(st.accentHue):'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)')+'"></span><span class="swatch-label">Custom</span></button></div>';
+  var hue=customOn?st.accentHue:150;
+  var custom='<label class="fld slider"><span>Custom colour</span><input id="accentHue" class="hue-slider" type="range" min="0" max="360" step="1" value="'+hue+'" data-act="colors.hue" data-ev="input" aria-label="custom accent colour, drag to choose"></label>'+
+    '<div class="hint">Drag to choose any colour. It is adjusted automatically so it always stays easy to read.</div>';
+  var cb=colorBlindFriendly();
+  var toggle='<button class="toggle'+(cb?' on':'')+'" role="switch" aria-checked="'+cb+'" data-act="colors.cb">'+
+    '<span class="toggle-track"><span class="toggle-thumb"></span></span><span>Colour-blind friendly colours</span></button>'+
+    '<div class="hint">Good, caution and warning colours chosen to stay distinct for every common kind of colour blindness.</div>';
+  var th=co.tintHue!=null?co.tintHue:210,ts=co.tintRequested!=null?co.tintRequested:(co.tintStrength||0);
+  var tint='<label class="fld slider"><span>Background colour</span><input class="hue-slider" type="range" min="0" max="360" step="1" value="'+th+'" data-act="colors.tintHue" data-ev="input" aria-label="background tint colour"></label>'+
+    '<label class="fld slider"><span>Background strength '+(co.tintStrength||0)+'%</span><input type="range" min="0" max="20" step="1" value="'+ts+'" data-act="colors.tintStrength" data-ev="input" aria-label="background tint strength"></label>'+
+    (co.tintRequested!=null&&co.tintStrength<co.tintRequested?'<div class="hint">Kept at '+co.tintStrength+'% so text stays easy to read on this theme.</div>':'')+
+    '<div class="btn-row">'+uiBtn('No background tint','colors.noTint',null,'btn-sm btn-ghost')+uiBtn('Reset all colours','colors.reset',null,'btn-sm btn-ghost')+'</div>';
+  var dev='<div class="dev" data-level="developer">accent '+esc(String(document&&getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim())+
+    ' \u00b7 hue '+(customOn?st.accentHue:'\u2014')+' \u00b7 state preset '+esc(co.preset||'standard')+' \u00b7 tint '+esc(String(co.tintHue!=null?co.tintHue:'\u2014'))+'/'+(co.tintStrength||0)+'%</div>';
+  return '<div class="card-title">Theme</div>'+themes+'<div class="card-title" style="margin-top:10px">Accent colour</div>'+sw+custom+
+    '<div class="card-title" style="margin-top:10px">Colour-blind friendly</div>'+toggle+
+    '<div class="card-title" style="margin-top:10px">Background</div>'+tint+dev;
+}

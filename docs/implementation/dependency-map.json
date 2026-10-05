@@ -1,0 +1,1280 @@
+{
+  "generatedAt": "2026-10-05T16:24:54.133Z",
+  "buildId": "de9d967236",
+  "nodes": 95,
+  "edges": 254,
+  "contractDerived": 83,
+  "dependencies": [
+    {
+      "sourceId": "foodReference",
+      "targetId": "recipe",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "foodReference",
+      "targetId": "dailyIntake",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "recipe",
+      "targetId": "dailyIntake",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "dailyIntake",
+      "targetId": "energyBalance",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "dailyIntake",
+      "targetId": "adherence",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "energyBalance",
+      "targetId": "tdee",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee",
+      "targetId": "forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee",
+      "targetId": "calorieTarget",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee",
+      "targetId": "decision",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weightObservation",
+      "targetId": "weightTrend",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weightTrend",
+      "targetId": "tdee",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weightTrend",
+      "targetId": "forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weightTrend",
+      "targetId": "rateBand",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weightTrend",
+      "targetId": "decision",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "forecast",
+      "targetId": "decision",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissueDensity",
+      "targetId": "tdee",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissueDensity",
+      "targetId": "forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissueDensity",
+      "targetId": "counterfactual",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sessionLog",
+      "targetId": "stimulus",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sessionLog",
+      "targetId": "fatigue",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sessionLog",
+      "targetId": "trainingLoad",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sessionLog",
+      "targetId": "strengthTrend",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "stimulus",
+      "targetId": "fatigue",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "stimulus",
+      "targetId": "recoveryCost",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "readiness",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "unifiedRecovery",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "recovery",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "readiness",
+      "targetId": "unifiedRecovery",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "readiness",
+      "targetId": "decision",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "tdee",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "decision",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "tdee_personal",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "muscle_risk",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "decide",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "diagnose",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "adherence",
+      "targetId": "data_trust",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "weight_avg",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "weight_trend",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "tdee_prior",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "rate_band",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "met_energy",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "learning_loop",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "model_competition",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "cardio_fitness_latent",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "physique_regions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight",
+      "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "weight_avg",
+      "targetId": "weight_trend",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_avg",
+      "targetId": "tdee_personal",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_avg",
+      "targetId": "goal_traj",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_avg",
+      "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_avg",
+      "targetId": "body",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_avg",
+      "targetId": "weight_forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "tdee_personal",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "rate_band",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "weight_forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "fat_vs_other",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "change_point",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "goal_traj",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "muscle_risk",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "response_matrix",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "uncertainty_chain",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water_noise",
+      "targetId": "fat_vs_other",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water_noise",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water_noise",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water_noise",
+      "targetId": "body",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water_noise",
+      "targetId": "weight_forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "context",
+      "targetId": "water_noise",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "record.phases",
+      "targetId": "water_noise",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.phases",
+      "targetId": "fat_vs_other",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.phases",
+      "targetId": "rate_band",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.phases",
+      "targetId": "adherence",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.phases",
+      "targetId": "response_matrix",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "carbs",
+      "targetId": "water_noise",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "profile.age",
+      "targetId": "tdee_prior",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "profile.sex",
+      "targetId": "tdee_prior",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "profile.heightIn",
+      "targetId": "tdee_prior",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "profile.heightIn",
+      "targetId": "bodycomp_circ",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "profile.activityBaseline",
+      "targetId": "tdee_prior",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee_prior",
+      "targetId": "tdee_personal",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee_prior",
+      "targetId": "calorieTargetSuggestion",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee_prior",
+      "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "tdee_personal",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "energy_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "adherence",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "uncertainty_chain",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "learning_loop",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "hydration_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "diet_digestibility",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "micronutrient_coverage",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "calories",
+      "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "tdee_personal",
+      "targetId": "energy_balance",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee_personal",
+      "targetId": "calorieTargetSuggestion",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee_personal",
+      "targetId": "learningSummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tdee_personal",
+      "targetId": "uncertainty_chain",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "energy_balance",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "energy_balance",
+      "targetId": "food",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "energy_balance",
+      "targetId": "uncertainty_chain",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "waist",
+      "targetId": "bodycomp_circ",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "waist",
+      "targetId": "fat_vs_other",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "waist",
+      "targetId": "physique_regions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "neck",
+      "targetId": "bodycomp_circ",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hip",
+      "targetId": "bodycomp_circ",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "bodycomp_circ",
+      "targetId": "body",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "bodycomp_circ",
+      "targetId": "data_trust",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "bodycomp_circ",
+      "targetId": "learningSummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "fat_vs_other",
+      "targetId": "body",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "fat_vs_other",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rate_band",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rate_band",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rate_band",
+      "targetId": "muscle_risk",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rate_band",
+      "targetId": "goal_traj",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rate_band",
+      "targetId": "response_matrix",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "canonicalGoal",
+      "targetId": "goal_traj",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "profile.targetDate",
+      "targetId": "goal_traj",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "goal_traj",
+      "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "goal_traj",
+      "targetId": "plan",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_forecast",
+      "targetId": "record.predictions",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_forecast",
+      "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_forecast",
+      "targetId": "forecastAccuracy",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.load",
+      "targetId": "e1rm",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.load",
+      "targetId": "exercise_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.reps",
+      "targetId": "e1rm",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "e1rm",
+      "targetId": "strength_trend",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "e1rm",
+      "targetId": "exercise_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "e1rm",
+      "targetId": "train",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "e1rm",
+      "targetId": "change_point",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.sessions",
+      "targetId": "strength_trend",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.sessions",
+      "targetId": "adherence",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.sessions",
+      "targetId": "personal_baseline",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.sessions",
+      "targetId": "exercise_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "strength_trend",
+      "targetId": "muscle_risk",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "strength_trend",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "strength_trend",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "strength_trend",
+      "targetId": "change_point",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "strength_trend",
+      "targetId": "train",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "recovery",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "adherence",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "recovery_allocation",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleepq",
+      "targetId": "recovery",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "soreness",
+      "targetId": "recovery",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "soreness",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "stress",
+      "targetId": "recovery",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "stress",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "recovery",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "recovery",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "recovery",
+      "targetId": "muscle_risk",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "recovery",
+      "targetId": "todaysTraining",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "appetite",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cravings",
+      "targetId": "appetite",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fullness",
+      "targetId": "appetite",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "difficulty",
+      "targetId": "appetite",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "appetite",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "appetite",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "appetite",
+      "targetId": "learningSummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "protein",
+      "targetId": "muscle_risk",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "protein",
+      "targetId": "adherence",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "protein",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "muscle_risk",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "muscle_risk",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "muscle_risk",
+      "targetId": "body",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "adherence",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "intervention_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "recovery_allocation",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "coverage",
+      "targetId": "data_trust",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "freshness",
+      "targetId": "data_trust",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "change_point",
+      "targetId": "data_trust",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "change_point",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "change_point",
+      "targetId": "attributeChange",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "data_trust",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "data_trust",
+      "targetId": "valueOfInformation",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "data_trust",
+      "targetId": "uncertainty_chain",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.modality",
+      "targetId": "met_energy",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.duration",
+      "targetId": "met_energy",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "met_energy",
+      "targetId": "log",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "met_energy",
+      "targetId": "steps",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "cardio_fitness_latent",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "hydration_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
+      "targetId": "recovery_allocation",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "personal_baseline",
+      "targetId": "recovery",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_baseline",
+      "targetId": "change_point",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_baseline",
+      "targetId": "diagnose",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_baseline",
+      "targetId": "learn",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.observations",
+      "targetId": "measurement_quality",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "measurement_quality",
+      "targetId": "data_trust",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "measurement_quality",
+      "targetId": "weight_trend",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "measurement_quality",
+      "targetId": "log",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "measurement_quality",
+      "targetId": "uncertainty_chain",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.experiments",
+      "targetId": "response_matrix",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "record.interventions",
+      "targetId": "response_matrix",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "response_matrix",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "response_matrix",
+      "targetId": "counterfactual",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "response_matrix",
+      "targetId": "learn",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.sets",
+      "targetId": "exercise_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.rir",
+      "targetId": "exercise_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "exercise_response",
+      "targetId": "train",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "exercise_response",
+      "targetId": "record.sessions",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "uncertainty_chain",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "uncertainty_chain",
+      "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "learning_loop",
+      "targetId": "loopCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "model_competition",
+      "targetId": "competitionForecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "intervention_response",
+      "targetId": "responsesOf",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_response",
+      "targetId": "predictResponse",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_response",
+      "targetId": "evaluateResponse",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "motivation",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "friction",
+      "targetId": "decide",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "friction",
+      "targetId": "rankLevers",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "rhr",
+      "targetId": "cardio_fitness_latent",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio_fitness_latent",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "water",
+      "targetId": "hydration_balance",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hydration_balance",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "supplement",
+      "targetId": "supplement_efficacy",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "supplement",
+      "targetId": "micronutrient_coverage",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "supplement",
+      "targetId": "supplement_adherence",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "supplement_efficacy",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "bodyfat",
+      "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "bodyfat",
+      "targetId": "physique_regions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "energy_availability",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "diet_digestibility",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "recovery_allocation",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "micronutrient_coverage",
+      "targetId": "supplementsCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "supplement_adherence",
+      "targetId": "supplementsCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "physique_regions",
+      "targetId": "physiqueCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "unified_optimiser",
+      "targetId": "optimiserCard",
+      "dependencyType": "model"
+    }
+  ],
+  "note": "Built from the model contracts plus a declared fallback. Regenerated on every run."
+}

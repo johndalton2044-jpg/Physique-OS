@@ -1,0 +1,30 @@
+# Clean-room CI (audit R-004, R-005, R-006): install from the lock, fetch the locked food corpus, build reproducibly,
+# run every gate with real browsers (a skipped gate fails the release), then the release check.
+name: ci
+on: [push, pull_request]
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Browsers for the browser gates
+        run: npx playwright install --with-deps chromium
+      - name: Food corpus from its locked archive
+        env: { FOOD_DATA_URL: '${{ secrets.FOOD_DATA_URL }}' }
+        run: node scripts/food-fetch.mjs --if-missing
+      - name: Reproducible build
+        run: SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) node build.mjs
+      - name: Every gate, recorded against this build
+        env: { PHYSIQUE_FOOD_ARCHIVE: '${{ secrets.FOOD_DATA_URL }}' }
+        run: |
+          rm -f docs/release/gate-results.json
+          for g in build authority layers maturity engine test adversarial audit conformance governance shipped browser visual persistence spine parity adapt integration intelligence external voice direction inputs deploy server connect timezones blackbox ai reproducible perf cloud:e2e yields:gate baseline verify; do
+            node tests/gate-record.mjs $g
+          done
+      - name: Release check (refuses skipped or failed gates)
+        run: node tests/release.mjs --from-results

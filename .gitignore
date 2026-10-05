@@ -1,0 +1,4 @@
+# installed by npm ci
+node_modules/
+# produced by node build.mjs (deploy with output directory dist)
+dist/
