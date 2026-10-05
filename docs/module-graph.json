@@ -3024,6 +3024,7 @@
     "undo"
    ],
    "22-persistence.js": [
+    "mergeRecordCollections",
     "writeCheckpoint",
     "storageManager",
     "storageEstimate",
@@ -4322,6 +4323,7 @@
    ],
    "22-persistence.js": [
     "_dirtyFor",
+    "mergeRecordCollections",
     "persistIncremental",
     "writeCheckpoint",
     "auditAppend",
@@ -4341,7 +4343,9 @@
     "projectEvents",
     "projectAt",
     "replayAgreement",
-    "projectionMatchesRecord"
+    "projectionMatchesRecord",
+    "mergeEvents",
+    "adoptMergedEvents"
    ],
    "26-sync.js": [
     "validateEnvelope",

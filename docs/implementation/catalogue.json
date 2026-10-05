@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "11bbf10590",
+ "build": "de9d967236",
  "models": [
   {
    "id": "adherence",
@@ -2797,6 +2797,7 @@
   "yoga"
  ],
  "events": [
+  "archive.recorded",
   "copilot.authorized",
   "cycle.recorded",
   "decision.recorded",

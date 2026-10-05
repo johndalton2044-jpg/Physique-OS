@@ -61,6 +61,23 @@ function _dirtyFor(label){
   if(LABEL_COLLECTIONS[base])return LABEL_COLLECTIONS[base].slice();
   return PERSIST_COLLECTIONS.slice();   // unknown label: correct, just not cheap
 }
+/* RESTORE → MERGE. The merge listed fourteen collections by hand, so a backup's plans, executions, environment, responses
+   and cycles passed validation, entered the merge and were silently left out. It now walks PERSIST_COLLECTIONS and adds
+   every record the live record does not already hold: by id, and a daily snapshot also by date, since there is one a day. */
+function mergeRecordCollections(incoming){
+  var added=0,byCollection={};
+  PERSIST_COLLECTIONS.forEach(function(k){
+    if(!incoming||!Array.isArray(incoming[k]))return;
+    if(!Array.isArray(DB[k]))DB[k]=[];
+    var have={},n=0;
+    DB[k].forEach(function(x){if(x&&x.id)have[x.id]=1;if(x&&x.date&&k==='snapshots')have['d:'+x.date]=1;});
+    incoming[k].forEach(function(x){
+      if(!x)return;if(x.id&&have[x.id])return;if(k==='snapshots'&&have['d:'+x.date])return;
+      DB[k].push(x);n++;if(x.id)have[x.id]=1;if(k==='snapshots'&&x.date)have['d:'+x.date]=1;});
+    if(n)byCollection[k]=n;added+=n;
+  });
+  return {added:added,byCollection:byCollection};
+}
 function _scalarBlob(){var o={};PERSIST_SCALARS.forEach(function(k){o[k]=DB[k];});return o;}
 /* A fast non-cryptographic digest used only to skip writes whose content did not actually change.
    The tamper-evident chain below uses real SHA-256; this is a change detector, not a security control. */

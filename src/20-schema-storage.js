@@ -96,7 +96,8 @@ function migrate(db){
   // structural backfill for collections a same-version document may lack (partial exports, older minor builds)
   var fresh=emptyDB();
   Object.keys(fresh).forEach(function(k){if(db[k]===undefined)db[k]=fresh[k];});
-  ['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','responses','cycles'].forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
+  /* every persisted collection (PERSIST_COLLECTIONS, 22-persistence.js): a hand list here missed plans, executions and environment */
+  PERSIST_COLLECTIONS.forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
   if(!db.settings||typeof db.settings!=='object')db.settings=fresh.settings;
   Object.keys(fresh.settings).forEach(function(k){if(db.settings[k]===undefined)db.settings[k]=fresh.settings[k];});
   if(!db.profile||typeof db.profile!=='object')db.profile=fresh.profile;
@@ -117,7 +118,7 @@ function validateDB(obj){
   else if(obj.schemaVersion!=null&&obj.schemaVersion>SCHEMA_VERSION)errors.push('Schema version '+obj.schemaVersion+' is newer than this app supports ('+SCHEMA_VERSION+')');
   else if(obj.schemaVersion!=null&&obj.schemaVersion<SCHEMA_MIN_KNOWN)errors.push('Schema version '+obj.schemaVersion+' is older than any migration this app knows; migration unavailable');
   else if(obj.schemaVersion==null&&!_looksLikeV1(obj))errors.push('Document carries no schema version and its shape is not recognized');
-  var lists=['phases','observations','sessions','foodLogs','foods','recipes','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes'];
+  var lists=PERSIST_COLLECTIONS;
   lists.forEach(function(k){if(obj[k]!=null&&!Array.isArray(obj[k]))errors.push(k+' must be a list');else counts[k]=(obj[k]||[]).length;});
   var seen={};var L=function(k){return Array.isArray(obj[k])?obj[k]:[];};
   L('observations').forEach(function(o,i){

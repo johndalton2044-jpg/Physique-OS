@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-05T13:35:36.036Z",
-  "sourceBuildId": "11bbf10590",
-  "releaseId": "446344486966",
+  "generatedAt": "2026-10-05T16:24:54.133Z",
+  "sourceBuildId": "de9d967236",
+  "releaseId": "c440f34a0de1",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -81,7 +81,7 @@
       "jsdom": true,
       "playwright-core": true
     },
-    "browser": "/opt/google/chrome/chrome"
+    "browser": "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
   },
   "registries": {
     "quantities": 38,

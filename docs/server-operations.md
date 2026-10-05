@@ -87,7 +87,7 @@ location / {
 | POST | `/v1/vault/device` | authorise another device (requires an authenticated device) |
 | POST | `/v1/auth/challenge` | request a single-use nonce |
 | POST | `/v1/auth/verify` | exchange a signature for a short-lived token |
-| POST | `/v1/events` | append encrypted events |
+| POST | `/v1/events` | append encrypted events; an id already stored is acknowledged (`duplicates`) and not stored again |
 | GET | `/v1/events?since=` | pull events after a sequence number |
 | POST | `/v1/push/subscribe` | register a Web Push endpoint |
 | POST | `/v1/push/notify` | nudge a vault's other devices |
@@ -126,7 +126,13 @@ Restore into an empty data folder: `node server/server.mjs --restore-from-s3 lat
 `GET /v1/health` reports `status: ok` or `degraded` with reasons (the last backup failed, no verified backup within twice
 the interval, storage not persistent, disk low), so an uptime monitor pointed at it alerts on them. Every response
 carries an `x-request-id` (a caller's own is kept if it is safe), logged with any error; `/v1/metrics` adds errors by
-route, the last 20 failures with their request ids, and the backup state.
+route, the last 20 failures with their request ids, the backup state, and `sync` (events appended, and re-sent events
+acknowledged without a new row).
+
+Event ids are idempotent. Every encryption uses a fresh IV, so a re-sent event arrives as different bytes; the server
+cannot compare contents it cannot read, so the id decides and the first stored copy stands. The ids are indexed in memory
+per vault, bounded by `LEDGER_INDEX_IDS` (default 500000 ids across all vaults); a vault dropped from the index is read
+from its ledger again on its next upload.
 
 Tested against a mock bucket that checks the signature's form and the payload hash (tests/server-ops.mjs), not yet
 against a real provider.

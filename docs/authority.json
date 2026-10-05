@@ -241,6 +241,7 @@
    ],
    "readModel": "archiveOf",
    "events": [
+    "archive.recorded",
     "experiment.evaluated",
     "phase.ended"
    ],
@@ -353,7 +354,7 @@
    ],
    "writers": {
     "adoptMergedEvents": [
-     "24-events.js:465"
+     "24-events.js:483"
     ],
     "action:data.restoreApply": [
      "90-actions.js:649"
@@ -649,7 +650,7 @@
      "50-decision.js:399"
     ],
     "archivePhase": [
-     "50-decision.js:512"
+     "50-decision.js:513"
     ]
    }
   }

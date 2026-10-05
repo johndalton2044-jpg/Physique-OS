@@ -9,7 +9,7 @@ Produced from the running registries on every governance run. Do not edit by han
 | entity contracts | 23 |
 | commands | 537 |
 | sheets | 120 |
-| event types | 46 |
+| event types | 47 |
 | observation types | 34 |
 | exercises | 159 |
 | movement patterns | 28 |
