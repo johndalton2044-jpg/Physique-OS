@@ -1,0 +1,1570 @@
+{
+ "rows": [
+  {
+   "sheet": "log:weight",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:weight",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:weight",
+   "field": "method",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:weight",
+   "field": "note",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:food",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:food",
+   "field": "calories",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:food",
+   "field": "protein",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:food",
+   "field": "carbs",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:food",
+   "field": "fat",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:food",
+   "field": "fiber",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:water",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:water",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:water",
+   "field": "wunit",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:urine",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sweattest",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sweattest",
+   "field": "pre",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sweattest",
+   "field": "post",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sweattest",
+   "field": "drank",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sweattest",
+   "field": "minutes",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sweattest",
+   "field": "modality",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:steps",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:steps",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "modality",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "rpe",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "hr",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "distance",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "grade",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:cardio",
+   "field": "watts",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sleep",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:sleep",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:recovery",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:hunger",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "waist",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "neck",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "hip",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "chest",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "arm",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:waist",
+   "field": "thigh",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:bodyfat",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:bodyfat",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:bodyfat",
+   "field": "method",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:supplement",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:supplement",
+   "field": "creatine",
+   "act": "sheet.suppDose",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "log:supplement",
+   "field": "vitd",
+   "act": "sheet.suppDose",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "log:supplement",
+   "field": "caffeine",
+   "act": "sheet.suppDose",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "log:supplement",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:context",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:context",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:note",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:note",
+   "field": "value",
+   "act": "sheet.field",
+   "type": "textarea",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "name",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "age",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "sex",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "heightFt",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "heightIn",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "startWeight",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "goalWeight",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "targetDate",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "activityBaseline",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "trainingExperience",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "profile",
+   "field": "sleepTargetH",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "type",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "startDate",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "objectiveChoice",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "objective",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "calorieTarget",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "proteinTarget",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "fatFloor",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "fiberTarget",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "stepTarget",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "cardioSessions",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "cardioMinutes",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "trainingSessions",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "program",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "sleepTargetH",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "targetRateLo",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "targetRateHi",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "goalWeight",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "targetDate",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "phase",
+   "field": "successCriteria",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "name",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "durationMin",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "0",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "0",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "0",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "0",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "0",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "1",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "1",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "1",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "1",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "1",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "2",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "2",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "2",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "2",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "2",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "3",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "3",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "3",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "3",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "3",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "4",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "4",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "4",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "4",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "4",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "5",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "5",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "5",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "5",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "5",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "6",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "6",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "6",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "6",
+   "act": "sheet.set",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "6",
+   "act": "sheet.set",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "session",
+   "field": "notes",
+   "act": "sheet.field",
+   "type": "textarea",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "question",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "variable",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "baselineValue",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "interventionValue",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "prediction",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "predLo",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "predHi",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "durationDays",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "experiment",
+   "field": "successCriteria",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "negative",
+   "field": "intervention",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "negative",
+   "field": "variable",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "negative",
+   "field": "expected",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "negative",
+   "field": "observed",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "negative",
+   "field": "reasons",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "negative",
+   "field": "confidence",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "userDecision",
+   "field": "verb",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "userDecision",
+   "field": "note",
+   "act": "sheet.field",
+   "type": "textarea",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "userDecision",
+   "field": "recheckDays",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodAdd",
+   "field": "amount",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodAdd",
+   "field": "unit",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodAdd",
+   "field": "meal",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodAdd",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodEdit",
+   "field": "amount",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodEdit",
+   "field": "unit",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "foodEdit",
+   "field": "meal",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "recipe",
+   "field": "name",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "recipe",
+   "field": "servings",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "recipe",
+   "field": "rcp_q",
+   "act": "recipe.search",
+   "type": "search",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "name",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "basis",
+   "act": "sheet.field",
+   "type": "select",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "kcal",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "protein",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "carbs",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "fat",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "fiber",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "sodium",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "exlibrary",
+   "field": "libSearch",
+   "act": "lib.search",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "voice",
+   "field": "voiceTyped",
+   "act": "voice.typed",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "exports",
+   "field": "expImport",
+   "act": "",
+   "type": "textarea",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "vizstudio",
+   "field": "",
+   "act": "viz.model",
+   "type": "select",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "studioHex",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "stateColor-good",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "stateColor-attention",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "stateColor-negative",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "tintHue",
+   "act": "",
+   "type": "range",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "tintStrength",
+   "act": "",
+   "type": "range",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "studioName",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "studio",
+   "field": "studioImport",
+   "act": "",
+   "type": "textarea",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "ask",
+   "field": "askInput",
+   "act": "ask.field",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "injuryAdd",
+   "field": "since",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "injuryAdd",
+   "field": "note",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "label",
+   "field": "labelName",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "label",
+   "field": "labelText",
+   "act": "",
+   "type": "textarea",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "import",
+   "field": "importFile",
+   "act": "import.file",
+   "type": "file",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "photos",
+   "field": "photoNote",
+   "act": "",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "photos",
+   "field": "camera",
+   "act": "photo.file",
+   "type": "file",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "photos",
+   "field": "library",
+   "act": "photo.file",
+   "type": "file",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "0",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "0",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "0",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "1",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "1",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "1",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "2",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "2",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "workout",
+   "field": "2",
+   "act": "workout.field",
+   "type": "number",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "scan",
+   "field": "scanManual",
+   "act": "scan.typed",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "weather",
+   "field": "wxPlace",
+   "act": "weather.q",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "supplements",
+   "field": "creatine",
+   "act": "supp.dose",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "supplements",
+   "field": "vitd",
+   "act": "supp.dose",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "supplements",
+   "field": "caffeine",
+   "act": "supp.dose",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  },
+  {
+   "sheet": "supplements",
+   "field": "suppQ",
+   "act": "supp.q",
+   "type": "text",
+   "status": "own",
+   "freeText": false
+  }
+ ],
+ "unopened": [
+  "restore",
+  "exercise",
+  "routine",
+  "whyShown",
+  "skillLimiter",
+  "expTemplate",
+  "injuryReview",
+  "obsInspect",
+  "decisionInspect",
+  "aiConsent",
+  "aiProposals"
+ ],
+ "forms": 120
+}

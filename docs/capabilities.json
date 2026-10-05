@@ -1,0 +1,282 @@
+{
+ "levels": [
+  "not implemented",
+  "specified",
+  "implemented",
+  "integrated",
+  "surfaced",
+  "validated",
+  "production-ready"
+ ],
+ "rules": {
+  "validated": "needs independent evidence: a black-box workflow (tests/blackbox.mjs) or a registered release gate that exercises it end to end",
+  "production-ready": "needs validated plus operational evidence (durable storage, monitoring, alerting in production); nothing has it yet"
+ },
+ "capabilities": [
+  {
+   "id": "local-persistence",
+   "label": "Local persistence (IndexedDB, incremental writes)",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "gate": "persistence"
+    }
+   ]
+  },
+  {
+   "id": "backup-restore",
+   "label": "Backup and restore",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-010"
+    }
+   ]
+  },
+  {
+   "id": "data-deletion",
+   "label": "Erase everything",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-009"
+    }
+   ]
+  },
+  {
+   "id": "nutrition-logging",
+   "label": "Food logging with portions",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-002"
+    }
+   ]
+  },
+  {
+   "id": "training-logging",
+   "label": "Training sessions and sets",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-003"
+    }
+   ]
+  },
+  {
+   "id": "correction-retraction",
+   "label": "Corrections and deletions with history",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-005"
+    }
+   ]
+  },
+  {
+   "id": "plan-targets-today",
+   "label": "Phase targets reaching Today",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-001"
+    }
+   ]
+  },
+  {
+   "id": "recovery-advice",
+   "label": "Recovery readings changing today's training advice",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-004"
+    }
+   ]
+  },
+  {
+   "id": "plan-authority",
+   "label": "One plan authority (every plan change through changePlan, one version each)",
+   "maturity": "integrated",
+   "evidence": [
+    {
+     "gate": "authority"
+    }
+   ]
+  },
+  {
+   "id": "temporal-replay",
+   "label": "What was known on a past date",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-011"
+    },
+    {
+     "gate": "engine"
+    }
+   ]
+  },
+  {
+   "id": "encrypted-sync",
+   "label": "Encrypted sync between devices",
+   "maturity": "integrated",
+   "evidence": [
+    {
+     "gate": "cloud:e2e"
+    },
+    {
+     "gate": "server"
+    }
+   ],
+   "note": "needs a persistent disk; production mode refuses to start without one and without off-host backups"
+  },
+  {
+   "id": "server-backups",
+   "label": "Verified off-host server backups, restore and health",
+   "maturity": "integrated",
+   "evidence": [
+    {
+     "gate": "server"
+    }
+   ],
+   "note": "tested against a mock S3 that checks signatures and payload hashes; not yet against a real provider"
+  },
+  {
+   "id": "adaptive-plan",
+   "label": "Adaptive plan",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "adapt"
+    }
+   ]
+  },
+  {
+   "id": "personal-response",
+   "label": "Personal response model",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ]
+  },
+  {
+   "id": "forecasting",
+   "label": "Forecasts that compete for accuracy",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ]
+  },
+  {
+   "id": "unified-optimiser",
+   "label": "Unified optimiser",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ]
+  },
+  {
+   "id": "digital-twin",
+   "label": "State model (the 'digital twin')",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a mathematical state model, not a validated twin"
+  },
+  {
+   "id": "file-import",
+   "label": "Import from Apple Health, Fitbit, Withings and Oura exports and CSV",
+   "maturity": "integrated",
+   "evidence": [
+    {
+     "gate": "integration"
+    }
+   ]
+  },
+  {
+   "id": "wearable-oauth",
+   "label": "Live connections to Fitbit, Withings and Oura",
+   "maturity": "implemented",
+   "evidence": [
+    {
+     "gate": "connect"
+    }
+   ],
+   "note": "tested against simulated providers only, never a real account",
+   "readme": {
+    "must": [
+     "simulated providers"
+    ],
+    "mustNot": [
+     "(Fitbit|Withings|Oura)[^.\\n]{0,80}production[- ]ready",
+     "live connections? (to|with) (Fitbit|Withings|Oura) (are|is) (ready|available|proven)"
+    ]
+   }
+  },
+  {
+   "id": "other-providers",
+   "label": "Garmin, WHOOP, Strava, Polar, Samsung Health, Health Connect, HealthKit",
+   "maturity": "specified",
+   "evidence": [],
+   "readme": {
+    "mustNot": [
+     "(connects?|syncs?) (to|with) (Garmin|WHOOP|Strava|Polar)"
+    ]
+   }
+  },
+  {
+   "id": "ai-providers",
+   "label": "LLM providers (Anthropic, OpenAI, Gemini, local OpenAI-compatible) through the server",
+   "maturity": "integrated",
+   "evidence": [
+    {
+     "gate": "ai"
+    }
+   ],
+   "readme": {
+    "mustNot": [
+     "(powered by|uses) (GPT|OpenAI|Claude|Gemini)",
+     "AI coach"
+    ]
+   },
+   "note": "tested against mock providers that check each protocol; not yet against a real provider. Apple Foundation Models need a native app"
+  },
+  {
+   "id": "ai-proposals",
+   "label": "AI proposals: describe a log entry or a meal, suggest a session, explain the plan",
+   "maturity": "integrated",
+   "evidence": [
+    {
+     "gate": "ai"
+    }
+   ],
+   "note": "off until consent; read-only tools; validated output; nothing is written until the person confirms"
+  },
+  {
+   "id": "ocr",
+   "label": "OCR of labels and photos",
+   "maturity": "not implemented",
+   "evidence": [],
+   "readme": {
+    "must": [
+     "No OCR engine is bundled"
+    ]
+   }
+  },
+  {
+   "id": "body-morphology",
+   "label": "Body shape from photos",
+   "maturity": "not implemented",
+   "evidence": []
+  }
+ ]
+}

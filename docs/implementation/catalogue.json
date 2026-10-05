@@ -1,0 +1,2891 @@
+{
+ "generatedFrom": "the running registries",
+ "build": "11bbf10590",
+ "models": [
+  {
+   "id": "adherence",
+   "cls": "DERIVED",
+   "fn": "adherenceState"
+  },
+  {
+   "id": "appetite",
+   "cls": "HEURISTIC",
+   "fn": "appetiteState"
+  },
+  {
+   "id": "bodycomp_circ",
+   "cls": "HEURISTIC",
+   "fn": "bodyComp"
+  },
+  {
+   "id": "cardio_fitness_latent",
+   "cls": "EMPIRICAL",
+   "fn": "cardioFitnessModel"
+  },
+  {
+   "id": "change_point",
+   "cls": "DERIVED",
+   "fn": "changePoints"
+  },
+  {
+   "id": "data_trust",
+   "cls": "DERIVED",
+   "fn": "dataTrust"
+  },
+  {
+   "id": "diet_digestibility",
+   "cls": "PRIOR",
+   "fn": "dietDigestibility"
+  },
+  {
+   "id": "e1rm",
+   "cls": "DERIVED",
+   "fn": "e1rmFrom"
+  },
+  {
+   "id": "energy_availability",
+   "cls": "DERIVED",
+   "fn": "energyAvailability"
+  },
+  {
+   "id": "energy_balance",
+   "cls": "DERIVED",
+   "fn": "energyBalance"
+  },
+  {
+   "id": "exercise_response",
+   "cls": "EMPIRICAL",
+   "fn": "exerciseResponse"
+  },
+  {
+   "id": "fat_vs_other",
+   "cls": "HEURISTIC",
+   "fn": "fatVsOther"
+  },
+  {
+   "id": "friction",
+   "cls": "EMPIRICAL",
+   "fn": "frictionModel"
+  },
+  {
+   "id": "goal_traj",
+   "cls": "PREDICTIVE",
+   "fn": "goalTrajectory"
+  },
+  {
+   "id": "hydration_balance",
+   "cls": "HEURISTIC",
+   "fn": "hydrationBalance"
+  },
+  {
+   "id": "intervention_response",
+   "cls": "EMPIRICAL",
+   "fn": "evaluateResponse"
+  },
+  {
+   "id": "learning_loop",
+   "cls": "DERIVED",
+   "fn": "learningCycleView"
+  },
+  {
+   "id": "measurement_quality",
+   "cls": "DERIVED",
+   "fn": "measurementQuality"
+  },
+  {
+   "id": "met_energy",
+   "cls": "DERIVED",
+   "fn": "metKcal"
+  },
+  {
+   "id": "micronutrient_coverage",
+   "cls": "DERIVED",
+   "fn": "micronutrientCoverage"
+  },
+  {
+   "id": "model_competition",
+   "cls": "EMPIRICAL",
+   "fn": "evaluateCompetition"
+  },
+  {
+   "id": "muscle_risk",
+   "cls": "HEURISTIC",
+   "fn": "muscleRetentionRisk"
+  },
+  {
+   "id": "personal_baseline",
+   "cls": "EMPIRICAL",
+   "fn": "personalBaselines"
+  },
+  {
+   "id": "personal_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalResponseModel"
+  },
+  {
+   "id": "physique_regions",
+   "cls": "EMPIRICAL",
+   "fn": "physiqueModel"
+  },
+  {
+   "id": "rate_band",
+   "cls": "POLICY",
+   "fn": "rateBand"
+  },
+  {
+   "id": "recovery",
+   "cls": "HEURISTIC",
+   "fn": "recoveryLatentState"
+  },
+  {
+   "id": "recovery_allocation",
+   "cls": "HEURISTIC",
+   "fn": "recoveryAllocation"
+  },
+  {
+   "id": "response_matrix",
+   "cls": "EMPIRICAL",
+   "fn": "personalResponse"
+  },
+  {
+   "id": "strength_trend",
+   "cls": "DERIVED",
+   "fn": "strengthTrend"
+  },
+  {
+   "id": "supplement_adherence",
+   "cls": "DERIVED",
+   "fn": "supplementAdherence"
+  },
+  {
+   "id": "supplement_efficacy",
+   "cls": "EMPIRICAL",
+   "fn": "supplementEfficacy"
+  },
+  {
+   "id": "tdee_personal",
+   "cls": "EMPIRICAL",
+   "fn": "tdeePersonal"
+  },
+  {
+   "id": "tdee_prior",
+   "cls": "PRIOR",
+   "fn": "tdeePrior"
+  },
+  {
+   "id": "uncertainty_chain",
+   "cls": "DERIVED",
+   "fn": "uncertaintyChain"
+  },
+  {
+   "id": "unified_optimiser",
+   "cls": "PREDICTIVE",
+   "fn": "unifiedOptimiser"
+  },
+  {
+   "id": "water_noise",
+   "cls": "HEURISTIC",
+   "fn": "waterNoise"
+  },
+  {
+   "id": "weight_avg",
+   "cls": "DERIVED",
+   "fn": "weightAverages"
+  },
+  {
+   "id": "weight_forecast",
+   "cls": "PREDICTIVE",
+   "fn": "weightForecast"
+  },
+  {
+   "id": "weight_trend",
+   "cls": "DERIVED",
+   "fn": "weightTrend"
+  }
+ ],
+ "capabilities": [
+  {
+   "id": "appearance",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "browserGate",
+   "met": [
+    "implemented",
+    "integrated"
+   ],
+   "grade": null
+  },
+  {
+   "id": "causalIdentification",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "fatigue",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "forecast",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "hydrationContext",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "inferenceGateway",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced",
+    "validated"
+   ],
+   "grade": null
+  },
+  {
+   "id": "maintenance",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "materialization",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced",
+    "validated"
+   ],
+   "grade": null
+  },
+  {
+   "id": "measurementModel",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "missingData",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "motorLearning",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "propensity",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "provenance",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced",
+    "validated"
+   ],
+   "grade": null
+  },
+  {
+   "id": "quantityRegistry",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced",
+    "validated"
+   ],
+   "grade": null
+  },
+  {
+   "id": "readiness",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "recoveryAllocation",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "resistance",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "runIdentity",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced",
+    "validated"
+   ],
+   "grade": null
+  },
+  {
+   "id": "supplementReview",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "unifiedRecovery",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  },
+  {
+   "id": "weightTrend",
+   "met": [
+    "implemented",
+    "integrated",
+    "surfaced"
+   ],
+   "grade": null
+  }
+ ],
+ "entities": [
+  {
+   "entity": "Individual",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Goal",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Constraint",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Phase",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Plan",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Intervention",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Execution",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Observation",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Experiment",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "NegativeKnowledge",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Recipe",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Food",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Prediction",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Snapshot",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Archive",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Source",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "IndividualState",
+   "status": "projection",
+   "horizon": null
+  },
+  {
+   "entity": "InterventionLifecycle",
+   "status": "projection",
+   "horizon": null
+  },
+  {
+   "entity": "Evidence",
+   "status": "reference",
+   "horizon": null
+  },
+  {
+   "entity": "Response",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "LearningCycle",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Decision",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Adaptation",
+   "status": "implemented",
+   "horizon": null
+  }
+ ],
+ "commands": [
+  {
+   "id": "a11y.audit",
+   "level": "developer"
+  },
+  {
+   "id": "adapt.apply",
+   "level": "developer"
+  },
+  {
+   "id": "adapt.dismiss",
+   "level": "developer"
+  },
+  {
+   "id": "ai.allow",
+   "level": "developer"
+  },
+  {
+   "id": "ai.applyLog",
+   "level": "developer"
+  },
+  {
+   "id": "ai.applyMeal",
+   "level": "developer"
+  },
+  {
+   "id": "ai.applyWorkout",
+   "level": "developer"
+  },
+  {
+   "id": "ai.consent",
+   "level": "developer"
+  },
+  {
+   "id": "ai.enable",
+   "level": "developer"
+  },
+  {
+   "id": "ai.log",
+   "level": "developer"
+  },
+  {
+   "id": "ai.meal",
+   "level": "developer"
+  },
+  {
+   "id": "ai.off",
+   "level": "developer"
+  },
+  {
+   "id": "ai.pick",
+   "level": "developer"
+  },
+  {
+   "id": "ai.workout",
+   "level": "developer"
+  },
+  {
+   "id": "ask.field",
+   "level": "developer"
+  },
+  {
+   "id": "ask.run",
+   "level": "developer"
+  },
+  {
+   "id": "attention.dismiss",
+   "level": "developer"
+  },
+  {
+   "id": "attention.go",
+   "level": "developer"
+  },
+  {
+   "id": "attention.show",
+   "level": "developer"
+  },
+  {
+   "id": "attention.snooze",
+   "level": "developer"
+  },
+  {
+   "id": "automation.open",
+   "level": "casual"
+  },
+  {
+   "id": "bm.days",
+   "level": "developer"
+  },
+  {
+   "id": "cloud.addDevice",
+   "level": "casual"
+  },
+  {
+   "id": "cloud.create",
+   "level": "casual"
+  },
+  {
+   "id": "cloud.delete",
+   "level": "casual"
+  },
+  {
+   "id": "cloud.disable",
+   "level": "casual"
+  },
+  {
+   "id": "cloud.push",
+   "level": "casual"
+  },
+  {
+   "id": "cloud.sync",
+   "level": "casual"
+  },
+  {
+   "id": "cloud.unlock",
+   "level": "casual"
+  },
+  {
+   "id": "cmd.pin",
+   "level": "developer"
+  },
+  {
+   "id": "cmdk.backdrop",
+   "level": "casual"
+  },
+  {
+   "id": "cmdk.filter",
+   "level": "casual"
+  },
+  {
+   "id": "cmdk.open",
+   "level": "casual"
+  },
+  {
+   "id": "cmdk.pick",
+   "level": "casual"
+  },
+  {
+   "id": "colors.accent",
+   "level": "developer"
+  },
+  {
+   "id": "colors.cb",
+   "level": "developer"
+  },
+  {
+   "id": "colors.custom",
+   "level": "developer"
+  },
+  {
+   "id": "colors.hue",
+   "level": "developer"
+  },
+  {
+   "id": "colors.noTint",
+   "level": "developer"
+  },
+  {
+   "id": "colors.reset",
+   "level": "developer"
+  },
+  {
+   "id": "colors.theme",
+   "level": "developer"
+  },
+  {
+   "id": "colors.tintHue",
+   "level": "developer"
+  },
+  {
+   "id": "colors.tintStrength",
+   "level": "developer"
+  },
+  {
+   "id": "confirm.cancel",
+   "level": "developer"
+  },
+  {
+   "id": "confirm.ok",
+   "level": "developer"
+  },
+  {
+   "id": "connect.revoke",
+   "level": "developer"
+  },
+  {
+   "id": "connect.start",
+   "level": "developer"
+  },
+  {
+   "id": "connect.sync",
+   "level": "developer"
+  },
+  {
+   "id": "copy.decision",
+   "level": "developer"
+  },
+  {
+   "id": "copy.trace",
+   "level": "developer"
+  },
+  {
+   "id": "dash.delete",
+   "level": "developer"
+  },
+  {
+   "id": "dash.discard",
+   "level": "developer"
+  },
+  {
+   "id": "dash.duplicate",
+   "level": "developer"
+  },
+  {
+   "id": "dash.edit",
+   "level": "developer"
+  },
+  {
+   "id": "dash.op",
+   "level": "developer"
+  },
+  {
+   "id": "dash.save",
+   "level": "developer"
+  },
+  {
+   "id": "dash.use",
+   "level": "developer"
+  },
+  {
+   "id": "data.backup",
+   "level": "developer"
+  },
+  {
+   "id": "data.backupEncrypted",
+   "level": "developer"
+  },
+  {
+   "id": "data.csv",
+   "level": "casual"
+  },
+  {
+   "id": "data.csv.weight",
+   "level": "developer"
+  },
+  {
+   "id": "data.diagnostics",
+   "level": "developer"
+  },
+  {
+   "id": "data.ics",
+   "level": "casual"
+  },
+  {
+   "id": "data.report",
+   "level": "developer"
+  },
+  {
+   "id": "data.restore",
+   "level": "developer"
+  },
+  {
+   "id": "data.restoreApply",
+   "level": "casual"
+  },
+  {
+   "id": "data.restoreEncrypted",
+   "level": "casual"
+  },
+  {
+   "id": "data.restoreFile",
+   "level": "casual"
+  },
+  {
+   "id": "day.jump",
+   "level": "casual"
+  },
+  {
+   "id": "day.lastIntervention",
+   "level": "casual"
+  },
+  {
+   "id": "day.next",
+   "level": "casual"
+  },
+  {
+   "id": "day.nextLogged",
+   "level": "casual"
+  },
+  {
+   "id": "day.phaseStart",
+   "level": "casual"
+  },
+  {
+   "id": "day.pick",
+   "level": "casual"
+  },
+  {
+   "id": "day.prev",
+   "level": "casual"
+  },
+  {
+   "id": "day.prevFood",
+   "level": "casual"
+  },
+  {
+   "id": "day.prevLogged",
+   "level": "casual"
+  },
+  {
+   "id": "day.prevSession",
+   "level": "casual"
+  },
+  {
+   "id": "day.prevWeigh",
+   "level": "casual"
+  },
+  {
+   "id": "day.step",
+   "level": "casual"
+  },
+  {
+   "id": "day.today",
+   "level": "casual"
+  },
+  {
+   "id": "decision.apply",
+   "level": "casual"
+  },
+  {
+   "id": "decision.user",
+   "level": "casual"
+  },
+  {
+   "id": "decision.userSave",
+   "level": "casual"
+  },
+  {
+   "id": "demo.load",
+   "level": "developer"
+  },
+  {
+   "id": "demo.reset",
+   "level": "developer"
+  },
+  {
+   "id": "device.test",
+   "level": "developer"
+  },
+  {
+   "id": "diag.server",
+   "level": "developer"
+  },
+  {
+   "id": "diag.sym",
+   "level": "developer"
+  },
+  {
+   "id": "dictate",
+   "level": "developer"
+  },
+  {
+   "id": "dup.keepBoth",
+   "level": "developer"
+  },
+  {
+   "id": "dup.keepImported",
+   "level": "developer"
+  },
+  {
+   "id": "edit.backdrop",
+   "level": "developer"
+  },
+  {
+   "id": "edit.close",
+   "level": "developer"
+  },
+  {
+   "id": "eq.retire",
+   "level": "developer"
+  },
+  {
+   "id": "events.compact",
+   "level": "casual"
+  },
+  {
+   "id": "events.verify",
+   "level": "casual"
+  },
+  {
+   "id": "exec.skip",
+   "level": "developer"
+  },
+  {
+   "id": "exec.variant",
+   "level": "developer"
+  },
+  {
+   "id": "exp.abandon",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.custom",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.design",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.download",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.evaluate",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.fromTemplate",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.import",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.new",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.save",
+   "level": "insightful"
+  },
+  {
+   "id": "features.go",
+   "level": "developer"
+  },
+  {
+   "id": "features.open",
+   "level": "casual"
+  },
+  {
+   "id": "fold.hide",
+   "level": "developer"
+  },
+  {
+   "id": "fold.showAll",
+   "level": "developer"
+  },
+  {
+   "id": "food.add",
+   "level": "casual"
+  },
+  {
+   "id": "food.again",
+   "level": "casual"
+  },
+  {
+   "id": "food.custom",
+   "level": "casual"
+  },
+  {
+   "id": "food.customSave",
+   "level": "casual"
+  },
+  {
+   "id": "food.day",
+   "level": "casual"
+  },
+  {
+   "id": "food.edit",
+   "level": "casual"
+  },
+  {
+   "id": "food.editSave",
+   "level": "casual"
+  },
+  {
+   "id": "food.fav",
+   "level": "casual"
+  },
+  {
+   "id": "food.logRecipe",
+   "level": "casual"
+  },
+  {
+   "id": "food.manifest",
+   "level": "casual"
+  },
+  {
+   "id": "food.notSame",
+   "level": "casual"
+  },
+  {
+   "id": "food.pick",
+   "level": "casual"
+  },
+  {
+   "id": "food.prefetch",
+   "level": "casual"
+  },
+  {
+   "id": "food.remove",
+   "level": "casual"
+  },
+  {
+   "id": "food.repeatDay",
+   "level": "casual"
+  },
+  {
+   "id": "food.repeatMeal",
+   "level": "casual"
+  },
+  {
+   "id": "food.same",
+   "level": "casual"
+  },
+  {
+   "id": "food.scan",
+   "level": "casual"
+  },
+  {
+   "id": "food.search",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.back",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.clear",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.pick",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.save",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.saveAnother",
+   "level": "casual"
+  },
+  {
+   "id": "foodsheet.search",
+   "level": "casual"
+  },
+  {
+   "id": "gen.apply",
+   "level": "developer"
+  },
+  {
+   "id": "gen.grocery",
+   "level": "developer"
+  },
+  {
+   "id": "gen.meals",
+   "level": "casual"
+  },
+  {
+   "id": "gen.program",
+   "level": "casual"
+  },
+  {
+   "id": "gen.progress",
+   "level": "casual"
+  },
+  {
+   "id": "gen.search",
+   "level": "insightful"
+  },
+  {
+   "id": "import.commit",
+   "level": "developer"
+  },
+  {
+   "id": "import.file",
+   "level": "developer"
+  },
+  {
+   "id": "import.reset",
+   "level": "developer"
+  },
+  {
+   "id": "inf.question",
+   "level": "developer"
+  },
+  {
+   "id": "injury.add",
+   "level": "casual"
+  },
+  {
+   "id": "injury.region",
+   "level": "developer"
+  },
+  {
+   "id": "injury.resolve",
+   "level": "developer"
+  },
+  {
+   "id": "injury.review",
+   "level": "developer"
+  },
+  {
+   "id": "injury.save",
+   "level": "developer"
+  },
+  {
+   "id": "injury.sev",
+   "level": "developer"
+  },
+  {
+   "id": "jobs.run",
+   "level": "developer"
+  },
+  {
+   "id": "jobs.runOne",
+   "level": "developer"
+  },
+  {
+   "id": "jump.go",
+   "level": "developer"
+  },
+  {
+   "id": "label.parse",
+   "level": "casual"
+  },
+  {
+   "id": "label.save",
+   "level": "casual"
+  },
+  {
+   "id": "lib.equip",
+   "level": "developer"
+  },
+  {
+   "id": "lib.group",
+   "level": "developer"
+  },
+  {
+   "id": "lib.level",
+   "level": "developer"
+  },
+  {
+   "id": "lib.search",
+   "level": "developer"
+  },
+  {
+   "id": "log.backdrop",
+   "level": "casual"
+  },
+  {
+   "id": "log.cardio",
+   "level": "casual"
+  },
+  {
+   "id": "log.close",
+   "level": "casual"
+  },
+  {
+   "id": "log.context",
+   "level": "casual"
+  },
+  {
+   "id": "log.day",
+   "level": "casual"
+  },
+  {
+   "id": "log.food",
+   "level": "casual"
+  },
+  {
+   "id": "log.foodDay",
+   "level": "casual"
+  },
+  {
+   "id": "log.group",
+   "level": "casual"
+  },
+  {
+   "id": "log.hidden",
+   "level": "casual"
+  },
+  {
+   "id": "log.hunger",
+   "level": "casual"
+  },
+  {
+   "id": "log.open",
+   "level": "casual"
+  },
+  {
+   "id": "log.q",
+   "level": "casual"
+  },
+  {
+   "id": "log.recovery",
+   "level": "casual"
+  },
+  {
+   "id": "log.save",
+   "level": "casual"
+  },
+  {
+   "id": "log.saveAnyway",
+   "level": "casual"
+  },
+  {
+   "id": "log.session",
+   "level": "casual"
+  },
+  {
+   "id": "log.sleep",
+   "level": "casual"
+  },
+  {
+   "id": "log.steps",
+   "level": "casual"
+  },
+  {
+   "id": "log.type",
+   "level": "casual"
+  },
+  {
+   "id": "log.waist",
+   "level": "casual"
+  },
+  {
+   "id": "log.weight",
+   "level": "casual"
+  },
+  {
+   "id": "mob.cooldownDone",
+   "level": "developer"
+  },
+  {
+   "id": "mob.done",
+   "level": "developer"
+  },
+  {
+   "id": "move.assess",
+   "level": "developer"
+  },
+  {
+   "id": "move.library",
+   "level": "casual"
+  },
+  {
+   "id": "move.log",
+   "level": "developer"
+  },
+  {
+   "id": "move.prepare",
+   "level": "casual"
+  },
+  {
+   "id": "move.progress",
+   "level": "insightful"
+  },
+  {
+   "id": "move.recover",
+   "level": "casual"
+  },
+  {
+   "id": "move.skill",
+   "level": "developer"
+  },
+  {
+   "id": "mv.pick",
+   "level": "developer"
+  },
+  {
+   "id": "nav.archive",
+   "level": "casual"
+  },
+  {
+   "id": "nav.ask",
+   "level": "casual"
+  },
+  {
+   "id": "nav.attention",
+   "level": "casual"
+  },
+  {
+   "id": "nav.back",
+   "level": "casual"
+  },
+  {
+   "id": "nav.body",
+   "level": "casual"
+  },
+  {
+   "id": "nav.bodymap",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.bottom",
+   "level": "casual"
+  },
+  {
+   "id": "nav.causal",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.charts",
+   "level": "casual"
+  },
+  {
+   "id": "nav.cloud",
+   "level": "developer"
+  },
+  {
+   "id": "nav.compare",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.compose",
+   "level": "casual"
+  },
+  {
+   "id": "nav.conditioning",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.dashboard",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.dataQuality",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.day",
+   "level": "casual"
+  },
+  {
+   "id": "nav.deload",
+   "level": "casual"
+  },
+  {
+   "id": "nav.diagnose",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.domains",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.episodes",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.equipment",
+   "level": "developer"
+  },
+  {
+   "id": "nav.exercise",
+   "level": "casual"
+  },
+  {
+   "id": "nav.exlibrary",
+   "level": "casual"
+  },
+  {
+   "id": "nav.experiments",
+   "level": "casual"
+  },
+  {
+   "id": "nav.experiments2",
+   "level": "casual"
+  },
+  {
+   "id": "nav.exports",
+   "level": "developer"
+  },
+  {
+   "id": "nav.food",
+   "level": "casual"
+  },
+  {
+   "id": "nav.forecast",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.forward",
+   "level": "casual"
+  },
+  {
+   "id": "nav.graph",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.health",
+   "level": "developer"
+  },
+  {
+   "id": "nav.home",
+   "level": "casual"
+  },
+  {
+   "id": "nav.hydration",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.import",
+   "level": "developer"
+  },
+  {
+   "id": "nav.inference",
+   "level": "developer"
+  },
+  {
+   "id": "nav.integrity",
+   "level": "developer"
+  },
+  {
+   "id": "nav.internals",
+   "level": "developer"
+  },
+  {
+   "id": "nav.jump",
+   "level": "casual"
+  },
+  {
+   "id": "nav.knowledge",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.label",
+   "level": "casual"
+  },
+  {
+   "id": "nav.learn",
+   "level": "casual"
+  },
+  {
+   "id": "nav.log",
+   "level": "casual"
+  },
+  {
+   "id": "nav.maintenance",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.maturity",
+   "level": "developer"
+  },
+  {
+   "id": "nav.measurement",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.missing",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.mobility",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.motorLearning",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.movement",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.nextTab",
+   "level": "casual"
+  },
+  {
+   "id": "nav.nutritionviz",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.optimise",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.photos",
+   "level": "casual"
+  },
+  {
+   "id": "nav.plan",
+   "level": "casual"
+  },
+  {
+   "id": "nav.planEdit",
+   "level": "casual"
+  },
+  {
+   "id": "nav.prevTab",
+   "level": "casual"
+  },
+  {
+   "id": "nav.program",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.progress",
+   "level": "casual"
+  },
+  {
+   "id": "nav.propagation",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.recent",
+   "level": "casual"
+  },
+  {
+   "id": "nav.recovery2",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.recoveryAllocation",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.recoveryState",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.resistance",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.routine",
+   "level": "casual"
+  },
+  {
+   "id": "nav.saved",
+   "level": "casual"
+  },
+  {
+   "id": "nav.scenarios",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.schedule",
+   "level": "casual"
+  },
+  {
+   "id": "nav.section",
+   "level": "casual"
+  },
+  {
+   "id": "nav.setup",
+   "level": "casual"
+  },
+  {
+   "id": "nav.since",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.storage",
+   "level": "developer"
+  },
+  {
+   "id": "nav.studio",
+   "level": "developer"
+  },
+  {
+   "id": "nav.substitute",
+   "level": "casual"
+  },
+  {
+   "id": "nav.supplements",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.sync",
+   "level": "developer"
+  },
+  {
+   "id": "nav.tab",
+   "level": "casual"
+  },
+  {
+   "id": "nav.timeline",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.today",
+   "level": "casual"
+  },
+  {
+   "id": "nav.tools",
+   "level": "casual"
+  },
+  {
+   "id": "nav.top",
+   "level": "casual"
+  },
+  {
+   "id": "nav.train",
+   "level": "casual"
+  },
+  {
+   "id": "nav.twin",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.vizstudio",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.voi",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.voice",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.weightTrend",
+   "level": "casual"
+  },
+  {
+   "id": "nav.welcome",
+   "level": "casual"
+  },
+  {
+   "id": "nav.whatChanged",
+   "level": "insightful"
+  },
+  {
+   "id": "nav.yields",
+   "level": "casual"
+  },
+  {
+   "id": "nav.yoga",
+   "level": "casual"
+  },
+  {
+   "id": "neg.new",
+   "level": "casual"
+  },
+  {
+   "id": "neg.save",
+   "level": "casual"
+  },
+  {
+   "id": "notif.enable",
+   "level": "developer"
+  },
+  {
+   "id": "nu.days",
+   "level": "developer"
+  },
+  {
+   "id": "obs.correct",
+   "level": "casual"
+  },
+  {
+   "id": "obs.inspect",
+   "level": "casual"
+  },
+  {
+   "id": "obs.inspectDecision",
+   "level": "casual"
+  },
+  {
+   "id": "obs.retract",
+   "level": "casual"
+  },
+  {
+   "id": "opt.apply",
+   "level": "developer"
+  },
+  {
+   "id": "opt.pref",
+   "level": "developer"
+  },
+  {
+   "id": "page.customize",
+   "level": "casual"
+  },
+  {
+   "id": "page.move",
+   "level": "developer"
+  },
+  {
+   "id": "page.reset",
+   "level": "developer"
+  },
+  {
+   "id": "page.toggle",
+   "level": "developer"
+  },
+  {
+   "id": "pattern.accept",
+   "level": "developer"
+  },
+  {
+   "id": "pattern.dismiss",
+   "level": "developer"
+  },
+  {
+   "id": "pg.weeks",
+   "level": "developer"
+  },
+  {
+   "id": "phase.crit",
+   "level": "casual"
+  },
+  {
+   "id": "phase.edit",
+   "level": "casual"
+  },
+  {
+   "id": "phase.end",
+   "level": "casual"
+  },
+  {
+   "id": "phase.save",
+   "level": "casual"
+  },
+  {
+   "id": "phase.start",
+   "level": "casual"
+  },
+  {
+   "id": "phase.suggest",
+   "level": "casual"
+  },
+  {
+   "id": "photo.delete",
+   "level": "casual"
+  },
+  {
+   "id": "photo.file",
+   "level": "casual"
+  },
+  {
+   "id": "photo.light",
+   "level": "casual"
+  },
+  {
+   "id": "photo.pick",
+   "level": "casual"
+  },
+  {
+   "id": "photo.todayToggle",
+   "level": "casual"
+  },
+  {
+   "id": "photo.view",
+   "level": "casual"
+  },
+  {
+   "id": "physio.open",
+   "level": "casual"
+  },
+  {
+   "id": "physique.open",
+   "level": "casual"
+  },
+  {
+   "id": "physique.priority",
+   "level": "developer"
+  },
+  {
+   "id": "plan.adapt",
+   "level": "developer"
+  },
+  {
+   "id": "plan.add",
+   "level": "developer"
+  },
+  {
+   "id": "plan.day",
+   "level": "developer"
+  },
+  {
+   "id": "plan.move",
+   "level": "developer"
+  },
+  {
+   "id": "plan.remove",
+   "level": "developer"
+  },
+  {
+   "id": "plan.reset",
+   "level": "developer"
+  },
+  {
+   "id": "plan.sets",
+   "level": "developer"
+  },
+  {
+   "id": "plan.swap",
+   "level": "developer"
+  },
+  {
+   "id": "plan.whatif",
+   "level": "developer"
+  },
+  {
+   "id": "post.effort",
+   "level": "developer"
+  },
+  {
+   "id": "post.feel",
+   "level": "developer"
+  },
+  {
+   "id": "pred.score",
+   "level": "insightful"
+  },
+  {
+   "id": "profile.diet",
+   "level": "developer"
+  },
+  {
+   "id": "profile.edit",
+   "level": "casual"
+  },
+  {
+   "id": "profile.eq",
+   "level": "developer"
+  },
+  {
+   "id": "profile.save",
+   "level": "developer"
+  },
+  {
+   "id": "program.set",
+   "level": "developer"
+  },
+  {
+   "id": "progress.range",
+   "level": "developer"
+  },
+  {
+   "id": "prompt.cancel",
+   "level": "developer"
+  },
+  {
+   "id": "prompt.ok",
+   "level": "developer"
+  },
+  {
+   "id": "pwa.later",
+   "level": "developer"
+  },
+  {
+   "id": "pwa.reload",
+   "level": "developer"
+  },
+  {
+   "id": "pwa.update",
+   "level": "developer"
+  },
+  {
+   "id": "qa.hide",
+   "level": "developer"
+  },
+  {
+   "id": "qa.repeatMeal",
+   "level": "developer"
+  },
+  {
+   "id": "qa.run",
+   "level": "developer"
+  },
+  {
+   "id": "qa.water",
+   "level": "developer"
+  },
+  {
+   "id": "qa.waterAmt",
+   "level": "developer"
+  },
+  {
+   "id": "recipe.addIng",
+   "level": "casual"
+  },
+  {
+   "id": "recipe.edit",
+   "level": "casual"
+  },
+  {
+   "id": "recipe.save",
+   "level": "casual"
+  },
+  {
+   "id": "recipe.search",
+   "level": "casual"
+  },
+  {
+   "id": "replay",
+   "level": "casual"
+  },
+  {
+   "id": "replay.compare",
+   "level": "insightful"
+  },
+  {
+   "id": "replay.enter",
+   "level": "developer"
+  },
+  {
+   "id": "replay.exit",
+   "level": "insightful"
+  },
+  {
+   "id": "replay.goto",
+   "level": "developer"
+  },
+  {
+   "id": "replay.pick",
+   "level": "insightful"
+  },
+  {
+   "id": "replay.run",
+   "level": "developer"
+  },
+  {
+   "id": "replay.step",
+   "level": "developer"
+  },
+  {
+   "id": "replay.waypoints",
+   "level": "insightful"
+  },
+  {
+   "id": "res.exercise",
+   "level": "developer"
+  },
+  {
+   "id": "responses.open",
+   "level": "developer"
+  },
+  {
+   "id": "rule.enable",
+   "level": "developer"
+  },
+  {
+   "id": "rule.toggle",
+   "level": "developer"
+  },
+  {
+   "id": "saved.remove",
+   "level": "developer"
+  },
+  {
+   "id": "saved.run",
+   "level": "developer"
+  },
+  {
+   "id": "scan.close",
+   "level": "developer"
+  },
+  {
+   "id": "scan.custom",
+   "level": "developer"
+  },
+  {
+   "id": "scan.lookup",
+   "level": "developer"
+  },
+  {
+   "id": "scan.typed",
+   "level": "developer"
+  },
+  {
+   "id": "sched.addDay",
+   "level": "developer"
+  },
+  {
+   "id": "sched.anchor",
+   "level": "developer"
+  },
+  {
+   "id": "sched.avail",
+   "level": "developer"
+  },
+  {
+   "id": "sched.cycleDay",
+   "level": "developer"
+  },
+  {
+   "id": "sched.cycleTrain",
+   "level": "developer"
+  },
+  {
+   "id": "sched.minutes",
+   "level": "developer"
+  },
+  {
+   "id": "sched.mode",
+   "level": "developer"
+  },
+  {
+   "id": "sched.override",
+   "level": "developer"
+  },
+  {
+   "id": "sched.preset",
+   "level": "developer"
+  },
+  {
+   "id": "sched.protect",
+   "level": "developer"
+  },
+  {
+   "id": "sched.removeDay",
+   "level": "developer"
+  },
+  {
+   "id": "sched.rule",
+   "level": "developer"
+  },
+  {
+   "id": "sched.weekday",
+   "level": "developer"
+  },
+  {
+   "id": "search.open",
+   "level": "casual"
+  },
+  {
+   "id": "search.save",
+   "level": "casual"
+  },
+  {
+   "id": "sel.act",
+   "level": "casual"
+  },
+  {
+   "id": "sel.all",
+   "level": "casual"
+  },
+  {
+   "id": "sel.enter",
+   "level": "casual"
+  },
+  {
+   "id": "sel.exit",
+   "level": "casual"
+  },
+  {
+   "id": "sel.export",
+   "level": "developer"
+  },
+  {
+   "id": "sel.toggle",
+   "level": "casual"
+  },
+  {
+   "id": "selftest.clear",
+   "level": "developer"
+  },
+  {
+   "id": "selftest.run",
+   "level": "developer"
+  },
+  {
+   "id": "selftest.showAll",
+   "level": "developer"
+  },
+  {
+   "id": "session.edit",
+   "level": "casual"
+  },
+  {
+   "id": "session.new",
+   "level": "casual"
+  },
+  {
+   "id": "session.retract",
+   "level": "casual"
+  },
+  {
+   "id": "session.save",
+   "level": "casual"
+  },
+  {
+   "id": "settings.accent",
+   "level": "casual"
+  },
+  {
+   "id": "settings.contrast",
+   "level": "casual"
+  },
+  {
+   "id": "settings.density",
+   "level": "casual"
+  },
+  {
+   "id": "settings.detail",
+   "level": "casual"
+  },
+  {
+   "id": "settings.font",
+   "level": "casual"
+  },
+  {
+   "id": "settings.letterSpacing",
+   "level": "casual"
+  },
+  {
+   "id": "settings.lineSpacing",
+   "level": "casual"
+  },
+  {
+   "id": "settings.motion",
+   "level": "casual"
+  },
+  {
+   "id": "settings.profile",
+   "level": "casual"
+  },
+  {
+   "id": "settings.rails",
+   "level": "casual"
+  },
+  {
+   "id": "settings.shape",
+   "level": "casual"
+  },
+  {
+   "id": "settings.showModels",
+   "level": "casual"
+  },
+  {
+   "id": "settings.textCard",
+   "level": "casual"
+  },
+  {
+   "id": "settings.textScale",
+   "level": "casual"
+  },
+  {
+   "id": "settings.textScale.L",
+   "level": "casual"
+  },
+  {
+   "id": "settings.textScale.M",
+   "level": "casual"
+  },
+  {
+   "id": "settings.textWeight",
+   "level": "casual"
+  },
+  {
+   "id": "settings.theme",
+   "level": "casual"
+  },
+  {
+   "id": "settings.units",
+   "level": "casual"
+  },
+  {
+   "id": "settings.units.imperial",
+   "level": "casual"
+  },
+  {
+   "id": "settings.units.metric",
+   "level": "casual"
+  },
+  {
+   "id": "setup.hide",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.ctx",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.field",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.ing",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.ingDel",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.logType",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.scale",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.set",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.setAdd",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.setDel",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.setDup",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.suppDose",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.suppPick",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.suppTiming",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.urine",
+   "level": "developer"
+  },
+  {
+   "id": "sheet.waterQuick",
+   "level": "developer"
+  },
+  {
+   "id": "skill.limiter",
+   "level": "developer"
+  },
+  {
+   "id": "sources.deleteCancel",
+   "level": "developer"
+  },
+  {
+   "id": "sources.deleteConfirm",
+   "level": "developer"
+  },
+  {
+   "id": "sources.deletePreview",
+   "level": "developer"
+  },
+  {
+   "id": "sources.open",
+   "level": "casual"
+  },
+  {
+   "id": "sources.prefer",
+   "level": "developer"
+  },
+  {
+   "id": "storage.checkpoint",
+   "level": "casual"
+  },
+  {
+   "id": "storage.clearFood",
+   "level": "casual"
+  },
+  {
+   "id": "storage.integrity",
+   "level": "developer"
+  },
+  {
+   "id": "stretch.info",
+   "level": "developer"
+  },
+  {
+   "id": "studio.clearAccent",
+   "level": "developer"
+  },
+  {
+   "id": "studio.colorPreset",
+   "level": "developer"
+  },
+  {
+   "id": "studio.customAccent",
+   "level": "developer"
+  },
+  {
+   "id": "studio.delete",
+   "level": "developer"
+  },
+  {
+   "id": "studio.duplicate",
+   "level": "developer"
+  },
+  {
+   "id": "studio.export",
+   "level": "developer"
+  },
+  {
+   "id": "studio.import",
+   "level": "developer"
+  },
+  {
+   "id": "studio.load",
+   "level": "developer"
+  },
+  {
+   "id": "studio.reset",
+   "level": "developer"
+  },
+  {
+   "id": "studio.resetColors",
+   "level": "developer"
+  },
+  {
+   "id": "studio.save",
+   "level": "developer"
+  },
+  {
+   "id": "studio.stateColors",
+   "level": "developer"
+  },
+  {
+   "id": "studio.tint",
+   "level": "developer"
+  },
+  {
+   "id": "sub.for",
+   "level": "developer"
+  },
+  {
+   "id": "supp.add",
+   "level": "developer"
+  },
+  {
+   "id": "supp.customField",
+   "level": "developer"
+  },
+  {
+   "id": "supp.customOpen",
+   "level": "developer"
+  },
+  {
+   "id": "supp.customSave",
+   "level": "developer"
+  },
+  {
+   "id": "supp.dose",
+   "level": "developer"
+  },
+  {
+   "id": "supp.logStack",
+   "level": "developer"
+  },
+  {
+   "id": "supp.open",
+   "level": "casual"
+  },
+  {
+   "id": "supp.q",
+   "level": "developer"
+  },
+  {
+   "id": "supp.remove",
+   "level": "developer"
+  },
+  {
+   "id": "supp.timing",
+   "level": "developer"
+  },
+  {
+   "id": "supp.toggle",
+   "level": "developer"
+  },
+  {
+   "id": "supp.when",
+   "level": "developer"
+  },
+  {
+   "id": "sync.export",
+   "level": "casual"
+  },
+  {
+   "id": "sync.import",
+   "level": "casual"
+  },
+  {
+   "id": "sync.push",
+   "level": "casual"
+  },
+  {
+   "id": "timeline.filter",
+   "level": "developer"
+  },
+  {
+   "id": "timer.cardioMinutes",
+   "level": "developer"
+  },
+  {
+   "id": "timer.setSeconds",
+   "level": "developer"
+  },
+  {
+   "id": "timer.start",
+   "level": "developer"
+  },
+  {
+   "id": "timer.stop",
+   "level": "developer"
+  },
+  {
+   "id": "tools.pin",
+   "level": "developer"
+  },
+  {
+   "id": "tpl.delete",
+   "level": "developer"
+  },
+  {
+   "id": "tpl.run",
+   "level": "developer"
+  },
+  {
+   "id": "tpl.saveMeal",
+   "level": "developer"
+  },
+  {
+   "id": "trace.open",
+   "level": "developer"
+  },
+  {
+   "id": "train.sub",
+   "level": "developer"
+  },
+  {
+   "id": "ui.contextMenu",
+   "level": "casual"
+  },
+  {
+   "id": "ui.focus",
+   "level": "casual"
+  },
+  {
+   "id": "ui.fold",
+   "level": "casual"
+  },
+  {
+   "id": "ui.keys",
+   "level": "casual"
+  },
+  {
+   "id": "ui.layout",
+   "level": "developer"
+  },
+  {
+   "id": "ui.openAbout",
+   "level": "casual"
+  },
+  {
+   "id": "ui.skipToMain",
+   "level": "casual"
+  },
+  {
+   "id": "ui.step",
+   "level": "casual"
+  },
+  {
+   "id": "ui.undoHistory",
+   "level": "casual"
+  },
+  {
+   "id": "undo",
+   "level": "casual"
+  },
+  {
+   "id": "undo.at",
+   "level": "casual"
+  },
+  {
+   "id": "undo.last",
+   "level": "casual"
+  },
+  {
+   "id": "viz.model",
+   "level": "developer"
+  },
+  {
+   "id": "viz.png",
+   "level": "developer"
+  },
+  {
+   "id": "viz.save",
+   "level": "developer"
+  },
+  {
+   "id": "viz.svg",
+   "level": "developer"
+  },
+  {
+   "id": "viz.type",
+   "level": "developer"
+  },
+  {
+   "id": "voice.apply",
+   "level": "casual"
+  },
+  {
+   "id": "voice.discard",
+   "level": "casual"
+  },
+  {
+   "id": "voice.parseTyped",
+   "level": "casual"
+  },
+  {
+   "id": "voice.start",
+   "level": "casual"
+  },
+  {
+   "id": "voice.typed",
+   "level": "casual"
+  },
+  {
+   "id": "weather.auto",
+   "level": "developer"
+  },
+  {
+   "id": "weather.expand",
+   "level": "developer"
+  },
+  {
+   "id": "weather.history",
+   "level": "developer"
+  },
+  {
+   "id": "weather.open",
+   "level": "casual"
+  },
+  {
+   "id": "weather.pick",
+   "level": "developer"
+  },
+  {
+   "id": "weather.q",
+   "level": "developer"
+  },
+  {
+   "id": "weather.refresh",
+   "level": "developer"
+  },
+  {
+   "id": "weather.search",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.back",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.demo",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.detail",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.field",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.finish",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.next",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.set",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.skip",
+   "level": "developer"
+  },
+  {
+   "id": "welcome.toggle",
+   "level": "developer"
+  },
+  {
+   "id": "why.shown",
+   "level": "developer"
+  },
+  {
+   "id": "workout.addSet",
+   "level": "developer"
+  },
+  {
+   "id": "workout.field",
+   "level": "developer"
+  },
+  {
+   "id": "workout.finish",
+   "level": "developer"
+  },
+  {
+   "id": "workout.goto",
+   "level": "developer"
+  },
+  {
+   "id": "workout.restAdd",
+   "level": "developer"
+  },
+  {
+   "id": "workout.restSkip",
+   "level": "developer"
+  },
+  {
+   "id": "workout.resume",
+   "level": "developer"
+  },
+  {
+   "id": "workout.setDone",
+   "level": "developer"
+  },
+  {
+   "id": "workout.start",
+   "level": "casual"
+  },
+  {
+   "id": "workout.swap",
+   "level": "developer"
+  },
+  {
+   "id": "workout.swapTo",
+   "level": "developer"
+  },
+  {
+   "id": "yields.apply",
+   "level": "casual"
+  },
+  {
+   "id": "yields.field",
+   "level": "casual"
+  },
+  {
+   "id": "yields.search",
+   "level": "casual"
+  },
+  {
+   "id": "yoga.log",
+   "level": "developer"
+  }
+ ],
+ "sheets": [
+  "about",
+  "aiConsent",
+  "aiProposals",
+  "ask",
+  "attention",
+  "attentionItem",
+  "automation",
+  "bodymap",
+  "causal",
+  "chartGallery",
+  "cloud",
+  "compare",
+  "compose",
+  "conditioning",
+  "customFood",
+  "dashboard",
+  "dataQuality",
+  "decisionInspect",
+  "deload",
+  "design",
+  "domains",
+  "episodes",
+  "equipment",
+  "eventIntegrity",
+  "exercise",
+  "exerciseDetail",
+  "exlibrary",
+  "expLibrary",
+  "expPicker",
+  "expTemplate",
+  "experiment",
+  "exports",
+  "features",
+  "foodAdd",
+  "foodEdit",
+  "forecastFamily",
+  "genProgram",
+  "graph",
+  "health",
+  "hydration",
+  "identification",
+  "import",
+  "inference",
+  "injuryAdd",
+  "injuryReview",
+  "integrity",
+  "internals",
+  "jumps",
+  "keys",
+  "knowledge",
+  "label",
+  "log",
+  "maintenance",
+  "maturity",
+  "mealPlan",
+  "measurement",
+  "missing",
+  "mobility",
+  "motorLearning",
+  "moveLibrary",
+  "movement",
+  "negative",
+  "nutritionviz",
+  "obsInspect",
+  "optimise",
+  "pageLayout",
+  "phase",
+  "photos",
+  "physio",
+  "physique",
+  "planEdit",
+  "planSearch",
+  "prepare",
+  "profile",
+  "program",
+  "progression",
+  "progressions",
+  "propagation",
+  "recent",
+  "recipe",
+  "recover",
+  "recoveryAllocation",
+  "recoveryLatent",
+  "recoveryState",
+  "replayCompare",
+  "resistance",
+  "response",
+  "restore",
+  "routine",
+  "saved",
+  "scan",
+  "scenarios",
+  "schedule",
+  "session",
+  "setup",
+  "since",
+  "skillLimiter",
+  "sources",
+  "storage",
+  "stretchInfo",
+  "studio",
+  "substitute",
+  "supplements",
+  "sync",
+  "timeline",
+  "trace",
+  "twin",
+  "undoHistory",
+  "userDecision",
+  "vizstudio",
+  "voice",
+  "waypoints",
+  "weather",
+  "welcome",
+  "whatChanged",
+  "whyShown",
+  "workout",
+  "workoutSwap",
+  "yields",
+  "yoga"
+ ],
+ "events": [
+  "copilot.authorized",
+  "cycle.recorded",
+  "decision.recorded",
+  "equipment.changed",
+  "execution.marked",
+  "experiment.created",
+  "experiment.evaluated",
+  "experiment.revised",
+  "food.logged",
+  "food.mealChanged",
+  "food.retracted",
+  "food.superseded",
+  "injury.recorded",
+  "injury.resolved",
+  "intervention.recorded",
+  "inventory.changed",
+  "model.stage",
+  "movement.logged",
+  "negative.recorded",
+  "nutrition.derived",
+  "observation.added",
+  "observation.corrected",
+  "observation.flagged",
+  "observation.retracted",
+  "phase.ended",
+  "phase.started",
+  "phase.targetsChanged",
+  "plan.created",
+  "prediction.scored",
+  "prediction.stamped",
+  "profile.changed",
+  "program.changed",
+  "program.customized",
+  "recipe.saved",
+  "record.imported",
+  "record.snapshot",
+  "response.recorded",
+  "session.added",
+  "session.retracted",
+  "session.superseded",
+  "settings.changed",
+  "skill.changed",
+  "snapshot.captured",
+  "userFood.saved",
+  "userRule.added",
+  "userRule.retired"
+ ],
+ "observationTypes": [
+  "adherence",
+  "arm",
+  "bodyfat",
+  "calories",
+  "carbs",
+  "cardio",
+  "chest",
+  "context",
+  "cravings",
+  "difficulty",
+  "fat",
+  "fatigue",
+  "fiber",
+  "fullness",
+  "hip",
+  "hunger",
+  "mobility",
+  "motivation",
+  "neck",
+  "note",
+  "protein",
+  "rhr",
+  "sleep",
+  "sleepq",
+  "soreness",
+  "steps",
+  "stress",
+  "supplement",
+  "sweatrate",
+  "thigh",
+  "urine",
+  "waist",
+  "water",
+  "weight"
+ ],
+ "library": {
+  "exercises": 159,
+  "patterns": 28,
+  "ladders": 18,
+  "mobility": 43,
+  "routines": 6
+ },
+ "panels": 115
+}
