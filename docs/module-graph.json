@@ -23,6 +23,10 @@
     "persistIncremental",
     "auditAppend"
    ],
+   "24-events.js": [
+    "undoMark",
+    "undoInLog"
+   ],
    "80-ui.js": [
     "toast"
    ],
@@ -4321,7 +4325,8 @@
     "serializeDB",
     "pushUndo",
     "canUndo",
-    "undo"
+    "undo",
+    "clearUndo"
    ],
    "22-persistence.js": [
     "_dirtyFor",
