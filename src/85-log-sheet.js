@@ -186,14 +186,16 @@ function saveSession(){var b=_SHEET.buf;/* a lifting session logged on a day pla
   var _n=function(x){return typeof normExercise==='function'?normExercise(x):String(x||'').toLowerCase().trim();};
   var loose=sets.map(function(x){return String(x.exercise).trim();}).filter(function(v,i,a){return a.indexOf(v)===i;}).filter(function(n){return !EXERCISES.some(function(e){return _n(e.name)===_n(n)||(e.aliases||[]).some(function(a){return _n(a)===_n(n);});});});
   if(loose.length&&!b._unknownOk){b._unknownOk=true;toast('Not an exact exercise: '+loose.map(function(n){var r=resolveExercise(n);return '\u201c'+n+'\u201d '+(r?'will count as '+r.name:'counts toward no muscle');}).join('; ')+'. Save again to keep, or pick from the list.',{tone:'attention',ms:10000});return;}
-  if(b.id){var s=DB.sessions.filter(function(x){return x.id===b.id;})[0];pushUndo('edit session');s.name=b.name;s.date=b.date;s.durationMin=num(b.durationMin);s.notes=b.notes;s.sets=sets.map(function(x){return {exercise:String(x.exercise).trim(),load:num(x.load),reps:num(x.reps),rir:num(x.rir),
+  /* An edit supersedes the session (updateSession), as the engine's own edits do: overwritten in place it had no event,
+     so the edit reverted on the next start and a replay of last week read today's sets. */
+  if(b.id){updateSession(b.id,{name:b.name,date:b.date,durationMin:num(b.durationMin),notes:b.notes,sets:sets.map(function(x){return {exercise:String(x.exercise).trim(),load:num(x.load),reps:num(x.reps),rir:num(x.rir),
       /* The set ontology fields travel with the set. Whitelisting the shape here and forgetting to add them
          meant the kind chosen in the editor was recorded in the buffer and dropped on save — the control
          worked and changed nothing. */
       kind:(x.kind&&SET_KINDS[x.kind])?x.kind:'working',
       rom:(x.rom&&ROM_KINDS[x.rom])?x.rom:undefined,
       tempo:x.tempo?String(x.tempo).slice(0,12):undefined,
-      note:''};});s.updatedAt=nowISO();save('session:edit');}
+      note:''};})});}
   else var _newSess=addSession({name:b.name,date:b.date,durationMin:b.durationMin,notes:b.notes,sets:sets});
   _memoInvalidate();closeSheet();renderAll();toast('Session saved \u00b7 '+sets.length+' sets',{undo:true});
   /* A new session opens its summary: what you did, any records, how hard it felt, a cool-down, and next time. */

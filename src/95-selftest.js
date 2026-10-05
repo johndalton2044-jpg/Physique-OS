@@ -770,6 +770,48 @@ function runSelfTest(opts){
       ok('migration repairs every persisted collection to a list',mg.ok&&PERSIST_COLLECTIONS.every(function(k){return Array.isArray(mg.db[k]);}));
       DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    /* EVENTS ARE IMMUTABLE, AND EVERY EDIT HAS ONE. Events used to share their data with the live record, so an edit with
+       no event of its own looked recorded until a restart rebuilt the record from the log and dropped it. Each edit
+       below is checked against a projection of the log rather than against the live record. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
+      var T=todayISO();
+      DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;resetEventLog('immutable events');_memoInvalidate();
+      var proj=function(k,id){return (projectEvents(_EVENTS).db[k]||[]).filter(function(x){return x.id===id;})[0]||{};};
+      var o=addObservation({type:'weight',date:T,value:200,source:'manual'},{silent:true,noSave:true});
+      var ev=_EVENTS[_EVENTS.length-1];o.value=999;o.note='edited in place';
+      ok('an event keeps the data it was recorded with when the live record changes later',ev.data.value===200&&ev.data.note!=='edited in place');
+      /* an experiment records its intervention's id, and scoring it closes the intervention in a replay too */
+      var x=createExperiment({question:'q',variable:'steps',baselineValue:8000,interventionValue:10000,startDate:addDays(T,-20),durationDays:14,silent:true,noSave:true});
+      ok('an experiment’s link to its intervention is in the log',!!x.interventionId&&proj('experiments',x.id).interventionId===x.interventionId);
+      evaluateExperiment(x.id);
+      var iv=proj('interventions',x.interventionId);
+      ok('scoring an experiment closes its intervention in a replay, not only in the live record',iv.status==='evaluated'&&iv.outcome===x.conclusion,JSON.stringify({status:iv.status,outcome:iv.outcome,conclusion:x.conclusion}));
+      /* applying a decision */
+      var d=recordDecision({code:'HOLD',confidence:'medium',verb:'Hold',lede:'',why:[],action:[]});
+      d.status='applied';d.experimentId=x.id;emitEvent('decision.applied',{id:d.id,experimentId:x.id});
+      ok('an applied decision is applied in a replay',proj('decisions',d.id).status==='applied'&&proj('decisions',d.id).experimentId===x.id);
+      /* a prediction that expires unscored */
+      var p={id:uid('pred'),model:'weight_forecast',subject:'weight',madeAt:addDays(T,-40)+'T08:00:00.000Z',dueDate:addDays(T,-20),horizon:14,point:200,lo:198,hi:202,status:'pending'};
+      DB.predictions.push(p);emitEvent('prediction.stamped',p,{at:p.madeAt});scorePredictions();
+      ok('a prediction that expires is expired in a replay',p.status==='expired'&&proj('predictions',p.id).status==='expired',p.status+' / '+proj('predictions',p.id).status);
+      /* a day's last food log removed */
+      var fl=logFood({food:seedFoods()[0],grams:100,date:T,silent:true,noSave:true});
+      removeFoodLog(fl.id);
+      var liveKcal=DB.observations.filter(function(q){return q.source==='food-log'&&q.date===T&&!q.retracted;}).length;
+      var projKcal=(projectEvents(_EVENTS).db.observations||[]).filter(function(q){return q.source==='food-log'&&q.date===T&&!q.retracted;}).length;
+      ok('removing a day’s last food log retracts its totals in a replay too',liveKcal===0&&projKcal===0,'live '+liveKcal+', replay '+projKcal);
+      /* rating a session: only the rating fields can be set by the event */
+      var s=addSession({name:'S',date:T,sets:[{exercise:'Back squat',load:200,reps:5,rir:2}],silent:true,noSave:true});
+      emitEvent('session.rated',{id:s.id,field:'effort',value:7});emitEvent('session.rated',{id:s.id,field:'date',value:'1999-01-01'});
+      var ps=proj('sessions',s.id);
+      ok('a session rating replays, and a rating event cannot set any other field',ps.effort===7&&ps.date===T,JSON.stringify({effort:ps.effort,date:ps.date}));
+      /* a phase edit's history and update time are the event's, so the replay matches the record exactly */
+      var ph=startPhase({type:'cut',startDate:addDays(T,-30),calorieTarget:2400});updatePhase(ph.id,{calorieTarget:2200},{noUndo:true,noSave:true});
+      var pp=proj('phases',ph.id);
+      ok('a phase edit replays with the same history and update time as the record',JSON.stringify(pp.history)===JSON.stringify(ph.history)&&pp.updatedAt===ph.updatedAt);
+      _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
+    })();
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;

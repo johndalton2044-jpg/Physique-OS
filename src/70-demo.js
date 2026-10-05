@@ -101,6 +101,13 @@ function _loadDemoInner(){
   try{seedDemoFoodLogs();}catch(e){_q(e);}
   /* a supplement regimen: creatine daily, vitamin D daily, caffeine on training days */
   DB.settings.supplementStack=[{id:'creatine',dose:5,unit:'g',when:'daily'},{id:'vitd',dose:50,unit:'\u00b5g',when:'daily'},{id:'caffeine',dose:200,unit:'mg',when:'training days'}];
+  /* The demo's last four weeks carry effort ratings, as a record would once someone began rating sessions, so the
+     session-load basis (effort \u00d7 duration) is exercised by the demo itself. Deterministic: derived from each
+     session's hard sets. Set before the log restarts below, so the snapshot carries them: set after it, they were lost
+     on the next start. */
+  (DB.sessions||[]).forEach(function(x){if(x.retracted||x.date<addDays(todayISO(),-27))return;
+    var hard=(x.sets||[]).filter(function(st){return st.rir==null||st.rir<=3;}).length;
+    x.effort=Math.max(5,Math.min(9,Math.round(5+hard/4)));if(!x.durationMin)x.durationMin=40+hard*2;});
   /* The generator writes the record directly rather than through the mutators, so the event log must be
      restarted from it. Without this the log would describe a different record than the one on screen. */
   try{
@@ -123,12 +130,6 @@ function _loadDemoInner(){
      today's snapshot existed, and the maintenance baseline — a median over a handful of snapshots — read 2,662 kcal
      in some loads and 2,606 in others from identical data. The reproducibility gate caught it. A capture replaces
      any snapshot for the same day, so a second one from the timer is harmless. */
-  /* The demo's last four weeks carry effort ratings, as a record would once someone began rating sessions, so the
-     session-load basis (effort \u00d7 duration) is exercised by the demo itself. Deterministic: derived from each
-     session's hard sets. */
-  (DB.sessions||[]).forEach(function(x){if(x.retracted||x.date<addDays(todayISO(),-27))return;
-    var hard=(x.sets||[]).filter(function(st){return st.rir==null||st.rir<=3;}).length;
-    x.effort=Math.max(5,Math.min(9,Math.round(5+hard/4)));if(!x.durationMin)x.durationMin=40+hard*2;});
   if(typeof captureSnapshot==='function'){try{captureSnapshot();}catch(e){}}
   /* responses are part of the demo's state: recorded now, not whenever something happens to trigger them */
   if(typeof recordResponses==='function'){try{recordResponses();}catch(e){_q(e,'P2');}}

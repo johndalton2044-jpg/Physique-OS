@@ -106,6 +106,7 @@ function deviceId(){
 /* EVENT TYPES. Each names a thing that happened in the world or in the record, never a resulting state.
    `apply` folds the event into a document. Adding a type requires adding its fold, and the contract test
    asserts every emitted type has one. */
+var SESSION_RATINGS={effort:1,feel:1};
 var EVENT_TYPES={
   'observation.added':{apply:function(db,e){db.observations.push(JSON.parse(JSON.stringify(e.data)));}},
   'observation.corrected':{apply:function(db,e){
@@ -123,6 +124,10 @@ var EVENT_TYPES={
   'session.retracted':{apply:function(db,e){
     var s=db.sessions.filter(function(x){return x.id===e.data.id;})[0];
     if(s){s.retracted=true;s.retractedAt=e.at;}}},
+  /* how a session felt, rated afterwards: an annotation of the same session, not an edit of what was done. Only the
+     rating fields can be set, because the data may arrive from another device. */
+  'session.rated':{apply:function(db,e){var s=db.sessions.filter(function(x){return x.id===e.data.id;})[0];
+    if(s&&SESSION_RATINGS[e.data.field]){s[e.data.field]=e.data.value;s.updatedAt=e.at;}}},
   'session.superseded':{apply:function(db,e){
     var old=db.sessions.filter(function(x){return x.id===e.data.of;})[0];
     if(old){old.supersededBy=e.data.record.id;old.supersededAt=e.at;}
@@ -149,7 +154,8 @@ var EVENT_TYPES={
   'phase.started':{apply:function(db,e){
     (db.phases||[]).forEach(function(x){if(x.status==='active'&&!x.endDate&&x.id!==e.data.id){
       x.history=(x.history||[]).concat([{at:e.at,before:{endDate:x.endDate,status:x.status}}]);
-      x.endDate=e.data.priorEnd||x.endDate;x.status='ended';}});
+      var pe=e.data.priorEnd;   /* never before the phase's own start, as startPhase does */
+      x.endDate=pe?(pe<x.startDate?x.startDate:pe):x.endDate;x.status='ended';}});
     db.phases.push(JSON.parse(JSON.stringify(e.data)));}},
   'phase.targetsChanged':{apply:function(db,e){
     var p=db.phases.filter(function(x){return x.id===e.data.id;})[0];if(!p)return;
@@ -167,6 +173,8 @@ var EVENT_TYPES={
     db.settings.programHistory=(db.settings.programHistory||[]).concat([{at:e.at,program:e.data.to,from:e.data.from||null,source:e.data.source||'user'}]);}},
   'intervention.recorded':{apply:function(db,e){db.interventions.push(JSON.parse(JSON.stringify(e.data)));}},
   'decision.recorded':{apply:function(db,e){db.decisions.push(JSON.parse(JSON.stringify(e.data)));}},
+  'decision.applied':{apply:function(db,e){var d=db.decisions.filter(function(x){return x.id===e.data.id;})[0];
+    if(d){d.status='applied';d.experimentId=e.data.experimentId||null;}}},
   'prediction.stamped':{apply:function(db,e){db.predictions.push(JSON.parse(JSON.stringify(e.data)));}},
   'prediction.scored':{apply:function(db,e){var p=db.predictions.filter(function(x){return x.id===e.data.id;})[0];
     if(p)Object.keys(e.data.result).forEach(function(k){p[k]=e.data.result[k];});}},
@@ -186,7 +194,10 @@ var EVENT_TYPES={
   'cycle.recorded':{apply:function(db,e){db.cycles=(db.cycles||[]).filter(function(x){return x.id!==e.data.id;});db.cycles.push(JSON.parse(JSON.stringify(e.data)));}},
   'response.recorded':{apply:function(db,e){db.responses=(db.responses||[]).filter(function(x){return x.id!==e.data.id;});db.responses.push(JSON.parse(JSON.stringify(e.data)));}},
   'experiment.evaluated':{apply:function(db,e){var x=db.experiments.filter(function(y){return y.id===e.data.id;})[0];
-    if(x)Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});}},
+    if(!x)return;Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});
+    /* scoring an experiment closes its intervention (evaluateExperiment); folded here so a replay closes it too */
+    var iv=(db.interventions||[]).filter(function(i){return i.id===x.interventionId;})[0];
+    if(iv){iv.status='evaluated';iv.outcome=e.data.result.conclusion;}}},
   'negative.recorded':{apply:function(db,e){db.negatives.push(JSON.parse(JSON.stringify(e.data)));}},
   'plan.created':{apply:function(db,e){(db.plans=db.plans||[]).push(JSON.parse(JSON.stringify(e.data)));}},
   'execution.marked':{apply:function(db,e){(db.executions=db.executions||[]).push(JSON.parse(JSON.stringify(e.data)));}},
@@ -247,8 +258,14 @@ function emitEvent(type,data,opts){
   if(!_EVENTS_ENABLED)return null;
   if(!EVENT_TYPES[type]){_q(new Error('unknown event type: '+type),'P1');return null;}
   opts=opts||{};
+  /* AN EVENT IS A FACT, SO IT IS COPIED WHEN IT IS RECORDED. Most callers passed the live record itself, so every later
+     in-place edit (a prediction expiring, a decision marked applied, a correction flag) silently rewrote events already
+     in the log: a replay of an earlier day saw the later state, and a change with no event of its own existed only
+     through that shared object, so it never reached another device (each event is uploaded once). A snapshot's record
+     is already a fresh copy (recordSnapshot) and by far the largest payload, so it is not copied twice. */
+  var payload=(type==='record.snapshot'||data===undefined)?data:JSON.parse(JSON.stringify(data));
   var e={id:(opts.id||uid('ev')),seq:++_EVENT_SEQ,type:type,at:opts.at||nowISO(),
-    device:deviceId(),schema:EVENT_SCHEMA,data:data};
+    device:deviceId(),schema:EVENT_SCHEMA,data:payload};
   _EVENTS.push(e);
   if(typeof _automationOnEvent==='function')_automationOnEvent(e);   /* workflow rules: after recording, never during replay (replay does not emit) */
   if(_EVENTS.length>EVENT_WINDOW){try{compactEvents();}catch(err){_q(err,'P0');}}

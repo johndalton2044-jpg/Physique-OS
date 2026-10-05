@@ -218,8 +218,36 @@ ok('setting the program to its current value is a no-op, not a spurious history 
 /* ---- contracts and the in-app self-test, running with no DOM at all ---- */
 const contracts=run('JSON.stringify(dataContractIssues())');
 ok('data and model contracts hold in a DOM-free engine run',JSON.parse(contracts).length===0,contracts.slice(0,200));
+/* ---- every save leaves a record its own log reproduces, field by field ----
+   projectionMatchesRecord() compares a few fields per collection, and events used to share their data with the live
+   record, so an edit with no event of its own looked recorded until the next start dropped it. Here every save made
+   by the fixture flows and the whole self-test is checked: the live record against a projection of the log, every
+   field of every record in every evented collection. Saves while the demo generator is still building its record
+   (before it restarts the log) are skipped, and so is a log that has not been adopted from a snapshot yet. */
+run(`var __DRIFT={},__DRIFT_SAVES=0,__save=save;
+  var __sk=function(v){if(Array.isArray(v))return v.map(__sk);if(v&&typeof v==='object'){var o={};Object.keys(v).sort().forEach(function(k){if(k!=='__sortAt')o[k]=__sk(v[k]);});return o;}return v;};
+  save=function(label){
+    try{if(!(_PLAN_HOOKS_OFF>0)&&_EVENTS.some(function(e){return e.type==='record.snapshot';})){__DRIFT_SAVES++;
+      var p=projectEvents(_EVENTS).db;
+      PERSIST_COLLECTIONS.forEach(function(k){if(UNEVENTED_COLLECTIONS.indexOf(k)>=0)return;
+        var proj={};(p[k]||[]).forEach(function(x){if(x&&x.id)proj[x.id]=x;});
+        (DB[k]||[]).forEach(function(a){if(!a||!a.id)return;var b=proj[a.id];
+          if(!b){__DRIFT[k+' (record missing from the log) at save "'+label+'"']=1;return;}
+          Object.keys(Object.assign({},a,b)).forEach(function(f){if(f!=='__sortAt'&&JSON.stringify(__sk(a[f]))!==JSON.stringify(__sk(b[f])))__DRIFT[k+'.'+f+' at save "'+label+'"']=1;});});});}
+    }catch(e){__DRIFT['drift check failed: '+e.message]=1;}
+    return __save.apply(this,arguments);};`);
+run(`Object.keys(FIXTURES).forEach(function(name){withFixture(name,function(){
+  try{ensurePlan();}catch(e){} try{runDueJobs();}catch(e){} try{captureSnapshot();save('daily');}catch(e){}
+  try{recordResponses();}catch(e){} try{runLearningCycle({force:true});}catch(e){}
+  try{var d=decide();if(d&&d.intervention)applyDecisionIntervention(d);}catch(e){}
+  (DB.experiments||[]).forEach(function(x){if(x.outcome==null){try{evaluateExperiment(x.id);}catch(e){}}});
+  try{scorePredictions();save('prediction:score');}catch(e){}
+});});`);
 const st=run('(function(){var r=runSelfTest();return {passed:r.passed,failed:r.failed,failures:r.results.filter(function(x){return !x.ok;}).map(function(x){return x.name+": "+x.detail;}).slice(0,6)};})()');
 ok('the in-app self-test passes without a DOM ('+st.passed+' checks)',st.failed===0,st.failures.join(' | '));
+const drift=run('(function(){save=__save;return {saves:__DRIFT_SAVES,drift:Object.keys(__DRIFT)};})()');
+ok('every save leaves a record its own event log reproduces ('+drift.saves+' saves, every field of every evented record)',
+   drift.saves>100&&drift.drift.length===0,drift.drift.slice(0,8).join(' | '));
 const presentation=run('(function(){var a=presentationSpecificationAudit();return {ok:a.ok,issues:a.findings.slice(0,20),required:a.execution.required,missing:a.execution.missing,visualizations:a.execution.registries};})()');
 const reportExport=run(`(function(){var r=exportPresentationSpec({page:'state-report',sections:[{title:'State report',body:'x'}],source:{app:APP_NAME,build:BUILD_ID},uncertainty:{included:true}},'print');return {ok:r.status==='ok'&&r.dedicatedRenderer==='ReportRenderer'&&r.sections.length===1,format:r.format,renderer:r.dedicatedRenderer};})()`);
 ok('presentation export contract executes through report renderer',reportExport.ok,reportExport);

@@ -292,7 +292,8 @@ function scorePredictions(){
   (DB.predictions||[]).forEach(function(p){
     if(p.status!=='pending'||p.dueDate>today)return;
     var s=dailySeries('weight',p.dueDate,7);var actual=s.length>=3?mean(s.map(function(d){return d.value;})):(s.length?s[s.length-1].value:null);
-    if(actual==null){if(daysBetween(p.dueDate,today)>5){p.status='expired';p.scoredAt=nowISO();p.note='no weigh-ins near the due date';scored++;}return;}
+    if(actual==null){if(daysBetween(p.dueDate,today)>5){p.status='expired';p.scoredAt=nowISO();p.note='no weigh-ins near the due date';scored++;
+      emitEvent('prediction.scored',{id:p.id,result:{status:'expired',scoredAt:p.scoredAt,note:p.note}},{at:p.scoredAt});}return;}
     p.actual=round(actual,2);p.error=round(actual-p.point,2);p.absError=Math.abs(p.error);p.covered=actual>=p.lo&&actual<=p.hi;p.status='scored';p.scoredAt=nowISO();p.actualBasis=s.length>=3?('7-day mean of '+s.length+' weigh-ins'):'single weigh-in';scored++;
     emitEvent('prediction.scored',{id:p.id,result:{actual:p.actual,error:p.error,absError:p.absError,covered:p.covered,status:'scored',scoredAt:p.scoredAt,actualBasis:p.actualBasis}},{at:p.scoredAt});
   });
@@ -329,9 +330,12 @@ function createExperiment(e){
   if(!e.silent)pushUndo('create experiment');
   /* §19: the plan is fingerprinted at creation, so any later change to it is detectable once results exist. */
   if(typeof experimentPlanHash==='function'){rec.planVersion=1;rec.planHash=experimentPlanHash(rec);}
+  /* the intervention's id is part of the experiment before it is recorded: set afterwards, it reached the log only
+     through a shared object, so a replay after a restart lost the link */
+  var ivId=uid('iv');rec.interventionId=ivId;
   DB.experiments.push(rec);emitEvent('experiment.created',rec,{at:rec.createdAt});
-  var iv={id:uid('iv'),date:start,createdAt:nowISO(),variable:rec.variable,from:rec.baselineValue,to:rec.interventionValue,decisionId:rec.decisionId,experimentId:rec.id,expected:rec.prediction,recheckDate:rec.recheckDate,status:'active',outcome:null,phaseId:rec.phaseId};
-  DB.interventions.push(iv);emitEvent('intervention.recorded',iv,{at:iv.createdAt});rec.interventionId=iv.id;
+  var iv={id:ivId,date:start,createdAt:nowISO(),variable:rec.variable,from:rec.baselineValue,to:rec.interventionValue,decisionId:rec.decisionId,experimentId:rec.id,expected:rec.prediction,recheckDate:rec.recheckDate,status:'active',outcome:null,phaseId:rec.phaseId};
+  DB.interventions.push(iv);emitEvent('intervention.recorded',iv,{at:iv.createdAt});
   if(!e.noSave)save('experiment:create');return rec;
 }
 function applyDecisionIntervention(dec){
@@ -348,7 +352,7 @@ function applyDecisionIntervention(dec){
     var patch={};patch[IV_FIELD[iv.variable]]=iv.to;
     updatePhase(ph.id,patch,{noUndo:true,noSave:true,intervention:false,label:'apply intervention'});
   }
-  if(d){d.status='applied';d.experimentId=exp.id;}
+  if(d){d.status='applied';d.experimentId=exp.id;emitEvent('decision.applied',{id:d.id,experimentId:exp.id});}
   save('intervention:apply');
   if(typeof notePlanChange==='function')notePlanChange('decision');   /* the decision's evidence and alternatives become the trigger */
   return exp;
@@ -371,7 +375,7 @@ function evaluateExperiment(id,opts){
   if(before.status!=='ok'||after.status!=='ok'){res.conclusion='inconclusive';res.confidence='insufficient';res.summary='Not enough weigh-ins around the experiment window to compare trends.';res.observed=null;}
   else{
     var delta=after.slopePerWeek-before.slopePerWeek;res.before=round(before.slopePerWeek,2);res.after=round(after.slopePerWeek,2);res.observed=round(delta,2);
-    var conf=detectConfounders(exp);exp.confounders=conf;
+    var conf=detectConfounders(exp);
     var expected=exp.predLo!=null&&exp.predHi!=null;var lo=expected?Math.min(exp.predLo,exp.predHi):null,hi=expected?Math.max(exp.predLo,exp.predHi):null;
     /* Conclusions are graded, not binary. `confounded` says the experiment cannot answer the question — it is
        not evidence against the intervention. `contradicted` means the effect went the wrong way, which is
@@ -393,8 +397,10 @@ function evaluateExperiment(id,opts){
   }
   if(!opts.dryRun){
     pushUndo('score experiment');exp.outcome=res;exp.conclusion=res.conclusion;exp.confidence=res.confidence;exp.status='complete';exp.completedAt=nowISO();
-    emitEvent('experiment.evaluated',{id:exp.id,result:{outcome:res,conclusion:res.conclusion,confidence:res.confidence,status:'complete',completedAt:exp.completedAt}},{at:exp.completedAt});
-    var iv=DB.interventions.filter(function(i){return i.id===exp.interventionId;})[0];if(iv){iv.status='evaluated';iv.outcome=res.conclusion;}
+    var result={outcome:res,conclusion:res.conclusion,confidence:res.confidence,status:'complete',completedAt:exp.completedAt};
+    if(res.confounders){exp.confounders=res.confounders;result.confounders=res.confounders;}
+    emitEvent('experiment.evaluated',{id:exp.id,result:result},{at:exp.completedAt});
+    var iv=DB.interventions.filter(function(i){return i.id===exp.interventionId;})[0];if(iv){iv.status='evaluated';iv.outcome=res.conclusion;}   /* folded from experiment.evaluated as well */
     if(res.conclusion==='unsupported'||res.conclusion==='contradicted')addNegative({intervention:exp.intervention||(exp.variable+' '+exp.baselineValue+'\u2192'+exp.interventionValue),variable:exp.variable,expected:exp.prediction,observed:res.summary,reasons:(res.conclusion==='contradicted'?['effect went the wrong way']:[]).concat(['adherence','compensation','water','measurement error']).concat(exp.confounders||[]),confidence:res.confidence,applicability:'this phase / weight zone',experimentId:exp.id,silent:true});
     try{var arc={id:uid('arc'),kind:'experiment',archivedAt:nowISO(),summary:exp.question,record:JSON.parse(JSON.stringify(exp))};DB.archive.push(arc);emitEvent('archive.recorded',JSON.parse(JSON.stringify(arc)),{at:arc.archivedAt});}catch(e){_q(e);}
     save('experiment:evaluate');

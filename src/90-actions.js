@@ -415,7 +415,7 @@ function postSessionSummary(sessId){
 /* Saving a session opens the existing After-the-session screen, now expanded (see the wrappers at the end of this file). */
 function openPostSession(id){_POST={id:id};dispatchAct('move.recover');}
 function _rateSession(field,val){var s=(DB.sessions||[]).filter(function(x){return x.id===(_POST&&_POST.id);})[0];if(!s)return;
-  s[field]=val;s.updatedAt=nowISO();save('session:edit');renderSheet();}
+  var ev=emitEvent('session.rated',{id:s.id,field:field,value:val});s[field]=val;s.updatedAt=(ev&&ev.at)||nowISO();save('session:edit');renderSheet();}
 registerAction('post.effort',function(n){_rateSession('effort',Math.max(1,Math.min(10,parseInt(n,10)||0)));});
 registerAction('post.feel',function(v){if(['drained','ok','good'].indexOf(v)>=0)_rateSession('feel',v);});
 

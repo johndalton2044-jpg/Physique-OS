@@ -44,7 +44,7 @@ function _knownBy(x,date){if(!_ASOF||!x)return true;var c=x.createdAt||x.at||nul
 function phaseAsOf(ph,date){if(!_ASOF||!ph||!ph.history||!ph.history.length)return ph;var later=ph.history.filter(function(h){return localDateOf(h.at)>date;});if(!later.length)return ph;var copy=Object.assign({},ph);for(var i=later.length-1;i>=0;i--){var before=later[i].before||{};Object.keys(before).forEach(function(k){copy[k]=before[k];});}copy._reconstructed=date;return copy;}
 function activePhase(date){date=date||asOf();var ph=(DB.phases||[]).filter(function(p){return _knownBy(p,date);}).map(function(p){return phaseAsOf(p,date);}).filter(function(p){return p.status!=='archived'&&p.startDate<=date&&(!p.endDate||p.endDate>=date);});return ph.length?ph[ph.length-1]:null;}
 function phaseAt(date){var ph=(DB.phases||[]).filter(function(p){return p.startDate<=date&&(!p.endDate||p.endDate>=date);});return ph.length?ph[ph.length-1]:null;}
-function _phaseHistory(ph,patch){var before={};Object.keys(patch).forEach(function(k){before[k]=ph[k]===undefined?null:ph[k];});ph.history=ph.history||[];ph.history.push({at:nowISO(),before:before});Object.keys(patch).forEach(function(k){ph[k]=patch[k];});}
+function _phaseHistory(ph,patch,at){var before={};Object.keys(patch).forEach(function(k){before[k]=ph[k]===undefined?null:ph[k];});ph.history=ph.history||[];ph.history.push({at:at||nowISO(),before:before});Object.keys(patch).forEach(function(k){ph[k]=patch[k];});}
 function makeObservation(o){
   var t=OBS_TYPES[o.type];if(!t)throw new Error('unknown observation type '+o.type);
   var date=o.date||todayISO();if(!isValidISO(date))throw new Error('invalid date');
@@ -158,7 +158,7 @@ function startPhase(p){
     startingState:p.startingState||null,targetSource:p.targetSource||'user',createdAt:nowISO(),history:[],notes:p.notes||''};
   pushUndo('start phase');
   emitEvent('phase.started',Object.assign({},ph,{priorEnd:addDays(ph.startDate,-1)}),{at:ph.createdAt});
-  (DB.phases||[]).forEach(function(x){if(x.status==='active'&&!x.endDate){_phaseHistory(x,{endDate:addDays(ph.startDate,-1)<x.startDate?x.startDate:addDays(ph.startDate,-1),status:'ended'});}});
+  (DB.phases||[]).forEach(function(x){if(x.status==='active'&&!x.endDate){_phaseHistory(x,{endDate:addDays(ph.startDate,-1)<x.startDate?x.startDate:addDays(ph.startDate,-1),status:'ended'},ph.createdAt);}});
   DB.phases.push(ph);save('phase:start');
   /* The first plan comes from setup; later ones from a new phase. */
   if(typeof notePlanChange==='function'){var _first=(typeof plansOf==='function')&&!plansOf().length;
@@ -167,7 +167,7 @@ function startPhase(p){
 }
 function endPhase(id,outcome){
   var ph=DB.phases.filter(function(p){return p.id===id;})[0];if(!ph)return null;
-  pushUndo('end phase');emitEvent('phase.ended',{id:ph.id,endDate:todayISO(),outcome:outcome||''});_phaseHistory(ph,{endDate:todayISO(),status:'ended',outcome:outcome||''});
+  pushUndo('end phase');var ev=emitEvent('phase.ended',{id:ph.id,endDate:todayISO(),outcome:outcome||''});_phaseHistory(ph,{endDate:todayISO(),status:'ended',outcome:outcome||''},ev&&ev.at);
   try{archivePhase(ph);}catch(e){_q(e);}
   save('phase:end');return ph;
 }
@@ -186,9 +186,10 @@ function updatePhase(id,patch,opts){
   if(!opts.noUndo)pushUndo(opts.label||'edit phase');
   var changed={},before={};
   Object.keys(patch).forEach(function(k){if(patch[k]===undefined)return;if(JSON.stringify(ph[k])!==JSON.stringify(patch[k])){changed[k]=patch[k];before[k]=ph[k]===undefined?null:ph[k];}});
-  if(!Object.keys(changed).length){ph.updatedAt=nowISO();if(!opts.noSave)save('phase:edit');return ph;}
-  emitEvent('phase.targetsChanged',{id:ph.id,before:before,changed:changed});
-  _phaseHistory(ph,changed); // records {at, before} so phaseAsOf() can reconstruct this phase on any past day
+  if(!Object.keys(changed).length){if(!opts.noSave)save('phase:edit');return ph;}   /* nothing changed, so nothing is recorded as an update */
+  var ev=emitEvent('phase.targetsChanged',{id:ph.id,before:before,changed:changed});
+  var evAt=(ev&&ev.at)||nowISO();
+  _phaseHistory(ph,changed,evAt); // records {at, before} so phaseAsOf() can reconstruct this phase on any past day
   var majors=Object.keys(changed).filter(function(k){return MAJOR_PHASE_VARS.indexOf(k)>=0;});
   if(majors.length&&opts.intervention!==false){
     var iv=opts.intervention||{};
@@ -203,7 +204,7 @@ function updatePhase(id,patch,opts){
       status:'active',outcome:null,phaseId:ph.id,
       note:iv.note||('targets edited: '+majors.join(', '))};DB.interventions.push(ivRec);emitEvent('intervention.recorded',ivRec,{at:ivRec.createdAt});}catch(e){_q(e);}
   }
-  ph.updatedAt=nowISO();if(!opts.noSave)save('phase:edit');
+  ph.updatedAt=evAt;if(!opts.noSave)save('phase:edit');
   /* The plan records the change and why. A decision applies its targets through here too and records its own trigger. */
   if(typeof notePlanChange==='function'&&opts.label!=='apply intervention')notePlanChange('your edit',{reason:'You changed the phase\u2019s targets.'});
   return ph;
