@@ -1,0 +1,18 @@
+{
+  "databaseVersion": "fdc-2026-04-30",
+  "sumsSha256": "8ab856bd4bee107b907796c71fb77bd31beaf318f802322ad12d0f362ed0cb2c",
+  "files": 1107,
+  "archive": {
+    "name": "physique-os-food-data.tar.gz",
+    "sha256": "32dfd0bc4f2ad67782eb770ccd4810bfa5add3f453c7025809a73f54ad5bc566",
+    "reproducible": "tar --sort=name --mtime=2026-01-01T00:00Z --owner=0 --group=0 --numeric-owner | gzip -n",
+    "url": null
+  },
+  "note": "The food corpus is an external release artifact. Content is the authority: sumsSha256 pins the per-file checksum list, and the build verifies every file against it. The archive checksum pins the reproducible archive made by scripts/package.mjs; an earlier archive of identical content stays accepted. The build fetches the archive itself when data/food is missing and FOOD_DATA_URL (or archive.url) is set.",
+  "acceptedArchives": [
+    {
+      "sha256": "b018a060a1f543f3ac21afb3a65bbde5d213a8d6f7840d5150887b0079095ef3",
+      "note": "the first published archive: not reproducible, identical content (the per-file sums match sumsSha256)"
+    }
+  ]
+}

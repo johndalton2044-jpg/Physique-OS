@@ -1,0 +1,42 @@
+{
+ "rule": "engine files must not call interface or test functions, except through a typeof-guarded hook; layers are declared here, not inferred from file numbers (the numbers record when a file was added)",
+ "ui": [
+  "76-visual-complete.js",
+  "76-visual-views.js",
+  "80-icons.js",
+  "80-ui.js",
+  "82-views-a.js",
+  "83-views-b.js",
+  "84-presentation.js",
+  "85-log-sheet.js",
+  "89-presentation-governance.js",
+  "89-render-complete.js",
+  "90-actions.js",
+  "90-ai-ui.js",
+  "90-automation.js",
+  "90-connections.js",
+  "90-optimiser-ui.js",
+  "90-physique-ui.js",
+  "90-responses.js",
+  "90-sources.js",
+  "90-weather-ui.js",
+  "90-workout.js",
+  "94-navigation.js",
+  "95-page-layout.js",
+  "96-recall.js",
+  "97-ai.js",
+  "97-copilot.js"
+ ],
+ "test": [
+  "95-selftest.js",
+  "70-demo.js",
+  "99-a-conformance.js"
+ ],
+ "boot": [
+  "99-boot.js"
+ ],
+ "reclassified": {
+  "96-recall.js": "answers questions about the interface\u2019s own state (navigation history, attention, selection); only interface files call it",
+  "97-copilot.js": "acts only through the interface\u2019s command registry; only interface files and self-tests call it"
+ }
+}

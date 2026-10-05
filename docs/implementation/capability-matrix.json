@@ -1,0 +1,443 @@
+{
+  "generatedAt": "2026-10-05T18:51:36.423Z",
+  "buildId": "c5ced85fff",
+  "statuses": [
+    "specified",
+    "implemented",
+    "integrated",
+    "surfaced",
+    "validated",
+    "production-ready"
+  ],
+  "capabilities": [
+    {
+      "id": "recoveryAllocation",
+      "name": "recoveryAllocation",
+      "domain": "recovery",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "recoveryAllocation",
+      "view": "nav.recoveryAllocation",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "motorLearning",
+      "name": "motorLearning",
+      "domain": "training",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "motorLearning",
+      "view": "nav.motorLearning",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "hydrationContext",
+      "name": "hydrationContext",
+      "domain": "body",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "hydrationContext",
+      "view": "nav.hydration",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "supplementReview",
+      "name": "supplementReview",
+      "domain": "nutrition",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "supplementReview",
+      "view": "nav.supplements",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "weightTrend",
+      "name": "weightTrend",
+      "domain": "body",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "weightTrend",
+      "view": "nav.weightTrend",
+      "maturity": "OPERATIONAL_ANALYTICAL",
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "derived from evidence",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "maintenance",
+      "name": "maintenance",
+      "domain": "energy",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "tdeeBayes",
+      "view": "nav.maintenance",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "readiness",
+      "name": "readiness",
+      "domain": "recovery",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "readinessState",
+      "view": "nav.recoveryState",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "unifiedRecovery",
+      "name": "unifiedRecovery",
+      "domain": "recovery",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "unifiedRecovery",
+      "view": "nav.recovery2",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "resistance",
+      "name": "resistance",
+      "domain": "training",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "effectiveSets",
+      "view": "nav.resistance",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "fatigue",
+      "name": "fatigue",
+      "domain": "training",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "fatigueCompartments",
+      "view": "nav.propagation",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "causalIdentification",
+      "name": "causalIdentification",
+      "domain": "inference",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "identificationStrategy",
+      "view": "nav.inference",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "propensity",
+      "name": "propensity",
+      "domain": "inference",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "propensityScoreModel",
+      "view": "nav.inference",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "missingData",
+      "name": "missingData",
+      "domain": "inference",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "multipleImputation",
+      "view": "nav.inference",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "measurementModel",
+      "name": "measurementModel",
+      "domain": "measurement",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "measurementModel",
+      "view": "nav.measurement",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "forecast",
+      "name": "forecast",
+      "domain": "forecast",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": "QUANTITY_REGISTRY",
+      "model": "forecastFamily",
+      "view": "nav.forecast",
+      "maturity": "OPERATIONAL_ANALYTICAL",
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "derived from evidence",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "appearance",
+      "name": "appearance",
+      "domain": "presentation",
+      "status": "surfaced",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "applyAppearanceProfile",
+      "view": "settings.profile",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "materialization",
+      "name": "materialization",
+      "domain": "runtime",
+      "status": "validated",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "materializeAll",
+      "view": "nav.internals",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "live verification",
+        "verification": "passes",
+        "validated": true,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "inferenceGateway",
+      "name": "inferenceGateway",
+      "domain": "runtime",
+      "status": "validated",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "infer",
+      "view": "nav.internals",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "live verification",
+        "verification": "passes",
+        "validated": true,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "provenance",
+      "name": "provenance",
+      "domain": "runtime",
+      "status": "validated",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "buildProvenance",
+      "view": "nav.internals",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "live verification",
+        "verification": "passes",
+        "validated": true,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "runIdentity",
+      "name": "runIdentity",
+      "domain": "runtime",
+      "status": "validated",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "runIdentity",
+      "view": "nav.internals",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "live verification",
+        "verification": "passes",
+        "validated": true,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "quantityRegistry",
+      "name": "quantityRegistry",
+      "domain": "semantic",
+      "status": "validated",
+      "sourceFiles": null,
+      "registry": null,
+      "model": "resolveQuantity",
+      "view": "nav.internals",
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": true,
+        "gradeSource": "live verification",
+        "verification": "passes",
+        "validated": true,
+        "productionReady": false
+      }
+    },
+    {
+      "id": "browserGate",
+      "name": "browserGate",
+      "domain": "testing",
+      "status": "integrated",
+      "sourceFiles": null,
+      "registry": null,
+      "model": null,
+      "view": null,
+      "maturity": null,
+      "evidence": {
+        "implemented": true,
+        "integrated": true,
+        "surfaced": false,
+        "gradeSource": "no derived grade",
+        "validated": false,
+        "productionReady": false
+      }
+    }
+  ],
+  "detections": {
+    "implementedButUnsurfaced": [],
+    "registeredButUnimplemented": [],
+    "productionReady": []
+  },
+  "note": "Every status is derived from evidence the build can check — existence, registry membership, a surfacing action, a maturity grade — and none is assigned by hand. Nothing is production-ready, because nothing has been experimentally or prospectively validated."
+}

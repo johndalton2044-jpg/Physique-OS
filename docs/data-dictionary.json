@@ -1,0 +1,2695 @@
+{
+ "generated": "tests/dictionary.mjs --write",
+ "ontologyVersion": "4f40c6abd6ab",
+ "observationTypes": [
+  {
+   "id": "adherence",
+   "label": "Plan adherence",
+   "unit": "%",
+   "group": "nutrition",
+   "min": 0,
+   "max": 100,
+   "consumers": [
+    "adherence confidence",
+    "model error vs execution error"
+   ],
+   "semantic": "adherence",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "arm",
+   "label": "Upper arm",
+   "unit": "in",
+   "group": "body",
+   "min": 6,
+   "max": 30,
+   "consumers": [
+    "measurement trend",
+    "lean-mass indicator"
+   ],
+   "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "bodyfat",
+   "label": "Body fat",
+   "unit": "%",
+   "group": "body",
+   "min": 2,
+   "max": 70,
+   "consumers": [
+    "composition estimate cross-check"
+   ],
+   "semantic": "adherence",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "calories",
+   "label": "Calories",
+   "unit": "kcal",
+   "group": "nutrition",
+   "min": 0,
+   "max": 15000,
+   "consumers": [
+    "TDEE",
+    "energy balance",
+    "calorie adherence",
+    "deficit estimate"
+   ],
+   "semantic": "intake",
+   "meaning": "energy INTAKE as logged",
+   "notes": "logged intake is not absorbed intake — see absorptionContext()",
+   "text": false
+  },
+  {
+   "id": "carbs",
+   "label": "Carbohydrate",
+   "unit": "g",
+   "group": "nutrition",
+   "min": 0,
+   "max": 1500,
+   "consumers": [
+    "macro summary",
+    "water-noise context"
+   ],
+   "semantic": "intake",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "cardio",
+   "label": "Cardio",
+   "unit": "min",
+   "group": "activity",
+   "min": 0,
+   "max": 600,
+   "consumers": [
+    "cardio load",
+    "recovery interference",
+    "activity adherence"
+   ],
+   "semantic": "sleep",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "chest",
+   "label": "Chest",
+   "unit": "in",
+   "group": "body",
+   "min": 20,
+   "max": 80,
+   "consumers": [
+    "measurement trend"
+   ],
+   "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "context",
+   "label": "Context tag",
+   "unit": null,
+   "group": "note",
+   "min": null,
+   "max": null,
+   "consumers": [
+    "interpretation context (travel, illness, new scale)"
+   ],
+   "semantic": null,
+   "meaning": null,
+   "notes": null,
+   "text": true
+  },
+  {
+   "id": "cravings",
+   "label": "Cravings",
+   "unit": "/10",
+   "group": "appetite",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "overeating risk"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "difficulty",
+   "label": "Diet difficulty",
+   "unit": "/10",
+   "group": "appetite",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "diet sustainability"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "fat",
+   "label": "Dietary fat",
+   "unit": "g",
+   "group": "nutrition",
+   "min": 0,
+   "max": 500,
+   "consumers": [
+    "macro summary",
+    "fat floor check"
+   ],
+   "semantic": "intake",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "fatigue",
+   "label": "Fatigue",
+   "unit": "/10",
+   "group": "recovery",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "recovery state",
+    "deload candidate",
+    "over-aggressive check"
+   ],
+   "semantic": "readiness",
+   "meaning": "accumulated exposure by compartment",
+   "notes": "an accounting scheme, not a measurement of fatigue",
+   "text": false
+  },
+  {
+   "id": "fiber",
+   "label": "Fiber",
+   "unit": "g",
+   "group": "nutrition",
+   "min": 0,
+   "max": 200,
+   "consumers": [
+    "fiber adequacy",
+    "satiety intervention"
+   ],
+   "semantic": "intake",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "fullness",
+   "label": "Fullness",
+   "unit": "/10",
+   "group": "appetite",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "satiety efficiency"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "hip",
+   "label": "Hip",
+   "unit": "in",
+   "group": "body",
+   "min": 20,
+   "max": 90,
+   "consumers": [
+    "body-composition estimate (circumference model, female)"
+   ],
+   "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "hunger",
+   "label": "Hunger",
+   "unit": "/10",
+   "group": "appetite",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "appetite burden",
+    "diet sustainability",
+    "over-aggressive check"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "mobility",
+   "label": "Mobility",
+   "unit": "min",
+   "group": "activity",
+   "min": 1,
+   "max": 180,
+   "consumers": [
+    "movement history"
+   ],
+   "semantic": "sleep",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "motivation",
+   "label": "Motivation",
+   "unit": "/10",
+   "group": "recovery",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "adherence risk"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "neck",
+   "label": "Neck",
+   "unit": "in",
+   "group": "body",
+   "min": 8,
+   "max": 30,
+   "consumers": [
+    "body-composition estimate (circumference model)"
+   ],
+   "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "note",
+   "label": "Observation note",
+   "unit": null,
+   "group": "note",
+   "min": null,
+   "max": null,
+   "consumers": [
+    "replay narrative",
+    "search"
+   ],
+   "semantic": null,
+   "meaning": null,
+   "notes": null,
+   "text": true
+  },
+  {
+   "id": "protein",
+   "label": "Protein",
+   "unit": "g",
+   "group": "nutrition",
+   "min": 0,
+   "max": 600,
+   "consumers": [
+    "protein adherence",
+    "muscle-retention risk"
+   ],
+   "semantic": "intake",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "rhr",
+   "label": "Resting heart rate",
+   "unit": "bpm",
+   "group": "body",
+   "min": 30,
+   "max": 140,
+   "consumers": [
+    "fitness indicator",
+    "recovery signal"
+   ],
+   "semantic": "cardioFitness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "sleep",
+   "label": "Sleep",
+   "unit": "h",
+   "group": "recovery",
+   "min": 0,
+   "max": 16,
+   "consumers": [
+    "recovery state",
+    "appetite context",
+    "over-aggressive check"
+   ],
+   "semantic": "sleep",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "sleepq",
+   "label": "Sleep quality",
+   "unit": "/10",
+   "group": "recovery",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "recovery state"
+   ],
+   "semantic": "sleep",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "soreness",
+   "label": "Soreness",
+   "unit": "/10",
+   "group": "recovery",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "recovery state",
+    "water-noise context"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "steps",
+   "label": "Steps",
+   "unit": "steps",
+   "group": "activity",
+   "min": 0,
+   "max": 80000,
+   "consumers": [
+    "step baseline",
+    "NEAT trend",
+    "activity target",
+    "TDEE context"
+   ],
+   "semantic": "steps",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "stress",
+   "label": "Stress",
+   "unit": "/10",
+   "group": "recovery",
+   "min": 0,
+   "max": 10,
+   "consumers": [
+    "recovery state"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "supplement",
+   "label": "Supplement",
+   "unit": null,
+   "group": "supplement",
+   "min": null,
+   "max": null,
+   "consumers": [
+    "supplement adherence",
+    "creatine water-weight context"
+   ],
+   "semantic": "adherence",
+   "meaning": null,
+   "notes": null,
+   "text": true
+  },
+  {
+   "id": "sweatrate",
+   "label": "Sweat rate",
+   "unit": "L/h",
+   "group": "activity",
+   "min": 0,
+   "max": 4,
+   "consumers": [
+    "hydration_balance"
+   ],
+   "semantic": "intake",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "thigh",
+   "label": "Thigh",
+   "unit": "in",
+   "group": "body",
+   "min": 10,
+   "max": 45,
+   "consumers": [
+    "measurement trend",
+    "lean-mass indicator"
+   ],
+   "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "urine",
+   "label": "Urine colour",
+   "unit": "1–8",
+   "group": "recovery",
+   "min": 1,
+   "max": 8,
+   "consumers": [
+    "hydration_balance"
+   ],
+   "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "waist",
+   "label": "Waist",
+   "unit": "in",
+   "group": "body",
+   "min": 15,
+   "max": 80,
+   "consumers": [
+    "waist trend",
+    "body-composition estimate",
+    "stall diagnosis",
+    "fat vs other mass"
+   ],
+   "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "water",
+   "label": "Water",
+   "unit": "L",
+   "group": "nutrition",
+   "min": 0,
+   "max": 15,
+   "consumers": [
+    "hydration context"
+   ],
+   "semantic": "intake",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "weight",
+   "label": "Body weight",
+   "unit": "lb",
+   "group": "body",
+   "min": 50,
+   "max": 700,
+   "consumers": [
+    "weight trend",
+    "7/14-day average",
+    "TDEE",
+    "forecast",
+    "goal trajectory",
+    "rate of loss"
+   ],
+   "semantic": "weight",
+   "meaning": "scale mass, as recorded",
+   "notes": "stored canonically in pounds; display converts",
+   "text": false
+  }
+ ],
+ "events": [
+  {
+   "id": "archive.recorded",
+   "entities": [
+    "Archive"
+   ]
+  },
+  {
+   "id": "copilot.authorized",
+   "entities": [
+    "Decision"
+   ]
+  },
+  {
+   "id": "cycle.recorded",
+   "entities": [
+    "LearningCycle"
+   ]
+  },
+  {
+   "id": "decision.applied",
+   "entities": [
+    "Decision"
+   ]
+  },
+  {
+   "id": "decision.recorded",
+   "entities": [
+    "Decision"
+   ]
+  },
+  {
+   "id": "equipment.changed",
+   "entities": [
+    "Constraint"
+   ]
+  },
+  {
+   "id": "events.revoked",
+   "entities": [
+    "Undo"
+   ]
+  },
+  {
+   "id": "execution.marked",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "experiment.created",
+   "entities": [
+    "Experiment"
+   ]
+  },
+  {
+   "id": "experiment.evaluated",
+   "entities": [
+    "Experiment",
+    "Archive"
+   ]
+  },
+  {
+   "id": "experiment.revised",
+   "entities": [
+    "Experiment"
+   ]
+  },
+  {
+   "id": "food.logged",
+   "entities": [
+    "Execution",
+    "Food"
+   ]
+  },
+  {
+   "id": "food.mealChanged",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "food.retracted",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "food.superseded",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "injury.recorded",
+   "entities": [
+    "Constraint"
+   ]
+  },
+  {
+   "id": "injury.resolved",
+   "entities": [
+    "Constraint"
+   ]
+  },
+  {
+   "id": "intervention.recorded",
+   "entities": [
+    "Intervention"
+   ]
+  },
+  {
+   "id": "inventory.changed",
+   "entities": [
+    "Constraint"
+   ]
+  },
+  {
+   "id": "model.stage",
+   "entities": [
+    "Prediction"
+   ]
+  },
+  {
+   "id": "movement.logged",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "negative.recorded",
+   "entities": [
+    "NegativeKnowledge"
+   ]
+  },
+  {
+   "id": "nutrition.derived",
+   "entities": [
+    "Observation"
+   ]
+  },
+  {
+   "id": "observation.added",
+   "entities": [
+    "Execution",
+    "Observation"
+   ]
+  },
+  {
+   "id": "observation.corrected",
+   "entities": [
+    "Observation"
+   ]
+  },
+  {
+   "id": "observation.flagged",
+   "entities": [
+    "Observation"
+   ]
+  },
+  {
+   "id": "observation.retracted",
+   "entities": [
+    "Observation"
+   ]
+  },
+  {
+   "id": "phase.ended",
+   "entities": [
+    "Phase",
+    "Archive"
+   ]
+  },
+  {
+   "id": "phase.started",
+   "entities": [
+    "Phase"
+   ]
+  },
+  {
+   "id": "phase.targetsChanged",
+   "entities": [
+    "Phase"
+   ]
+  },
+  {
+   "id": "plan.created",
+   "entities": [
+    "Plan",
+    "Adaptation"
+   ]
+  },
+  {
+   "id": "prediction.scored",
+   "entities": [
+    "Prediction"
+   ]
+  },
+  {
+   "id": "prediction.stamped",
+   "entities": [
+    "Prediction"
+   ]
+  },
+  {
+   "id": "profile.changed",
+   "entities": [
+    "Individual",
+    "Goal",
+    "Constraint"
+   ]
+  },
+  {
+   "id": "program.changed",
+   "entities": [
+    "Plan"
+   ]
+  },
+  {
+   "id": "program.customized",
+   "entities": [
+    "Plan"
+   ]
+  },
+  {
+   "id": "recipe.saved",
+   "entities": [
+    "Recipe"
+   ]
+  },
+  {
+   "id": "record.imported",
+   "entities": [
+    "Source"
+   ]
+  },
+  {
+   "id": "record.snapshot",
+   "entities": [
+    "Snapshot"
+   ]
+  },
+  {
+   "id": "response.recorded",
+   "entities": [
+    "Response"
+   ]
+  },
+  {
+   "id": "session.added",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "session.rated",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "session.retracted",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "session.superseded",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "settings.changed",
+   "entities": [
+    "Constraint"
+   ]
+  },
+  {
+   "id": "skill.changed",
+   "entities": [
+    "Execution"
+   ]
+  },
+  {
+   "id": "snapshot.captured",
+   "entities": [
+    "Snapshot"
+   ]
+  },
+  {
+   "id": "userFood.saved",
+   "entities": [
+    "Food"
+   ]
+  },
+  {
+   "id": "userRule.added",
+   "entities": [
+    "Decision"
+   ]
+  },
+  {
+   "id": "userRule.retired",
+   "entities": [
+    "Decision"
+   ]
+  }
+ ],
+ "stores": {
+  "profile": {
+   "entities": [
+    "Individual",
+    "Goal",
+    "Constraint"
+   ],
+   "fields": {
+    "activityBaseline": [
+     "string"
+    ],
+    "age": [
+     "number"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "dietPreference": [
+     "string"
+    ],
+    "equipment": [
+     "string"
+    ],
+    "goalType": [
+     "string"
+    ],
+    "goalWeightLb": [
+     "number"
+    ],
+    "heightIn": [
+     "number"
+    ],
+    "name": [
+     "string"
+    ],
+    "schedule": [
+     "string"
+    ],
+    "sex": [
+     "string"
+    ],
+    "sleepTargetH": [
+     "number"
+    ],
+    "startWeightLb": [
+     "number"
+    ],
+    "targetDate": [
+     "string"
+    ],
+    "trainingExperience": [
+     "string"
+    ],
+    "updatedAt": [
+     "null"
+    ]
+   }
+  },
+  "settings": {
+   "entities": [
+    "Constraint"
+   ],
+   "fields": {
+    "contrast": [
+     "string"
+    ],
+    "density": [
+     "string"
+    ],
+    "detail": [
+     "string"
+    ],
+    "deviceId": [
+     "string"
+    ],
+    "deviceTests": [
+     "object"
+    ],
+    "favorites": [
+     "array"
+    ],
+    "folds": [
+     "object"
+    ],
+    "foodDatabaseVersion": [
+     "null"
+    ],
+    "jobs": [
+     "object"
+    ],
+    "lastBackupAt": [
+     "null"
+    ],
+    "letterSpacing": [
+     "string"
+    ],
+    "lineSpacing": [
+     "string"
+    ],
+    "modelLifecycle": [
+     "object"
+    ],
+    "motion": [
+     "string"
+    ],
+    "onboarded": [
+     "boolean"
+    ],
+    "program": [
+     "string"
+    ],
+    "programHistory": [
+     "array"
+    ],
+    "showModels": [
+     "boolean"
+    ],
+    "supplementStack": [
+     "array"
+    ],
+    "textScale": [
+     "string"
+    ],
+    "textWeight": [
+     "string"
+    ],
+    "theme": [
+     "string"
+    ],
+    "units": [
+     "string"
+    ]
+   }
+  },
+  "phases": {
+   "entities": [
+    "Phase"
+   ],
+   "fields": {
+    "calorieTarget": [
+     "number"
+    ],
+    "cardioMinutes": [
+     "number"
+    ],
+    "cardioSessions": [
+     "number"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "criteria": [
+     "object"
+    ],
+    "endDate": [
+     "null"
+    ],
+    "fatFloor": [
+     "number"
+    ],
+    "fiberTarget": [
+     "number"
+    ],
+    "goalWeightLb": [
+     "number"
+    ],
+    "history": [
+     "array"
+    ],
+    "id": [
+     "string"
+    ],
+    "notes": [
+     "string"
+    ],
+    "objective": [
+     "string"
+    ],
+    "proteinTarget": [
+     "number"
+    ],
+    "sleepTargetH": [
+     "number"
+    ],
+    "startDate": [
+     "string"
+    ],
+    "startingState": [
+     "object"
+    ],
+    "status": [
+     "string"
+    ],
+    "stepTarget": [
+     "number"
+    ],
+    "stopCriteria": [
+     "string"
+    ],
+    "successCriteria": [
+     "string"
+    ],
+    "targetDate": [
+     "string"
+    ],
+    "targetRateHi": [
+     "number"
+    ],
+    "targetRateLo": [
+     "number"
+    ],
+    "targetSource": [
+     "string"
+    ],
+    "trainingSessions": [
+     "number"
+    ],
+    "transitionCriteria": [
+     "string"
+    ],
+    "type": [
+     "string"
+    ],
+    "updatedAt": [
+     "string"
+    ]
+   }
+  },
+  "plans": {
+   "entities": [
+    "Plan",
+    "Adaptation"
+   ],
+   "fields": {
+    "changes": [
+     "array"
+    ],
+    "content": [
+     "object"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "effectiveFrom": [
+     "string"
+    ],
+    "id": [
+     "string"
+    ],
+    "provenance": [
+     "object"
+    ],
+    "supersedes": [
+     "null"
+    ],
+    "trigger": [
+     "object"
+    ],
+    "version": [
+     "number"
+    ]
+   }
+  },
+  "interventions": {
+   "entities": [
+    "Intervention"
+   ],
+   "fields": {
+    "createdAt": [
+     "string"
+    ],
+    "date": [
+     "string"
+    ],
+    "decisionId": [
+     "string"
+    ],
+    "expected": [
+     "string"
+    ],
+    "experimentId": [
+     "string"
+    ],
+    "from": [
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "outcome": [
+     "string"
+    ],
+    "phaseId": [
+     "string"
+    ],
+    "recheckDate": [
+     "string"
+    ],
+    "status": [
+     "string"
+    ],
+    "to": [
+     "number"
+    ],
+    "variable": [
+     "string"
+    ]
+   }
+  },
+  "sessions": {
+   "entities": [
+    "Execution"
+   ],
+   "fields": {
+    "createdAt": [
+     "string"
+    ],
+    "date": [
+     "string"
+    ],
+    "durationMin": [
+     "number"
+    ],
+    "effort": [
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "name": [
+     "string"
+    ],
+    "notes": [
+     "string"
+    ],
+    "phaseId": [
+     "string"
+    ],
+    "retracted": [
+     "boolean"
+    ],
+    "sets": [
+     "array"
+    ],
+    "source": [
+     "string"
+    ],
+    "template": [
+     "string"
+    ]
+   }
+  },
+  "foodLogs": {
+   "entities": [
+    "Execution"
+   ],
+   "fields": {
+    "basis": [
+     "string"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "date": [
+     "string"
+    ],
+    "food": [
+     "object"
+    ],
+    "grams": [
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "meal": [
+     "string"
+    ],
+    "ml": [
+     "null"
+    ],
+    "nutrients": [
+     "object"
+    ],
+    "portionLabel": [
+     "string"
+    ],
+    "quantity": [
+     "number"
+    ],
+    "servings": [
+     "null"
+    ],
+    "source": [
+     "string"
+    ]
+   }
+  },
+  "observations": {
+   "entities": [
+    "Execution",
+    "Observation"
+   ],
+   "fields": {
+    "at": [
+     "string"
+    ],
+    "correctedBy": [
+     "null"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "date": [
+     "string"
+    ],
+    "flags": [
+     "array"
+    ],
+    "id": [
+     "string"
+    ],
+    "meta": [
+     "null",
+     "object"
+    ],
+    "method": [
+     "null",
+     "string"
+    ],
+    "note": [
+     "string"
+    ],
+    "phaseId": [
+     "null",
+     "string"
+    ],
+    "quality": [
+     "string"
+    ],
+    "retracted": [
+     "boolean"
+    ],
+    "source": [
+     "string"
+    ],
+    "supersedes": [
+     "null"
+    ],
+    "type": [
+     "string"
+    ],
+    "unit": [
+     "string"
+    ],
+    "value": [
+     "number",
+     "string"
+    ]
+   }
+  },
+  "executions": {
+   "entities": [
+    "Execution"
+   ],
+   "fields": {}
+  },
+  "experiments": {
+   "entities": [
+    "Experiment"
+   ],
+   "fields": {
+    "analysis": [
+     "object"
+    ],
+    "baseline": [
+     "object"
+    ],
+    "baselineValue": [
+     "number"
+    ],
+    "completedAt": [
+     "string"
+    ],
+    "conclusion": [
+     "string"
+    ],
+    "confidence": [
+     "string"
+    ],
+    "confounders": [
+     "array"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "decisionId": [
+     "string"
+    ],
+    "design": [
+     "object"
+    ],
+    "durationDays": [
+     "number"
+    ],
+    "estimand": [
+     "string"
+    ],
+    "finding": [
+     "null"
+    ],
+    "hypothesis": [
+     "string"
+    ],
+    "id": [
+     "string"
+    ],
+    "intervention": [
+     "string"
+    ],
+    "interventionId": [
+     "string"
+    ],
+    "interventionValue": [
+     "number"
+    ],
+    "metric": [
+     "string"
+    ],
+    "notes": [
+     "string"
+    ],
+    "outcome": [
+     "object"
+    ],
+    "phaseId": [
+     "string"
+    ],
+    "planHash": [
+     "string"
+    ],
+    "planVersion": [
+     "number"
+    ],
+    "predHi": [
+     "number"
+    ],
+    "predLo": [
+     "number"
+    ],
+    "prediction": [
+     "string"
+    ],
+    "question": [
+     "string"
+    ],
+    "recheckDate": [
+     "string"
+    ],
+    "startDate": [
+     "string"
+    ],
+    "status": [
+     "string"
+    ],
+    "successCriteria": [
+     "string"
+    ],
+    "variable": [
+     "string"
+    ]
+   }
+  },
+  "negatives": {
+   "entities": [
+    "NegativeKnowledge"
+   ],
+   "fields": {}
+  },
+  "recipes": {
+   "entities": [
+    "Recipe"
+   ],
+   "fields": {}
+  },
+  "foods": {
+   "entities": [
+    "Food"
+   ],
+   "fields": {}
+  },
+  "predictions": {
+   "entities": [
+    "Prediction"
+   ],
+   "fields": {
+    "absError": [
+     "null",
+     "number"
+    ],
+    "actual": [
+     "null",
+     "number"
+    ],
+    "actualBasis": [
+     "string"
+    ],
+    "assumptions": [
+     "array"
+    ],
+    "confidence": [
+     "string"
+    ],
+    "context": [
+     "object"
+    ],
+    "covered": [
+     "boolean",
+     "null"
+    ],
+    "date": [
+     "string"
+    ],
+    "dueDate": [
+     "string"
+    ],
+    "error": [
+     "null",
+     "number"
+    ],
+    "hi": [
+     "number"
+    ],
+    "horizonDays": [
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "inputs": [
+     "object"
+    ],
+    "level": [
+     "number"
+    ],
+    "lo": [
+     "number"
+    ],
+    "madeAt": [
+     "string"
+    ],
+    "model": [
+     "string"
+    ],
+    "modelVersion": [
+     "string"
+    ],
+    "outcome": [
+     "null"
+    ],
+    "phaseId": [
+     "string"
+    ],
+    "point": [
+     "number"
+    ],
+    "reliable": [
+     "boolean"
+    ],
+    "scoredAt": [
+     "null",
+     "string"
+    ],
+    "status": [
+     "string"
+    ],
+    "subject": [
+     "string"
+    ],
+    "unit": [
+     "string"
+    ]
+   }
+  },
+  "snapshots": {
+   "entities": [
+    "Snapshot"
+   ],
+   "fields": {
+    "at": [
+     "string"
+    ],
+    "avg7": [
+     "number"
+    ],
+    "calories": [
+     "number"
+    ],
+    "confidence": [
+     "string"
+    ],
+    "date": [
+     "string"
+    ],
+    "decision": [
+     "string"
+    ],
+    "hunger": [
+     "number"
+    ],
+    "phaseId": [
+     "string"
+    ],
+    "protein": [
+     "number"
+    ],
+    "recovery": [
+     "string"
+    ],
+    "sleep": [
+     "number"
+    ],
+    "steps": [
+     "number"
+    ],
+    "tdee": [
+     "null",
+     "number"
+    ],
+    "tdeeCls": [
+     "null",
+     "string"
+    ],
+    "trend": [
+     "number"
+    ],
+    "trendConf": [
+     "string"
+    ],
+    "trust": [
+     "string"
+    ],
+    "waist": [
+     "number"
+    ],
+    "weight": [
+     "number"
+    ]
+   }
+  },
+  "archive": {
+   "entities": [
+    "Archive"
+   ],
+   "fields": {
+    "archivedAt": [
+     "string"
+    ],
+    "id": [
+     "string"
+    ],
+    "kind": [
+     "string"
+    ],
+    "record": [
+     "object"
+    ],
+    "summary": [
+     "string"
+    ]
+   }
+  },
+  "responses": {
+   "entities": [
+    "Response"
+   ],
+   "fields": {
+    "adherence": [
+     "object"
+    ],
+    "applicability": [
+     "object"
+    ],
+    "attribution": [
+     "string"
+    ],
+    "burden": [
+     "object"
+    ],
+    "cls": [
+     "string"
+    ],
+    "confidence": [
+     "string"
+    ],
+    "confounders": [
+     "array"
+    ],
+    "delta": [
+     "number"
+    ],
+    "dose": [
+     "null",
+     "number"
+    ],
+    "evaluatedAt": [
+     "string"
+    ],
+    "evidence": [
+     "array"
+    ],
+    "executionIds": [
+     "array"
+    ],
+    "expectation": [
+     "string"
+    ],
+    "expected": [
+     "object"
+    ],
+    "expectedOutcome": [
+     "null",
+     "object"
+    ],
+    "exposureWindow": [
+     "object"
+    ],
+    "followedBy": [
+     "object"
+    ],
+    "from": [
+     "null",
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "interventionId": [
+     "string"
+    ],
+    "kind": [
+     "string"
+    ],
+    "modelVersion": [
+     "string"
+    ],
+    "observedOutcome": [
+     "object"
+    ],
+    "outcome": [
+     "string"
+    ],
+    "placebo": [
+     "object"
+    ],
+    "primary": [
+     "object"
+    ],
+    "reversible": [
+     "string"
+    ],
+    "source": [
+     "object"
+    ],
+    "stage": [
+     "string"
+    ],
+    "start": [
+     "string"
+    ],
+    "status": [
+     "string"
+    ],
+    "to": [
+     "null",
+     "number"
+    ],
+    "uncertainty": [
+     "object"
+    ],
+    "unintended": [
+     "array"
+    ],
+    "variable": [
+     "string"
+    ],
+    "verdict": [
+     "string"
+    ],
+    "windows": [
+     "object"
+    ]
+   }
+  },
+  "cycles": {
+   "entities": [
+    "LearningCycle"
+   ],
+   "fields": {
+    "at": [
+     "string"
+    ],
+    "beliefs": [
+     "object"
+    ],
+    "health": [
+     "object"
+    ],
+    "id": [
+     "string"
+    ],
+    "learned": [
+     "array"
+    ],
+    "next": [
+     "object"
+    ],
+    "stages": [
+     "array"
+    ],
+    "starved": [
+     "array"
+    ],
+    "week": [
+     "string"
+    ]
+   }
+  },
+  "decisions": {
+   "entities": [
+    "Decision"
+   ],
+   "fields": {
+    "action": [
+     "array"
+    ],
+    "at": [
+     "string"
+    ],
+    "code": [
+     "string"
+    ],
+    "confidence": [
+     "string"
+    ],
+    "createdAt": [
+     "string"
+    ],
+    "date": [
+     "string"
+    ],
+    "experimentId": [
+     "string"
+    ],
+    "id": [
+     "string"
+    ],
+    "intervention": [
+     "null",
+     "object"
+    ],
+    "lede": [
+     "string"
+    ],
+    "phaseId": [
+     "string"
+    ],
+    "recheckDate": [
+     "string"
+    ],
+    "recheckDays": [
+     "number"
+    ],
+    "reverseIf": [
+     "array"
+    ],
+    "rulesVersion": [
+     "string"
+    ],
+    "source": [
+     "string"
+    ],
+    "status": [
+     "string"
+    ],
+    "trace": [
+     "object"
+    ],
+    "verb": [
+     "string"
+    ],
+    "why": [
+     "array"
+    ]
+   }
+  }
+ },
+ "models": [
+  {
+   "id": "adherence",
+   "cls": "DERIVED",
+   "output": "per-stream adherence, never one collapsed score",
+   "uncertainty": "per-stream percentages, never one collapsed score",
+   "inputs": [
+    "calories",
+    "protein",
+    "steps",
+    "record.sessions|sessions",
+    "sleep",
+    "record.phases|plan targets"
+   ]
+  },
+  {
+   "id": "appetite",
+   "cls": "HEURISTIC",
+   "output": "low / moderate / high",
+   "uncertainty": "ordinal burden level",
+   "inputs": [
+    "hunger",
+    "cravings",
+    "fullness",
+    "difficulty"
+   ]
+  },
+  {
+   "id": "bodycomp_circ",
+   "cls": "HEURISTIC",
+   "output": "body-fat range and fat/lean mass ranges",
+   "uncertainty": "±3–4 percentage points (population fit)",
+   "inputs": [
+    "waist",
+    "neck",
+    "profile.heightIn|height",
+    "hip|hip (female)"
+   ]
+  },
+  {
+   "id": "cardio_fitness_latent",
+   "cls": "EMPIRICAL",
+   "output": "VO2max per modality family, with uncertainty",
+   "uncertainty": "kalman posterior",
+   "inputs": [
+    "cardio",
+    "rhr",
+    "weight"
+   ]
+  },
+  {
+   "id": "change_point",
+   "cls": "DERIVED",
+   "output": "dated shifts per stream with candidate causes and an attribution strength",
+   "uncertainty": "t statistic of the shift; attribution strength stated separately",
+   "inputs": [
+    "weight_trend|weight trend series",
+    "steps",
+    "sleep",
+    "calories|intake",
+    "fatigue",
+    "hunger",
+    "e1rm|e1RM"
+   ]
+  },
+  {
+   "id": "data_trust",
+   "cls": "DERIVED",
+   "output": "per-stream trust with reasons",
+   "uncertainty": "per-stream levels plus an overall percentage",
+   "inputs": [
+    "coverage",
+    "freshness",
+    "adherence|consistency",
+    "change_point|anomalies"
+   ]
+  },
+  {
+   "id": "diet_digestibility",
+   "cls": "PRIOR",
+   "output": "digestible protein (g) and energy adjustment",
+   "uncertainty": "group values",
+   "inputs": [
+    "calories"
+   ]
+  },
+  {
+   "id": "e1rm",
+   "cls": "DERIVED",
+   "output": "e1RM consensus with estimator spread",
+   "uncertainty": "spread across five estimator formulas",
+   "inputs": [
+    "session.load|load",
+    "session.reps|reps"
+   ]
+  },
+  {
+   "id": "energy_availability",
+   "cls": "DERIVED",
+   "output": "kcal per kg fat-free mass per day",
+   "uncertainty": "propagated",
+   "inputs": [
+    "calories",
+    "weight",
+    "bodyfat",
+    "cardio"
+   ]
+  },
+  {
+   "id": "energy_balance",
+   "cls": "DERIVED",
+   "output": "observed deficit/surplus estimate",
+   "uncertainty": "inherited TDEE interval",
+   "inputs": [
+    "calories|mean intake",
+    "tdee_personal|estimated TDEE"
+   ]
+  },
+  {
+   "id": "exercise_response",
+   "cls": "EMPIRICAL",
+   "output": "per-exercise slope, volume-vs-response, fatigue cost and a progression suggestion",
+   "uncertainty": "slope with exposure count; compared against personal e1RM noise",
+   "inputs": [
+    "session.sets|sets per exercise",
+    "session.load|load × reps",
+    "session.rir|RIR",
+    "record.sessions|session dates"
+   ]
+  },
+  {
+   "id": "fat_vs_other",
+   "cls": "HEURISTIC",
+   "output": "plausible split, never a precise fat number",
+   "uncertainty": "a qualitative verdict; a numeric split only with measured composition",
+   "inputs": [
+    "weight_trend|weight trend",
+    "waist|waist trend",
+    "record.phases|phase age",
+    "water_noise|water noise"
+   ]
+  },
+  {
+   "id": "friction",
+   "cls": "EMPIRICAL",
+   "output": "why plan items are missed (odds ratios per burden) and the probability a change is carried out",
+   "uncertainty": "standard error of each log odds",
+   "inputs": [
+    "sleep",
+    "fatigue",
+    "motivation",
+    "weight"
+   ]
+  },
+  {
+   "id": "goal_traj",
+   "cls": "PREDICTIVE",
+   "output": "required rate, status, projected date range",
+   "uncertainty": "projection range from the trend interval",
+   "inputs": [
+    "weight_avg|7-day average",
+    "canonicalGoal|goal weight (profile) or phase milestone",
+    "weight_trend|trend",
+    "profile.targetDate|deadline"
+   ]
+  },
+  {
+   "id": "hydration_balance",
+   "cls": "HEURISTIC",
+   "output": "daily water balance (L)",
+   "uncertainty": "fixed",
+   "inputs": [
+    "water",
+    "calories",
+    "cardio"
+   ]
+  },
+  {
+   "id": "intervention_response",
+   "cls": "EMPIRICAL",
+   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual",
+   "uncertainty": "standard error of the difference in trends",
+   "inputs": [
+    "weight",
+    "hunger",
+    "fatigue",
+    "sleep",
+    "steps",
+    "calories"
+   ]
+  },
+  {
+   "id": "learning_loop",
+   "cls": "DERIVED",
+   "output": "a weekly cycle: each stage’s status, what changed in what the app knows about you, loop health and the next test",
+   "uncertainty": "carried from each stage",
+   "inputs": [
+    "weight",
+    "calories"
+   ]
+  },
+  {
+   "id": "measurement_quality",
+   "cls": "DERIVED",
+   "output": "0–1 quality score per observation and per stream",
+   "uncertainty": "0–1 score with the deductions listed",
+   "inputs": [
+    "record.observations|observation source",
+    "record.observations|flags",
+    "record.observations|protocol conditions",
+    "record.observations|method consistency"
+   ]
+  },
+  {
+   "id": "met_energy",
+   "cls": "DERIVED",
+   "output": "estimated kcal for a session, never measured expenditure",
+   "uncertainty": "±20% (population METs)",
+   "inputs": [
+    "session.modality|modality",
+    "session.duration|duration",
+    "weight|body weight"
+   ]
+  },
+  {
+   "id": "micronutrient_coverage",
+   "cls": "DERIVED",
+   "output": "7-day intake vs reference intakes and upper limits",
+   "uncertainty": "data completeness",
+   "inputs": [
+    "calories",
+    "supplement"
+   ]
+  },
+  {
+   "id": "model_competition",
+   "cls": "EMPIRICAL",
+   "output": "which forecast to trust for each important prediction, with its error, bias and calibration",
+   "uncertainty": "paired error test and interval coverage",
+   "inputs": [
+    "weight"
+   ]
+  },
+  {
+   "id": "muscle_risk",
+   "cls": "HEURISTIC",
+   "output": "low / medium / high / insufficient",
+   "uncertainty": "ordinal level; the contributing proxies are listed",
+   "inputs": [
+    "strength_trend|strength trend",
+    "protein|protein adherence",
+    "weight_trend|rate of loss",
+    "recovery",
+    "adherence|training consistency"
+   ]
+  },
+  {
+   "id": "personal_baseline",
+   "cls": "EMPIRICAL",
+   "output": "per-stream personal centre, spread and where the last 7 days sit against it",
+   "uncertainty": "median with MAD spread; z-scores against the personal centre",
+   "inputs": [
+    "weight",
+    "steps",
+    "sleep",
+    "hunger",
+    "fatigue",
+    "stress",
+    "soreness",
+    "calories",
+    "protein",
+    "cardio",
+    "record.sessions|sessions"
+   ]
+  },
+  {
+   "id": "personal_response",
+   "cls": "EMPIRICAL",
+   "output": "the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data",
+   "uncertainty": "posterior standard deviation",
+   "inputs": [
+    "weight",
+    "hunger",
+    "steps",
+    "calories"
+   ]
+  },
+  {
+   "id": "physique_regions",
+   "cls": "EMPIRICAL",
+   "output": "per region: exposure, strength and size trends, status, and where to add or take sets",
+   "uncertainty": "standard error of each trend",
+   "inputs": [
+    "waist",
+    "bodyfat",
+    "weight"
+   ]
+  },
+  {
+   "id": "rate_band",
+   "cls": "POLICY",
+   "output": "the lb/week range this system elects to work within for the current weight zone",
+   "uncertainty": "a policy range, not an estimate",
+   "inputs": [
+    "weight|current weight",
+    "record.phases|phase"
+   ]
+  },
+  {
+   "id": "recovery",
+   "cls": "HEURISTIC",
+   "output": "good / acceptable / strained / poor / unknown with the signals that drove it",
+   "uncertainty": "ordinal level from the count and severity of signals",
+   "inputs": [
+    "sleep",
+    "sleepq|sleep quality",
+    "fatigue",
+    "soreness",
+    "stress"
+   ]
+  },
+  {
+   "id": "recovery_allocation",
+   "cls": "HEURISTIC",
+   "output": "weekly recovery budget and its split",
+   "uncertainty": "relative units",
+   "inputs": [
+    "sleep",
+    "steps",
+    "cardio"
+   ]
+  },
+  {
+   "id": "response_matrix",
+   "cls": "EMPIRICAL",
+   "output": "effect per unit change, n, confidence and confounders per variable",
+   "uncertainty": "effect per unit with n and confounder count",
+   "inputs": [
+    "record.experiments|completed experiments",
+    "record.interventions|interventions",
+    "weight_trend|weight trend before/after",
+    "record.phases|phase",
+    "rate_band|weight zone"
+   ]
+  },
+  {
+   "id": "strength_trend",
+   "cls": "DERIVED",
+   "output": "improving / stable / declining per exercise and overall",
+   "uncertainty": "direction per lift; confidence from the number of tracked lifts",
+   "inputs": [
+    "record.sessions|sessions",
+    "e1rm|e1RM per exercise"
+   ]
+  },
+  {
+   "id": "supplement_adherence",
+   "cls": "DERIVED",
+   "output": "taken vs due, per supplement",
+   "uncertainty": "count",
+   "inputs": [
+    "supplement"
+   ]
+  },
+  {
+   "id": "supplement_efficacy",
+   "cls": "EMPIRICAL",
+   "output": "on-vs-off difference per supplement",
+   "uncertainty": "standard error",
+   "inputs": [
+    "supplement"
+   ]
+  },
+  {
+   "id": "tdee_personal",
+   "cls": "EMPIRICAL",
+   "output": "estimated TDEE with interval, evidence count and calibration status",
+   "uncertainty": "95% interval combining slope error, tissue-density spread and logging error",
+   "inputs": [
+    "calories",
+    "weight_trend|weight trend",
+    "adherence|logging coverage",
+    "adherence"
+   ]
+  },
+  {
+   "id": "tdee_prior",
+   "cls": "PRIOR",
+   "output": "starting estimate with ± ~15% uncertainty; replaced as personal evidence accumulates",
+   "uncertainty": "±15% band around the population equation",
+   "inputs": [
+    "profile.age|age",
+    "profile.sex|sex",
+    "profile.heightIn|height",
+    "weight",
+    "profile.activityBaseline|activity baseline"
+   ]
+  },
+  {
+   "id": "uncertainty_chain",
+   "cls": "DERIVED",
+   "output": "an energy-balance interval and the decision confidence ceiling it implies",
+   "uncertainty": "the interval it produces is the uncertainty",
+   "inputs": [
+    "calories|intake coverage",
+    "measurement_quality|measurement quality",
+    "tdee_personal|TDEE interval",
+    "weight_trend|trend interval"
+   ]
+  },
+  {
+   "id": "unified_optimiser",
+   "cls": "PREDICTIVE",
+   "output": "the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference",
+   "uncertainty": "combined standard deviation and robustness",
+   "inputs": [
+    "weight",
+    "steps",
+    "calories",
+    "fatigue"
+   ]
+  },
+  {
+   "id": "water_noise",
+   "cls": "HEURISTIC",
+   "output": "low / medium / high",
+   "uncertainty": "ordinal (low / medium / high) with the drivers listed",
+   "inputs": [
+    "water_noise|weight volatility",
+    "context|context tags",
+    "record.phases|phase age",
+    "carbs|carbohydrate swings"
+   ]
+  },
+  {
+   "id": "weight_avg",
+   "cls": "DERIVED",
+   "output": "7- and 14-day mean of daily weight",
+   "uncertainty": "none (a mean); its inputs carry the noise",
+   "inputs": [
+    "weight"
+   ]
+  },
+  {
+   "id": "weight_forecast",
+   "cls": "PREDICTIVE",
+   "output": "point and interval at 7/14/28 days; stamped to the ledger before outcomes",
+   "uncertainty": "point plus interval from slope error and scale noise",
+   "inputs": [
+    "weight_avg|7-day average",
+    "weight_trend|trend",
+    "water_noise|residual noise"
+   ]
+  },
+  {
+   "id": "weight_trend",
+   "cls": "DERIVED",
+   "output": "slope in lb/week with residual noise and confidence",
+   "uncertainty": "95% slope interval from the OLS standard error, plus residual noise",
+   "inputs": [
+    "weight"
+   ]
+  }
+ ],
+ "concepts": {
+  "weight": {
+   "unit": "lb (canonical)",
+   "owner": "currentWeight",
+   "meaning": "scale mass, as recorded",
+   "notes": "stored canonically in pounds; display converts"
+  },
+  "calories": {
+   "unit": "kcal/day",
+   "owner": "food log",
+   "meaning": "energy INTAKE as logged",
+   "notes": "logged intake is not absorbed intake — see absorptionContext()"
+  },
+  "tdee": {
+   "unit": "kcal/day",
+   "owner": "tdeePersonal",
+   "meaning": "maintenance energy, fitted from intake and weight change",
+   "notes": "an estimate with an interval, never a measurement"
+  },
+  "e1rm": {
+   "unit": "lb",
+   "owner": "e1rmFrom",
+   "meaning": "estimated one-rep maximum from a submaximal set",
+   "notes": "Epley; degrades badly above about fifteen effective reps"
+  },
+  "rir": {
+   "unit": "count",
+   "owner": "effortOf",
+   "meaning": "reps left in reserve at the end of a set",
+   "notes": "subjective; reliability falls as the number rises"
+  },
+  "stimulus": {
+   "unit": "index",
+   "owner": "mechanicalDemand",
+   "meaning": "weighted exposure, comparable within a programme",
+   "notes": "not a physical quantity and not comparable between people"
+  },
+  "fatigue": {
+   "unit": "index",
+   "owner": "fatigueCompartments",
+   "meaning": "accumulated exposure by compartment",
+   "notes": "an accounting scheme, not a measurement of fatigue"
+  },
+  "kcalPerLb": {
+   "unit": "kcal/lb",
+   "owner": "tissueEnergyDensity",
+   "meaning": "energy behind a pound of scale weight",
+   "notes": "composition-dependent; 3500 is adipose tissue alone"
+  },
+  "readiness": {
+   "unit": "z (own baseline)",
+   "owner": "readinessState",
+   "meaning": "today against your own middle per signal",
+   "notes": "relative to the person, meaningless as an absolute"
+  },
+  "trainingLoad": {
+   "unit": "ratio",
+   "owner": "trainingLoad",
+   "meaning": "acute against own chronic average",
+   "notes": "descriptive; its predictive value for injury is contested"
+  }
+ },
+ "ontology": {
+  "observationTypes": [
+   "adherence",
+   "arm",
+   "bodyfat",
+   "calories",
+   "carbs",
+   "cardio",
+   "chest",
+   "context",
+   "cravings",
+   "difficulty",
+   "fat",
+   "fatigue",
+   "fiber",
+   "fullness",
+   "hip",
+   "hunger",
+   "mobility",
+   "motivation",
+   "neck",
+   "note",
+   "protein",
+   "rhr",
+   "sleep",
+   "sleepq",
+   "soreness",
+   "steps",
+   "stress",
+   "supplement",
+   "sweatrate",
+   "thigh",
+   "urine",
+   "waist",
+   "water",
+   "weight"
+  ],
+  "events": [
+   "archive.recorded",
+   "copilot.authorized",
+   "cycle.recorded",
+   "decision.applied",
+   "decision.recorded",
+   "equipment.changed",
+   "events.revoked",
+   "execution.marked",
+   "experiment.created",
+   "experiment.evaluated",
+   "experiment.revised",
+   "food.logged",
+   "food.mealChanged",
+   "food.retracted",
+   "food.superseded",
+   "injury.recorded",
+   "injury.resolved",
+   "intervention.recorded",
+   "inventory.changed",
+   "model.stage",
+   "movement.logged",
+   "negative.recorded",
+   "nutrition.derived",
+   "observation.added",
+   "observation.corrected",
+   "observation.flagged",
+   "observation.retracted",
+   "phase.ended",
+   "phase.started",
+   "phase.targetsChanged",
+   "plan.created",
+   "prediction.scored",
+   "prediction.stamped",
+   "profile.changed",
+   "program.changed",
+   "program.customized",
+   "recipe.saved",
+   "record.imported",
+   "record.snapshot",
+   "response.recorded",
+   "session.added",
+   "session.rated",
+   "session.retracted",
+   "session.superseded",
+   "settings.changed",
+   "skill.changed",
+   "snapshot.captured",
+   "userFood.saved",
+   "userRule.added",
+   "userRule.retired"
+  ],
+  "stores": [
+   "archive",
+   "cycles",
+   "decisions",
+   "executions",
+   "experiments",
+   "foodLogs",
+   "foods",
+   "interventions",
+   "negatives",
+   "observations",
+   "phases",
+   "plans",
+   "predictions",
+   "profile",
+   "recipes",
+   "responses",
+   "sessions",
+   "settings",
+   "snapshots"
+  ],
+  "models": [
+   "adherence",
+   "appetite",
+   "bodycomp_circ",
+   "cardio_fitness_latent",
+   "change_point",
+   "data_trust",
+   "diet_digestibility",
+   "e1rm",
+   "energy_availability",
+   "energy_balance",
+   "exercise_response",
+   "fat_vs_other",
+   "friction",
+   "goal_traj",
+   "hydration_balance",
+   "intervention_response",
+   "learning_loop",
+   "measurement_quality",
+   "met_energy",
+   "micronutrient_coverage",
+   "model_competition",
+   "muscle_risk",
+   "personal_baseline",
+   "personal_response",
+   "physique_regions",
+   "rate_band",
+   "recovery",
+   "recovery_allocation",
+   "response_matrix",
+   "strength_trend",
+   "supplement_adherence",
+   "supplement_efficacy",
+   "tdee_personal",
+   "tdee_prior",
+   "uncertainty_chain",
+   "unified_optimiser",
+   "water_noise",
+   "weight_avg",
+   "weight_forecast",
+   "weight_trend"
+  ],
+  "exercises": [
+   "abs",
+   "abwheel",
+   "adductormachine",
+   "archerpushup",
+   "arnoldpress",
+   "assisteddip",
+   "assistedpullup",
+   "backext",
+   "bandcurl",
+   "bandextrotation",
+   "bandpallof",
+   "bandpullapart",
+   "bandpullup",
+   "bandpushup",
+   "bandrow",
+   "bbrow",
+   "beltsquat",
+   "bench",
+   "benchdip",
+   "birddog",
+   "bodysaw",
+   "boxjump",
+   "boxpistol",
+   "boxsquat",
+   "broadjump",
+   "bwsquat",
+   "cablecrunch",
+   "cablecurl",
+   "cablefly",
+   "cablekickback",
+   "cablelatraise",
+   "cablepress",
+   "cablepullthrough",
+   "cablerow",
+   "cablewoodchop",
+   "calf",
+   "chestsupportedrow",
+   "chinup",
+   "closegripbench",
+   "copenhagen",
+   "curl",
+   "dbbench",
+   "dbrdl",
+   "dbrow",
+   "dbshrug",
+   "deadbug",
+   "deadhang",
+   "deadlift",
+   "declinebench",
+   "deficitlunge",
+   "deficitpushup",
+   "depthjump",
+   "diamondpushup",
+   "dip",
+   "extrotation",
+   "facepull",
+   "farmercarry",
+   "floorpress",
+   "frontsquat",
+   "glutebridge",
+   "gobletsquat",
+   "goodmorning",
+   "hacksquat",
+   "hammercurl",
+   "handstandpushup",
+   "hangingkneeraise",
+   "hanginglegraise",
+   "hipthrust",
+   "inclinebench",
+   "inclinecurl",
+   "inclinedb",
+   "inclinepushup",
+   "invertedrow",
+   "kbdeadlift",
+   "kbswing",
+   "kneeplank",
+   "kneepushup",
+   "landminepress",
+   "landminerotation",
+   "lateralunge",
+   "latraise",
+   "legcurl",
+   "legext",
+   "legpress",
+   "lunge",
+   "machinepress",
+   "machinerow",
+   "machineshoulder",
+   "meadowsrow",
+   "medballchestpass",
+   "medballrotthrow",
+   "medballslam",
+   "negativepullup",
+   "nordic",
+   "ohp",
+   "overheadcarry",
+   "overheadext",
+   "pallofpress",
+   "pausesquat",
+   "pecdeck",
+   "pecfly",
+   "pendlayrow",
+   "pikepushup",
+   "pistol",
+   "plank",
+   "platepinch",
+   "preachercurl",
+   "pressdown",
+   "pulldown",
+   "pullup",
+   "pushpress",
+   "pushup",
+   "rackcarry",
+   "rdl",
+   "reversecrunch",
+   "reversefly",
+   "reversehyper",
+   "reverselunge",
+   "reversepecdeck",
+   "ringpushup",
+   "ringrow",
+   "rkcplank",
+   "russiantwist",
+   "sealrow",
+   "seatedcalf",
+   "seateddbpress",
+   "seatedlegcurl",
+   "shrug",
+   "sidebend",
+   "sideplank",
+   "singlearmpulldown",
+   "singlelegbridge",
+   "singlelegcalf",
+   "singleleghipthrust",
+   "singlelegrdl",
+   "sissysquat",
+   "skullcrusher",
+   "sleddrag",
+   "sledpush",
+   "slidercurl",
+   "smithsquat",
+   "spanishsquat",
+   "splitsquat",
+   "squat",
+   "squatjump",
+   "staticsplitsquat",
+   "stepup",
+   "straightarmpulldown",
+   "suitcasecarry",
+   "sumodl",
+   "toestobar",
+   "trapbardl",
+   "uprightrow",
+   "wallpushup",
+   "wallsit",
+   "weighteddip",
+   "weightedpullup",
+   "wristcurl",
+   "ytw"
+  ]
+ }
+}
