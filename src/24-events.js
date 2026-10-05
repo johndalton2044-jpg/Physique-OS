@@ -392,7 +392,9 @@ function _liveAt(db,date){
     if(x.date&&x.date>date)return false;
     if(x.createdAt&&localDateOf(x.createdAt)>date)return false;
     if(x.retracted&&(!x.retractedAt||localDateOf(x.retractedAt)<=date))return false;
-    if(supKey&&x[supKey]&&(!x[supAtKey]||String(x[supAtKey]).slice(0,10)<=date))return false;
+    /* the local date, as the app's own visibility rules use (_foodLogVisible, the observation rules): a UTC slice put a
+       correction made after 10 am in UTC+14 on the previous day */
+    if(supKey&&x[supKey]&&(!x[supAtKey]||localDateOf(x[supAtKey])<=date))return false;
     return true;
   };
   return {
