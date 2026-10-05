@@ -396,7 +396,7 @@ function evaluateExperiment(id,opts){
     emitEvent('experiment.evaluated',{id:exp.id,result:{outcome:res,conclusion:res.conclusion,confidence:res.confidence,status:'complete',completedAt:exp.completedAt}},{at:exp.completedAt});
     var iv=DB.interventions.filter(function(i){return i.id===exp.interventionId;})[0];if(iv){iv.status='evaluated';iv.outcome=res.conclusion;}
     if(res.conclusion==='unsupported'||res.conclusion==='contradicted')addNegative({intervention:exp.intervention||(exp.variable+' '+exp.baselineValue+'\u2192'+exp.interventionValue),variable:exp.variable,expected:exp.prediction,observed:res.summary,reasons:(res.conclusion==='contradicted'?['effect went the wrong way']:[]).concat(['adherence','compensation','water','measurement error']).concat(exp.confounders||[]),confidence:res.confidence,applicability:'this phase / weight zone',experimentId:exp.id,silent:true});
-    try{DB.archive.push({id:uid('arc'),kind:'experiment',archivedAt:nowISO(),summary:exp.question,record:JSON.parse(JSON.stringify(exp))});}catch(e){_q(e);}
+    try{var arc={id:uid('arc'),kind:'experiment',archivedAt:nowISO(),summary:exp.question,record:JSON.parse(JSON.stringify(exp))};DB.archive.push(arc);emitEvent('archive.recorded',JSON.parse(JSON.stringify(arc)),{at:arc.archivedAt});}catch(e){_q(e);}
     save('experiment:evaluate');
   }
   return res;
@@ -509,7 +509,8 @@ function archivePhase(ph){
   var sess=(DB.sessions||[]).filter(function(s){return s.phaseId===ph.id&&!s.retracted;});
   var exps=(DB.experiments||[]).filter(function(e){return e.phaseId===ph.id;});var negs=(DB.negatives||[]).filter(function(n){return n.phaseId===ph.id;});
   var summary={label:phaseLabel(ph)+' \u00b7 '+Math.round(weeks)+' weeks',startWeight:sW,endWeight:eW,observedRate:(sW!=null&&eW!=null&&weeks>0)?(eW-sW)/weeks:null,avgIntake:cal.length?mean(cal.map(function(o){return o.value;})):null,avgProtein:pr.length?mean(pr.map(function(o){return o.value;})):null,trainingSessions:sess.length,trainingPerWeek:weeks>0?sess.length/weeks:null,experiments:exps.length,supported:exps.filter(function(e){return e.conclusion==='supported';}).length,unsupported:exps.filter(function(e){return e.conclusion==='unsupported';}).length,negatives:negs.length,outcome:ph.outcome||'',lessons:exps.filter(function(e){return e.outcome;}).map(function(e){return e.intervention+': '+e.conclusion;}).concat(negs.map(function(n){return 'did not work: '+n.intervention;}))};
-  DB.archive.push({id:uid('arc'),kind:'phase',archivedAt:nowISO(),summary:summary.label,record:{phase:JSON.parse(JSON.stringify(ph)),summary:summary,modelVersions:MODELS.map(function(m){return m.id+'@'+m.version;}),rulesVersion:DECISION_RULES_VERSION,decisions:(DB.decisions||[]).filter(function(d){return d.phaseId===ph.id;}).map(function(d){return {date:d.date,code:d.code,confidence:d.confidence};})}});
+  var arc={id:uid('arc'),kind:'phase',archivedAt:nowISO(),summary:summary.label,record:{phase:JSON.parse(JSON.stringify(ph)),summary:summary,modelVersions:MODELS.map(function(m){return m.id+'@'+m.version;}),rulesVersion:DECISION_RULES_VERSION,decisions:(DB.decisions||[]).filter(function(d){return d.phaseId===ph.id;}).map(function(d){return {date:d.date,code:d.code,confidence:d.confidence};})}};
+  DB.archive.push(arc);emitEvent('archive.recorded',JSON.parse(JSON.stringify(arc)),{at:arc.archivedAt});
   return summary;
 }
 /* ---- value of information ---- */

@@ -67,7 +67,7 @@ var ENTITY_CONTRACTS={
   Snapshot:{status:'implemented',stores:['snapshots'],identity:'one per day',lifecycle:['captured'],owners:['captureSnapshot'],readModel:'snapshotsOf',registry:null,layer:'models',
     temporal:'what was known on that day',provenance:'snapshot.captured events',correction:'append only',events:['snapshot.captured'],existing:[],note:''},
   Archive:{status:'implemented',stores:['archive'],identity:'one per archived phase or evaluated experiment',lifecycle:['archived'],owners:['evaluateExperiment','archivePhase'],readModel:'archiveOf',registry:null,layer:'models',
-    temporal:'the date it closed',provenance:'experiment.evaluated and phase.ended events',correction:'append only',events:['experiment.evaluated','phase.ended'],existing:[],note:''},
+    temporal:'the date it closed',provenance:'archive.recorded events, written when experiment.evaluated or phase.ended closes the record',correction:'append only',events:['archive.recorded','experiment.evaluated','phase.ended'],existing:[],note:''},
   Source:{status:'implemented',stores:[],identity:'one per data source (manual, import, a connected service)',lifecycle:['connected','syncing','disconnected'],owners:['importObservations'],readModel:'externalSources',registry:null,layer:'sources',
     temporal:'each observation keeps the source it came from',provenance:'source and method on every observation',correction:'disconnecting keeps past data, labelled with its source',events:['record.imported'],existing:[],note:'a source is not a store of its own: it is the provenance carried by observations'},
   IndividualState:{status:'projection',stores:[],identity:'one per person, as of a date',lifecycle:['computed'],owners:[],readModel:'individualState',registry:null,layer:'models',

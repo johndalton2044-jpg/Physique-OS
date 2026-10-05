@@ -717,6 +717,59 @@ function runSelfTest(opts){
         /nothing was deleted|not been compacted/.test(eventArchiveState().note));
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    /* EVERY PERSISTED COLLECTION survives every path a record takes through the log. The checks above counted observations
+       only, so snapshots, compaction and restore-merge each lost plans, executions, environment, responses and cycles
+       without a single failure. Each check here walks PERSIST_COLLECTIONS, so a collection added later is covered too. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ;
+      var T=todayISO();
+      var ids=function(db,k){return (db[k]||[]).map(function(x){return x&&x.id;}).sort().join(',');};
+      var lost=function(a,b){return PERSIST_COLLECTIONS.filter(function(k){return ids(a,k)!==ids(b,k);});};
+      var oneOfEach=function(tag){var db={};PERSIST_COLLECTIONS.forEach(function(k){db[k]=[{id:k+'-'+tag,date:T,week:tag,version:1,stage:'final',kind:'phase',item:'steps',status:'done',dataset:'forecast'}];});return db;};
+      var folds=Object.keys(EVENT_TYPES).map(function(t){return String(EVENT_TYPES[t].apply);}).join('\n');
+      var unfolded=PERSIST_COLLECTIONS.filter(function(k){return !new RegExp('db\\.'+k+'\\b').test(folds)&&UNEVENTED_COLLECTIONS.indexOf(k)<0;});
+      ok('every persisted collection is written by an event, or declared as kept outside the log',!unfolded.length,unfolded.join(', '));
+      ok('the collections kept outside the log are persisted ones',UNEVENTED_COLLECTIONS.every(function(k){return PERSIST_COLLECTIONS.indexOf(k)>=0;}));
+      /* 1. a reset snapshot carries every collection */
+      DB=emptyDB();var seed=oneOfEach('a');PERSIST_COLLECTIONS.forEach(function(k){DB[k]=JSON.parse(JSON.stringify(seed[k]));});
+      _EVENTS.length=0;_EVENT_SEQ=0;resetEventLog('collection round trip');_memoInvalidate();
+      var l1=lost(DB,projectEvents(_EVENTS).db);
+      ok('a reset snapshot carries every persisted collection',!l1.length,'lost: '+l1.join(', '));
+      /* 2. compaction folds every collection, including records written by events after the snapshot */
+      var evented=[['plan.created','plans'],['execution.marked','executions'],['response.recorded','responses'],['cycle.recorded','cycles'],['archive.recorded','archive']];
+      evented.forEach(function(p){var rec={id:p[1]+'-b',date:T,week:'b',version:2,stage:'final',kind:'phase',item:'steps',status:'done'};
+        DB[p[1]].push(JSON.parse(JSON.stringify(rec)));emitEvent(p[0],rec);});
+      for(var i=0;i<6;i++)addObservation({type:'steps',date:T,value:8000+i,source:'manual'},{silent:true,noSave:true});
+      var beforeC=projectEvents(_EVENTS).db,rc=compactEvents(true),afterC=projectEvents(_EVENTS).db,l2=lost(beforeC,afterC);
+      ok('compaction keeps every persisted collection in its snapshot',rc.compacted>0&&!l2.length,'compacted '+rc.compacted+'; lost: '+l2.join(', '));
+      ok('the record still matches its own log for every evented collection',projectionMatchesRecord().ok,JSON.stringify(projectionMatchesRecord().diffs));
+      /* 3. startup adoption (99-boot.js: the stored log merged into an empty one) keeps everything, archive entries
+            made after the snapshot and the weather kept outside the log included */
+      DB.environment.push({id:'environment-live',date:T,dataset:'forecast'});
+      var arc={id:'archive-c',kind:'experiment',archivedAt:nowISO()};DB.archive.push(arc);emitEvent('archive.recorded',JSON.parse(JSON.stringify(arc)));
+      var live=JSON.parse(JSON.stringify(DB)),stored=_EVENTS.slice();_EVENTS.length=0;
+      adoptMergedEvents(mergeEvents(_EVENTS,stored));
+      var l3=lost(live,DB);
+      ok('adopting the stored log at startup keeps every persisted collection',!l3.length,'lost: '+l3.join(', '));
+      /* 4. restore → merge adds the backup's records in every collection, and only the ones not already held */
+      var backup=oneOfEach('r');backup.snapshots[0].date=addDays(T,-1);
+      PERSIST_COLLECTIONS.forEach(function(k){if((DB[k]||[]).length)backup[k].push(JSON.parse(JSON.stringify(DB[k][0])));});
+      var keep=JSON.parse(JSON.stringify(DB)),mr=mergeRecordCollections(backup);
+      var missed=PERSIST_COLLECTIONS.filter(function(k){return !DB[k].some(function(x){return x.id===k+'-r';});});
+      var doubled=PERSIST_COLLECTIONS.filter(function(k){return DB[k].length!==keep[k].length+1;});
+      ok('restore → merge adds the backup’s records to every persisted collection',!missed.length&&mr.added===PERSIST_COLLECTIONS.length,'missed: '+missed.join(', ')+'; added '+mr.added);
+      ok('restore → merge does not add a record the record already holds',!doubled.length,'doubled: '+doubled.join(', '));
+      var sameDay=mergeRecordCollections({snapshots:[{id:'snapshots-other',date:T}]});
+      ok('restore → merge keeps one daily snapshot per date',sameDay.added===0);
+      var merged=JSON.parse(JSON.stringify(DB));resetEventLog('record restored from a backup');
+      var l4=lost(merged,projectEvents(_EVENTS).db);
+      ok('a merged restore survives the log restart that follows it',!l4.length,'lost: '+l4.join(', '));
+      /* 5. validation and migration know every collection */
+      ok('validation rejects a backup whose plans are not a list',!validateDB({schemaVersion:SCHEMA_VERSION,observations:[],plans:{}}).ok);
+      var mg=migrate({schemaVersion:SCHEMA_VERSION,observations:[],executions:{}});
+      ok('migration repairs every persisted collection to a list',mg.ok&&PERSIST_COLLECTIONS.every(function(k){return Array.isArray(mg.db[k]);}));
+      DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
+    })();
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;

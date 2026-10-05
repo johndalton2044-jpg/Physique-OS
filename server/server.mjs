@@ -91,13 +91,43 @@ function writeVault(v){
   fs.writeFileSync(tmp,JSON.stringify(v));
   fs.renameSync(tmp,vaultMetaPath(v.id));   // atomic: a crash mid-write never leaves a half-vault
 }
+/* EVENT IDS ARE IDEMPOTENT. A device re-sends what it cannot show was stored: after a lost response, after a server reset,
+   once its list of sent ids is trimmed, and (until the client stopped) every event it had only pulled from another device.
+   Each re-send was stored as a new row with a new sequence number, so the ledger grew with no new facts, every device
+   pulled the copy again, and the copies counted toward the vault's event limit. An id the ledger already holds is now
+   acknowledged and not stored again. The ciphertext cannot decide it: each encryption draws a fresh IV, so the same event
+   re-sent is different bytes, and this server cannot read either copy. The first row stored for an id stands, which is
+   what the client's merge already does with a duplicate id. The ids are indexed in memory per vault and rebuilt from the
+   ledger whenever the file is not the one the index last saw (a restore, a crash recovery, another process). The index
+   is bounded by ids held, not by vaults, since one vault may hold MAX_EVENTS_PER_VAULT of them: the least recently used
+   vaults are dropped first, never the one in use, and a dropped vault is simply read from its ledger again. */
+const _ledgerIndex=new Map(),LEDGER_INDEX_IDS=+(process.env.LEDGER_INDEX_IDS||500000),MAX_EVENT_ID=200;
+function _ledgerStamp(p){try{const st=fs.statSync(p);return st.size+':'+st.mtimeMs+':'+st.ino;}catch(e){return null;}}
+function ledgerIds(v){
+  const p=eventsPath(v.id),stamp=_ledgerStamp(p),hit=_ledgerIndex.get(v.id);
+  _ledgerIndex.delete(v.id);   /* re-inserted below, so the map runs least recently used first */
+  if(hit&&hit.stamp===stamp){_ledgerIndex.set(v.id,hit);return hit.ids;}
+  const ids=new Set(),add=l=>{if(!l)return;try{const r=JSON.parse(l);if(r&&typeof r.id==='string')ids.add(r.id);}catch(e){}};
+  if(stamp){const fd=fs.openSync(p,'r'),size=fs.statSync(p).size;let pos=0,rest='';
+    try{while(pos<size){const n=Math.min(1<<20,size-pos),buf=Buffer.alloc(n);fs.readSync(fd,buf,0,n,pos);pos+=n;
+        const lines=(rest+buf.toString('utf8')).split('\n');rest=lines.pop();lines.forEach(add);}
+      add(rest);}   /* a torn last line does not parse, so its id is not claimed and its re-send is stored */
+    finally{fs.closeSync(fd);}}
+  _ledgerIndex.set(v.id,{stamp,ids});_trimLedgerIndex(v.id);
+  return ids;
+}
+const ledgerIndexSize=()=>{let ids=0;for(const x of _ledgerIndex.values())ids+=x.ids.size;return {vaults:_ledgerIndex.size,ids};};
+function _trimLedgerIndex(keep){let held=ledgerIndexSize().ids;
+  for(const [k,x] of _ledgerIndex){if(held<=LEDGER_INDEX_IDS||k===keep)break;_ledgerIndex.delete(k);held-=x.ids.size;}}
 function appendEvents(v,rows){
   const p=eventsPath(v.id);let size=fs.existsSync(p)?fs.statSync(p).size:0;
+  const idx=_ledgerIndex.get(v.id),current=!!idx&&idx.stamp===_ledgerStamp(p);
   let prefix='';if(size>0){const t=_tailRows(p,1);if(!t.endsWithNewline)prefix='\n';}   // fence off a torn line
   size+=Buffer.byteLength(prefix);v.offsets=v.offsets||{};
   const parts=rows.map(r=>{const line=JSON.stringify(r)+'\n';if(r.serverSeq%IDX_EVERY===1)v.offsets[r.serverSeq]=size;size+=Buffer.byteLength(line);return line;});
   fs.appendFileSync(p,prefix+parts.join(''));
   v.eventCount=(v.eventCount||0)+rows.length;
+  if(current){rows.forEach(r=>idx.ids.add(r.id));idx.stamp=_ledgerStamp(p);_trimLedgerIndex(v.id);}else _ledgerIndex.delete(v.id);
 }
 function countEventsSlow(id){const p=eventsPath(id);if(!fs.existsSync(p))return 0;let n=0;
   for(const line of fs.readFileSync(p,'utf8').split('\n')){if(!line)continue;try{JSON.parse(line);n++;}catch(e){}}return n;}
@@ -405,7 +435,7 @@ async function _fetchWindow(p,token,start,end){
 /* ============================================================================
    OPERATIONS (audit §63\u2013§69, §111 phase 3): storage verified, metrics, backup, key rotation.
    ============================================================================ */
-const METRICS={startedAt:Date.now(),requests:{},errors:0,errorsByRoute:{},recentErrors:[],rateLimited:0,push:{sent:0,failed:0,removed:0},backup:{configured:false,lastAt:null,ok:null,verified:null,bytes:null,key:null,error:null}};
+const METRICS={startedAt:Date.now(),requests:{},errors:0,errorsByRoute:{},recentErrors:[],rateLimited:0,push:{sent:0,failed:0,removed:0},sync:{appended:0,duplicates:0},backup:{configured:false,lastAt:null,ok:null,verified:null,bytes:null,key:null,error:null}};
 function _dirBytes(d){let n=0;try{for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,f.name);n+=f.isDirectory()?_dirBytes(p):fs.statSync(p).size;}}catch(e){}return n;}
 function storageStatus(){let free=null,total=null,writable=false;try{const st=fs.statfsSync(DATA);free=st.bavail*st.bsize;total=st.blocks*st.bsize;}catch(e){}
   try{const f=path.join(DATA,'.probe-'+process.pid);fs.writeFileSync(f,'ok');writable=fs.readFileSync(f,'utf8')==='ok';fs.unlinkSync(f);}catch(e){}
@@ -422,7 +452,7 @@ const opsRoutes={
   'GET /v1/metrics':async(req)=>{if(!process.env.METRICS_TOKEN)return {code:404,body:{error:'metrics are off (set METRICS_TOKEN)'}};if(!_bearerIs(req,'METRICS_TOKEN'))return {code:401,body:{error:'unauthorized'}};
     let vaults=0,events=0;try{for(const id of fs.readdirSync(path.join(DATA,'vaults'))){const v=readVault(id);if(v){vaults++;events+=v.eventCount||0;}}}catch(e){}
     return {service:'physique-os-sync',uptimeSeconds:Math.round((Date.now()-METRICS.startedAt)/1000),epoch:DATA_EPOCH,requests:METRICS.requests,errors:METRICS.errors,rateLimited:METRICS.rateLimited,
-      push:METRICS.push,vaults,events,dataBytes:_dirBytes(DATA),storage:storageStatus(),errorsByRoute:METRICS.errorsByRoute,recentErrors:METRICS.recentErrors,backup:METRICS.backup,health:healthStatus()};},
+      push:METRICS.push,sync:METRICS.sync,vaults,events,dataBytes:_dirBytes(DATA),storage:storageStatus(),errorsByRoute:METRICS.errorsByRoute,recentErrors:METRICS.recentErrors,backup:METRICS.backup,health:healthStatus()};},
   'GET /v1/admin/backup':async(req)=>{if(!process.env.ADMIN_TOKEN)return {code:404,body:{error:'admin is off (set ADMIN_TOKEN)'}};if(!_bearerIs(req,'ADMIN_TOKEN'))return {code:401,body:{error:'unauthorized'}};
     const f=path.join(os.tmpdir(),'physique-backup-'+DATA_EPOCH+'-'+Date.now()+'.tar.gz');execFileSync('tar',['-czf',f,'-C',DATA,'--exclude=./.probe-*','.']);
     log('info','backup taken',{bytes:fs.statSync(f).size});return {file:f,type:'application/gzip',name:'physique-backup-'+new Date().toISOString().slice(0,10)+'-'+DATA_EPOCH+'.tar.gz'};},
@@ -595,7 +625,8 @@ const routes={
   },
 
   /* Append encrypted events. The server assigns a monotonic sequence so clients can pull incrementally.
-     It never inspects, reorders or merges: merge is the client's job, on plaintext it alone can read. */
+     It never inspects, reorders or merges: merge is the client's job, on plaintext it alone can read.
+     An id already stored, or repeated in the batch, is acknowledged without a new row (see ledgerIds). */
   'POST /v1/events':async(req,body)=>{
     const auth=authFor(req);
     if(!auth)return {code:401,body:{error:'authenticate first'}};
@@ -603,19 +634,22 @@ const routes={
     if(!v)return {code:404,body:{error:'no such vault'}};
     if(!Array.isArray(body.events))return {code:400,body:{error:'events must be an array'}};
     if(body.events.length>5000)return {code:400,body:{error:'batch too large'}};
-    const existing=v.eventCount||0;
-    if(existing+body.events.length>MAX_EVENTS_PER_VAULT)return {code:507,body:{error:'vault event limit reached'}};
-    const rows=[];
     for(const e of body.events){
-      if(!e||typeof e.id!=='string'||typeof e.ciphertext!=='string')
+      if(!e||typeof e.id!=='string'||!e.id||typeof e.ciphertext!=='string')
         return {code:400,body:{error:'each event needs an id and a ciphertext'}};
+      if(e.id.length>MAX_EVENT_ID)return {code:400,body:{error:'event id too long'}};
       if(e.ciphertext.length>256*1024)return {code:400,body:{error:'event too large'}};
-      rows.push({id:e.id,ciphertext:e.ciphertext,iv:String(e.iv||''),device:String(e.device||'').slice(0,64),
-        serverSeq:++v.serverSeq,receivedAt:new Date().toISOString()});
     }
+    const known=ledgerIds(v),seen=new Set();
+    const fresh=body.events.filter(e=>{if(known.has(e.id)||seen.has(e.id))return false;seen.add(e.id);return true;});
+    const duplicates=body.events.length-fresh.length;
+    if((v.eventCount||0)+fresh.length>MAX_EVENTS_PER_VAULT)return {code:507,body:{error:'vault event limit reached'}};
+    const rows=fresh.map(e=>({id:e.id,ciphertext:e.ciphertext,iv:String(e.iv||''),device:String(e.device||'').slice(0,64),
+      serverSeq:++v.serverSeq,receivedAt:new Date().toISOString()}));
     if(rows.length){appendEvents(v,rows);writeVault(v);}   /* the ledger first; the metadata is recoverable from it */
-    log('info','events appended',{vault:v.id.slice(0,8),count:rows.length,serverSeq:v.serverSeq});
-    return {code:200,body:{ok:true,accepted:rows.length,serverSeq:v.serverSeq}};
+    METRICS.sync.appended+=rows.length;METRICS.sync.duplicates+=duplicates;
+    log('info','events appended',{vault:v.id.slice(0,8),count:rows.length,duplicates,serverSeq:v.serverSeq});
+    return {code:200,body:{ok:true,accepted:rows.length,duplicates,serverSeq:v.serverSeq}};
   },
 
   'GET /v1/events':async(req,body,url)=>{
@@ -668,7 +702,7 @@ const routes={
     const v=readVault(auth.vaultId);
     if(!v)return {code:404,body:{error:'no such vault'}};
     if(body.confirm!==v.id)return {code:400,body:{error:'send confirm with the vault id to delete it'}};
-    fs.rmSync(vaultDir(v.id),{recursive:true,force:true});
+    fs.rmSync(vaultDir(v.id),{recursive:true,force:true});_ledgerIndex.delete(v.id);
     log('info','vault deleted',{vault:v.id.slice(0,8)});
     return {code:200,body:{ok:true,deleted:true}};
   }
@@ -730,7 +764,7 @@ async function restoreFromS3(which,env,opts){env=env||process.env;opts=opts||{};
   const existing=fs.existsSync(DATA)?fs.readdirSync(DATA).filter(n=>!/^\.probe-|^epoch\.json$/.test(n)):[];if(existing.length&&!opts.force)throw new Error('the data folder is not empty ('+existing.slice(0,3).join(', ')+'); restore refuses to overwrite without --force');
   let key=which;if(!key||key==='latest'){const xml=(await s3Request(cfg,'GET','',null,{'list-type':'2',prefix:'backups/'})).toString('utf8');key=[...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map(m=>m[1]).sort().pop();if(!key)throw new Error('no backups in the bucket');}
   const buf=await s3Request(cfg,'GET',key),f=path.join(os.tmpdir(),'physique-restore-'+Date.now()+'.tar.gz');fs.writeFileSync(f,buf);
-  try{const list=execFileSync('tar',['-tzf',f],{encoding:'utf8'});if(!/epoch\.json/.test(list))throw new Error('that object is not a Physique OS backup');fs.mkdirSync(DATA,{recursive:true});execFileSync('tar',['-xzf',f,'-C',DATA]);}finally{try{fs.unlinkSync(f);}catch(e){}}
+  try{const list=execFileSync('tar',['-tzf',f],{encoding:'utf8'});if(!/epoch\.json/.test(list))throw new Error('that object is not a Physique OS backup');fs.mkdirSync(DATA,{recursive:true});execFileSync('tar',['-xzf',f,'-C',DATA]);_ledgerIndex.clear();}finally{try{fs.unlinkSync(f);}catch(e){}}
   return {status:'ok',key,sha256:_sha(buf),bytes:buf.length};}
 function healthStatus(env){env=env||process.env;const reasons=[],st=storageStatus(),hours=+(env.BACKUP_INTERVAL_HOURS||24);
   if(!st.writable)reasons.push('the data folder cannot be written');(st.warnings||[]).forEach(w=>reasons.push(w));
@@ -843,5 +877,5 @@ if(process.env.PHYSIQUE_SERVER_TEST!=='1'&&_restoreArg<0)server.listen(PORT,HOST
 });
 export {server};
 /* for tests: load with PHYSIQUE_SERVER_TEST=1 (nothing listens) */
-export {aiConfig,aiTranslate,aiComplete,productionPreflight,sigv4,runBackup,restoreFromS3,healthStatus,METRICS,sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,rateOk,tokens,readConns,writeConns,storageStatus,rotateConnectKeys};
+export {aiConfig,aiTranslate,aiComplete,productionPreflight,sigv4,runBackup,restoreFromS3,healthStatus,METRICS,sendPush,retireSubscriptions,normaliseVapid,vapidKeys,readVault,writeVault,appendEvents,readEvents,ledgerIds,ledgerIndexSize,rateOk,tokens,readConns,writeConns,storageStatus,rotateConnectKeys};
 export const _sealForDrill=o=>_seal(o),_openForDrill=e=>_open(e);
