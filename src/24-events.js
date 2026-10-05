@@ -244,6 +244,7 @@ var EVENT_TYPES={
   'injury.resolved':{apply:function(db,e){
     var i=(db.settings.injuries||[]).filter(function(x){return x.id===e.data.id;})[0];
     if(i)i.resolvedAt=e.at;}},
+  'events.revoked':{apply:function(db,e){/* read by projectEvents before folding: the events it names are left out */}},
   'record.imported':{apply:function(db,e){/* recorded for provenance; the rows arrive as observation.added */}},
   /* A record can enter the app without passing through the mutators: the demo generator, a restore, or a
      boot from a build that predates the event log. Pretending the log describes such a record would make the
@@ -254,6 +255,32 @@ var EVENT_TYPES={
     var snap=e.data&&e.data.record;if(!snap)return;
     Object.keys(snap).forEach(function(k){db[k]=JSON.parse(JSON.stringify(snap[k]));});}}
 };
+/* UNDO IS A FACT TOO. Undo puts an earlier copy of the record back, but the events of what it undid stayed in the log, so
+   the next start (which rebuilds the record from the log) brought the undone change back, and no other device heard of
+   the undo. Each undo step now records how far this device's own events had got; undoing it revokes the events this
+   device recorded since, with an event of its own, and a projection leaves revoked events out (at every date: what was
+   undone is treated as never having happened, as the record the undo put back treats it). A revocation is never itself
+   revoked, so a deeper undo revokes everything since its step and nothing earlier comes back. If the log was restarted
+   or compacted since the step, the events may sit inside a snapshot where they cannot be left out, so the log restarts
+   from the record the undo put back, as a restore does. Undoing a merge of another device's changes revokes nothing:
+   those are that device's facts, and revoking them would remove them on every device. */
+var _LOCAL_EMITTED=[],_EMIT_N=0,LOCAL_EMITTED_MAX=20000;
+function _latestSnapshotId(){var s=null;_EVENTS.forEach(function(e){if(e.type==='record.snapshot'&&(!s||_eventOrder(s,e)<0))s=e;});return s?s.id:null;}
+function undoMark(){return {n:_EMIT_N,snapshot:_latestSnapshotId()};}
+function undoInLog(mark,label){
+  if(!mark||/^merge\b/i.test(String(label||'')))return {revoked:0};
+  var inLog={};_EVENTS.forEach(function(e){inLog[e.id]=1;});
+  var ids=_LOCAL_EMITTED.filter(function(x){return x.n>mark.n&&x.type!=='events.revoked'&&inLog[x.id];}).map(function(x){return x.id;});
+  if(mark.snapshot!==_latestSnapshotId()){resetEventLog('undo: '+(label||'change'));return {restarted:true};}
+  if(!ids.length)return {revoked:0};
+  emitEvent('events.revoked',{ids:ids,reason:'undo: '+(label||'change')});
+  return {revoked:ids.length};
+}
+/* The ids every revocation in these events names, or null when there is none (the common case costs nothing). */
+function _revokedIds(events){
+  var out=null;(events||[]).forEach(function(e){if(e&&e.type==='events.revoked'&&e.data&&Array.isArray(e.data.ids)){out=out||{};e.data.ids.forEach(function(id){out[id]=1;});}});
+  return out;
+}
 function emitEvent(type,data,opts){
   if(!_EVENTS_ENABLED)return null;
   if(!EVENT_TYPES[type]){_q(new Error('unknown event type: '+type),'P1');return null;}
@@ -267,6 +294,7 @@ function emitEvent(type,data,opts){
   var e={id:(opts.id||uid('ev')),seq:++_EVENT_SEQ,type:type,at:opts.at||nowISO(),
     device:deviceId(),schema:EVENT_SCHEMA,data:payload};
   _EVENTS.push(e);
+  _LOCAL_EMITTED.push({n:++_EMIT_N,id:e.id,type:type});if(_LOCAL_EMITTED.length>LOCAL_EMITTED_MAX)_LOCAL_EMITTED.splice(0,_LOCAL_EMITTED.length-LOCAL_EMITTED_MAX);
   if(typeof _automationOnEvent==='function')_automationOnEvent(e);   /* workflow rules: after recording, never during replay (replay does not emit) */
   if(_EVENTS.length>EVENT_WINDOW){try{compactEvents();}catch(err){_q(err,'P0');}}
   if(DB&&DB.ledger)DB.ledger.events=(DB.ledger.events||0)+1;
@@ -357,7 +385,9 @@ function projectEvents(events,opts){
      latest snapshot followed by every event it does not cover, in time order: nothing it contains is applied twice,
      an entry backdated after it still survives, and a fact the snapshotting device had not yet seen survives as well.
      A log written before snapshots carried covers projects exactly as it did. */
-  var all=events||_EVENTS,snaps=all.filter(function(e){return e.type==='record.snapshot';}).sort(_eventOrder);
+  var all=events||_EVENTS,revoked=_revokedIds(all);
+  if(revoked)all=all.filter(function(e){return !revoked[e.id];});
+  var snaps=all.filter(function(e){return e.type==='record.snapshot';}).sort(_eventOrder);
   var lastSnap=snaps[snaps.length-1];
   if(lastSnap&&lastSnap.data&&Array.isArray(lastSnap.data.covers))return _foldEvents(db,_coveredOrder(all,lastSnap),opts);
   var raw=all.slice().sort(function(a,b){return (a.seq||0)-(b.seq||0);});

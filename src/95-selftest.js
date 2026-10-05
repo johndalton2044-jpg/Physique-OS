@@ -836,6 +836,27 @@ function runSelfTest(opts){
       ok('a snapshot without covers (an older build) still keeps a backdated entry made after it',onOld.indexOf(late.data.id)>=0);
       DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    /* UNDO SURVIVES A RESTART. Undo put an earlier record back but left the undone events in the log, so the next start
+       rebuilt the record with the change in it again. Each check below rebuilds the record from its log, as a start does. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedStack=_undoStack.slice();
+      var T=todayISO(),restart=function(){var stored=_EVENTS.slice();_EVENTS.length=0;adoptMergedEvents(mergeEvents([],stored));};
+      var has=function(id){return DB.observations.some(function(o){return o.id===id;});};
+      DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;clearUndo();resetEventLog('undo test');_memoInvalidate();
+      var keep=addObservation({type:'weight',date:addDays(T,-1),value:211,source:'manual'},{noSave:true});
+      var o=addObservation({type:'weight',date:T,value:210,source:'manual'},{noSave:true});
+      undo();restart();
+      ok('an undone entry stays undone after the record is rebuilt from its log',!has(o.id)&&has(keep.id)&&projectionMatchesRecord().ok);
+      var a=addObservation({type:'waist',date:T,value:38,source:'manual'},{noSave:true});
+      var b=addObservation({type:'waist',date:T,value:37.5,source:'manual'},{noSave:true});
+      undo();undo();restart();
+      ok('undoing twice removes both entries, and the first undo does not bring anything back',!has(a.id)&&!has(b.id)&&!has(o.id)&&has(keep.id));
+      var c=addObservation({type:'steps',date:T,value:9000,source:'manual'},{noSave:true});
+      resetEventLog('record restored from a backup');
+      undo();restart();
+      ok('an undo across a restart of the log restarts the log from the record it put back',!has(c.id)&&has(keep.id)&&projectionMatchesRecord().ok);
+      DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();
+    })();
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
