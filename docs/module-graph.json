@@ -1225,7 +1225,8 @@
     "_e1rmTop"
    ],
    "64-physique.js": [
-    "physiqueModel"
+    "physiqueModel",
+    "bodyCompositionState"
    ]
   }
  },
@@ -1559,21 +1560,36 @@
     "todayISO",
     "addDays",
     "daysBetween",
+    "clamp",
     "round",
     "mean",
     "_medianOf"
    ],
    "30-observations.js": [
+    "asOf",
     "activePhase",
     "obsOf",
+    "latestObs",
     "seriesWindow",
     "sessionsOf"
+   ],
+   "40-models.js": [
+    "prof",
+    "weightTrend",
+    "navyBodyFat",
+    "muscleRetentionRisk"
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
    ],
    "64-exercise.js": [
     "resolveExercise"
+   ],
+   "79-rigour.js": [
+    "tissueEnergyDensity"
+   ],
+   "96-bayes-engine.js": [
+    "bayesUpdate"
    ]
   }
  },
@@ -3867,6 +3883,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_q",
     "round",
     "esc"
    ],
@@ -3875,7 +3892,8 @@
    ],
    "64-physique.js": [
     "physiquePriorities",
-    "physiqueModel"
+    "physiqueModel",
+    "bodyCompositionState"
    ],
    "80-ui.js": [
     "uiCard",
@@ -4517,6 +4535,7 @@
     "tdeePersonal",
     "tdeeEstimate",
     "energyBalance",
+    "navyBodyFat",
     "rateBand",
     "canonicalGoal",
     "goalTrajectory",
@@ -4852,6 +4871,7 @@
     "physiqueModel",
     "exerciseRedundancy",
     "physiqueRate",
+    "bodyCompositionState",
     "bodyCompositionByMethod"
    ],
    "65-import.js": [

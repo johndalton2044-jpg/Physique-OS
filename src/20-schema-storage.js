@@ -10,7 +10,7 @@ var OBS_TYPES={
   chest:{label:'Chest',unit:'in',group:'body',consumers:['measurement trend'],min:20,max:80,step:0.1},
   arm:{label:'Upper arm',unit:'in',group:'body',consumers:['measurement trend','lean-mass indicator'],min:6,max:30,step:0.1},
   thigh:{label:'Thigh',unit:'in',group:'body',consumers:['measurement trend','lean-mass indicator'],min:10,max:45,step:0.1},
-  bodyfat:{label:'Body fat',unit:'%',group:'body',consumers:['composition estimate cross-check'],min:2,max:70,step:0.1,methods:['DEXA','BIA scale','calipers','Bod Pod','hydrostatic','visual estimate','other']},
+  bodyfat:{label:'Body fat',unit:'%',group:'body',consumers:['composition estimate cross-check','body_composition_state'],min:2,max:70,step:0.1,methods:['DEXA','BIA scale','calipers','Bod Pod','hydrostatic','visual estimate','other']},
   rhr:{label:'Resting heart rate',unit:'bpm',group:'body',consumers:['fitness indicator','recovery signal'],min:30,max:140,step:1},
   calories:{label:'Calories',unit:'kcal',group:'nutrition',consumers:['TDEE','energy balance','calorie adherence','deficit estimate','personal_neat_response'],min:0,max:15000,step:1},
   protein:{label:'Protein',unit:'g',group:'nutrition',consumers:['protein adherence','muscle-retention risk'],min:0,max:600,step:1},

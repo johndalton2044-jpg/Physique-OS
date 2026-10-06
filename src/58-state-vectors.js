@@ -28,6 +28,9 @@ function stateVector(){var C=[],push=function(key,label,value,unit,sd,fresh,sour
   try{var D=tdeePersonal();if(D&&D.status==='ok')push('tdee','Energy expenditure',D.value,'kcal a day',(D.hi-D.lo)/3.92,_fresh('calories'),'intake and weight trend, '+D.window+' days');}catch(e){}
   try{var E=_e1rmTop();if(E&&E.series.length){var last=E.series.slice(-4).map(function(x){return x.value;});push('strength','Strength ('+E.exercise+', estimated one-rep max)',last[last.length-1],'lb',_sdOfMean(last),{asOf:E.series[E.series.length-1].date,ageDays:daysBetween(E.series[E.series.length-1].date,asOf())},'sessions');}}catch(e){}
   try{var A=adherenceState(14);if(A&&A.overall!=null){var p=A.overall/100,n=14;push('adherence','Plan followed',A.overall,'%',100*Math.sqrt(p*(1-p)/n),null,'executions, 14 days');}}catch(e){}
+  try{var BC=bodyCompositionState();if(BC.status==='ok'){var bf=_fresh('bodyfat'),src=BC.methods.length?('weight trend and '+BC.methods.map(function(m){return m.method;}).join(', ')):'weight trend, partition prior';
+    push('fatRate','Fat mass, rate',BC.fatRate.mean,'lb a week',BC.fatRate.sd,_fresh('weight'),src);push('leanRate','Lean mass, rate',BC.leanRate.mean,'lb a week',BC.leanRate.sd,_fresh('weight'),src);
+    if(BC.masses){push('fatMass','Fat mass',BC.masses.fat.mean,'lb',BC.masses.fat.sd,bf,BC.masses.from);push('leanMass','Lean mass',BC.masses.lean.mean,'lb',BC.masses.lean.sd,bf,BC.masses.from);}}}catch(e){}
   try{var F=seriesWindow('fatigue',7).map(function(x){return x.value;});push('fatigue','Fatigue, 7-day average',F.length?mean(F):null,'1\u201310',_sdOfMean(F),_fresh('fatigue'),'recovery check-ins');}catch(e){}
   return {asOf:asOf(),components:C,stale:C.filter(function(c){return c.ageDays!=null&&c.ageDays>7;}).map(function(c){return c.key;}),note:'each value with its uncertainty (standard deviation) and how old its newest data is'};}
 

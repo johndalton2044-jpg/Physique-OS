@@ -59,6 +59,73 @@ function physiqueRate(){var ph=typeof activePhase==='function'?activePhase():(DB
   var state=type==='cut'?(pct<R[0]?'faster than the range: more muscle at risk':(pct>R[1]?'slower than the range':'within the range')):
     (type==='bulk'?(pct>R[1]?'faster than the range: more of the gain is fat':(pct<R[0]?'slower than the range':'within the range')):(pct<R[0]||pct>R[1]?'drifting outside maintenance':'within the range'));
   return {status:'ok',phase:type,pctPerWeek:round(pct,2),se:round(100*f.se/w,2),range:R,state:state,basis:'cut 0.5\u20131% of body weight a week; lean gain 0.1\u20130.25% a week (about 0.5\u20131% a month); maintenance within \u00b10.1%'};}
+/* ============================================================================
+   BODY-COMPOSITION LATENT STATE (Stage D; TRANSITION item 2). Fat and lean trajectories, each with its uncertainty, from
+   everything that bears on them, through the one Bayesian engine (bayesUpdate). The unknown is the fat-mass rate (lb a
+   week). Its prior is the share of the weight trend that is fat (tissueEnergyDensity: body-fat level, rate of loss,
+   protein, lifting), moved toward lean by the muscle-retention risk in a cut. Each body-fat method's own fat-mass slope is
+   an observation weighted by that method's error (BODYFAT_METHOD_SE), never mixed with another method's readings, so a
+   fixed offset between methods cannot read as change; the waist enters as one more method through the circumference
+   equation, as a change, not a level. Lean is the remainder, weight trend minus fat rate, its interval taken as if the
+   two were independent, which is wider than the truth. Masses, not only rates, are given only when a measured reading
+   from the last 60 days anchors them, the rule bodyComp() follows. Limits, stated: the scale moves with water and gut
+   content, so the rate needs weeks before it means much; no method here is calibrated against another.
+   ============================================================================ */
+/* the partition range tissueEnergyDensity states (\u00b10.15) is taken as one standard deviation: partitioning cannot be
+   measured from the record, so the prior should not be more certain than its own stated range */
+var BCS_SHARE_SD=0.15;
+/* a slope in lb a week from {date, fat} points, its standard error floored by the method's error per reading */
+function _bcsSlope(points,sigma){if(points.length<3)return null;var t0=points[0].date,xs=points.map(function(p){return daysBetween(t0,p.date)/7;}),ys=points.map(function(p){return p.fat;});
+  var mx=mean(xs),my=mean(ys),sxx=0,sxy=0;xs.forEach(function(x,i){sxx+=(x-mx)*(x-mx);sxy+=(x-mx)*(ys[i]-my);});if(xs[xs.length-1]-xs[0]<2||!sxx)return null;
+  var b=sxy/sxx,res=0;xs.forEach(function(x,i){var e=ys[i]-my-b*(x-mx);res+=e*e;});var s2=Math.max(res/Math.max(1,xs.length-2),sigma*sigma);
+  return {slope:b,se:Math.sqrt(s2/sxx),n:points.length,weeks:round(xs[xs.length-1]-xs[0],1)};}
+function _bcsInputs(){
+  var tr=weightTrend(56);if(!tr||tr.status!=='ok')return {need:'a weight trend over the last 8 weeks'};
+  var dW=tr.slopePerWeek,share={mean:0.5,sd:0.2,basis:'gaining: no reliable population split, so a wide prior around half'};
+  if(dW<0){var T=tissueEnergyDensity(),s=T&&T.status==='ok'?T.fatShare:0.75,why=T&&T.reasons?T.reasons.slice():[];
+    var M=null;try{M=muscleRetentionRisk();}catch(e){}
+    if(M&&M.status==='ok'&&M.level!=='low'){s-=M.level==='high'?0.10:0.05;why.push('muscle-retention risk '+M.level);}
+    share={mean:clamp(s,0.45,0.95),sd:BCS_SHARE_SD,basis:'the fat share of a loss: '+why.join('; ')};}
+  var wAt=function(d){var W=obsOf('weight').filter(function(o){return !o.retracted&&Math.abs(daysBetween(o.date,d))<=3;});return W.length?W[W.length-1].value:null;};
+  var from=addDays(asOf(),-84),by={};
+  obsOf('bodyfat').filter(function(o){return !o.retracted&&o.date>=from;}).forEach(function(o){var raw=o.method||(o.meta&&o.meta.method)||'unspecified',m=BODYFAT_METHOD_NAME[String(raw).toLowerCase()]||raw,w=wAt(o.date);
+    if(w)(by[m]=by[m]||[]).push({date:o.date,fat:w*o.value/100,bf:o.value});});
+  var p=prof();
+  if(!by.circumference&&p.heightIn&&(p.sex!=='female'||latestObs('hip'))){var neck=latestObs('neck'),hip=latestObs('hip');
+    if(neck)obsOf('waist').filter(function(o){return !o.retracted&&o.date>=from;}).forEach(function(o){var w=wAt(o.date);if(!w)return;
+      var bf=navyBodyFat(p.sex,p.heightIn,o.value,neck.value,hip?hip.value:null);if(isFinite(bf))(by.circumference=by.circumference||[]).push({date:o.date,fat:w*bf/100,bf:bf,fromWaist:true});});}
+  var W7=seriesWindow('weight',7).map(function(x){return x.value;}),wNow=W7.length?mean(W7):null;
+  var methods=Object.keys(by).map(function(m){return {method:m,se:BODYFAT_METHOD_SE[m]||4,points:by[m].sort(function(a,b){return a.date<b.date?-1:1;})};});
+  var meas=obsOf('bodyfat').filter(function(o){return !o.retracted&&daysBetween(o.date,asOf())<=60;}).slice(-1)[0],anchor=null;
+  if(meas&&wNow){var mm=BODYFAT_METHOD_NAME[String(meas.method||'').toLowerCase()]||meas.method||'unspecified';anchor={bf:meas.value,method:mm,date:meas.date,se:BODYFAT_METHOD_SE[mm]||4,weight:wNow};}
+  return {trend:{slope:dW,se:tr.slopeSe!=null?tr.slopeSe:Math.abs(dW)*0.5},share:share,methods:methods,anchor:anchor};
+}
+function bodyCompositionState(inp){
+  var D=inp||_bcsInputs();if(!D.trend)return {status:'insufficient',need:D.need||'a weight trend'};
+  var dW=D.trend.slope,seW=D.trend.se,s0=D.share.mean,sdS=D.share.sd;
+  var prior={mean:s0*dW,sd:Math.sqrt(Math.pow(sdS*dW,2)+Math.pow(s0*seW,2)+0.05*0.05)};
+  var wRef=D.anchor?D.anchor.weight:null;
+  var used=(D.methods||[]).map(function(m){var w=wRef||mean(m.points.map(function(p){return p.fat/(p.bf/100);})),f=_bcsSlope(m.points,w*m.se/100);
+    return f?{method:m.method,fromWaist:!!(m.points[0]&&m.points[0].fromWaist),value:f.slope,sd:f.se,n:f.n,weeks:f.weeks}:null;}).filter(Boolean);
+  var B=bayesUpdate({prior:prior,observations:used.map(function(u){return {value:u.value,sd:u.sd};})});
+  var dF=B.mean,sdF=B.sd,dL=dW-dF,sdL=Math.sqrt(seW*seW+sdF*sdF);
+  var iv=function(m,s){return {mean:round(m,2),sd:round(s,2),lo:round(m-1.96*s,2),hi:round(m+1.96*s,2)};};
+  var out={status:'ok',cls:used.length?(B.cls||'BLENDED'):'PRIOR',weightRate:iv(dW,seW),fatRate:iv(dF,sdF),leanRate:iv(dL,sdL),measuredShare:B.weightOnData||0,prior:{fatShare:round(s0,2),basis:D.share.basis},
+    methods:used.map(function(u){return {method:u.method,fromWaist:u.fromWaist,fatPerWeek:round(u.value,2),sd:round(u.sd,2),n:u.n,weeks:u.weeks};}),anchored:!!D.anchor,masses:null,trajectory:[],
+    limits:'the scale moves with water and gut content, so the rate needs weeks before it means much; methods are not calibrated against each other, so each is read only for its own change; lean\u2019s interval treats it as independent of the fat rate, which is wider than the truth'};
+  if(D.anchor){var F0=D.anchor.weight*D.anchor.bf/100,sF0=D.anchor.weight*D.anchor.se/100,L0=D.anchor.weight-F0;
+    out.masses={fat:iv(F0,sF0),lean:iv(L0,sF0),from:D.anchor.method+' on '+D.anchor.date};
+    for(var t=-8;t<=4;t+=2)out.trajectory.push({weeksFromNow:t,fat:iv(F0+dF*t,Math.sqrt(sF0*sF0+Math.pow(sdF*t,2))),lean:iv(L0+dL*t,Math.sqrt(sF0*sF0+Math.pow(sdL*t,2)))});}
+  out.reading=(used.length?('fat '+(dF>0?'+':'')+round(dF,2)+' lb a week ('+out.fatRate.lo+' to '+out.fatRate.hi+'), lean '+(dL>0?'+':'')+round(dL,2)+' ('+out.leanRate.lo+' to '+out.leanRate.hi+'); '+Math.round(out.measuredShare*100)+'% from '+used.map(function(u){return u.method;}).join(', ')):
+    ('no body-fat measurements in the last 12 weeks: the split of the weight trend is the population assumption ('+D.share.basis+')'));
+  return out;
+}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='body_composition_state';}))return;
+  MODELS.push({id:'body_composition_state',name:'Body-composition latent state',cls:'EMPIRICAL',version:'1.0',inputs:['weight_trend','bodyfat','waist','muscle_risk'],minN:1,
+    assumes:['a method\u2019s error is the same at every reading','a method\u2019s offset from the truth is constant, so its change is meaningful','the fat share of a loss follows the partition prior unless measurements say otherwise'],
+    failsWhen:['large water shifts within the window','a method used under different conditions each time (BIA after a meal or a workout)','a new device or technician part-way through'],
+    output:'fat and lean rates (lb a week) with intervals, how much rests on measurement, and fat and lean masses with trajectories when a recent measurement anchors them',
+    consumers:['physiqueCard','stateVector'],freshnessDays:14,uncertainty:{kind:'posterior interval on the fat rate; lean by subtraction'},fn:'bodyCompositionState'});})();
 /* body composition, one trend per method; methods are compared by their offset on near dates, never mixed */
 /* the form saves dexa/bia/calipers/bodpod/navy/other: mapped to the method names whose errors are known */
 var BODYFAT_METHOD_NAME={dexa:'DEXA',bia:'BIA scale',calipers:'calipers',bodpod:'Bod Pod',navy:'circumference',other:'other',hydrostatic:'hydrostatic',visual:'visual estimate'};

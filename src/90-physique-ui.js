@@ -2,6 +2,8 @@
 function _statusTone(s){return s==='on track'?'good':(s==='lagging'||s==='under-trained'?'attention':'neutral');}
 function physiqueCard(){var P=physiqueModel(),R=P.regions.filter(function(r){return r.sets>0||r.priority;}).slice(0,8);if(!R.length)return '';
   var body=R.map(function(r){return uiRow(esc(r.label)+(r.priority?' '+uiPill('priority','attention'):''),r.sets+' sets/wk',{sub:esc((r.strength?('strength '+(r.strength.pctPerMonth>0?'+':'')+r.strength.pctPerMonth+'%/month \u00b7 '):'')+r.why),rsub:r.status});}).join('');
+  try{var BC=bodyCompositionState();if(BC.status==='ok')body+=uiRow('Fat and lean',(BC.fatRate.mean>0?'+':'')+BC.fatRate.mean+' / '+(BC.leanRate.mean>0?'+':'')+BC.leanRate.mean+' lb a week',
+    {sub:esc(BC.reading),rsub:Math.round(BC.measuredShare*100)+'% measured'});}catch(e){_q(e,'P2');}
   if(P.rate.status==='ok')body+=uiRow('Rate of change',(P.rate.pctPerWeek>0?'+':'')+P.rate.pctPerWeek+'% a week',{sub:esc(P.rate.phase+': '+P.rate.state),rsub:'range '+P.rate.range.join(' to ')+'%'});
   if(P.suggestions.length)body+='<div class="hint">'+esc(P.suggestions.slice(0,2).map(function(s){return s.text;}).join('; '))+'.</div>';
   return uiCard({title:'Physique',sub:R.filter(function(r){return r.status==='lagging';}).length?'a region is lagging':(physiquePriorities().length?'priorities: '+physiquePriorities().map(function(m){return MUSCLE_GROUPS[m];}).join(', '):'by region'),

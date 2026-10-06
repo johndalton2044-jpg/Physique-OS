@@ -31,6 +31,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Unified optimiser | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Marginal returns: the next unit of each dose | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | real data path | population | surfaced | local | internal | — | gate engine |
+| Body composition: fat and lean trajectories | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | State model (the 'digital twin') | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | — | real data path | — | surfaced | local | independent | — | gate integration |
 | Live connections to Fitbit, Withings and Oura | implemented | — | simulated | — | surfaced | server | internal | — | gate connect |

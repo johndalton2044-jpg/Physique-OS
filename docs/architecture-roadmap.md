@@ -3489,3 +3489,22 @@ the current deficit puts on everyday steps; the Learn tab's physiology card show
 so; the current deficit is expected to cost about 308 steps (18 kcal) a day. Both deliberate breakages (no offset; the
 regression's sign flipped) turned the intended checks red. Steps and calories list the model as a consumer; the
 ledger's optimiser entry carries the source. All 36 gates pass (reproducible included); release 24/24; 1,659 self-tests.
+
+## Stage D: the body-composition latent state (build 1a3e16e592)
+
+bodyCompositionState() estimates the fat-mass rate, in lb a week, through the one Bayesian engine (bayesUpdate). Its
+prior is the share of the weight trend that is fat, from tissueEnergyDensity (body-fat level, rate of loss, protein,
+lifting), moved toward lean by the muscle-retention risk in a cut; that model's own stated partition range (±0.15) is
+taken as one standard deviation, because partitioning cannot be measured from the record. Each body-fat method's fat
+mass is fitted on its own and enters as an observation weighted by that method's error (BODYFAT_METHOD_SE), so a fixed
+offset between methods cannot read as change; the waist enters as one more method through the circumference equation
+(now one function, navyBodyFat, which bodyComp also uses), as a change, not a level. Lean is the remainder, its interval
+taken as if independent of the fat rate (wider than the truth, and said so). Masses and trajectories are given only when
+a measured reading from the last 60 days anchors them, the rule bodyComp() already follows. Self-tests from stated inputs
+with expectations from precision arithmetic: with no measurement the prior stands and says so; a DEXA trend moves the
+estimate by exactly its precision; a 6-point offset between DEXA and a BIA scale falling at the same rate reads as the
+same rate; no anchor means no masses. Removing the measurements and inventing masses each turned the intended check red.
+Consumers: the physique card's "Fat and lean" row and four state-vector components (fat and lean rate; fat and lean mass
+when anchored). On the demo: fat −0.86 lb a week (−1.17 to −0.55), lean −0.12 (−0.45 to +0.20), 4% from its body-fat
+readings and waist, which are imprecise against a clear weight trend. A body-composition capability joins the ledger at
+"early personal". 1,667 self-tests pass; the full release record is in progress.

@@ -391,6 +391,9 @@ function energyBalance(){
   return {status:'ok',intake:intake,tdee:t,balance:bal,lo:intake-t.hi,hi:intake-t.lo,confidence:t.confidence,n:cal.length,cls:t.cls==='PRIOR'?'HEURISTIC':'DERIVED',neat:neat};
 }
 /* ---- body composition ---- */
+/* the US Navy circumference equation (Hodgdon & Beckett 1984), in inches; also read by bodyCompositionState */
+function navyBodyFat(sex,heightIn,waist,neck,hip){
+  return sex==='female'?163.205*Math.log10(waist+hip-neck)-97.684*Math.log10(heightIn)-78.387:86.010*Math.log10(waist-neck)-70.041*Math.log10(heightIn)+36.76;}
 function bodyComp(){
   var p=prof();var waist=latestObs('waist'),neck=latestObs('neck'),hip=latestObs('hip');
   var measured=latestObs('bodyfat');
@@ -398,7 +401,7 @@ function bodyComp(){
   var need=[];if(!waist)need.push('a waist measurement');if(!neck)need.push('a neck measurement');if(!p.heightIn)need.push('profile.heightIn|height');if(p.sex==='female'&&!hip)need.push('a hip measurement');
   if(need.length){out.estimate=insufficient('bodycomp_circ',need);return out;}
   var h=p.heightIn,w=waist.value,n=neck.value;var bf;
-  if(p.sex==='female'){var hp=hip.value;bf=163.205*Math.log10(w+hp-n)-97.684*Math.log10(h)-78.387;}else bf=86.010*Math.log10(w-n)-70.041*Math.log10(h)+36.76;
+  bf=navyBodyFat(p.sex,h,w,n,p.sex==='female'?hip.value:null);
   if(!isFinite(bf))return {measured:out.measured,estimate:insufficient('bodycomp_circ',['measurements produce an out-of-domain result'])};
   var stale=freshness('waist',waist.date).state==='stale'||freshness('neck',neck.date).state==='stale';
   var wt=weightAverages().avg7||currentWeight().value;

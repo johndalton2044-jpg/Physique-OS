@@ -388,6 +388,28 @@
    }
   },
   {
+   "id": "body-composition",
+   "label": "Body composition: fat and lean trajectories",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the fat-mass rate from the weight trend's partition prior and each body-fat method's own trend (weighted by that method's error, methods never mixed), lean as the remainder; masses only when a measured reading from the last 60 days anchors them",
+   "source": "method errors in BODYFAT_METHOD_SE; the US Navy circumference equation (Hodgdon & Beckett 1984); the partition prior of tissueEnergyDensity",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

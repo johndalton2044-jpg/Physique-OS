@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "0d7051d2d660",
+ "ontologyVersion": "42c3137480d6",
  "observationTypes": [
   {
    "id": "adherence",
@@ -42,7 +42,8 @@
    "min": 2,
    "max": 70,
    "consumers": [
-    "composition estimate cross-check"
+    "composition estimate cross-check",
+    "body_composition_state"
    ],
    "semantic": "adherence",
    "meaning": null,
@@ -2005,6 +2006,18 @@
    ]
   },
   {
+   "id": "body_composition_state",
+   "cls": "EMPIRICAL",
+   "output": "fat and lean rates (lb a week) with intervals, how much rests on measurement, and fat and lean masses with trajectories when a recent measurement anchors them",
+   "uncertainty": "posterior interval on the fat rate; lean by subtraction",
+   "inputs": [
+    "weight_trend",
+    "bodyfat",
+    "waist",
+    "muscle_risk"
+   ]
+  },
+  {
    "id": "bodycomp_circ",
    "cls": "HEURISTIC",
    "output": "body-fat range and fat/lean mass ranges",
@@ -2661,6 +2674,7 @@
   "models": [
    "adherence",
    "appetite",
+   "body_composition_state",
    "bodycomp_circ",
    "cardio_fitness_latent",
    "change_point",

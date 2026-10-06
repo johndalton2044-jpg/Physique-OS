@@ -4088,6 +4088,24 @@ function runSelfTest(opts){
         var steps=NEAT_PRIOR.mean*(100*300/t.value/10),kcal=steps*0.0005*kg,expect=p.mean+(-kcal*7/tissueKcalPerLb())*(1-(p.personalWeight||0));
         ok('a deeper calorie cut is credited with the everyday movement it tends to cost',Math.abs(e.mean-expect)<0.002&&e.mean>p.mean&&/everyday movement/.test(e.basis),round(e.mean,3)+' vs '+round(expect,3)+' (plain '+p.mean+')');
         var eb=energyBalance();ok('the energy balance states the movement its deficit is expected to cost',eb.status!=='ok'||eb.balance>=0||(eb.neat&&eb.neat.steps<0&&eb.neat.kcal<0));});})();
+    /* ---- Stage D: body-composition latent state (from stated inputs; expectations from precision arithmetic) ---- */
+    (function(){var d0='2026-01-01',pts=function(bf0,step,n,w){var o=[];for(var i=0;i<n;i++){var bf=bf0+step*i;o.push({date:addDays(d0,14*i),fat:w*bf/100,bf:bf});}return o;};
+      var base={trend:{slope:-1.0,se:0.1},share:{mean:0.75,sd:0.1,basis:'test'},methods:[],anchor:null};
+      var P=bodyCompositionState(base),pm=0.75*-1.0,psd=Math.sqrt(0.1*0.1*1+0.75*0.75*0.01+0.0025);
+      ok('with no measurements the fat rate is the partition prior, and it says so',Math.abs(P.fatRate.mean-pm)<0.005&&Math.abs(P.fatRate.sd-psd)<0.005&&P.measuredShare===0&&/population assumption/.test(P.reading));
+      ok('lean is the remainder of the weight trend',Math.abs(P.leanRate.mean-(-1.0-pm))<0.005&&Math.abs(P.leanRate.sd-Math.sqrt(0.01+psd*psd))<0.005);
+      ok('without a recent measured reading no masses are given',P.masses===null&&!P.anchored);
+      /* DEXA (error 1.5 points) at 200 lb: fat falls 0.5 lb a week; the posterior is the precision-weighted mean */
+      var dexa=pts(25,-0.35,7,200),M=bodyCompositionState(Object.assign({},base,{methods:[{method:'DEXA',se:1.5,points:dexa}],anchor:{bf:dexa[6].bf,method:'DEXA',date:dexa[6].date,se:1.5,weight:200}}));
+      var t=[0,2,4,6,8,10,12],tm=6,sxx=t.reduce(function(a,x){return a+(x-tm)*(x-tm);},0),oSd=200*0.015/Math.sqrt(sxx),oV=-0.35;
+      var want=(pm/(psd*psd)+oV/(oSd*oSd))/(1/(psd*psd)+1/(oSd*oSd));
+      ok('a measured fat trend moves the estimate by its precision (DEXA: \u22120.35 lb a week against a \u22120.75 prior)',Math.abs(M.fatRate.mean-want)<0.01&&M.fatRate.mean>pm&&M.measuredShare>0.15&&M.measuredShare<0.25,round(M.fatRate.mean,3)+' vs '+round(want,3));
+      ok('a recent measured reading anchors fat and lean masses, with trajectories that widen away from now',M.anchored&&Math.abs(M.masses.fat.mean-200*dexa[6].bf/100)<0.01&&M.trajectory[0].fat.sd>M.trajectory[4].fat.sd);
+      /* two methods with a fixed 6-point offset, both falling at the same rate: read separately, the offset is not change */
+      var bia=pts(31,-0.35,7,200),X=bodyCompositionState(Object.assign({},base,{methods:[{method:'DEXA',se:1.5,points:dexa},{method:'BIA scale',se:3.5,points:bia}]}));
+      ok('a fixed offset between methods does not read as change',X.methods.length===2&&X.methods.every(function(m){return Math.abs(m.fatPerWeek+0.35)<0.01;}));
+      ok('the latent state states its limits',/water/.test(P.limits)&&/not calibrated against each other/.test(P.limits));
+      ok('the circumference equation is the one bodyComp uses',Math.abs(navyBodyFat('male',70,36,15)-(86.010*Math.log10(21)-70.041*Math.log10(70)+36.76))<1e-9);})();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
