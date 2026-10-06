@@ -3488,4 +3488,4 @@ the current deficit puts on everyday steps; the Learn tab's physiology card show
 −298 steps a day per 10% deficit (−655 to +59, 80% personal), so the interval includes no change and the reading says
 so; the current deficit is expected to cost about 308 steps (18 kcal) a day. Both deliberate breakages (no offset; the
 regression's sign flipped) turned the intended checks red. Steps and calories list the model as a consumer; the
-ledger's optimiser entry carries the source. 1,659 self-tests pass; the full release record is in progress.
+ledger's optimiser entry carries the source. All 36 gates pass (reproducible included); release 24/24; 1,659 self-tests.
