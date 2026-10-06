@@ -2,13 +2,13 @@
   "build": "f8ea4c9780",
   "release": "527b8123c60c",
   "schema": 2,
-  "generatedAt": "2026-10-06T22:43:09.906Z",
+  "generatedAt": "2026-10-06T23:27:29.692Z",
   "verification": [
     {
       "n": 1,
       "label": "Build",
       "status": "PASS",
-      "evidence": "recorded against build f8ea4c9780: food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"f8ea4c9780\",\"release\":\"07b40b9f2199\",\"inputs\":177,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3513,\"scriptLines\":31382,\"sources\":99,\"files\":32,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
+      "evidence": "recorded against build f8ea4c9780: food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"f8ea4c9780\",\"release\":\"527b8123c60c\",\"inputs\":177,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3513,\"scriptLines\":31382,\"sources\":99,\"files\":32,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
     },
     {
       "n": 2,
@@ -187,7 +187,7 @@
     {
       "file": "BUILD-MANIFEST.json",
       "bytes": 32179,
-      "sha256": "53150868499ad9a5703c4ffc811d1e5cad564413a154882ee4d49cc21840d8c3"
+      "sha256": "ce405ea4441fe5bb3c1ceda285cafcc3be92f7d71413dadbf54128ed445b8a64"
     },
     {
       "file": "DEPLOYMENT.md",
@@ -202,7 +202,7 @@
     {
       "file": "SHA256SUMS",
       "bytes": 2796,
-      "sha256": "04ab0d47978a55cfc69dceb419ef5ffc3d2e52b2e2d55dd6cad2c8707f580e60"
+      "sha256": "65be141241b8ce752a1de726f4d680365786e4a3726a2b6f6910d563b259c08c"
     },
     {
       "file": "data/reference/SHA256SUMS",
@@ -317,7 +317,7 @@
     {
       "file": "index.html",
       "bytes": 3597771,
-      "sha256": "144edc0fdd296ea1a0bf2cf9bd1d33efa6bf2fd14d013feb5ce7b151b2f0580d"
+      "sha256": "f764822de0a9895020f6a5de378b1c5a5cb43e5104393f5a8e3d4c0200a0047a"
     },
     {
       "file": "manifest.webmanifest",
@@ -342,7 +342,7 @@
     {
       "file": "version.json",
       "bytes": 3114,
-      "sha256": "f86ac88edc4a4f3af8dc29bd06363f9807c67267cd259fd170e66d6d78c2e262"
+      "sha256": "4bd9692df84fa689c7dcd44fef01d356835fcf7633100971df13a564d74bb9ad"
     }
   ]
 }

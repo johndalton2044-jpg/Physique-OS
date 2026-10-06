@@ -827,3 +827,17 @@ Appended by `node scripts/baseline.mjs`. Each entry is generated from the runnin
 - capabilities: 22 — surfaced 16, validated 5, integrated 1
 - production-ready: 0; implemented but unsurfaced: none
 - dependency graph: 98 nodes, 263 edges
+
+## 2026-10-06T23:13:22.155Z — build f8ea4c9780
+
+- sources: 99, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 98 nodes, 263 edges
+
+## 2026-10-06T23:27:03.458Z — build f8ea4c9780
+
+- sources: 99, quantities: 38 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 98 nodes, 263 edges

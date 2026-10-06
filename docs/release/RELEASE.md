@@ -1,6 +1,6 @@
 # Release f8ea4c9780
 
-Release id 527b8123c60c · schema 2 · generated 2026-10-06T22:43:09.895Z
+Release id 527b8123c60c · schema 2 · generated 2026-10-06T23:27:29.684Z
 
 **24 of 24 verification items pass**
 
@@ -8,7 +8,7 @@ Release id 527b8123c60c · schema 2 · generated 2026-10-06T22:43:09.895Z
 
 | # | Item | Status | Evidence |
 |---|---|---|---|
-| 1 | Build | PASS | recorded against build f8ea4c9780: food data verified: fdc-2026-04-30, 1107 files · {"build":"f8ea4c9780","release":"07b40b9f2199","inputs":177,"version":"1.0.0 |
+| 1 | Build | PASS | recorded against build f8ea4c9780: food data verified: fdc-2026-04-30, 1107 files · {"build":"f8ea4c9780","release":"527b8123c60c","inputs":177,"version":"1.0.0 |
 | 2 | Engine | PASS | recorded against build f8ea4c9780: 65 passed, 0 failed  (1650 in-app self-test checks) |
 | 3 | Unit tests (in-app self-tests) | PASS | engine: recorded against build f8ea4c9780: 65 passed, 0 failed  (1650 in-app self-test checks) · shipped: recorded against build f8ea4c9780: pass  a second run  |
 | 4 | DOM tests | PASS | recorded against build f8ea4c9780: pass  with no layout measurement it falls back to the document end rather than failing · 399 passed, 0 failed |
