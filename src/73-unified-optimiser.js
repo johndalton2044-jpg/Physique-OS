@@ -19,7 +19,17 @@ function _leverText(k,d){var n=function(x){return Math.abs(x).toLocaleString();}
 function _goalDirection(ph){var t=ph?ph.type:'maintenance';return t==='cut'?-1:(t==='bulk'?1:0);}
 /* each lever's expected weekly effect on the weight trend, with its sd, from the personal model where it has one */
 function _leverEffect(k,dose,kg){if(!dose)return {mean:0,sd:0,basis:'no change'};
-  if(k==='calories'||k==='steps'){var p=predictResponse(k,'weight',dose);if(p)return {mean:p.mean,sd:Math.abs(p.hi-p.lo)/4,basis:p.basis};}
+  if(k==='calories'||k==='steps'){var p=predictResponse(k,'weight',dose);if(p){var out={mean:p.mean,sd:Math.abs(p.hi-p.lo)/4,basis:p.basis};
+    /* A deeper cut costs some everyday movement (the NEAT response), which gives back part of the deficit. The person's
+       own calorie responses are measured on the scale and already contain it, so only the share still resting on the
+       population figure is adjusted. */
+    var n=(typeof neatOffset==='function')?neatOffset(k==='calories'?Math.max(0,-dose):0):null;
+    if(n&&dose<0){var share=1-(p.personalWeight||0),kl=tissueKcalPerLb(),back=-n.kcal*7/kl*share;
+      out.mean=round(out.mean+back,3);out.sd=round(Math.sqrt(out.sd*out.sd+Math.pow(n.sdKcal*7/kl*share,2)),3);
+      out.basis+='; less the everyday movement a deeper deficit is expected to cost, about '+Math.abs(n.steps).toLocaleString()+' steps a day ('+n.basis+')';}
+    if(k==='steps'){var pull=null;try{var eb=energyBalance();pull=eb.status==='ok'&&eb.neat?eb.neat:null;}catch(e){}
+      if(pull&&pull.steps<0)out.basis+='; your current deficit is expected to pull everyday steps down by about '+Math.abs(pull.steps).toLocaleString()+' a day, which a step target holds against';}
+    return out;}}
   if(k==='cardio'){var kcal=6*(kg||85)*0.5*dose,m=-kcal/3500,pp=typeof predictResponse==='function'?predictResponse('cardio','weight',dose):null;return pp&&pp.n?{mean:pp.mean,sd:Math.abs(pp.hi-pp.lo)/4,basis:pp.basis}:{mean:m,sd:Math.abs(m)*0.4,basis:'about 6 METs for 30 minutes per session'};}
   if(k==='training'){var e=-(4*(kg||85)*1*dose)/3500;return {mean:e,sd:Math.abs(e)*0.6,basis:'about 4 METs for an hour per session; mainly for strength, not weight'};}
   return {mean:0,sd:0,basis:k==='sleep'?'sleep helps hunger, recovery and muscle retention more than the scale':'protein protects muscle and fullness; little direct effect on weight'};}

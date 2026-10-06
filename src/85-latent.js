@@ -230,6 +230,62 @@ function neatCompensation(opts){
     note:'Compensation modelled as weekly means across the phase, with the lag before it started and the effect expressed in expenditure rather than steps.',
     caveat:'Unintentional compensation and a deliberate decision to walk less look identical here. The conversion from steps to kcal is a population figure of roughly 0.045 kcal per step and varies with body mass and gait.'};
 }
+/* ============================================================================
+   PERSONAL NEAT RESPONSE (Stage D; TRANSITION item 1). Does this person move less when they eat less? Each week's
+   deficit is measured rather than assumed: the energy the weight trend implies (its 14-day slope at the week's end,
+   times the tissue's energy density) against what was eaten, as a share of expenditure (intake + deficit). The week's
+   mean steps are regressed on that share, per 10 points, with a prior centred on a small decline: spontaneous activity
+   falls under energy restriction in controlled studies (Martin et al. 2007, CALERIE), by amounts that vary widely
+   between people. Normal-normal posterior; personal weight as elsewhere. Six weeks at least, with deficits that differ
+   by 5 points or more (a steady deficit cannot show a response). Limits, stated: steps include deliberate walks, so a
+   decision to walk less looks like unplanned compensation; an association across weeks, not proof of cause.
+   neatCompensation() above describes the drift within one phase; this is the response it can be predicted from.
+   ============================================================================ */
+var NEAT_PRIOR={mean:-250,sd:400,source:'spontaneous activity falls under energy restriction, by amounts that vary widely between people (Martin et al. 2007, CALERIE)'};
+/* energy per step: the personal response model's population figure, about 0.5 kcal per 1,000 steps per kg (90 kg if unknown) */
+function kcalPerStep(){var kg=(typeof _kgNow==='function')?_kgNow():null;return 0.0005*(kg||90);}
+function _neatWeeks(days){
+  days=days||182;var end=asOf(),by={};
+  var add=function(type,key){dailySeries(type,end,days).forEach(function(d){var k=_weekKey(d.date),w=by[k]=by[k]||{s:[],c:[],last:d.date};w[key].push(d.value);if(d.date>w.last)w.last=d.date;});};
+  add('steps','s');add('calories','c');
+  var kcalLb=tissueKcalPerLb();
+  return Object.keys(by).sort().map(function(k){var w=by[k];if(w.s.length<4||w.c.length<4)return null;
+    var tr=weightTrend(14,w.last);if(!tr||tr.status!=='ok')return null;
+    var intake=mean(w.c),deficit=-tr.slopePerWeek/7*kcalLb,expend=intake+deficit;if(!(expend>0))return null;
+    return {week:k,steps:mean(w.s),deficitPct:100*deficit/expend};}).filter(Boolean);
+}
+function personalNeatResponse(weeks){
+  weeks=weeks||_neatWeeks();
+  if(weeks.length<6)return {status:'insufficient',need:'6 weeks with steps, intake and a weight trend',n:weeks.length};
+  var xs=weeks.map(function(w){return w.deficitPct/10;}),ys=weeks.map(function(w){return w.steps;});
+  if((Math.max.apply(null,xs)-Math.min.apply(null,xs))*10<5)return {status:'insufficient',need:'weeks whose deficits differ by 5 points of expenditure or more',n:weeks.length};
+  var mx=mean(xs),my=mean(ys),sxx=0,sxy=0;xs.forEach(function(x,i){sxx+=(x-mx)*(x-mx);sxy+=(x-mx)*(ys[i]-my);});
+  var b=sxy/sxx,res=0;xs.forEach(function(x,i){var e=ys[i]-my-b*(x-mx);res+=e*e;});var se=Math.sqrt(res/(xs.length-2)/sxx)||1e-6;
+  var pv=NEAT_PRIOR.sd*NEAT_PRIOR.sd,vp=1/(1/pv+1/(se*se)),mp=vp*(NEAT_PRIOR.mean/pv+b/(se*se)),pw=Math.max(0,Math.min(1,1-vp/pv));
+  var sdp=Math.sqrt(vp),lo=mp-2*sdp,hi=mp+2*sdp,kps=kcalPerStep();
+  return {status:'ok',cls:'EMPIRICAL',perTenPct:Math.round(mp),sd:Math.round(sdp),interval:[Math.round(lo),Math.round(hi)],personalWeight:round(pw,2),n:weeks.length,
+    kcalPerStep:round(kps,4),kcalPerTenPct:Math.round(mp*kps),weeks:weeks,prior:NEAT_PRIOR,
+    reading:pw<0.2?('not enough of your own data yet; the population evidence is used ('+NEAT_PRIOR.source+')'):
+      (hi<0?('your steps fall about '+Math.round(-mp)+' a day for each 10% deficit'):(lo>0?('your steps rise about '+Math.round(mp)+' a day for each 10% deficit'):'no clear change in your steps with the size of the deficit')),
+    limits:'steps include deliberate walks, so a decision to walk less looks like unplanned compensation; an association across weeks, not proof of cause'};
+}
+/* The expected change in everyday movement when the deficit deepens by deficitKcal a day: steps, the energy they carry
+   (negative = less expenditure) and its sd, from the person's response, or the population prior while there is none. */
+function neatOffset(deficitKcal){
+  if(!deficitKcal)return null;
+  var t=(typeof tdeeEstimate==='function')?tdeeEstimate():null;if(!t||t.status!=='ok'||!(t.value>0))return null;
+  var R=memo('pneat:'+todayISO(),function(){return personalNeatResponse();}),own=R.status==='ok';
+  var per=own?R.perTenPct:NEAT_PRIOR.mean,sdPer=own?R.sd:NEAT_PRIOR.sd,units=100*deficitKcal/t.value/10,kps=kcalPerStep();
+  return {steps:Math.round(per*units),kcal:Math.round(per*units*kps),sdKcal:Math.round(Math.abs(sdPer*units*kps)),personalWeight:own?R.personalWeight:0,
+    basis:own&&R.personalWeight>=0.2?('your NEAT response, '+R.perTenPct.toLocaleString()+' steps a day per 10% deficit, '+Math.round(R.personalWeight*100)+'% your own data'+
+      (R.interval[0]<0&&R.interval[1]>0?'; its interval includes no change':'')):('the population prior: '+NEAT_PRIOR.source)};
+}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_neat_response';}))return;
+  MODELS.push({id:'personal_neat_response',name:'Personal NEAT response',cls:'EMPIRICAL',version:'1.0',inputs:['steps','calories','weight_trend'],minN:6,
+    assumes:['the deficit the weight trend implies is the deficit eaten into','a week\u2019s steps respond to that week\u2019s deficit','the relationship is roughly linear across the deficits seen'],
+    failsWhen:['a deficit that hardly changes between weeks','deliberate changes in walking that track the diet','water shifts large enough to distort a week\u2019s trend'],
+    output:'the change in everyday steps a day for each 10% of expenditure in deficit, with its interval and how much is the person\u2019s own data',
+    consumers:['energyBalance','unifiedOptimiser','physiologySummary'],freshnessDays:14,uncertainty:{kind:'posterior interval on the slope'},fn:'personalNeatResponse'});})();
 /* ---------------- circadian context ----------------
    Work.md names this. What the record can support is time-of-day consistency, not a phase estimate. */
 function circadianContext(){

@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "35f69b0642fb",
+ "ontologyVersion": "0d7051d2d660",
  "observationTypes": [
   {
    "id": "adherence",
@@ -60,7 +60,8 @@
     "TDEE",
     "energy balance",
     "calorie adherence",
-    "deficit estimate"
+    "deficit estimate",
+    "personal_neat_response"
    ],
    "semantic": "intake",
    "meaning": "energy INTAKE as logged",
@@ -408,7 +409,8 @@
     "step baseline",
     "NEAT trend",
     "activity target",
-    "TDEE context"
+    "TDEE context",
+    "personal_neat_response"
    ],
    "semantic": "steps",
    "meaning": null,
@@ -2269,6 +2271,17 @@
    ]
   },
   {
+   "id": "personal_neat_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in everyday steps a day for each 10% of expenditure in deficit, with its interval and how much is the person’s own data",
+   "uncertainty": "posterior interval on the slope",
+   "inputs": [
+    "steps",
+    "calories",
+    "weight_trend"
+   ]
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "output": "the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data",
@@ -2671,6 +2684,7 @@
    "personal_baseline",
    "personal_dose_response",
    "personal_frequency_response",
+   "personal_neat_response",
    "personal_response",
    "personal_sleep_response",
    "physique_regions",

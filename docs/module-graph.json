@@ -258,6 +258,9 @@
    "79-rigour.js": [
     "tissueEnergyDensity"
    ],
+   "85-latent.js": [
+    "neatOffset"
+   ],
    "96-bayes-engine.js": [
     "_logistic",
     "runIdentity"
@@ -1900,6 +1903,10 @@
     "updatePhase",
     "applyProfileFields"
    ],
+   "40-models.js": [
+    "tissueKcalPerLb",
+    "energyBalance"
+   ],
    "58-plan.js": [
     "changePlan"
    ],
@@ -1918,6 +1925,9 @@
    "64-physique.js": [
     "physiqueModel",
     "physiqueRate"
+   ],
+   "85-latent.js": [
+    "neatOffset"
    ]
   }
  },
@@ -2622,6 +2632,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "todayISO",
     "addDays",
     "daysBetween",
     "round",
@@ -2629,11 +2640,15 @@
     "sd",
     "theilSen"
    ],
+   "20-schema-storage.js": [
+    "memo"
+   ],
    "30-observations.js": [
     "asOf",
     "withAsOf",
     "activePhase",
     "obsOf",
+    "dailySeries",
     "seriesWindow",
     "sessionsOf"
    ],
@@ -2641,7 +2656,9 @@
     "currentWeight",
     "weightTrend",
     "bmrPrior",
+    "tissueKcalPerLb",
     "tdeePersonal",
+    "tdeeEstimate",
     "energyBalance"
    ],
    "48-domains-more.js": [
@@ -2657,6 +2674,9 @@
    "61-conditioning.js": [
     "conditioningState",
     "_weekKey"
+   ],
+   "61-physiology.js": [
+    "_kgNow"
    ],
    "62-food.js": [
     "_liveFoodLogs"
@@ -4096,6 +4116,9 @@
    "82-views-a.js": [
     "renderAll"
    ],
+   "85-latent.js": [
+    "personalNeatResponse"
+   ],
    "85-log-sheet.js": [
     "openSheet",
     "closeSheet",
@@ -4493,6 +4516,7 @@
     "tissueKcalSd",
     "tdeePersonal",
     "tdeeEstimate",
+    "energyBalance",
     "rateBand",
     "canonicalGoal",
     "goalTrajectory",
@@ -4750,6 +4774,7 @@
     "cardioNormalisationAudit"
    ],
    "61-physiology.js": [
+    "_kgNow",
     "cardioIntensityClass",
     "_vo2Prior",
     "_modalityFamily",
@@ -4912,6 +4937,7 @@
     "captureRequest"
    ],
    "73-unified-optimiser.js": [
+    "_leverEffect",
     "unifiedOptimiser",
     "applyOptimiserChoice"
    ],
@@ -5038,6 +5064,7 @@
     "waterGlycogenState",
     "adaptiveThermogenesis",
     "neatCompensation",
+    "personalNeatResponse",
     "distributedLag",
     "absorptionContext",
     "_dailyLoad",

@@ -4072,6 +4072,22 @@ function runSelfTest(opts){
       ok('an outcome without 14 paired days is not estimated',R.outcomes.filter(function(o){return o.key==='steps';})[0].status==='insufficient');
       ok('sleep that does not vary cannot show an effect',personalSleepResponse({sleep:sl.map(function(o){return {date:o.date,value:7};}),fatigue:fa,hunger:hu,performance:{},steps:[]}).outcomes[0].status==='insufficient');
       ok('the sleep response states it is an association, not proof of cause',/not proof of cause/.test(R.limits));})();
+    /* ---- Stage D: personal NEAT response (simulated from a known slope) ---- */
+    (function(){var gen=function(b,dpcts,noise){return dpcts.map(function(d,i){return {week:'w'+i,deficitPct:d,steps:9000+b*d/10+(noise?noise[i]:0)};});};
+      var D=[0,5,10,15,20,25,12,8],R=personalNeatResponse(gen(-800,D,[60,-40,30,-70,50,-20,10,-30]));
+      ok('a known NEAT decline (\u2212800 steps a day per 10% deficit) is recovered inside its interval',R.status==='ok'&&R.interval[0]<=-800&&R.interval[1]>=-800&&Math.abs(R.perTenPct+800)<60&&R.personalWeight>0.5,JSON.stringify(R.interval));
+      ok('it says the person\u2019s steps fall, in their units',/steps fall about \d+ a day for each 10% deficit/.test(R.reading));
+      var Z=personalNeatResponse(gen(0,D,[300,-250,200,-350,280,-200,150,-120]));
+      ok('no response leaves the interval around zero, pulled toward the small-decline prior',Z.status==='ok'&&Z.interval[0]<0&&Z.interval[1]>0&&Z.perTenPct<0&&Z.perTenPct>-250);
+      ok('a steady deficit cannot show a response',personalNeatResponse(gen(-800,[15,15,16,15,14,15,15])).status==='insufficient');
+      ok('fewer than six weeks are not estimated',personalNeatResponse(gen(-800,[0,10,20,5,15])).status==='insufficient');
+      ok('the NEAT response states what it cannot tell apart',/deliberate walks/.test(R.limits)&&/not proof of cause/.test(R.limits));
+      /* the optimiser: a 300 kcal cut, its effect on the population figure, gives back what the prior says the steps cost */
+      withFixture('normal_loss',function(){ok('the fixture is too short for a personal NEAT response, so the prior applies',personalNeatResponse().status==='insufficient');
+        var t=tdeeEstimate(),kg=_kgNow(),p=predictResponse('calories','weight',-300),e=_leverEffect('calories',-300,kg);
+        var steps=NEAT_PRIOR.mean*(100*300/t.value/10),kcal=steps*0.0005*kg,expect=p.mean+(-kcal*7/tissueKcalPerLb())*(1-(p.personalWeight||0));
+        ok('a deeper calorie cut is credited with the everyday movement it tends to cost',Math.abs(e.mean-expect)<0.002&&e.mean>p.mean&&/everyday movement/.test(e.basis),round(e.mean,3)+' vs '+round(expect,3)+' (plain '+p.mean+')');
+        var eb=energyBalance();ok('the energy balance states the movement its deficit is expected to cost',eb.status!=='ok'||eb.balance>=0||(eb.neat&&eb.neat.steps<0&&eb.neat.kcal<0));});})();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

@@ -293,7 +293,7 @@ registerAction('diag.server',function(){var target=_SHEET&&_SHEET.buf?_SHEET.buf
   testExternalServer({probeProvider:true}).then(function(d){DB.settings.lastServerCheck={code:d.code,verdict:d.verdict,at:d.at,steps:d.steps};save('settings');
     if(target&&_SHEET&&_SHEET.buf===target){target.diag=d;renderSheet();}renderAll();toast(d.code==='OK'?'The server works':'Server check: '+d.verdict.slice(0,90),d.code==='OK'?null:{tone:'attention',ms:8000});});});
 /* ---- physiology models on screen ---- */
-function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=energyAvailability(),D=dietDigestibility(),L=null,sp=supplementEfficacy();
+function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=energyAvailability(),D=dietDigestibility(),L=null,sp=supplementEfficacy(),N=personalNeatResponse();
   var lift=((DB.sessions||[]).filter(function(s){return (s.sets||[]).length;}).slice(-1)[0]||{sets:[]}).sets[0];if(lift)L=exerciseLearningCurve(lift.exercise);
   return [
     {icon:'heart',label:'Aerobic fitness',r:F,v:F.status==='ok'?F.headline.estimate+' ml/kg/min':null,sub:F.status==='ok'?('80% range '+F.headline.ci80.join('\u2013')+' \u00b7 '+F.headline.family+' \u00b7 '+F.headline.n+' sessions \u00b7 '+F.headline.backtest.verdict):(F.need||[]).join('; ')},
@@ -301,6 +301,8 @@ function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=e
     {icon:'bolt',label:'Energy availability',r:E,v:E.status==='ok'?E.ea+' kcal/kg FFM':null,sub:E.status==='ok'?(E.band+' \u00b7 \u00b1'+E.sd+' \u00b7 not a diagnosis'):(E.need||[]).join('; ')},
     {icon:'fork',label:'Protein quality today',r:D,v:D.status==='ok'?D.digestibleProteinG+' g digestible':null,sub:D.status==='ok'?('of '+D.proteinG+' g \u00b7 quality '+D.proteinQuality+(D.unclassifiedFoods?' \u00b7 '+D.unclassifiedFoods+' foods unclassified':'')):(D.need||[]).join('; ')},
     {icon:'brain',label:'Learning'+(L&&L.exercise?' ('+L.exercise+')':''),r:L||{status:'insufficient'},v:L&&L.status==='ok'?L.stage:null,sub:L&&L.status==='ok'?('recent gain '+L.recentGain+'% \u00b7 '+L.sessions+' sessions'):(L&&L.need||['lifting sessions']).join('; ')},
+    {icon:'walk',label:'Everyday movement in a deficit',r:N,v:N.status==='ok'?((N.perTenPct>0?'+':'')+N.perTenPct.toLocaleString()+' steps a day per 10% deficit'):null,
+      sub:N.status==='ok'?(N.interval[0].toLocaleString()+' to '+N.interval[1].toLocaleString()+' \u00b7 '+Math.round(N.personalWeight*100)+'% your own data \u00b7 '+N.reading):N.need},
     {icon:'pill',label:'Supplements',r:sp,v:sp.status==='ok'?sp.supplements.filter(function(x){return x.status==='ok';}).length+' tested':null,sub:sp.status==='ok'?sp.supplements.map(function(x){return x.name+': '+(x.verdict||x.status);}).join(' \u00b7 '):(sp.need||[]).join('; ')}];}
 function physiologyRows(){return physiologySummary().map(function(x){return '<div class="feat">'+uiIcon(x.icon,{size:22})+'<div class="feat-body"><b>'+esc(x.label)+'</b> '+(x.v?'<span class="num">'+esc(x.v)+'</span> '+uiPill(x.r.cls||'HEURISTIC'):uiPill('needs data','neutral'))+'<div class="hint">'+esc(x.sub||'')+'</div></div></div>';}).join('');}
 registerAction('physio.open',function(){openSheet('edit',{form:'physio',title:'Physiology models',desc:'',buf:{}});});

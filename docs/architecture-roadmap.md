@@ -3470,3 +3470,22 @@ The black-box gate had failed twice in recorded runs and passed when rerun; unde
 source bytes; a CRLF checkout builds a different ID). CLAUDE.md (rules Claude Code loads automatically) and
 docs/handoff/TRANSITION.md (set-up, release procedure, backlog with acceptance criteria, known limits, trajectory) hand
 the work to Claude Code.
+
+## Stage D: the personal NEAT response (build 6c47545fdc)
+
+personalNeatResponse() asks whether the person moves less when they eat less. Each week's deficit is measured rather
+than assumed: the energy the weight trend implies (its 14-day slope at the week's end, times the tissue's energy
+density) against what was eaten, as a share of expenditure. The week's mean steps are regressed on that share, per 10
+points, with a prior centred on a small decline (−250 steps a day, SD 400), because spontaneous activity falls under
+energy restriction in controlled studies (Martin et al. 2007, CALERIE) by amounts that vary widely between people. It
+needs six weeks and deficits that differ by 5 points or more. A known −800 is recovered inside its interval, no
+response gives an interval around zero pulled toward the prior, and a steady deficit or fewer than six weeks are
+refused; it states that deliberate walks look like compensation and that it is an association, not proof of cause.
+Consumers: the energy balance now states the movement its deficit is expected to cost; the optimiser credits a deeper
+calorie cut with that cost, applied only to the share of the calorie effect still resting on the population figure
+(the person's own calorie responses are measured on the scale and already contain it); the steps lever states the pull
+the current deficit puts on everyday steps; the Learn tab's physiology card shows the response. On the demo: 9 weeks,
+−298 steps a day per 10% deficit (−655 to +59, 80% personal), so the interval includes no change and the reading says
+so; the current deficit is expected to cost about 308 steps (18 kcal) a day. Both deliberate breakages (no offset; the
+regression's sign flipped) turned the intended checks red. Steps and calories list the model as a consumer; the
+ledger's optimiser entry carries the source. 1,659 self-tests pass; the full release record is in progress.

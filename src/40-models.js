@@ -386,7 +386,9 @@ function energyBalance(){
   var t=tdeeEstimate();var cal=seriesWindow('calories',14);
   if(t.status!=='ok'||cal.length<7)return insufficient('energy_balance',t.status!=='ok'?(t.need||[]):[(7-cal.length)+' more intake days'],{tdee:t});
   var intake=mean(cal.map(function(d){return d.value;}));var bal=intake-t.value;
-  return {status:'ok',intake:intake,tdee:t,balance:bal,lo:intake-t.hi,hi:intake-t.lo,confidence:t.confidence,n:cal.length,cls:t.cls==='PRIOR'?'HEURISTIC':'DERIVED'};
+  /* the everyday movement this deficit is expected to cost, from the person's NEAT response (or its prior) */
+  var neat=(bal<0&&typeof neatOffset==='function')?neatOffset(-bal):null;
+  return {status:'ok',intake:intake,tdee:t,balance:bal,lo:intake-t.hi,hi:intake-t.lo,confidence:t.confidence,n:cal.length,cls:t.cls==='PRIOR'?'HEURISTIC':'DERIVED',neat:neat};
 }
 /* ---- body composition ---- */
 function bodyComp(){
