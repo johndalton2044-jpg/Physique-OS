@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-05T18:51:36.423Z",
-  "buildId": "c5ced85fff",
-  "nodes": 95,
-  "edges": 254,
-  "contractDerived": 83,
+  "generatedAt": "2026-10-06T22:21:46.094Z",
+  "buildId": "f8ea4c9780",
+  "nodes": 98,
+  "edges": 263,
+  "contractDerived": 86,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -158,6 +158,11 @@
     {
       "sourceId": "fatigue",
       "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "personal_sleep_response",
       "dependencyType": "data"
     },
     {
@@ -801,6 +806,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "sleep",
+      "targetId": "personal_sleep_response",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "sleepq",
       "targetId": "recovery",
       "dependencyType": "data"
@@ -868,6 +878,11 @@
     {
       "sourceId": "hunger",
       "targetId": "personal_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "hunger",
+      "targetId": "personal_sleep_response",
       "dependencyType": "data"
     },
     {
@@ -958,6 +973,11 @@
     {
       "sourceId": "steps",
       "targetId": "recovery_allocation",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "personal_sleep_response",
       "dependencyType": "data"
     },
     {
@@ -1151,6 +1171,31 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "physique_regions",
+      "targetId": "personal_dose_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "physique_regions",
+      "targetId": "personal_frequency_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "physique_regions",
+      "targetId": "physiqueCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_dose_response",
+      "targetId": "marginalReturns",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_frequency_response",
+      "targetId": "marginalReturns",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "learning_loop",
       "targetId": "loopCard",
       "dependencyType": "model"
@@ -1256,6 +1301,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "personal_sleep_response",
+      "targetId": "marginalReturns",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "micronutrient_coverage",
       "targetId": "supplementsCard",
       "dependencyType": "model"
@@ -1263,11 +1313,6 @@
     {
       "sourceId": "supplement_adherence",
       "targetId": "supplementsCard",
-      "dependencyType": "model"
-    },
-    {
-      "sourceId": "physique_regions",
-      "targetId": "physiqueCard",
       "dependencyType": "model"
     },
     {

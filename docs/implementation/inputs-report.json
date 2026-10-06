@@ -930,46 +930,6 @@
   },
   {
    "sheet": "session",
-   "field": "6",
-   "act": "sheet.set",
-   "type": "text",
-   "status": "own",
-   "freeText": false
-  },
-  {
-   "sheet": "session",
-   "field": "6",
-   "act": "sheet.set",
-   "type": "text",
-   "status": "own",
-   "freeText": false
-  },
-  {
-   "sheet": "session",
-   "field": "6",
-   "act": "sheet.set",
-   "type": "text",
-   "status": "own",
-   "freeText": false
-  },
-  {
-   "sheet": "session",
-   "field": "6",
-   "act": "sheet.set",
-   "type": "text",
-   "status": "own",
-   "freeText": false
-  },
-  {
-   "sheet": "session",
-   "field": "6",
-   "act": "sheet.set",
-   "type": "select",
-   "status": "own",
-   "freeText": false
-  },
-  {
-   "sheet": "session",
    "field": "notes",
    "act": "sheet.field",
    "type": "textarea",

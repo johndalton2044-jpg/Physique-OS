@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "c5ced85fff",
+ "build": "f8ea4c9780",
  "models": [
   {
    "id": "adherence",
@@ -118,9 +118,24 @@
    "fn": "personalBaselines"
   },
   {
+   "id": "personal_dose_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalDoseResponse"
+  },
+  {
+   "id": "personal_frequency_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalFrequencyResponse"
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "fn": "personalResponseModel"
+  },
+  {
+   "id": "personal_sleep_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalSleepResponse"
   },
   {
    "id": "physique_regions",
@@ -501,6 +516,21 @@
   {
    "entity": "Undo",
    "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Exposure",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Outcome",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Regime",
+   "status": "projection",
    "horizon": null
   },
   {
@@ -1101,6 +1131,10 @@
   {
    "id": "gen.search",
    "level": "insightful"
+  },
+  {
+   "id": "goal.choose",
+   "level": "developer"
   },
   {
    "id": "import.commit",
@@ -2813,6 +2847,7 @@
   "experiment.created",
   "experiment.evaluated",
   "experiment.revised",
+  "exposure.recorded",
   "food.logged",
   "food.mealChanged",
   "food.retracted",
@@ -2829,6 +2864,7 @@
   "observation.corrected",
   "observation.flagged",
   "observation.retracted",
+  "outcome.recorded",
   "phase.ended",
   "phase.started",
   "phase.targetsChanged",
@@ -2896,5 +2932,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 115
+ "panels": 116
 }

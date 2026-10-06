@@ -8,35 +8,37 @@ Not medical advice. It interprets a training and nutrition record; it does not d
 
 ## Capability maturity
 
-What is finished, what is partial and what is not built, with the evidence for each. Levels: not implemented → specified → implemented → integrated → surfaced → validated → production-ready.
+What is finished, what is partial and what is not built, rated on separate axes so that a model can be solid engineering and early science at once (reconstruction §211). Every level is earned: the rules are in docs/capabilities.json and tests/maturity.mjs refuses a claim its evidence does not support; prospective validation, real-world evidence, data at scale and production operations cannot be claimed yet. Engineering levels: not implemented → specified → implemented → integrated → surfaced → validated → production-ready.
 
 <!-- maturity:begin (generated from docs/capabilities.json by tests/maturity.mjs --write) -->
-| Capability | Maturity | Evidence | Note |
-|---|---|---|---|
-| Local persistence (IndexedDB, incremental writes) | validated | gate persistence |  |
-| Backup and restore | validated | workflow V-010 |  |
-| Erase everything | validated | workflow V-009 |  |
-| Food logging with portions | validated | workflow V-002 |  |
-| Training sessions and sets | validated | workflow V-003 |  |
-| Corrections and deletions with history | validated | workflow V-005 |  |
-| Phase targets reaching Today | validated | workflow V-001 |  |
-| Recovery readings changing today's training advice | validated | workflow V-004 |  |
-| One plan authority (every plan change through changePlan, one version each) | integrated | gate authority |  |
-| What was known on a past date | validated | workflow V-011, gate engine |  |
-| Encrypted sync between devices | integrated | gate cloud:e2e, gate server | needs a persistent disk; production mode refuses to start without one and without off-host backups |
-| Verified off-host server backups, restore and health | integrated | gate server | tested against a mock S3 that checks signatures and payload hashes; not yet against a real provider |
-| Adaptive plan | surfaced | gate adapt |  |
-| Personal response model | surfaced | gate engine |  |
-| Forecasts that compete for accuracy | surfaced | gate engine |  |
-| Unified optimiser | surfaced | gate engine |  |
-| State model (the 'digital twin') | surfaced | gate engine | a mathematical state model, not a validated twin |
-| Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | gate integration |  |
-| Live connections to Fitbit, Withings and Oura | implemented | gate connect | tested against simulated providers only, never a real account |
-| Garmin, WHOOP, Strava, Polar, Samsung Health, Health Connect, HealthKit | specified | — |  |
-| LLM providers (Anthropic, OpenAI, Gemini, local OpenAI-compatible) through the server | integrated | gate ai | tested against mock providers that check each protocol; not yet against a real provider. Apple Foundation Models need a native app |
-| AI proposals: describe a log entry or a meal, suggest a session, explain the plan | integrated | gate ai | off until consent; read-only tools; validated output; nothing is written until the person confirms |
-| OCR of labels and photos | not implemented | — |  |
-| Body shape from photos | not implemented | — |  |
+| Capability | Engineering | Scientific | Data | Personalisation | UX | Operational | Evidence | Calibration | Shown by |
+|---|---|---|---|---|---|---|---|---|---|
+| Local persistence (IndexedDB, incremental writes) | validated | — | real data path | — | surfaced | local | independent | — | gate persistence |
+| Backup and restore | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-010 |
+| Erase everything | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-009 |
+| Food logging with portions | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-002 |
+| Training sessions and sets | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-003 |
+| Corrections and deletions with history | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-005 |
+| Phase targets reaching Today | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-001 |
+| Recovery readings changing today's training advice | validated | heuristic | real data path | population | workflow-tested | local | independent | insufficient | workflow V-004 |
+| One plan authority (every plan change through changePlan, one version each) | integrated | — | real data path | — | surfaced | local | internal | — | gate authority |
+| What was known on a past date | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-011, gate engine |
+| Encrypted sync between devices | integrated | — | real data path | — | surfaced | server | independent | — | gate cloud:e2e, gate server |
+| Verified off-host server backups, restore and health | integrated | — | simulated | — | hidden | server | internal | — | gate server |
+| Adaptive plan | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate adapt |
+| Personal response model | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
+| Forecasts that compete for accuracy | surfaced | backtested | real data path | personal | surfaced | local | internal | measured | gate engine |
+| Unified optimiser | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
+| Marginal returns: the next unit of each dose | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
+| Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | real data path | population | surfaced | local | internal | — | gate engine |
+| State model (the 'digital twin') | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
+| Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | — | real data path | — | surfaced | local | independent | — | gate integration |
+| Live connections to Fitbit, Withings and Oura | implemented | — | simulated | — | surfaced | server | internal | — | gate connect |
+| Garmin, WHOOP, Strava, Polar, Samsung Health, Health Connect, HealthKit | specified | — | none | — | hidden | — | none | — | — |
+| LLM providers (Anthropic, OpenAI, Gemini, local OpenAI-compatible) through the server | integrated | — | simulated | — | surfaced | server | internal | — | gate ai |
+| AI proposals: describe a log entry or a meal, suggest a session, explain the plan | integrated | heuristic | simulated | population | surfaced | server | internal | — | gate ai |
+| OCR of labels and photos | not implemented | none | none | — | hidden | — | none | — | — |
+| Body shape from photos | not implemented | none | none | — | hidden | — | none | — | — |
 <!-- maturity:end -->
 
 ## Run it

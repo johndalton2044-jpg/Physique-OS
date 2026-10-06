@@ -875,6 +875,40 @@
    ]
   }
  },
+ "58-goals.js": {
+  "layer": "engine",
+  "calls": {
+   "10-core.js": [
+    "todayISO",
+    "round",
+    "mean"
+   ],
+   "20-schema-storage.js": [
+    "memo"
+   ],
+   "30-observations.js": [
+    "activePhase",
+    "seriesWindow"
+   ],
+   "40-models.js": [
+    "canonicalGoal"
+   ],
+   "58-schedule.js": [
+    "scheduleModel"
+   ],
+   "58-state-vectors.js": [
+    "capabilityVector"
+   ],
+   "61-physiology.js": [
+    "_kgNow",
+    "personalSleepResponse"
+   ],
+   "64-physique.js": [
+    "physiqueModel",
+    "physiqueRate"
+   ]
+  }
+ },
  "58-learning-loop.js": {
   "layer": "engine",
   "calls": {
@@ -1104,6 +1138,10 @@
     "personalResponseModel",
     "predictResponse"
    ],
+   "58-state-vectors.js": [
+    "currentRegimes",
+    "regimeChangesIn"
+   ],
    "61-physiology.js": [
     "_kgNow"
    ],
@@ -1154,6 +1192,37 @@
    ],
    "58-plan.js": [
     "notePlanChange"
+   ]
+  }
+ },
+ "58-state-vectors.js": {
+  "layer": "engine",
+  "calls": {
+   "10-core.js": [
+    "todayISO",
+    "addDays",
+    "daysBetween",
+    "round",
+    "mean"
+   ],
+   "30-observations.js": [
+    "asOf",
+    "obsOf",
+    "seriesWindow"
+   ],
+   "40-models.js": [
+    "weightTrend",
+    "tdeePersonal",
+    "adherenceState"
+   ],
+   "45-baselines.js": [
+    "changePoints"
+   ],
+   "58-model-competition.js": [
+    "_e1rmTop"
+   ],
+   "64-physique.js": [
+    "physiqueModel"
    ]
   }
  },
@@ -1306,16 +1375,19 @@
     "todayISO",
     "addDays",
     "daysBetween",
+    "num",
     "round",
     "mean",
     "sd"
    ],
    "30-observations.js": [
     "obsOf",
-    "seriesWindow"
+    "seriesWindow",
+    "sessionsOf"
    ],
    "40-models.js": [
-    "prof"
+    "prof",
+    "e1rm"
    ],
    "50-decision.js": [
     "_detrended"
@@ -2265,7 +2337,8 @@
     "renderNextUp"
    ],
    "90-optimiser-ui.js": [
-    "optimiserCard"
+    "optimiserCard",
+    "goalsCard"
    ],
    "90-weather-ui.js": [
     "renderWeatherCard"
@@ -2789,6 +2862,9 @@
    ],
    "54-scenarios.js": [
     "monteCarloForecast"
+   ],
+   "58-schedule.js": [
+    "scheduleModel"
    ],
    "71-integration.js": [
     "unifiedRecovery"
@@ -3732,10 +3808,18 @@
   "calls": {
    "10-core.js": [
     "round",
-    "esc"
+    "fmtNum",
+    "esc",
+    "attrEsc",
+    "plural"
    ],
    "20-schema-storage.js": [
     "save"
+   ],
+   "58-goals.js": [
+    "marginalReturns",
+    "goalConflicts",
+    "setGoalPriority"
    ],
    "73-unified-optimiser.js": [
     "unifiedOptimiser",
@@ -3743,12 +3827,16 @@
    ],
    "80-ui.js": [
     "uiCard",
+    "uiRow",
     "uiPill",
     "uiBtn",
     "toast"
    ],
    "82-views-a.js": [
     "renderAll"
+   ],
+   "87-governance.js": [
+    "arbitrateDecision"
    ],
    "90-actions.js": [
     "registerAction"
@@ -3794,6 +3882,7 @@
    "10-core.js": [
     "shortDate",
     "round",
+    "fmtNum",
     "esc",
     "attrEsc"
    ],
@@ -3804,6 +3893,7 @@
     "evaluateCompetition"
    ],
    "58-response-entity.js": [
+    "exposuresOf",
     "responsesOf"
    ],
    "58-response-model.js": [
@@ -4557,6 +4647,13 @@
     "logQuality",
     "qualityTrend"
    ],
+   "58-goals.js": [
+    "marginalReturn",
+    "goalConflicts",
+    "setGoalPriority",
+    "personalDoseResponse",
+    "personalFrequencyResponse"
+   ],
    "58-learning-loop.js": [
     "_loopDeltas",
     "nextTest",
@@ -4596,6 +4693,8 @@
    "58-response-entity.js": [
     "evaluateResponse",
     "recordResponses",
+    "exposuresOf",
+    "outcomesOf",
     "responsesOf",
     "interventionLifecycles",
     "individualState"
@@ -4614,6 +4713,12 @@
     "scheduleAhead",
     "setSchedule",
     "scheduleAudit"
+   ],
+   "58-state-vectors.js": [
+    "regimes",
+    "regimeChangesIn",
+    "stateVector",
+    "capabilityVector"
    ],
    "58-trace.js": [
     "traceValue",
@@ -4651,7 +4756,8 @@
     "cardioFitnessObservation",
     "hydrationModel",
     "energyAvailability",
-    "_foodGroup"
+    "_foodGroup",
+    "personalSleepResponse"
    ],
    "62-food.js": [
     "_foodCacheStore",

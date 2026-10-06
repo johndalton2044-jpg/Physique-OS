@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "4f40c6abd6ab",
+ "ontologyVersion": "35f69b0642fb",
  "observationTypes": [
   {
    "id": "adherence",
@@ -615,6 +615,12 @@
    ]
   },
   {
+   "id": "exposure.recorded",
+   "entities": [
+    "Exposure"
+   ]
+  },
+  {
    "id": "food.logged",
    "entities": [
     "Execution",
@@ -710,6 +716,12 @@
    "id": "observation.retracted",
    "entities": [
     "Observation"
+   ]
+  },
+  {
+   "id": "outcome.recorded",
+   "entities": [
+    "Outcome"
    ]
   },
   {
@@ -1627,6 +1639,108 @@
     ]
    }
   },
+  "exposures": {
+   "entities": [
+    "Exposure"
+   ],
+   "fields": {
+    "adherence": [
+     "null",
+     "number"
+    ],
+    "before": [
+     "number"
+    ],
+    "coverage": [
+     "null",
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "interventionId": [
+     "string"
+    ],
+    "method": [
+     "string"
+    ],
+    "planned": [
+     "null",
+     "number"
+    ],
+    "received": [
+     "number"
+    ],
+    "recordedAt": [
+     "string"
+    ],
+    "responseId": [
+     "string"
+    ],
+    "stage": [
+     "string"
+    ],
+    "unit": [
+     "string"
+    ],
+    "variable": [
+     "string"
+    ],
+    "window": [
+     "array"
+    ]
+   }
+  },
+  "outcomes": {
+   "entities": [
+    "Outcome"
+   ],
+   "fields": {
+    "after": [
+     "number"
+    ],
+    "baselineWindow": [
+     "array"
+    ],
+    "before": [
+     "number"
+    ],
+    "effect": [
+     "number"
+    ],
+    "id": [
+     "string"
+    ],
+    "method": [
+     "string"
+    ],
+    "n": [
+     "array"
+    ],
+    "quantity": [
+     "string"
+    ],
+    "recordedAt": [
+     "string"
+    ],
+    "responseId": [
+     "string"
+    ],
+    "se": [
+     "number"
+    ],
+    "stage": [
+     "string"
+    ],
+    "unit": [
+     "null",
+     "string"
+    ],
+    "window": [
+     "array"
+    ]
+   }
+  },
   "responses": {
    "entities": [
     "Response"
@@ -1679,6 +1793,9 @@
      "null",
      "object"
     ],
+    "exposureId": [
+     "string"
+    ],
     "exposureWindow": [
      "object"
     ],
@@ -1707,8 +1824,14 @@
     "outcome": [
      "string"
     ],
+    "outcomeId": [
+     "string"
+    ],
     "placebo": [
      "object"
+    ],
+    "planVersionId": [
+     "null"
     ],
     "primary": [
      "object"
@@ -2128,6 +2251,24 @@
    ]
   },
   {
+   "id": "personal_dose_response",
+   "cls": "EMPIRICAL",
+   "output": "the scale of the person’s sets curve, with its interval and how much is their own data",
+   "uncertainty": "posterior interval on the scale",
+   "inputs": [
+    "physique_regions"
+   ]
+  },
+  {
+   "id": "personal_frequency_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in monthly strength gain per extra weekly exposure at equal volume, with its interval and how much is the person’s own data",
+   "uncertainty": "posterior interval on the slope",
+   "inputs": [
+    "physique_regions"
+   ]
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "output": "the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data",
@@ -2137,6 +2278,18 @@
     "hunger",
     "steps",
     "calories"
+   ]
+  },
+  {
+   "id": "personal_sleep_response",
+   "cls": "EMPIRICAL",
+   "output": "per outcome, the change per extra hour of sleep above the person’s usual, with its interval and how much is their own data",
+   "uncertainty": "posterior interval per outcome",
+   "inputs": [
+    "sleep",
+    "fatigue",
+    "hunger",
+    "steps"
    ]
   },
   {
@@ -2427,6 +2580,7 @@
    "experiment.created",
    "experiment.evaluated",
    "experiment.revised",
+   "exposure.recorded",
    "food.logged",
    "food.mealChanged",
    "food.retracted",
@@ -2443,6 +2597,7 @@
    "observation.corrected",
    "observation.flagged",
    "observation.retracted",
+   "outcome.recorded",
    "phase.ended",
    "phase.started",
    "phase.targetsChanged",
@@ -2473,11 +2628,13 @@
    "decisions",
    "executions",
    "experiments",
+   "exposures",
    "foodLogs",
    "foods",
    "interventions",
    "negatives",
    "observations",
+   "outcomes",
    "phases",
    "plans",
    "predictions",
@@ -2512,7 +2669,10 @@
    "model_competition",
    "muscle_risk",
    "personal_baseline",
+   "personal_dose_response",
+   "personal_frequency_response",
    "personal_response",
+   "personal_sleep_response",
    "physique_regions",
    "rate_band",
    "recovery",

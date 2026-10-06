@@ -2,8 +2,8 @@
  "app": "Physique OS",
  "version": "1.0.0",
  "schema": 2,
- "build": "c5ced85fff",
- "release": "a8eeada546ae",
+ "build": "f8ea4c9780",
+ "release": "527b8123c60c",
  "data": {
   "food": {
    "present": true,
@@ -28,8 +28,8 @@
   ],
   "rewriteConfigured": true
  },
- "cacheName": "physique-os-1.0.0-a8eeada546ae",
- "builtAt": "2026-09-21T14:13:20.000Z",
+ "cacheName": "physique-os-1.0.0-527b8123c60c",
+ "builtAt": "2026-10-06T22:42:58.248Z",
  "sources": [
   "10-core.js",
   "20-schema-storage.js",
@@ -53,6 +53,7 @@
   "55-generate.js",
   "56-knowledge.js",
   "57-composition.js",
+  "58-goals.js",
   "58-learning-loop.js",
   "58-model-competition.js",
   "58-phase-criteria.js",
@@ -60,6 +61,7 @@
   "58-response-entity.js",
   "58-response-model.js",
   "58-schedule.js",
+  "58-state-vectors.js",
   "58-trace.js",
   "59-friction.js",
   "59-graph.js",
@@ -129,7 +131,7 @@
   "99-a-conformance.js",
   "99-boot.js"
  ],
- "buildInputs": 175,
+ "buildInputs": 177,
  "food": {
   "databaseVersion": "fdc-2026-04-30",
   "branded": 455381,

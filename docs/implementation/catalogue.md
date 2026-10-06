@@ -4,18 +4,18 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 40 |
+| models | 43 |
 | capabilities | 22 |
-| entity contracts | 24 |
-| commands | 537 |
+| entity contracts | 27 |
+| commands | 538 |
 | sheets | 120 |
-| event types | 50 |
+| event types | 52 |
 | observation types | 34 |
 | exercises | 159 |
 | movement patterns | 28 |
 | progression families | 18 |
 | mobility items | 43 |
-| classified panels (rules) | 115 |
+| classified panels (rules) | 116 |
 
 ## Entity contracts
 
@@ -38,6 +38,9 @@ Produced from the running registries on every governance run. Do not edit by han
 - **IndividualState**: projection
 - **InterventionLifecycle**: projection
 - **Undo**: implemented
+- **Exposure**: implemented
+- **Outcome**: implemented
+- **Regime**: projection
 - **Evidence**: reference
 - **Response**: implemented
 - **LearningCycle**: implemented
@@ -71,8 +74,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- added entitie: Undo
-- added event: archive.recorded
-- added event: decision.applied
-- added event: events.revoked
-- added event: session.rated
+- added model: personal_sleep_response

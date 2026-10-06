@@ -14,6 +14,9 @@ function _howYouRespond(){var M=personalResponseModel(),rows=M.rows.filter(funct
 registerAction('responses.open',function(id){openSheet('edit',{form:'response',title:'What happened because of it',desc:'',buf:{id:id}});});
 SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x.id===b.id;})[0];if(!r)return {body:'<div class="hint">That response is no longer in the record.</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
+  /* the exposure actually received, beside what was planned and what came before (Stage B) */
+  var _E=exposuresOf().filter(function(e){return e.id===r.exposureId;})[0];
+  if(_E)out+=uiRow('Received',fmtNum(_E.received,_E.received%1?2:0)+' '+esc(_E.unit),{sub:esc([_E.planned!=null?'planned '+fmtNum(_E.planned,0):null,_E.before!=null?fmtNum(_E.before,_E.before%1?2:0)+' before':null,_E.coverage!=null?'logged on '+Math.round(_E.coverage*100)+'% of days':null].filter(Boolean).join('; '))});
   if(r.adherence)out+=uiRow('Carried out',r.adherence.share!=null?Math.round(r.adherence.share*100)+'% of days':'\u2014',{sub:esc(r.adherence.daysMet+' of '+r.adherence.daysLogged+' logged days '+r.adherence.rule)});
   if(P)out+=uiRow(esc(P.quantity)+' before',esc(String(P.before)+(P.unit?' '+P.unit:'')))+uiRow('after',esc(String(P.after)+(P.unit?' '+P.unit:'')))+uiRow('Effect',esc(_respEffect(r)),{sub:esc(P.method)});
   if(r.expected)out+=uiRow('Expected',esc(round(Math.min(r.expected.lo,r.expected.hi),2)+' to '+round(Math.max(r.expected.lo,r.expected.hi),2)+' '+r.expected.unit),{sub:esc(r.expected.basis+' \u00b7 '+(r.expectation||''))});

@@ -874,9 +874,9 @@ tr.wx-today td{font-weight:700}
 .loop-stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}.loop-stage{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:8px;border:1px solid var(--border);font-size:calc(11.5px*var(--ts,1));min-width:0}
 .loop-stage span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}.loop-stage.st-ok{border-color:var(--good,#3a8f5c)}.loop-stage.st-attention{border-style:dashed}.loop-stage.st-starved{border-color:var(--neg,#c0504d)}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1ZpvAFtAOFRmeTl6YTTwJ2SgqZ5WNcnL9yHpuokmNvw='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
-<meta name="physique-build" content="c5ced85fff 2026-09-21T14:13:20.000Z">
-<meta name="physique-release" content="a8eeada546ae">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lLZ9PQD19TkZoxwCZwWlZ8FPN1AsrG+d9kZeB2rP8po='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<meta name="physique-build" content="f8ea4c9780 2026-10-06T22:42:58.248Z">
+<meta name="physique-release" content="527b8123c60c">
 </head>
 <body>
 
@@ -1081,9 +1081,9 @@ var APP_NAME='Physique OS';
 var APP_VERSION='1.0.0';
 var SCHEMA_VERSION=2;
 var SCHEMA_MIN_KNOWN=1; // oldest schema this build can migrate from; anything older is rejected, never guessed
-var BUILD_ID='c5ced85fff';        // hash of src/ — identifies the application code
-var RELEASE_ID='a8eeada546ae';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
-var BUILD_TIME='2026-09-21T14:13:20.000Z';
+var BUILD_ID='f8ea4c9780';        // hash of src/ — identifies the application code
+var RELEASE_ID='527b8123c60c';   // hash of every material build input (src, build.mjs, scripts, reference data, package config) — identifies the distribution and names the service-worker cache
+var BUILD_TIME='2026-10-06T22:42:58.248Z';
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
 function _q(e,severity){
 try{
@@ -1283,7 +1283,7 @@ return {
 schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
 profile:{name:'',age:null,sex:'',heightIn:null,startWeightLb:null,goalWeightLb:null,goalType:'',targetDate:'',trainingExperience:'',activityBaseline:'',dietPreference:'',equipment:'',schedule:'',sleepTargetH:null,createdAt:nowISO(),updatedAt:null},
 phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
-decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],environment:[],
+decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],exposures:[],outcomes:[],environment:[],
 models:{calibration:{},versions:{}},
 settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
 ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},
@@ -1491,7 +1491,7 @@ return false;
 if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('pagehide',function(){flushMirrorIfBehind('pagehide');});
 if(typeof document!=='undefined'&&document&&document.addEventListener)document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flushMirrorIfBehind('hidden');});
 /* ===== SOURCE: 22-persistence.js ===== */
-var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses','cycles'];
+var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses','cycles','exposures','outcomes'];
 var PERSIST_SCALARS=['schemaVersion','appVersion','revision','instance','createdAt','profile','settings','ledger','models','demo'];
 var LABEL_COLLECTIONS={
 plan:['plans'],execution:['executions'],environment:['environment'],
@@ -1501,7 +1501,7 @@ session:['sessions'],'session:retract':['sessions'],'session:edit':['sessions'],
 'food-log:repeat':['foodLogs','observations'],food:['foods'],recipe:['recipes'],favorite:[],
 phase:['phases'],'phase:edit':['phases','interventions'],'phase:end':['phases'],
 decision:['decisions'],'decision:user':['decisions'],intervention:['interventions'],'intervention:user':['interventions'],
-prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],responses:['responses'],cycles:['cycles'],
+prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],responses:['responses','exposures','outcomes'],cycles:['cycles'],
 'experiment:evaluate':['experiments','negatives','interventions'],negative:['negatives'],
 snapshot:['snapshots'],archive:['archive','phases'],note:['notes'],
 program:[],settings:[],profile:[],focus:[],'device-test':[],'food-db-version':[],daily:['snapshots'],
@@ -1847,6 +1847,12 @@ InterventionLifecycle:{status:'projection',stores:[],identity:'one per intervent
 temporal:'each transition dated by the record that shows it',provenance:'plan versions, executions, observations and Response records',correction:'follows the records it reads',events:[],existing:['interventionLifecycle'],note:'one lifecycle for every domain (audit A-003)'},
 Undo:{status:'implemented',stores:[],identity:'one per undo, naming the events it revokes',lifecycle:['recorded'],owners:['undoInLog'],readModel:'_revokedIds',registry:null,layer:'storage',
 temporal:'from the moment it is recorded: replay leaves the revoked events out',provenance:'events.revoked events carrying the ids and the reason',correction:'never edited: undoing an undo is a new change',events:['events.revoked'],existing:['undoMark'],note:'cuts across every entity: the revoked events can belong to any of them'},
+Exposure:{status:'implemented',stores:['exposures'],identity:'one per intervention and stage (expo:<intervention>:<stage>)',lifecycle:['provisional','final'],owners:['recordResponses'],readModel:'exposuresOf',registry:null,layer:'models',
+temporal:'the window after the change, beside the same measure before it',provenance:'exposure.recorded events; measured from observations and sessions in the window',correction:'a later stage is a new record; the earlier one stays',events:['exposure.recorded'],existing:['exposureFor'],note:'the dose actually received: planned beside received, with coverage'},
+Outcome:{status:'implemented',stores:['outcomes'],identity:'one per intervention and stage (out:<intervention>:<stage>)',lifecycle:['provisional','final'],owners:['recordResponses'],readModel:'outcomesOf',registry:null,layer:'models',
+temporal:'the window after the change, against its baseline window',provenance:'outcome.recorded events; the method travels with it',correction:'a later stage is a new record',events:['outcome.recorded'],existing:['outcomeFrom'],note:'what was measured to change, first-class so interventions can share it (§104)'},
+Regime:{status:'projection',stores:[],identity:'one per period: a phase, a context period, time off training and the return, a break in the weight trend',lifecycle:['entered','exited'],owners:[],readModel:'regimes',registry:null,layer:'models',
+temporal:'from its entry to its exit (open while it lasts)',provenance:'phases, context tags, sessions and change-point detection',correction:'follows the records it is read from',events:[],existing:['currentRegimes','regimeChangesIn'],note:'§89; a regime change inside a Response\u2019s window is listed among its confounders'},
 Evidence:{status:'reference',stores:[],identity:'one per cited finding',lifecycle:['reference'],owners:[],readModel:'evidenceFor',registry:null,layer:'reference',
 temporal:'the publication',provenance:'citation',correction:'replaced by a new release',events:[],existing:[],note:'reference data, read only: nothing at run time writes it'},
 Response:{status:'implemented',stores:['responses'],identity:'one per intervention (resp:<intervention id>); a later stage replaces an earlier',
@@ -2048,6 +2054,8 @@ Object.keys(e.data.changes||{}).forEach(function(k){x[k]=e.data.changes[k];});
 x.planVersion=e.data.version;x.planHash=e.data.planHash;}},
 'experiment.created':{apply:function(db,e){db.experiments.push(JSON.parse(JSON.stringify(e.data)));}},
 'cycle.recorded':{apply:function(db,e){db.cycles=(db.cycles||[]).filter(function(x){return x.id!==e.data.id;});db.cycles.push(JSON.parse(JSON.stringify(e.data)));}},
+'exposure.recorded':{apply:function(db,e){db.exposures=(db.exposures||[]).filter(function(x){return x.id!==e.data.id;});db.exposures.push(JSON.parse(JSON.stringify(e.data)));}},
+'outcome.recorded':{apply:function(db,e){db.outcomes=(db.outcomes||[]).filter(function(x){return x.id!==e.data.id;});db.outcomes.push(JSON.parse(JSON.stringify(e.data)));}},
 'response.recorded':{apply:function(db,e){db.responses=(db.responses||[]).filter(function(x){return x.id!==e.data.id;});db.responses.push(JSON.parse(JSON.stringify(e.data)));}},
 'experiment.evaluated':{apply:function(db,e){var x=db.experiments.filter(function(y){return y.id===e.data.id;})[0];
 if(!x)return;Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});
@@ -7914,6 +7922,124 @@ change:(a!=null&&b!=null)?round(b-a,1):null};
 return {status:'ok',cls:'MEASURED',exercise:exercise,observations:h.length,rows:rows,
 note:'What you observed, not what it means. A reduced range was observed; whether a joint, a muscle or a decision caused it is not something this can tell you, and it will not guess.'};
 }
+/* ===== SOURCE: 58-goals.js ===== */
+var MARGINAL_CURVES={
+sets:{label:'Hard sets per muscle a week',unit:'sets',step:1,k:7,negBeyond:25,
+benefit:'muscle growth',source:'Schoenfeld, Ogborn & Krieger 2017 (dose-response meta-analysis); Pelland et al. 2024 (diminishing returns)',negNote:'past about 25 a week, recovery may limit what extra sets add'},
+protein:{label:'Protein',unit:'g/kg a day',step:0.1,plateau:1.6,plateauHi:2.2,
+benefit:'muscle retained and gained',source:'Morton et al. 2018 (meta-regression: breakpoint 1.62 g/kg/day, 95% CI up to 2.2)'},
+steps:{label:'Steps',unit:'steps a day',step:1000,k:5000,
+benefit:'health (energy expenditure itself rises in proportion)',source:'Paluch et al. 2022 (steps and mortality: benefit levels off around 6,000\u201310,000 a day)'},
+cardio:{label:'Cardio',unit:'minutes a week',step:30,k:150,negBeyond:180,
+benefit:'aerobic fitness',source:'WHO 2020 activity guidelines (150\u2013300 min); Wilson et al. 2012 (concurrent training interference)',negNote:'past about 180 minutes, interference with strength and size gains grows'},
+sleep:{label:'Sleep',unit:'hours a night',step:0.5,k:2.2,start:5,
+benefit:'recovery and appetite regulation',source:'Watson et al. 2015 (AASM/SRS consensus: 7 hours or more)'},
+deficit:{label:'Rate of loss',unit:'% of body weight a week',step:0.25,negBeyond:1,linear:1.5,
+benefit:'fat lost each week',source:'Garthe et al. 2011; Helms et al. 2014 (faster loss risks more lean mass)',negNote:'past about 1% a week, more of the loss is lean mass'}};
+function _curve(c,d){if(d==null)return null;
+if(c.plateau!=null)return Math.min(1,Math.max(0,d)/c.plateau);
+if(c.linear)return Math.max(0,d)/c.linear;   /* fat lost rises with the rate; the cost is the lean-mass risk past 1% (a flag, not an identity check: curves are copied when scaled) */
+var x=Math.max(0,d-(c.start||0));return 1-Math.exp(-x/c.k);}
+function _zone(c,d){if(c.negBeyond!=null&&d>c.negBeyond)return 'possibly negative';if(c.plateau!=null)return d>=c.plateau?'plateau':'rising';
+if(c.linear)return 'rising';var f=_curve(c,d);return f<0.5?'rising':(f<0.85?'diminishing':'plateau');}
+function _currentDoses(){var d={},kg=(typeof _kgNow==='function'?_kgNow():null);
+try{d.sets=(physiqueModel().regions||[]).map(function(r){return {region:r.label,dose:r.sets,priority:!!r.priority};});}catch(e){d.sets=[];}
+try{var P=seriesWindow('protein',14).map(function(x){return x.value;});if(P.length&&kg)d.protein=round(mean(P)/kg,2);}catch(e){}
+try{var S=seriesWindow('steps',14).map(function(x){return x.value;});if(S.length)d.steps=Math.round(mean(S));}catch(e){}
+try{d.cardio=capabilityVector().endurance.cardioMinutesPerWeek;}catch(e){}
+try{var Z=seriesWindow('sleep',14).map(function(x){return x.value;});if(Z.length)d.sleep=round(mean(Z),1);}catch(e){}
+try{var R=physiqueRate();if(R.status==='ok'&&R.pctPerWeek<0)d.deficit=round(-R.pctPerWeek,2);}catch(e){}
+return d;}
+function marginalReturn(lever,dose,opts){var c=MARGINAL_CURVES[lever];if(!c||dose==null)return null;
+var personal=null;if(lever==='sets'&&!(opts&&opts.population)){var PD=(opts&&opts.personal)||_personalDoseCached();if(PD&&PD.status==='ok'&&PD.personalWeight>=0.2){personal=PD;c=Object.assign({},c,{k:c.k*PD.scale});}}
+var gain=function(scale){var cc=Object.assign({},c);if(cc.k)cc.k*=scale;if(cc.plateau)cc.plateau*=scale;if(cc.linear)cc.linear*=scale;return _curve(cc,dose+c.step)-_curve(cc,dose);};
+var mid=gain(1),lo=gain(c.plateau?1.375:1.3),hi=gain(c.plateau?0.8:0.7),z=_zone(c,dose+c.step);
+return {lever:lever,label:c.label,dose:dose,unit:c.unit,next:'+'+c.step+' '+(c.step===1&&c.unit==='sets'?'set':c.unit),benefit:c.benefit,marginalPct:round(100*mid,1),range:[round(100*Math.min(lo,hi),1),round(100*Math.max(lo,hi),1)],
+zone:z,warning:z==='possibly negative'?c.negNote:null,
+fatigue:lever==='sets'?'about one more hard set to recover from':(lever==='cardio'?'more fatigue, and more interference with lifting':null),
+timeMinutes:{sets:3,steps:10,cardio:30,sleep:30}[lever]||0,source:c.source,
+basis:personal?'personal curve: fitted across '+personal.n+' regions, '+Math.round(personal.personalWeight*100)+'% your own data (scale '+personal.scale+', between '+personal.interval[0]+' and '+personal.interval[1]+')':'population curve (personal scaling needs strength trends across regions)',personal:!!personal};}
+function _personalDoseCached(){return typeof memo==='function'?memo('pdr:'+todayISO(),function(){return personalDoseResponse();}):personalDoseResponse();}
+function marginalReturns(){var D=_currentDoses(),out=[];
+(D.sets||[]).filter(function(r){return r.dose!=null;}).forEach(function(r){var m=marginalReturn('sets',r.dose);if(m){m.region=r.region;m.priority=r.priority;out.push(m);}});
+['protein','steps','cardio','sleep','deficit'].forEach(function(k){var m=marginalReturn(k,D[k]);if(m)out.push(m);});
+try{var SR=typeof memo==='function'?memo('psr:'+todayISO(),function(){return personalSleepResponse();}):personalSleepResponse(),sr=out.filter(function(r){return r.lever==='sleep';})[0];
+if(sr&&SR.status==='ok'){var own=SR.outcomes.filter(function(o){return o.status==='ok'&&o.personalWeight>=0.2;});if(own.length){sr.personal=true;sr.basis='for you: '+own.map(function(o){return o.reading;}).join('; ')+'. '+SR.limits;}}}catch(e){}
+try{var FR=typeof memo==='function'?memo('pfr:'+todayISO(),function(){return personalFrequencyResponse();}):personalFrequencyResponse();
+if(FR.status==='ok')out.push({lever:'frequency',label:'Weekly exposures per muscle',next:'+1 exposure a week (same sets)',unit:'exposures a week',dose:null,benefit:'strength gained a month',
+marginalPct:FR.personalWeight>=0.2?FR.perExposure:0,range:FR.personalWeight>=0.2?FR.interval:[-0.5,0.5],zone:FR.personalWeight>=0.2?(FR.interval[0]>0?'rising':'no clear effect'):'little on average',
+warning:null,fatigue:'one more session to recover from',timeMinutes:0,source:'Schoenfeld et al. 2019; Grgic et al. 2018',basis:FR.reading+' '+FR.limits,personal:FR.personalWeight>=0.2});}catch(e){}
+return {status:out.length?'ok':'insufficient',cls:'HEURISTIC',rows:out,doses:D,method:'one dose-response curve per lever from cited evidence; the next unit\u2019s change in benefit at the current dose'};}
+var GOAL_TENSIONS=[
+{id:'deficit-vs-muscle',goals:['fat loss','hypertrophy'],test:function(s){return s.phase==='cut'&&s.priorityRegions>0;},
+evidence:function(s){return s.priorityRegions+' muscle'+(s.priorityRegions===1?'':'s')+' set as a priority during a cut';},
+tradeoff:'Muscle builds slowly in a deficit. A smaller deficit (about 0.5% a week) protects it; a larger one loses fat sooner.',options:[['protect-muscle','Protect muscle'],['lose-faster','Lose fat faster']]},
+{id:'cardio-vs-strength',goals:['endurance','strength'],test:function(s){return s.cardio>150&&(s.strengthPriority||s.priorityRegions>0);},
+evidence:function(s){return s.cardio+' cardio minutes a week while strength or size is a priority';},
+tradeoff:'Past about 150\u2013180 minutes a week, cardio starts to blunt strength and size gains. Less cardio keeps lifting gains; more builds endurance.',options:[['favour-strength','Favour strength'],['favour-endurance','Favour endurance']]},
+{id:'time-vs-volume',goals:['time','training volume'],test:function(s){return s.needMinutes!=null&&s.haveMinutes!=null&&s.needMinutes>s.haveMinutes*1.1;},
+evidence:function(s){return 'the plan needs about '+s.needMinutes+' minutes a week; the schedule gives about '+s.haveMinutes;},
+tradeoff:'The plan asks for more time than the schedule gives. Fewer sets fit the week; keeping the volume means longer sessions or another day.',options:[['fit-the-week','Fit the week'],['keep-volume','Keep the volume']]},
+{id:'rate-vs-recovery',goals:['fat loss','recovery'],test:function(s){return s.deficit!=null&&s.deficit>0.75&&s.fatigue!=null&&s.fatigue>=6;},
+evidence:function(s){return 'losing '+s.deficit+'% a week with fatigue averaging '+s.fatigue;},
+tradeoff:'A fast loss is wearing on recovery. Slowing the loss eases it; keeping the pace finishes sooner.',options:[['ease-recovery','Ease recovery'],['keep-pace','Keep the pace']]},
+{id:'volume-vs-fatigue',goals:['training volume','recovery'],test:function(s){return s.setsPerWeek>60&&s.fatigue!=null&&s.fatigue>=7;},
+evidence:function(s){return s.setsPerWeek+' sets a week with fatigue averaging '+s.fatigue;},
+tradeoff:'High volume with high fatigue may be adding fatigue faster than growth. A lighter week recovers; keeping volume keeps the stimulus.',options:[['recover','Recover first'],['keep-stimulus','Keep the stimulus']]}];
+function _goalState(){var s={},ph=null;try{ph=activePhase();}catch(e){}s.phase=ph?ph.type:null;
+try{s.priorityRegions=physiqueModel().regions.filter(function(r){return r.priority;}).length;}catch(e){s.priorityRegions=0;}
+var g=null;try{g=canonicalGoal();}catch(e){}s.strengthPriority=!!(g&&/strength/.test(String(g.type)));
+try{var C=capabilityVector();s.cardio=C.endurance.cardioMinutesPerWeek;s.setsPerWeek=C.workCapacity.setsPerWeek;}catch(e){}
+try{var M=scheduleModel(),days=(DB.settings.trainingDays||[]).length||(ph&&ph.trainingSessions)||4;s.haveMinutes=days*((M.minutes&&M.minutes.full)||60);
+s.needMinutes=s.setsPerWeek!=null?Math.round(s.setsPerWeek*3+(s.cardio||0)):null;}catch(e){}
+try{var R=physiqueRate();s.deficit=R.status==='ok'&&R.pctPerWeek<0?round(-R.pctPerWeek,2):null;}catch(e){}
+try{var F=seriesWindow('fatigue',7).map(function(x){return x.value;});s.fatigue=F.length?round(mean(F),1):null;}catch(e){}
+return s;}
+function goalConflicts(){var s=_goalState(),P=DB.settings.goalPriorities||{};
+var rows=GOAL_TENSIONS.filter(function(t){try{return t.test(s);}catch(e){return false;}}).map(function(t){return {id:t.id,goals:t.goals,evidence:t.evidence(s),tradeoff:t.tradeoff,options:t.options,chosen:P[t.id]||null};});
+return {status:'ok',cls:'POLICY',conflicts:rows,state:s,note:'Tensions are shown, never silently resolved: you choose which goal leads, and arbitration follows your choice.'};}
+function setGoalPriority(id,choice){var P=Object.assign({},DB.settings.goalPriorities||{});if(choice)P[id]=choice;else delete P[id];return P;}
+function personalDoseResponse(rows){
+if(!rows){try{rows=physiqueModel().regions.filter(function(r){return r.sets!=null&&r.strength&&r.strength.pctPerMonth!=null&&r.strength.se>0;}).map(function(r){return {region:r.label,sets:r.sets,gain:r.strength.pctPerMonth,se:r.strength.se};});}catch(e){rows=[];}}
+if(rows.length<4)return {status:'insufficient',need:'strength trends in 4 or more regions with different weekly sets',n:rows.length};
+var spread=Math.max.apply(null,rows.map(function(r){return r.sets;}))-Math.min.apply(null,rows.map(function(r){return r.sets;}));
+if(spread<4)return {status:'insufficient',need:'weekly sets that differ by 4 or more between regions',n:rows.length};
+var PRIOR_SD=0.5,grid=[],post=[];for(var L=-1.5;L<=1.5001;L+=0.02)grid.push(L);
+grid.forEach(function(L){var sc=Math.exp(L),num=0,den=0;rows.forEach(function(r){var f=1-Math.exp(-r.sets/(7*sc)),w=1/(r.se*r.se);num+=w*r.gain*f;den+=w*f*f;});
+var a=den>0?num/den:0,sse=0;rows.forEach(function(r){var f=1-Math.exp(-r.sets/(7*sc));sse+=Math.pow(r.gain-a*f,2)/(r.se*r.se);});
+post.push(-sse/2-L*L/(2*PRIOR_SD*PRIOR_SD));});
+var mx=Math.max.apply(null,post),wts=post.map(function(v){return Math.exp(v-mx);}),Z=wts.reduce(function(a,b){return a+b;},0);
+var m=0;grid.forEach(function(L,i){m+=L*wts[i]/Z;});var v=0;grid.forEach(function(L,i){v+=(L-m)*(L-m)*wts[i]/Z;});
+var pw=Math.max(0,Math.min(1,1-v/(PRIOR_SD*PRIOR_SD)));
+return {status:'ok',cls:'EMPIRICAL',scale:round(Math.exp(m),2),logSd:round(Math.sqrt(v),3),interval:[round(Math.exp(m-2*Math.sqrt(v)),2),round(Math.exp(m+2*Math.sqrt(v)),2)],personalWeight:round(pw,2),n:rows.length,rows:rows,
+reading:(function(){var r=Math.exp(m)<0.85?'gains that level off at fewer sets than the population curve':(Math.exp(m)>1.15?'gains that keep rising with more sets than the population curve suggests':null);
+if(pw<0.2)return 'not enough of your own data yet'+(r?'; so far it hints at '+r:'')+'. The population curve is used.';return r?'Your data show '+r+'.':'Close to the population curve.';})(),
+limits:'compares regions with each other, not changes over time: a muscle that grows easily can look like a dose effect'};}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_dose_response';}))return;
+MODELS.push({id:'personal_dose_response',name:'Personal training dose-response',cls:'EMPIRICAL',version:'1.0',inputs:['physique_regions'],minN:4,
+assumes:['the population curve\u2019s shape (1 \u2212 e^(\u2212sets/7)) holds; only its scale is personal','regions differ in dose, not in how readily they grow'],
+failsWhen:['regions that grow at very different rates for reasons other than volume','fewer than four regions with strength trends'],
+output:'the scale of the person\u2019s sets curve, with its interval and how much is their own data',consumers:['marginalReturns'],freshnessDays:14,uncertainty:{kind:'posterior interval on the scale'},fn:'personalDoseResponse'});})();
+function personalFrequencyResponse(rows){
+if(!rows){try{rows=physiqueModel().regions.filter(function(r){return r.sets!=null&&r.frequency>0&&r.strength&&r.strength.pctPerMonth!=null&&r.strength.se>0;}).map(function(r){return {region:r.label,sets:r.sets,frequency:r.frequency,gain:r.strength.pctPerMonth,se:r.strength.se};});}catch(e){rows=[];}}
+if(rows.length<4)return {status:'insufficient',need:'strength trends in 4 or more regions trained at different frequencies',n:rows.length};
+var fs=rows.map(function(r){return r.frequency;}),spread=Math.max.apply(null,fs)-Math.min.apply(null,fs);
+if(spread<0.5)return {status:'insufficient',need:'regions trained at frequencies at least half a session a week apart',n:rows.length};
+var D=personalDoseResponse(rows),sc=D.status==='ok'&&D.personalWeight>=0.2?D.scale:1;
+var num=0,den=0;rows.forEach(function(r){var f=1-Math.exp(-r.sets/(7*sc)),w=1/(r.se*r.se);num+=w*r.gain*f;den+=w*f*f;});var a=den>0?num/den:0;
+var W=0,mf=0;rows.forEach(function(r){var w=1/(r.se*r.se);W+=w;mf+=w*r.frequency;});mf/=W;
+var sxy=0,sxx=0;rows.forEach(function(r){var w=1/(r.se*r.se),res=r.gain-a*(1-Math.exp(-r.sets/(7*sc))),x=r.frequency-mf;sxy+=w*x*res;sxx+=w*x*x;});
+var bHat=sxy/sxx,seB=Math.sqrt(1/sxx),PRIOR=1.5,vp=1/(1/(PRIOR*PRIOR)+1/(seB*seB)),mp=vp*(bHat/(seB*seB)),pw=Math.max(0,Math.min(1,1-vp/(PRIOR*PRIOR)));
+var lo=mp-2*Math.sqrt(vp),hi=mp+2*Math.sqrt(vp);
+return {status:'ok',cls:'EMPIRICAL',perExposure:round(mp,2),sd:round(Math.sqrt(vp),2),interval:[round(lo,2),round(hi,2)],personalWeight:round(pw,2),n:rows.length,volumeScale:sc,
+reading:pw<0.2?'Not enough of your own data yet. At equal weekly sets, frequency adds little on average (Schoenfeld 2019; Grgic 2018).':
+(lo>0?'At the same weekly sets, your regions trained more often have gained more: about '+round(mp,1)+'% a month more per extra weekly exposure.':(hi<0?'At the same weekly sets, your regions trained more often have gained less: about '+round(-mp,1)+'% a month less per extra weekly exposure.':'At the same weekly sets, how often you train a region makes no clear difference for you so far.')),
+limits:'regions compared with each other, not changes over time; fatigue per exposure is not measured, so response per unit fatigue is not claimed'};}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_frequency_response';}))return;
+MODELS.push({id:'personal_frequency_response',name:'Personal frequency response',cls:'EMPIRICAL',version:'1.0',inputs:['physique_regions'],minN:4,
+assumes:['volume\u2019s effect is captured by the dose-response curve','regions differ in frequency, not in how readily they grow'],
+failsWhen:['frequency and volume rising together in every region','fewer than four regions with strength trends'],
+output:'the change in monthly strength gain per extra weekly exposure at equal volume, with its interval and how much is the person\u2019s own data',consumers:['marginalReturns'],freshnessDays:14,uncertainty:{kind:'posterior interval on the slope'},fn:'personalFrequencyResponse'});})();
 /* ===== SOURCE: 58-learning-loop.js ===== */
 function _isoWeek(d){var t=new Date(d+'T12:00:00Z'),day=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-day+3);var y=t.getUTCFullYear(),f=new Date(Date.UTC(y,0,4));return y+'-W'+String(1+Math.round(((t-f)/86400000-3+((f.getUTCDay()+6)%7))/7)).padStart(2,'0');}
 var LOOP_TEST_TEMPLATE={calories:'calorie-step',steps:'step-intervention',protein:'protein','training days':'training-volume',cardio:'cardio',sleep:'sleep'};
@@ -8584,12 +8710,37 @@ rec.confidence=!P?'none':(rec.stage==='final'&&Math.abs(P.effect)>3*P.se&&!(rec.
 return rec;
 }
 function recordResponses(){
-DB.responses=DB.responses||[];var n=0;
+DB.responses=DB.responses||[];DB.exposures=DB.exposures||[];DB.outcomes=DB.outcomes||[];var n=0;
 responseInterventions().forEach(function(iv){var r=evaluateResponse(iv);if(r.stage==='pending')return;
 var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&(ex.stage===r.stage||ex.stage==='final'))return;
+var E=exposureFor(iv,r),O=outcomeFrom(iv,r);
+if(E){DB.exposures=DB.exposures.filter(function(x){return x.id!==E.id;});DB.exposures.push(E);emitEvent('exposure.recorded',E,{at:r.evaluatedAt});r.exposureId=E.id;}
+if(O){DB.outcomes=DB.outcomes.filter(function(x){return x.id!==O.id;});DB.outcomes.push(O);emitEvent('outcome.recorded',O,{at:r.evaluatedAt});r.outcomeId=O.id;}
+r.planVersionId=planVersionAt(iv.start);
 DB.responses=DB.responses.filter(function(x){return x.id!==r.id;});DB.responses.push(r);emitEvent('response.recorded',r,{at:r.evaluatedAt});n++;});
 if(n)save('responses');return {status:'ok',recorded:n,total:DB.responses.length};
 }
+function _dailyMean(type,from,to){var S=_rangeSeries(type,from,to);return S.length?{mean:mean(S.map(function(x){return x.value;})),days:S.length}:null;}
+function _exposureMeasure(variable,from,to){var span=Math.max(1,daysBetween(from,to)+1);
+if(variable==='calories'||variable==='steps'||variable==='protein'||variable==='sleep'){var m=_dailyMean(variable,from,to);
+return m?{received:round(m.mean,variable==='sleep'?1:0),unit:{calories:'kcal a day',steps:'steps a day',protein:'g a day',sleep:'hours a night'}[variable],coverage:round(m.days/span,2)}:null;}
+if(variable==='cardio'){var c=obsOf('cardio').filter(function(o){return o.date>=from&&o.date<=to;});return {received:round(c.reduce(function(a,o){return a+(o.value||0);},0)/(span/7),0),unit:'minutes a week',coverage:null};}
+if(variable==='training days'||variable==='training'){var ss=(DB.sessions||[]).filter(function(x){return !x.retracted&&x.date>=from&&x.date<=to;});
+return {received:round(ss.reduce(function(a,x){return a+(x.sets||[]).length;},0)/(span/7),1),unit:'sets a week',sessions:ss.length,coverage:null};}
+if(/^supplement: /.test(variable)){var name=variable.slice(12).toLowerCase(),days={};obsOf('supplement').forEach(function(o){if(o.date>=from&&o.date<=to&&String(o.value).toLowerCase().indexOf(name.split(' ')[0])>=0)days[o.date]=1;});
+return {received:round(Object.keys(days).length/span,2),unit:'share of days taken',coverage:null};}
+return null;}
+function exposureFor(iv,r){var A=r.windows&&r.windows.after,B=r.windows&&r.windows.before;if(!A)return null;var after=_exposureMeasure(iv.variable,A[0],A[1]);if(!after)return null;
+var before=B?_exposureMeasure(iv.variable,B[0],B[1]):null;
+return {id:'expo:'+iv.id+':'+r.stage,interventionId:iv.id,responseId:r.id,variable:iv.variable,window:[A[0],A[1]],stage:r.stage,
+planned:typeof iv.to==='number'?iv.to:null,received:after.received,unit:after.unit,coverage:after.coverage,before:before?before.received:null,
+adherence:r.adherence?r.adherence.share:null,recordedAt:r.evaluatedAt,method:'measured from the record in the window after the change'};}
+function outcomeFrom(iv,r){var P=r.primary;if(!P)return null;
+return {id:'out:'+iv.id+':'+r.stage,responseId:r.id,quantity:P.quantity,unit:P.unit||null,window:r.windows.after,baselineWindow:r.windows.before,
+before:P.before,after:P.after,effect:P.effect,se:P.se,n:P.n,method:P.method,stage:r.stage,recordedAt:r.evaluatedAt};}
+function planVersionAt(date){var P=plansOf().filter(function(p){return p.effectiveFrom<=date;});return P.length?P[P.length-1].id:null;}
+function exposuresOf(){return (DB.exposures||[]).slice();}
+function outcomesOf(){return (DB.outcomes||[]).slice();}
 function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){return a.start<b.start?1:-1;});}
 (function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='intervention_response';}))return;
 MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
@@ -8606,7 +8757,8 @@ r.delta=P?P.effect:null;
 r.uncertainty=P?{se:P.se,interval95:[round(P.effect-2*P.se,2),round(P.effect+2*P.se,2)]}:null;
 var ctx=A?obsOf('context').filter(function(o){return o.date>=A[0]&&o.date<=A[1]&&!/^intervention:/i.test(String(o.value));}).map(function(o){return String(o.value);}):[];
 r.confounders=[].concat(r.placebo&&r.placebo.alreadyUnderWay?['the change was already under way before it started']:[],ctx.map(function(c){return 'context: '+c;}),
-(r.unintended||[]).filter(function(u){return u.flag;}).map(function(u){return 'also changed: '+u.quantity;}),r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5?['carried out on only '+Math.round(r.adherence.share*100)+'% of days']:[]);
+(r.unintended||[]).filter(function(u){return u.flag;}).map(function(u){return 'also changed: '+u.quantity;}),
+A&&typeof regimeChangesIn==='function'?regimeChangesIn(A[0],A[1]).map(function(x){return 'regime change: '+x;}):[],r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5?['carried out on only '+Math.round(r.adherence.share*100)+'% of days']:[]);
 r.attribution=!P?'nothing to attribute':(r.placebo&&r.placebo.alreadyUnderWay?'a trend already under way, not the change':(Math.abs(P.effect)>2*P.se&&!(r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5)?'the change':'uncertain'));
 var ph=null;try{ph=activePhase(r.start);}catch(e){}r.applicability={phase:ph?ph.type:null,conditions:ctx,note:'what this says about you applies to a '+(ph?ph.type:'similar')+' phase under similar conditions'};
 r.evidence=[].concat(P?[{kind:P.quantity,method:P.method,n:P.n}]:[],r.placebo?[{kind:'placebo check',effect:r.placebo.effect,se:r.placebo.se}]:[],r.expectedOutcome?[{kind:'expectation',basis:r.expectedOutcome.basis}]:[]);
@@ -8636,7 +8788,8 @@ recovery:g(function(){return {fatigueAvg7:(function(v){return v.length?round(mea
 bodyComposition:g(function(){var r=physiqueRate();return {rate:r.status==='ok'?{pctPerWeek:r.pctPerWeek,range:r.range}:null};},null),
 execution:g(function(){return adherenceState(14);},null),response:g(function(){return personalResponseModel().rows.filter(function(r){return r.n>0;}).map(function(r){return {key:r.key,mean:r.posterior.mean,personal:r.personalWeight};});},[]),
 evidence:g(function(){return {responses:responsesOf().length,final:responsesOf().filter(function(r){return r.stage==='final';}).length};},null),
-adaptation:g(function(){return {planVersions:plansOf().length,interventions:interventionLifecycles().map(function(l){return {id:l.id,state:l.state};})};},null)};
+adaptation:g(function(){return {planVersions:plansOf().length,interventions:interventionLifecycles().map(function(l){return {id:l.id,state:l.state};})};},null),
+vector:g(stateVector,null),capability:g(capabilityVector,null),regimes:g(function(){return currentRegimes();},[])};
 return _deepFreeze(st);}
 function _deepFreeze(o){if(o&&typeof o==='object'&&!Object.isFrozen(o)){Object.freeze(o);Object.keys(o).forEach(function(k){_deepFreeze(o[k]);});}return o;}
 /* ===== SOURCE: 58-response-model.js ===== */
@@ -8756,6 +8909,41 @@ function scheduleAudit(){var M=scheduleModel(),issues=[];
 if(M.mode==='rotation'){if(!M.pattern)issues.push('a rotation needs a pattern');if(!isValidISO(M.anchor))issues.push('a rotation needs the date its cycle started');
 if(M.pattern&&!/^[DNOE]+$/.test(M.pattern))issues.push('the pattern may only use D, N, O and E');}
 return {ok:!issues.length,issues:issues,mode:M.mode};}
+/* ===== SOURCE: 58-state-vectors.js ===== */
+var REGIME_CONTEXT_TAGS=['travel','illness','holiday','injury'];
+function regimes(){var out=[];
+(DB.phases||[]).forEach(function(p){if(p.startDate)out.push({id:'phase:'+p.id,kind:'phase',label:(p.type||'')+' phase',from:p.startDate,to:p.endDate||null,source:'phase'});});
+REGIME_CONTEXT_TAGS.forEach(function(tag){var days=obsOf('context').filter(function(o){return String(o.value).toLowerCase().indexOf(tag)>=0;}).map(function(o){return o.date;}).sort();
+var cur=null;days.forEach(function(d){if(cur&&daysBetween(cur.to,d)<=2)cur.to=d;else{if(cur)out.push(cur);cur={id:'context:'+tag+':'+d,kind:'context',label:tag,from:d,to:d,source:'context tags'};}});if(cur)out.push(cur);});
+var S=(DB.sessions||[]).filter(function(s){return !s.retracted;}).map(function(s){return s.date;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+for(var i=1;i<S.length;i++){var gap=daysBetween(S[i-1],S[i]);if(gap>=10){out.push({id:'break:'+S[i-1],kind:'training break',label:(gap-1)+' days without training',from:addDays(S[i-1],1),to:addDays(S[i],-1),source:'sessions'});
+out.push({id:'return:'+S[i],kind:'return to training',label:'the first two weeks back',from:S[i],to:addDays(S[i],13)<todayISO()?addDays(S[i],13):null,source:'sessions'});}}
+try{(changePoints(180).items||[]).filter(function(c){return c.stream==='weight';}).forEach(function(c){out.push({id:'trend:'+c.date,kind:'trend break',label:c.text,from:c.date,to:c.date,point:true,source:'change-point detection'});});}catch(e){}
+return out.sort(function(a,b){return a.from<b.from?-1:(a.from>b.from?1:0);});}
+function currentRegimes(date){date=date||asOf();return regimes().filter(function(r){return !r.point&&r.from<=date&&(!r.to||r.to>=date);});}
+function regimeChangesIn(from,to){var out=[];regimes().forEach(function(r){if(r.kind==='phase'&&r.from===from)return;
+if(r.from>from&&r.from<=to)out.push((r.point?'':'started: ')+r.label+' ('+r.from+')');else if(r.to&&r.to>=from&&r.to<to&&!r.point)out.push('ended: '+r.label+' ('+r.to+')');});return out;}
+function _fresh(type){var o=obsOf(type).filter(function(x){return !x.retracted&&x.date<=asOf();});var d=o.length?o[o.length-1].date:null;return {asOf:d,ageDays:d?daysBetween(d,asOf()):null};}
+function _sdOfMean(v){if(v.length<2)return null;var m=mean(v),s=Math.sqrt(v.reduce(function(a,x){return a+(x-m)*(x-m);},0)/(v.length-1));return s/Math.sqrt(v.length);}
+function stateVector(){var C=[],push=function(key,label,value,unit,sd,fresh,source){if(value==null||!isFinite(value))return;C.push({key:key,label:label,value:round(value,2),unit:unit,sd:sd!=null&&isFinite(sd)?round(sd,2):null,asOf:fresh&&fresh.asOf||null,ageDays:fresh?fresh.ageDays:null,source:source});};
+try{var W=seriesWindow('weight',7).map(function(x){return x.value;});push('weight','Weight, 7-day average',W.length?mean(W):null,'lb',_sdOfMean(W),_fresh('weight'),'weigh-ins');}catch(e){}
+try{var T=weightTrend(21);if(T&&T.status!=='insufficient')push('weightTrend','Weight trend',T.slopePerWeek,'lb a week',T.slopeSe,_fresh('weight'),'weigh-ins, 21 days');   /* weightTrend names its standard error slopeSe */}catch(e){}
+try{var D=tdeePersonal();if(D&&D.status==='ok')push('tdee','Energy expenditure',D.value,'kcal a day',(D.hi-D.lo)/3.92,_fresh('calories'),'intake and weight trend, '+D.window+' days');}catch(e){}
+try{var E=_e1rmTop();if(E&&E.series.length){var last=E.series.slice(-4).map(function(x){return x.value;});push('strength','Strength ('+E.exercise+', estimated one-rep max)',last[last.length-1],'lb',_sdOfMean(last),{asOf:E.series[E.series.length-1].date,ageDays:daysBetween(E.series[E.series.length-1].date,asOf())},'sessions');}}catch(e){}
+try{var A=adherenceState(14);if(A&&A.overall!=null){var p=A.overall/100,n=14;push('adherence','Plan followed',A.overall,'%',100*Math.sqrt(p*(1-p)/n),null,'executions, 14 days');}}catch(e){}
+try{var F=seriesWindow('fatigue',7).map(function(x){return x.value;});push('fatigue','Fatigue, 7-day average',F.length?mean(F):null,'1\u201310',_sdOfMean(F),_fresh('fatigue'),'recovery check-ins');}catch(e){}
+return {asOf:asOf(),components:C,stale:C.filter(function(c){return c.ageDays!=null&&c.ageDays>7;}).map(function(c){return c.key;}),note:'each value with its uncertainty (standard deviation) and how old its newest data is'};}
+function _weekly(fn,weeks){var out=[];for(var w=0;w<weeks;w++){var to=addDays(asOf(),-7*w),from=addDays(to,-6);out.push(fn(from,to));}return out;}
+function capabilityVector(){var weeks=4,cap={asOf:asOf(),weeks:weeks};
+try{cap.strength=physiqueModel().regions.filter(function(r){return r.strength&&r.strength.pctPerMonth!=null;}).map(function(r){return {region:r.label,trendPctPerMonth:r.strength.pctPerMonth,se:r.strength.se,setsPerWeek:r.sets,status:r.status};});}catch(e){cap.strength=[];}
+var sets=_weekly(function(f,t){return (DB.sessions||[]).filter(function(s){return !s.retracted&&s.date>=f&&s.date<=t;}).reduce(function(a,s){return a+(s.sets||[]).length;},0);},weeks);
+cap.workCapacity={setsPerWeek:round(mean(sets),1),sd:sets.length>1?round(Math.sqrt(sets.reduce(function(a,x){var m=mean(sets);return a+(x-m)*(x-m);},0)/(sets.length-1)),1):null,weeks:sets};
+var card=_weekly(function(f,t){return obsOf('cardio').filter(function(o){return o.date>=f&&o.date<=t;}).reduce(function(a,o){return a+(o.value||0);},0);},weeks);
+cap.endurance={cardioMinutesPerWeek:round(mean(card),0),weeks:card};
+var mob=_weekly(function(f,t){return obsOf('mobility').filter(function(o){return o.date>=f&&o.date<=t;}).length;},weeks);
+cap.mobility={sessionsPerWeek:round(mean(mob),1),weeks:mob};
+cap.note='strength by region from the physique model; work capacity, endurance and mobility from the last '+weeks+' weeks, newest first';
+return cap;}
 /* ===== SOURCE: 58-trace.js ===== */
 var TRACES={
 weight_trend:{
@@ -9719,6 +9907,41 @@ limits:'Visual comparison only. No body-fat or shape estimate is made from image
 {id:'diet_digestibility',name:'Protein quality and digestibility',cls:'PRIOR',version:'1.0',inputs:['calories'],minN:1,assumes:['food-group values represent these foods'],failsWhen:['unclassified foods'],output:'digestible protein (g) and energy adjustment',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'group values'},fn:'dietDigestibility'},
 {id:'recovery_allocation',name:'Recovery resource allocation',cls:'HEURISTIC',version:'1.0',inputs:['sleep','steps','cardio'],minN:7,assumes:['relative costs of lifting, cardio and steps'],failsWhen:['illness','unlogged training'],output:'weekly recovery budget and its split',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'relative units'},fn:'recoveryAllocation'}
 ].forEach(function(m){if(!MODELS.some(function(x){return x.id===m.id;}))MODELS.push(m);});})();
+var SLEEP_OUTCOMES=[
+{key:'fatigue',label:'fatigue',unit:'points (1\u201310)',prior:{mean:-0.4,sd:0.4},source:'sleep loss raises fatigue (Watson et al. 2015)'},
+{key:'hunger',label:'hunger',unit:'points (1\u201310)',prior:{mean:-0.3,sd:0.4},source:'sleep restriction raises appetite (Spiegel et al. 2004)'},
+{key:'performance',label:'training performance',unit:'% of the recent best',prior:{mean:1,sd:1.5},source:'small, inconsistent effects on strength (Fullagar et al. 2015)'},
+{key:'steps',label:'steps',unit:'steps',prior:{mean:200,sd:500},source:'weak evidence; the prior is close to no effect'}];
+function _sessionPerformance(){var out={},best={};
+sessionsOf({from:addDays(todayISO(),-365)}).slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(s){var day=[];
+(s.sets||[]).forEach(function(x){var e=e1rm(num(x.load),num(x.reps));if(!e)return;var k=String(x.exercise||'').toLowerCase(),hist=(best[k]||[]).filter(function(h){return daysBetween(h.date,s.date)<=30&&h.date<s.date;});
+if(hist.length){var mx=Math.max.apply(null,hist.map(function(h){return h.v;}));day.push(100*(e.value-mx)/mx);}(best[k]=best[k]||[]).push({date:s.date,v:e.value});});
+if(day.length)out[s.date]=mean(day);});
+return out;}
+function personalSleepResponse(series){
+var sleep={};(series&&series.sleep||obsOf('sleep').filter(function(o){return !o.retracted;}).map(function(o){return {date:o.date,value:o.value};})).forEach(function(o){sleep[o.date]=o.value;});
+var days=Object.keys(sleep);if(days.length<14)return {status:'insufficient',need:'14 nights of sleep logged',n:days.length};
+var vals=days.map(function(d){return sleep[d];}).sort(function(a,b){return a-b;}),med=vals[Math.floor(vals.length/2)];
+var perf=series&&series.performance||_sessionPerformance();
+var outcomes=SLEEP_OUTCOMES.map(function(O){var src={};
+if(O.key==='performance')src=perf;
+else if(series&&Array.isArray(series[O.key]))series[O.key].forEach(function(o){src[o.date]=o.value;});
+else obsOf(O.key).filter(function(o){return !o.retracted;}).forEach(function(o){src[o.date]=o.value;});
+var pairs=days.filter(function(d){return src[d]!=null;}).map(function(d){return {x:sleep[d]-med,y:src[d]};});
+if(pairs.length<14)return {key:O.key,label:O.label,status:'insufficient',need:'14 days with both sleep and '+O.label,n:pairs.length};
+var mx=mean(pairs.map(function(p){return p.x;})),my=mean(pairs.map(function(p){return p.y;})),sxx=0,sxy=0;pairs.forEach(function(p){sxx+=(p.x-mx)*(p.x-mx);sxy+=(p.x-mx)*(p.y-my);});
+if(Math.sqrt(sxx/pairs.length)<0.3)return {key:O.key,label:O.label,status:'insufficient',need:'sleep that varies by more than a few minutes',n:pairs.length};
+var b=sxy/sxx,res=0;pairs.forEach(function(p){var e=p.y-my-b*(p.x-mx);res+=e*e;});var se=Math.sqrt(res/(pairs.length-2)/sxx);
+var vp=1/(1/(O.prior.sd*O.prior.sd)+1/(se*se)),mp=vp*(O.prior.mean/(O.prior.sd*O.prior.sd)+b/(se*se)),pw=Math.max(0,Math.min(1,1-vp/(O.prior.sd*O.prior.sd)));
+var lo=mp-2*Math.sqrt(vp),hi=mp+2*Math.sqrt(vp),dir=lo>0?'more':(hi<0?'less':null);
+return {key:O.key,label:O.label,status:'ok',perHour:round(mp,2),interval:[round(lo,2),round(hi,2)],unit:O.unit,personalWeight:round(pw,2),n:pairs.length,source:O.source,
+reading:pw<0.2?'not enough of your own data yet for '+O.label+'; the population evidence is used ('+O.source+')':(dir?'each extra hour above your usual goes with '+Math.abs(round(mp,O.key==='steps'?0:1))+' '+(O.key==='steps'?'steps':(O.key==='performance'?'percentage points':'points'))+' '+dir+' '+O.label:'no clear link between your sleep and '+O.label+' so far')};});
+return {status:'ok',cls:'EMPIRICAL',medianSleep:med,nights:days.length,outcomes:outcomes,limits:'an association within one person, not proof of cause: a late night can come from the same busy day that raises fatigue'};}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_sleep_response';}))return;
+MODELS.push({id:'personal_sleep_response',name:'Personal sleep response',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue','hunger','steps'],minN:14,
+assumes:['a night\u2019s sleep acts on the same day\u2019s fatigue, hunger, steps and training','the relationship is roughly linear around the person\u2019s usual sleep'],
+failsWhen:['sleep that hardly varies','a common cause driving both sleep and the outcome'],
+output:'per outcome, the change per extra hour of sleep above the person\u2019s usual, with its interval and how much is their own data',consumers:['marginalReturns'],freshnessDays:14,uncertainty:{kind:'posterior interval per outcome'},fn:'personalSleepResponse'});})();
 /* ===== SOURCE: 62-food.js ===== */
 var FOOD_DATA_BASE='./data/food/';
 var _foodCache={},_foodCacheOrder=[];var _foodManifest=null,_foodManifestState='not loaded';
@@ -15279,7 +15502,8 @@ colMarks:[{i:0,label:shortDate(days[0])},{i:27,label:'today'}]})});})();
 programVersions().forEach(function(v){ev.push({date:v.from,lane:'Programme',short:'v'+v.version,label:v.change});});
 (DB.phases||[]).forEach(function(ph){if(ph.startDate)ev.push({date:ph.startDate,lane:'Phase',short:((PHASE_TYPES[ph.type]||{}).label||ph.type).slice(0,4),label:((PHASE_TYPES[ph.type]||{}).label||ph.type)+' phase started'});});
 if(ev.length<2)return;
-try{out+=optimiserCard();}catch(e){_q(e,'P2');}   /* the unified optimiser: options across every domain */
+try{out+=optimiserCard();}catch(e){_q(e,'P2');}
+try{out+=goalsCard();}catch(e){_q(e,'P2');}   /* goals in tension, the next unit, who decides */   /* the unified optimiser: options across every domain */
 out+=uiCard({fold:'plan-history',foldOpen:true,title:'Plan history',sub:ev.length+' events',body:renderChartSpec('timeline',{title:'Plan versions, programme changes and phases',events:ev,lanes:['Plan','Programme','Phase'],to:todayISO()})});})();
 var P=plansOf();
 out+=uiCard({title:'Why the plan changed',sub:'every version keeps its reason, evidence and the alternatives considered',body:
@@ -18237,6 +18461,28 @@ rule:'Lowest priority number leads. Safety vetoes sit below 10, domain proposals
 note:'Arbitration stated rather than emergent. Where two claims sit within ten of each other the decision is contested, and both are shown rather than one being silently dropped.',
 caveat:'Priority is a declared ordering, not a measured one. It encodes a judgement \u2014 that pain and recovery outrank rate \u2014 which is arguable and is therefore visible rather than buried.'};
 }
+var CLAIM_GOAL={recovery:['recover','ease-recovery','favour-strength','protect-muscle'],rate:['lose-faster','keep-pace'],training:['keep-stimulus','keep-volume','favour-strength'],nutrition:['protect-muscle']};
+(function(){var _base=arbitrateDecision;
+arbitrateDecision=function(){var a=_base();if(!a||a.status!=='ok')return a;var P=DB.settings.goalPriorities||{},chosen=Object.keys(P).map(function(k){return P[k];});
+var mins=null;try{var M=scheduleModel();mins=(M.minutes&&M.minutes.full)||null;}catch(e){}
+a.claims.forEach(function(c){var src=String(c.source).toLowerCase(),key=/recover/.test(src)?'recovery':(/rate/.test(src)?'rate':(/train|volume|strength/.test(src)?'training':(/nutri|food|protein/.test(src)?'nutrition':'other')));
+var verb=String(c.verb||'').toLowerCase();
+c.dimensions={priority:c.priority,confidence:c.confidence||'low',
+constraints:/add|more|increase/.test(verb)&&key==='training'&&mins!=null&&mins<45?'conflicts with the session length you set':'none',
+risk:c.priority<10?'acting against it risks injury or poor recovery':(/cut|reduce|lower/.test(verb)&&key==='rate'?'a faster loss risks lean mass':'low'),
+reversibility:/programme|program/.test(verb)?'slower to reverse':'easily reversed (a target)',
+expectedBenefit:(c.why||[])[0]||null,opportunityCost:/add|more/.test(verb)?'more time each week':'none',
+alignedWithYourChoice:(CLAIM_GOAL[key]||[]).some(function(x){return chosen.indexOf(x)>=0;})};});
+var safety=a.claims.filter(function(c){return c.priority<10;}),blocked=a.claims.filter(function(c){return c.priority>=10&&c.dimensions.constraints!=='none';}),
+open=a.claims.filter(function(c){return c.priority>=10&&c.dimensions.constraints==='none';});
+var conf={high:3,medium:2,low:1,insufficient:0};var score=function(c){return (c.dimensions.alignedWithYourChoice?10:0)+(conf[c.confidence]||1)-(c.dimensions.risk==='low'?0:1)-(/slower/.test(c.dimensions.reversibility)?1:0)-(c.dimensions.opportunityCost==='none'?0:0.5);};
+var winner=safety.length?safety.sort(function(x,y){return x.priority-y.priority;})[0]:null;
+if(!winner&&open.length){open.sort(function(x,y){return x.priority-y.priority;});var lead=open[0],tie=open.filter(function(c){return c.priority<=lead.priority+10;});
+winner=tie.sort(function(x,y){return score(y)-score(x)||x.priority-y.priority;})[0];}
+if(winner){a.winner=winner;a.contested=a.claims.filter(function(c){return c!==winner&&c.priority<=winner.priority+10;});}
+a.setAside=blocked.map(function(c){return {source:c.source,verb:c.verb,reason:c.dimensions.constraints};});
+a.rule='Safety vetoes (priority under 10) lead. A claim that breaks a constraint is set aside and shown. Among claims within ten of the lowest priority, the one aligned with the goal you chose leads, then confidence, risk, reversibility and time cost; all are shown.';
+a.dimensions=['priority','constraints','risk','confidence','reversibility','expected benefit','opportunity cost'];return a;};})();
 function idempotencyKey(job,date){return job+':'+(date||todayISO());}
 function jobAlreadyRan(job,date){
 var log=(DB.settings.jobRuns||{});
@@ -23216,6 +23462,18 @@ return uiCard({fold:'plan-options',title:'Options for the next two weeks',sub:R?
 O.pareto.slice(0,5).map(row).join('')+'<div class="prov">'+esc(O.method)+'. Assumes '+esc(O.assumptions.join('; '))+'. '+esc(O.limits)+'</div>'});}
 registerAction('opt.pref',function(p){DB.settings.optimiserPreference=p;save('settings');renderAll();});
 registerAction('opt.apply',function(i){var O=unifiedOptimiser(),r=O.pareto[+i];if(!r)return;var res=applyOptimiserChoice(r);renderAll();toast(res.status==='ok'?('Plan updated: '+r.label+'. Its effect will be judged after 7 and 21 days.'):'Could not apply that',{undo:res.status==='ok'});});
+function goalsCard(){var G=goalConflicts(),M=marginalReturns(),A=null;try{A=arbitrateDecision();}catch(e){}
+var body='';
+if(G.conflicts.length)body+='<div class="card-title">Goals in tension</div>'+G.conflicts.map(function(c){return '<div class="feat"><div class="feat-body"><b>'+esc(c.goals.join(' and '))+'</b><div class="hint">'+esc(c.evidence)+'. '+esc(c.tradeoff)+'</div></div>'+
+c.options.map(function(o){var on=c.chosen===o[0];return '<button type="button" class="chip sm'+(on?' active':'')+'" data-act="goal.choose" data-arg="'+attrEsc(c.id+'|'+o[0])+'" aria-pressed="'+on+'">'+esc(o[1])+'</button>';}).join('')+'</div>';}).join('');
+else body+='<div class="hint">Your goals are not pulling against each other at the moment.</div>';
+if(M.status==='ok'){var rows=M.rows.filter(function(r){return r.lever!=='sets'||r.priority||r.zone!=='diminishing';}).slice(0,8);
+body+='<div class="card-title" style="margin-top:10px">The next unit</div>'+rows.map(function(r){return uiRow(esc(r.next+(r.region?' for '+r.region:'')),esc(r.zone),{sub:esc(r.lever==='frequency'?r.basis:('at '+fmtNum(r.dose,r.dose%1?2:0)+' '+r.unit+': about '+r.marginalPct+'% more '+r.benefit+' (between '+r.range[0]+' and '+r.range[1]+')'+(r.warning?'; '+r.warning:'')+(r.timeMinutes?'; about '+r.timeMinutes+' more minutes':'')))});}).join('')+
+'<div class="prov">'+esc(M.rows[0].basis)+'. '+esc(Array.from(new Set(M.rows.map(function(r){return r.source;}))).join('; '))+'</div>';}
+if(A&&A.status==='ok')body+='<div class="card-title" style="margin-top:10px">Who decides today</div>'+uiRow(esc(A.winner.source),esc(A.winner.verb||''),{sub:esc(A.winner.dimensions?'confidence '+A.winner.dimensions.confidence+'; '+A.winner.dimensions.reversibility+(A.winner.dimensions.alignedWithYourChoice?'; matches the goal you chose':''):'')})+
+(A.contested.length?'<div class="hint">Also proposed: '+esc(A.contested.map(function(c){return c.source+' ('+(c.verb||'')+')';}).join('; '))+'</div>':'')+(A.setAside&&A.setAside.length?'<div class="hint">Set aside: '+esc(A.setAside.map(function(c){return c.source+', '+c.reason;}).join('; '))+'</div>':'')+'<div class="prov">'+esc(A.rule)+'</div>';
+return uiCard({fold:'plan-goals',title:'Goals and the next unit',sub:G.conflicts.length?plural(G.conflicts.length,'tension'):'no tensions',body:body});}
+registerAction('goal.choose',function(arg){var q=String(arg).split('|'),cur=(DB.settings.goalPriorities||{})[q[0]];DB.settings.goalPriorities=setGoalPriority(q[0],cur===q[1]?null:q[1]);save('settings');renderAll();});
 /* ===== SOURCE: 90-physique-ui.js ===== */
 function _statusTone(s){return s==='on track'?'good':(s==='lagging'||s==='under-trained'?'attention':'neutral');}
 function physiqueCard(){var P=physiqueModel(),R=P.regions.filter(function(r){return r.sets>0||r.priority;}).slice(0,8);if(!R.length)return '';
@@ -23253,6 +23511,8 @@ return uiRow(esc(r.variable+' \u2192 '+r.outcome+', '+r.label),esc((p.mean>0?'+'
 registerAction('responses.open',function(id){openSheet('edit',{form:'response',title:'What happened because of it',desc:'',buf:{id:id}});});
 SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x.id===b.id;})[0];if(!r)return {body:'<div class="hint">That response is no longer in the record.</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
+var _E=exposuresOf().filter(function(e){return e.id===r.exposureId;})[0];
+if(_E)out+=uiRow('Received',fmtNum(_E.received,_E.received%1?2:0)+' '+esc(_E.unit),{sub:esc([_E.planned!=null?'planned '+fmtNum(_E.planned,0):null,_E.before!=null?fmtNum(_E.before,_E.before%1?2:0)+' before':null,_E.coverage!=null?'logged on '+Math.round(_E.coverage*100)+'% of days':null].filter(Boolean).join('; '))});
 if(r.adherence)out+=uiRow('Carried out',r.adherence.share!=null?Math.round(r.adherence.share*100)+'% of days':'\u2014',{sub:esc(r.adherence.daysMet+' of '+r.adherence.daysLogged+' logged days '+r.adherence.rule)});
 if(P)out+=uiRow(esc(P.quantity)+' before',esc(String(P.before)+(P.unit?' '+P.unit:'')))+uiRow('after',esc(String(P.after)+(P.unit?' '+P.unit:'')))+uiRow('Effect',esc(_respEffect(r)),{sub:esc(P.method)});
 if(r.expected)out+=uiRow('Expected',esc(round(Math.min(r.expected.lo,r.expected.hi),2)+' to '+round(Math.max(r.expected.lo,r.expected.hi),2)+' '+r.expected.unit),{sub:esc(r.expected.basis+' \u00b7 '+(r.expectation||''))});
@@ -25147,7 +25407,7 @@ var KEYMAP=[
 {keys:'Tab / Shift+Tab',label:'Move through controls; inside a sheet focus stays in the sheet',group:'navigation'},
 {keys:'Enter / Space',label:'Activate the focused control',group:'navigation'}
 ];
-var REQUIRES_SUBJECT=/^(welcome\.|ai\.(allow|pick)|opt\.(pref|apply)|page\.(toggle|move|reset)|qa\.waterAmt|sheet\.urine|ui\.step|timer\.(start|stop|cardioMinutes|setSeconds)|sched\.(override|cycleTrain)|profile\.(eq|diet)|phase\.crit|attention\.(dismiss|show)|setup\.hide|log\.(q|group)|supp\.(toggle|timing|customField)|sheet\.(suppTiming|suppPick|suppDose|waterQuick)|physique\.priority|responses\.open|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
+var REQUIRES_SUBJECT=/^(welcome\.|goal\.choose|ai\.(allow|pick)|opt\.(pref|apply)|page\.(toggle|move|reset)|qa\.waterAmt|sheet\.urine|ui\.step|timer\.(start|stop|cardioMinutes|setSeconds)|sched\.(override|cycleTrain)|profile\.(eq|diet)|phase\.crit|attention\.(dismiss|show)|setup\.hide|log\.(q|group)|supp\.(toggle|timing|customField)|sheet\.(suppTiming|suppPick|suppDose|waterQuick)|physique\.priority|responses\.open|dup\.(keepImported|keepBoth)|connect\.(start|sync|revoke)|sources\.(prefer|deletePreview|deleteConfirm)|qa\.(run|hide)|tpl\.(run|delete|saveMeal)|pattern\.(accept|dismiss)|rule\.(enable|toggle)|supp\.(q|add|remove|dose|when)|features\.go|tools\.pin|dictate|voice\.typed|sched\.(mode|weekday|preset|cycleDay|anchor|rule|minutes|avail)|attention\.snooze|weather\.(q|pick)|fold\.hide|import\.file|adapt\.|food\.again|food\.same|food\.notSame|exec\.|scan\.typed|scan\.custom|workout\.(field|setDone|goto|swapTo)|trace\.open|exp\.download|nav\.exercise|nav\.routine|lib\.|post\.|mob\.|mv\.pick|pg\.weeks|nu\.days|bm\.days|viz\.type|dash\.op|dash\.use|dash\.duplicate|dash\.delete|studio\.load|studio\.duplicate|studio\.delete|inf\.question|eq\.retire|sub\.for|skill\.limiter|yoga\.log|stretch\.info|res\.exercise|ask\.(run|field)|move\.(log|skill|assess)|exp\.fromTemplate|gen\.(apply|grocery)|injury\.(review|resolve|region|sev|save)|why\.shown|copy\.(trace|decision)|jump\.go|saved\.|cmd\.pin|ui\.layout|plan\.(swap|sets|move|remove|add|day|adapt|reset)|obs\.(inspect|retract|correct)|food\.(edit|remove|editSave)|exp\.(open|abandon)|session\.(edit|open|retract)|phase\.edit|attention\.go|undo\.at|sel\.act|yields\.apply|jobs\.runOne|device\.test|nav\.(day|section|tab)|day\.(step|jump)|program\.set|timeline\.filter|label\.|voice\.apply|cloud\.(addDevice)|sync\.)/;
 var INTERNAL_ACTION=/^(sheet\.|cmdk\.(filter|pick|backdrop)|prompt\.|confirm\.|edit\.close|log\.close|timeline\.filter|yields\.field|voice\.(discard)|sel\.toggle|fold\.|tab\.|ui\.skipToMain|scale\.|set\.|ing\.|recipe\.addIng|food\.pick)/;
 var COMMAND_META={
 'log.open':{d:'Record a weight, measurement, or how you are feeling',k:['add','new','entry','quick']},
@@ -25823,7 +26083,7 @@ commandRegister().forEach(function(c){if(!DETAIL_LEVELS[commandLevel(c.id,c.grou
 return {ok:issues.length===0,issues:issues,levels:Object.keys(DETAIL_LEVELS)};
 }
 var PANEL_LEVEL_RULES=[
-[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^Hydration/,'casual'],[/^What happened because of it/,'insightful'],[/^The learning loop/,'insightful'],[/^AI assistant/,'insightful'],[/^What gets in the way/,'insightful'],[/^Physique/,'insightful'],[/^Which forecast to trust/,'insightful'],[/^Options for the next two weeks/,'insightful'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
+[/^Today\u2019s actions/,'casual'],[/^The plan$/,'casual'],[/^Today at a glance$/,'casual'],[/^Set up more/,'casual'],[/^Supplements and vitamins/,'casual'],[/^Hydration/,'casual'],[/^What happened because of it/,'insightful'],[/^The learning loop/,'insightful'],[/^AI assistant/,'insightful'],[/^What gets in the way/,'insightful'],[/^Physique/,'insightful'],[/^Which forecast to trust/,'insightful'],[/^Options for the next two weeks/,'insightful'],[/^Goals and the next unit/,'insightful'],[/^Physiology models/,'insightful'],[/^Why, and what would change it/,'casual'],[/^Weather$/,'casual'],[/^How the last four weeks went/,'casual'],[/^Plan history/,'insightful'],[/^How much is still assumed/,'insightful'],[/^This week by macro/,'insightful'],[/^Suggested changes/,'casual'],[/^Why the plan changed/,'insightful'],[/^Upcoming/,'casual'],[/^Forecast/,'insightful'],[/^Data quality/,'insightful'],[/^Technical detail/,'developer'],
 [/^Quick log/,'casual'],[/^Today$/,'casual'],[/^All observations/,'casual'],
 [/^[A-Z][A-Za-z ]+ \u00b7 week \d+/,'casual'],[/^No active phase/,'casual'],[/^Profile$/,'casual'],
 [/^How targets and estimates are kept apart/,'developer'],[/^Criteria/,'insightful'],[/^Phase progression/,'insightful'],[/^Phase history/,'insightful'],[/^What if/,'insightful'],
@@ -29522,6 +29782,69 @@ ok('under 4.5 h of sleep means rest or very light; under 5 h lighter; 6 h is not
 ok('the acute advice names its readings',/fatigue 9\/10/.test(at({fatigue:9,sleep:4.4}).reasons.join(','))&&/4\.4 h/.test(at({fatigue:9,sleep:4.4}).reasons.join(',')));
 at({fatigue:9});ok('a severe reading raises a safety item, ranked above everything else',attentionQueue().items[0].id.indexOf('acute-recovery:')===0&&attentionQueue().items[0].severity==='safety');
 DB.observations=keep;_memoInvalidate();});
+withFixture('successful_cut',function(){var keepX=DB.experiments,keepO=DB.observations;var start=addDays(todayISO(),-25);
+DB.observations=DB.observations.filter(function(o){return o.type!=='steps';});
+for(var i=0;i<=25;i++){var d=addDays(todayISO(),-25+i);DB.observations.push(makeObservation({type:'steps',date:d,value:i<1?7000:(i%2?10500:9500),source:'test'}));}
+for(var j=1;j<=14;j++)DB.observations.push(makeObservation({type:'steps',date:addDays(start,-j),value:7000,source:'test'}));
+createExperiment({variable:'steps',baselineValue:7000,interventionValue:10000,intervention:'steps +3,000/day',startDate:start,durationDays:14,question:'steps?'});_memoInvalidate();recordResponses();
+var r=responsesOf().filter(function(x){return x.variable==='steps';})[0],E=r&&exposuresOf().filter(function(e){return e.id===r.exposureId;})[0],O=r&&outcomesOf().filter(function(o){return o.id===r.outcomeId;})[0];
+var A=E&&E.window,vals=[];if(A)for(var k=0;k<=25;k++){var dd=addDays(todayISO(),-25+k);if(dd>=A[0]&&dd<=A[1])vals.push(k<1?7000:(k%2?10500:9500));}
+ok('an exposure records the dose actually received after the change',!!E&&vals.length>0&&Math.abs(E.received-vals.reduce(function(a,b){return a+b;},0)/vals.length)<1&&E.before===7000);
+ok('an outcome is its own record, carrying the Response\u2019s measured effect',!!O&&O.effect===r.primary.effect&&O.se===r.primary.se);
+ok('the Response refers to its exposure, its outcome and the plan version in effect',!!r.exposureId&&!!r.outcomeId&&('planVersionId' in r));
+var db={exposures:[],outcomes:[]};EVENT_TYPES['exposure.recorded'].apply(db,{data:E});EVENT_TYPES['outcome.recorded'].apply(db,{data:O});
+ok('exposures and outcomes replay from their events',db.exposures[0].id===E.id&&db.outcomes[0].id===O.id);
+DB.experiments=keepX;DB.observations=keepO;_memoInvalidate();});
+withFixture('successful_cut',function(){var keepS=DB.sessions,keepO=DB.observations,t=todayISO();
+DB.sessions=[{id:'g1',date:addDays(t,-30),sets:[{exercise:'Squat',load:200,reps:5}]},{id:'g2',date:addDays(t,-17),sets:[{exercise:'Squat',load:200,reps:5}]},{id:'g3',date:addDays(t,-15),sets:[{exercise:'Squat',load:200,reps:5},{exercise:'Squat',load:200,reps:5}]}];
+DB.observations=DB.observations.filter(function(o){return o.type!=='context'&&o.type!=='cardio';});
+[-9,-8,-7].forEach(function(d){DB.observations.push(makeObservation({type:'context',date:addDays(t,d),value:'illness',source:'test'}));});
+[[-2,30],[-5,45],[-10,40]].forEach(function(x){DB.observations.push(makeObservation({type:'cardio',date:addDays(t,x[0]),value:x[1],source:'test'}));});_memoInvalidate();
+var R=regimes(),br=R.filter(function(r){return r.kind==='training break';})[0],ill=R.filter(function(r){return r.kind==='context'&&r.label==='illness';});
+ok('13 days between sessions is a training break from the day after one to the day before the next',!!br&&br.from===addDays(t,-29)&&br.to===addDays(t,-18));
+ok('three consecutive illness days are one regime with an entry and an exit',ill.length===1&&ill[0].from===addDays(t,-9)&&ill[0].to===addDays(t,-7));
+ok('a regime change inside a window is named for it',regimeChangesIn(addDays(t,-12),addDays(t,-1)).some(function(x){return /started: illness/.test(x);}));
+var C=capabilityVector();ok('endurance is cardio minutes a week over four weeks (30+45 this week, 40 the one before, 0, 0)',C.endurance.weeks[0]===75&&C.endurance.weeks[1]===40&&C.endurance.cardioMinutesPerWeek===Math.round((75+40)/4));
+ok('work capacity counts sets by week (days 14\u201320 ago hold 1 + 2 sets)',C.workCapacity.weeks[2]===3&&C.workCapacity.weeks[0]===0);
+var V=stateVector(),w=V.components.filter(function(c){return c.key==='weight';})[0];
+ok('every state value carries its uncertainty and its freshness',V.components.length>0&&V.components.every(function(c){return 'sd' in c&&'ageDays' in c;})&&w&&w.ageDays!=null);
+DB.sessions=keepS;DB.observations=keepO;_memoInvalidate();});
+(function(){var m=marginalReturn('sets',10),exp=100*((1-Math.exp(-11/7))-(1-Math.exp(-10/7)));
+ok('the next set at 10 a week adds what the curve 1\u2212e^(\u2212d/7) says',!!m&&Math.abs(m.marginalPct-exp)<0.06&&m.range[0]<=m.marginalPct&&m.range[1]>=m.marginalPct);
+ok('past 25 sets a week the next set is possibly negative, and says why',marginalReturn('sets',26).zone==='possibly negative'&&/recovery/.test(marginalReturn('sets',26).warning));
+ok('protein past the 1.6 g/kg breakpoint is on the plateau, with the breakpoint\u2019s uncertainty kept',marginalReturn('protein',1.7).zone==='plateau'&&marginalReturn('protein',1.7).range[1]>0);
+var dr=marginalReturn('deficit',0.5);ok('the rate of loss gives a number, and past 1% a week is flagged for lean mass',dr.marginalPct!=null&&isFinite(dr.marginalPct)&&marginalReturn('deficit',1.1).zone==='possibly negative');
+ok('one set reads \u201c+1 set\u201d',marginalReturn('sets',5).next==='+1 set');})();
+withFixture('successful_cut',function(){var keepO=DB.observations,keepP=DB.settings.goalPriorities,keepPr=DB.settings.physiquePriorities;
+DB.observations=DB.observations.filter(function(o){return o.type!=='cardio';});for(var w=0;w<4;w++)for(var k=0;k<4;k++)DB.observations.push(makeObservation({type:'cardio',date:addDays(todayISO(),-7*w-k),value:55,source:'test'}));
+DB.settings.physiquePriorities=['chest'];_memoInvalidate();var G=goalConflicts(),ids=G.conflicts.map(function(c){return c.id;});
+ok('a cut with a priority muscle is shown as fat loss in tension with muscle',ids.indexOf('deficit-vs-muscle')>=0);
+ok('220 cardio minutes a week while size is a priority is shown as cardio in tension with strength',ids.indexOf('cardio-vs-strength')>=0&&/220 cardio minutes/.test(G.conflicts.filter(function(c){return c.id==='cardio-vs-strength';})[0].evidence));
+DB.settings.goalPriorities=setGoalPriority('deficit-vs-muscle','protect-muscle');var A=arbitrateDecision();
+ok('arbitration scores every claim on all seven dimensions and states its rule',A.status!=='ok'||(A.claims.every(function(c){return c.dimensions&&['priority','constraints','risk','confidence','reversibility','expectedBenefit','opportunityCost'].every(function(k){return k in c.dimensions;});})&&/goal you chose/.test(A.rule)));
+ok('a safety veto still leads whatever goal was chosen',A.status!=='ok'||!A.claims.some(function(c){return c.priority<10;})||A.winner.priority<10);
+DB.observations=keepO;DB.settings.goalPriorities=keepP;DB.settings.physiquePriorities=keepPr;_memoInvalidate();});
+(function(){var gen=function(sc){return [3,5,8,11,15,20].map(function(x){return {region:'r'+x,sets:x,gain:10*(1-Math.exp(-x/(7*sc))),se:0.4};});};
+var R1=personalDoseResponse(gen(0.6)),R2=personalDoseResponse(gen(1.8));
+ok('a known scale is recovered inside its interval (0.6 and 1.8)',R1.interval[0]<=0.6&&R1.interval[1]>=0.6&&R2.interval[0]<=1.8&&R2.interval[1]>=1.8&&Math.abs(R1.scale-0.6)<0.1);
+ok('precise data from several regions are mostly the person\u2019s own',R1.personalWeight>0.8);
+var weak=personalDoseResponse([3,6,9,12].map(function(x){return {region:'w'+x,sets:x,gain:5,se:6};}));
+ok('noisy data stay near the population curve and say so',weak.status==='ok'&&weak.personalWeight<0.2&&/not enough of your own data/.test(weak.reading));
+ok('fewer than four regions is not enough',personalDoseResponse(gen(1).slice(0,3)).status==='insufficient');
+var pop=marginalReturn('sets',10,{population:true}),per=marginalReturn('sets',10,{personal:R1});
+ok('the next set uses the personal curve once the person\u2019s data carry it, and says so',per.personal&&/personal curve/.test(per.basis)&&per.marginalPct<pop.marginalPct);})();
+(function(){var gen=function(b,noise){var fq=[0.8,1.2,1.6,2.0,2.4,2.8];return fq.map(function(f,i){return {region:'f'+i,sets:10,frequency:f,gain:8+b*(f-1.8)+(noise?noise[i]:0),se:0.3};});};
+var R=personalFrequencyResponse(gen(2));ok('a known effect of frequency at equal volume is recovered inside its interval (+2%/month per exposure)',R.status==='ok'&&R.interval[0]<=2&&R.interval[1]>=2&&Math.abs(R.perExposure-2)<0.3);
+var Z=personalFrequencyResponse(gen(0,[0.2,-0.1,0.15,-0.2,0.1,-0.05]));ok('no effect gives an interval around zero and says so',Z.interval[0]<0&&Z.interval[1]>0&&/no clear difference/.test(Z.reading));
+var flat=gen(2).map(function(r){r.frequency=1.5;return r;});ok('regions trained equally often cannot show a frequency effect',personalFrequencyResponse(flat).status==='insufficient');
+ok('the frequency estimate states what it does not measure',/fatigue per exposure is not measured/.test(R.limits));})();
+(function(){var t0=todayISO(),sl=[],fa=[],hu=[];for(var i=0;i<30;i++){var d=addDays(t0,-i),x=6+((i*7)%5)*0.6;sl.push({date:d,value:x});fa.push({date:d,value:5-0.8*(x-7.2)+((i%3)-1)*0.1});hu.push({date:d,value:4+((i%4)-1.5)*0.2});}
+var R=personalSleepResponse({sleep:sl,fatigue:fa,hunger:hu,performance:{},steps:[]}),F=R.outcomes.filter(function(o){return o.key==='fatigue';})[0],H=R.outcomes.filter(function(o){return o.key==='hunger';})[0];
+ok('a known effect of sleep on fatigue (\u22120.8 points an hour) is recovered inside its interval',F.status==='ok'&&F.interval[0]<=-0.8&&F.interval[1]>=-0.8&&F.personalWeight>0.5);
+ok('no link with hunger leaves the interval around zero (pulled toward the prior)',H.status==='ok'&&H.interval[0]<0.05&&H.interval[1]>-0.6);
+ok('an outcome without 14 paired days is not estimated',R.outcomes.filter(function(o){return o.key==='steps';})[0].status==='insufficient');
+ok('sleep that does not vary cannot show an effect',personalSleepResponse({sleep:sl.map(function(o){return {date:o.date,value:7};}),fatigue:fa,hunger:hu,performance:{},steps:[]}).outcomes[0].status==='insufficient');
+ok('the sleep response states it is an association, not proof of cause',/not proof of cause/.test(R.limits));})();
 ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
 withFixture('successful_cut',function(){
 var keepO=DB.observations,keepP=DB.settings.sourcePreference,d=addDays(todayISO(),-3);DB.settings.sourcePreference={};
@@ -30760,7 +31083,7 @@ return e;}
 var _AI_TRUNC=function(o){var s=JSON.stringify(o);return s.length>4000?s.slice(0,4000)+'\u2026':s;};
 var AI_TOOLS={
 get_state:{description:'Read one part of the person\u2019s current state (a read-only projection of the record).',
-schema:{type:'object',properties:{part:{type:'string',enum:['goal','constraints','plan','phase','training','nutrition','activity','recovery','bodyComposition','execution','response','evidence','adaptation']}},required:['part']},
+schema:{type:'object',properties:{part:{type:'string',enum:['goal','constraints','plan','phase','training','nutrition','activity','recovery','bodyComposition','execution','response','evidence','adaptation','vector','capability','regimes']}},required:['part']},
 run:function(a){var s=individualState();return {asOf:s.asOf,part:a.part,value:s[a.part]};}},
 explain_plan:{description:'Why the current plan is what it is: its version, what changed, the reason and the expected outcome.',schema:{type:'object',properties:{}},
 run:function(){var p=currentPlan();if(!p)return {plan:null};return {version:p.version,since:p.effectiveFrom,changes:(p.changes||[]).slice(0,8),reason:p.trigger&&p.trigger.reason,expected:p.trigger&&p.trigger.expected,source:p.trigger&&p.trigger.source};}},

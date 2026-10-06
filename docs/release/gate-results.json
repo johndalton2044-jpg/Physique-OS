@@ -1,221 +1,221 @@
 {
- "build": "c5ced85fff",
+ "build": "f8ea4c9780",
  "gates": {
   "build": {
    "ok": true,
    "skipped": false,
-   "summary": "food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"c5ced85fff\",\"release\":\"a8eeada546ae\",\"inputs\":175,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3467,\"scriptLines\":31059,\"sources\":97,\"files\":32,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}",
-   "at": "2026-10-05T18:36:07.753Z"
+   "summary": "food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"f8ea4c9780\",\"release\":\"07b40b9f2199\",\"inputs\":177,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3513,\"scriptLines\":31382,\"sources\":99,\"files\":32,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}",
+   "at": "2026-10-06T21:57:17.432Z"
   },
   "authority": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:36:08.450Z"
+   "at": "2026-10-06T21:57:18.095Z"
   },
   "layers": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:36:12.935Z"
+   "at": "2026-10-06T21:57:22.266Z"
   },
   "maturity": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:36:13.138Z"
+   "at": "2026-10-06T21:57:22.459Z"
   },
   "dictionary": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:36:19.035Z"
+   "at": "2026-10-06T21:57:28.489Z"
   },
   "engine": {
    "ok": true,
    "skipped": false,
-   "summary": "65 passed, 0 failed  (1617 in-app self-test checks)",
-   "at": "2026-10-05T18:38:17.895Z"
+   "summary": "65 passed, 0 failed  (1650 in-app self-test checks)",
+   "at": "2026-10-06T21:59:03.138Z"
   },
   "adversarial": {
    "ok": true,
    "skipped": false,
    "summary": "62 passed, 0 failed",
-   "at": "2026-10-05T18:38:29.305Z"
+   "at": "2026-10-06T21:59:15.178Z"
   },
   "audit": {
    "ok": true,
    "skipped": false,
    "summary": "124 passed, 0 finding(s): 0 P0, 0 P1, 0 P2",
-   "at": "2026-10-05T18:39:13.696Z"
+   "at": "2026-10-06T22:00:03.591Z"
   },
   "conformance": {
    "ok": true,
    "skipped": false,
    "summary": "0 finding(s): 0 P1, 0 P2",
-   "at": "2026-10-05T18:39:18.651Z"
+   "at": "2026-10-06T22:00:08.642Z"
   },
   "governance": {
    "ok": true,
    "skipped": false,
    "summary": "25 passing, 0 tracked, 0 failing — report written to docs/implementation/governance-report.{json,md}",
-   "at": "2026-10-05T18:39:31.276Z"
+   "at": "2026-10-06T22:00:23.828Z"
   },
   "shipped": {
    "ok": true,
    "skipped": false,
-   "summary": "pass  a second run in the same page passes too (1624 passed, 0 failed) · all passed",
-   "at": "2026-10-05T18:40:17.296Z"
+   "summary": "pass  a second run in the same page passes too (1657 passed, 0 failed) · all passed",
+   "at": "2026-10-06T22:01:13.590Z"
   },
   "test": {
    "ok": true,
    "skipped": false,
    "summary": "pass  with no layout measurement it falls back to the document end rather than failing · 399 passed, 0 failed",
-   "at": "2026-10-05T18:42:09.233Z"
+   "at": "2026-10-06T22:03:09.796Z"
   },
   "browser": {
    "ok": true,
    "skipped": false,
    "summary": "6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1",
-   "at": "2026-10-05T18:45:18.946Z"
+   "at": "2026-10-06T22:06:40.810Z"
   },
   "visual": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:45:34.630Z"
+   "at": "2026-10-06T22:06:54.963Z"
   },
   "persistence": {
    "ok": true,
    "skipped": false,
    "summary": "all passed · all passed",
-   "at": "2026-10-05T18:46:57.224Z"
+   "at": "2026-10-06T22:08:14.761Z"
   },
   "spine": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:47:09.978Z"
+   "at": "2026-10-06T22:08:30.573Z"
   },
   "parity": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:47:30.107Z"
+   "at": "2026-10-06T22:08:48.049Z"
   },
   "adapt": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:47:41.484Z"
+   "at": "2026-10-06T22:09:00.549Z"
   },
   "integration": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:47:50.728Z"
+   "at": "2026-10-06T22:09:09.706Z"
   },
   "intelligence": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:48:00.715Z"
+   "at": "2026-10-06T22:09:18.845Z"
   },
   "external": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:48:24.970Z"
+   "at": "2026-10-06T22:09:43.048Z"
   },
   "voice": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:48:40.456Z"
+   "at": "2026-10-06T22:09:58.442Z"
   },
   "direction": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:48:45.959Z"
+   "at": "2026-10-06T22:10:03.825Z"
   },
   "inputs": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:48:57.032Z"
+   "at": "2026-10-06T22:10:15.818Z"
   },
   "blackbox": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:49:20.049Z"
+   "at": "2026-10-06T22:19:47.441Z"
   },
   "ai": {
    "ok": true,
    "skipped": false,
    "summary": "all passed · all passed",
-   "at": "2026-10-05T18:49:26.116Z"
+   "at": "2026-10-06T22:10:44.801Z"
   },
   "deploy": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:49:42.996Z"
+   "at": "2026-10-06T22:11:01.907Z"
   },
   "server": {
    "ok": true,
    "skipped": false,
    "summary": "pass  health has no backup complaint after a verified backup · all passed",
-   "at": "2026-10-05T18:49:44.659Z"
+   "at": "2026-10-06T22:11:03.585Z"
   },
   "connect": {
    "ok": true,
    "skipped": false,
    "summary": "all passed · all passed",
-   "at": "2026-10-05T18:49:52.985Z"
+   "at": "2026-10-06T22:11:12.147Z"
   },
   "timezones": {
    "ok": true,
    "skipped": false,
    "summary": "all passed",
-   "at": "2026-10-05T18:50:56.091Z"
+   "at": "2026-10-06T22:21:10.200Z"
   },
   "reproducible": {
    "ok": true,
    "skipped": false,
    "summary": "food corpus fetched from its locked archive and verified",
-   "at": "2026-10-05T18:51:08.882Z"
+   "at": "2026-10-06T22:21:22.198Z"
   },
   "perf": {
    "ok": true,
    "skipped": false,
    "summary": "all operations within budget",
-   "at": "2026-10-05T18:51:23.045Z"
+   "at": "2026-10-06T22:21:33.518Z"
   },
   "cloud:e2e": {
    "ok": true,
    "skipped": false,
    "summary": "log lines: 17",
-   "at": "2026-10-05T18:51:31.372Z"
+   "at": "2026-10-06T22:21:41.037Z"
   },
   "yields:gate": {
    "ok": true,
    "skipped": false,
    "summary": "yields gate: 537 rows, all satisfy yield+loss≈100",
-   "at": "2026-10-05T18:51:31.578Z"
+   "at": "2026-10-06T22:21:41.225Z"
   },
   "baseline": {
    "ok": true,
    "skipped": false,
-   "summary": "baseline written: build c5ced85fff, 38 quantities, 22 capabilities (0 production-ready), 95-node dependency map",
-   "at": "2026-10-05T18:51:39.482Z"
+   "summary": "baseline written: build f8ea4c9780, 38 quantities, 22 capabilities (0 production-ready), 98-node dependency map",
+   "at": "2026-10-06T22:21:49.666Z"
   },
   "verify": {
    "ok": true,
    "skipped": false,
    "summary": "data/reference: 2 files verified · dist verified.",
-   "at": "2026-10-05T18:51:40.220Z"
+   "at": "2026-10-06T22:21:50.126Z"
   }
  }
 }

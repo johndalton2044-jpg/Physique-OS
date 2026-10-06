@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-05T18:51:36.423Z",
-  "sourceBuildId": "c5ced85fff",
-  "releaseId": "a8eeada546ae",
+  "generatedAt": "2026-10-06T22:21:46.094Z",
+  "sourceBuildId": "f8ea4c9780",
+  "releaseId": "527b8123c60c",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -23,7 +23,7 @@
     "fndds": null,
     "dsld": null
   },
-  "sourceCount": 97,
+  "sourceCount": 99,
   "gates": [
     {
       "gate": "engine",
@@ -86,8 +86,8 @@
   "registries": {
     "quantities": 38,
     "quantitySingleSource": true,
-    "models": 40,
-    "actions": 497,
+    "models": 43,
+    "actions": 498,
     "capabilities": 22
   },
   "note": "Generated from the running build. Do not edit by hand — regenerate with node scripts/baseline.mjs."

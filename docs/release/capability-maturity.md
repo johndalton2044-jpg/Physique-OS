@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build c5ced85fff. Every status is derived from evidence the build can check; none is assigned by hand.
+Build f8ea4c9780. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -56,6 +56,8 @@ Build c5ced85fff. Every status is derived from evidence the build can check; non
 | response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | assigned |
 | exercise_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | uncertainty_chain | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_dose_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_frequency_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | learning_loop | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | model_competition | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | intervention_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
@@ -67,6 +69,7 @@ Build c5ced85fff. Every status is derived from evidence the build can check; non
 | energy_availability | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | diet_digestibility | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | recovery_allocation | 1.0 | INFRASTRUCTURE_GRADE | assigned |
+| personal_sleep_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |

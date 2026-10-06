@@ -54,7 +54,7 @@ function emptyDB(){
     schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
     profile:{name:'',age:null,sex:'',heightIn:null,startWeightLb:null,goalWeightLb:null,goalType:'',targetDate:'',trainingExperience:'',activityBaseline:'',dietPreference:'',equipment:'',schedule:'',sleepTargetH:null,createdAt:nowISO(),updatedAt:null},
     phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
-    decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],environment:[],
+    decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],exposures:[],outcomes:[],environment:[],
     models:{calibration:{},versions:{}},
     settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
     ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},

@@ -2815,11 +2815,11 @@ refuses, so its infer() figures described a refusal.
 
 What was genuinely missing, and is now in place: quantities gain conversion (the dimension table's own factors) and
 display; dependency edges gain dependencyId, sourceId, targetId, dependencyType, scope and version; infer() carries the
-specified request (subject, context, options, requestedOutputs), echoes it and returns outputs by name \u2014 the gateway
+specified request (subject, context, options, requestedOutputs), echoes it and returns outputs by name — the gateway
 had accepted these in spirit and dropped them on the way to the core; materialize() returns runId, modelVersion and
 asOf, with invalidateView, recomputeView and a kept restatement log when a recomputation changes a value.
 
-The direction gate checks \u00a72\u20135 and \u00a77\u201310 against real calls on the demo record. Sections not yet gated
+The direction gate checks §2–5 and §7–10 against real calls on the demo record. Sections not yet gated
 (forecasting, causal and Bayesian engines, sensor fusion, knowledge graph, twin, optimisation, renderers, navigation)
 exist as code; their field lists should be added to the gate from the specification before they are called conformant.
 
@@ -3367,3 +3367,106 @@ contract it belongs to. The ontology version is a hash of its ids; an id that di
 docs/ontology-migrations.json fails. Gate dictionary fails on an undescribed type or model, an unowned event, a persisted
 field missing from the committed dictionary (schema drift), or a lost id; tampering with the committed copy confirmed
 both ratchets. Next: Stage B, the longitudinal object model.
+
+## Integration of the parallel branch (build c5ced85fff)
+
+The deployed repository held a second line of work: commits on claude/keen-albattani-a0pi2g, merged as pull requests #1
+and #2 on top of release 11bbf10590 (commit 65b16f5, whose source is byte-identical to that release). It was merged
+three ways into this tree (base 11bbf10590, theirs at 9150239, ours at 9a6da7df20, which adds Stage A): 31 files
+changed on their side; 19 were taken as they were (ours had not changed them, checked file by file); the entity
+contracts merged cleanly; the implementation log, appended on both sides, keeps all five entries in time order; the
+eight generated reports were regenerated from the merged source. Their changes: record loss fixed through snapshots,
+restore-merge and cloud re-sends; immutable events, with every in-place edit its own event; replay comparing
+correction and supersession dates by local date; large events synced in parts, a snapshot's events never folded twice;
+undo recorded in the event log so it survives a restart; every cloud end-to-end result an assertion; the linear
+front-door estimator corrected and given an interval; Vercel building the app and serving dist. The dictionary gate
+found three events their work added without an owning contract: decision.applied (Decision), session.rated (Execution)
+and events.revoked, owned by a new Undo contract (an undo cuts across every entity). All 36 gates pass; the engine runs
+1,617 self-tests, 30 of them theirs. The repository's working tree differed from its HEAD only in line endings (CRLF);
+its nested physique-os-repo folder is a stale intermediate copy that nothing builds from.
+
+## Future architecture, Stage B complete (build b5b8519ae0)
+
+The longitudinal object model, through the existing event log, contracts and dictionary (no new registry). Exposure
+(exposures, exposure.recorded): for each Response stage, the dose actually received in the window after the change —
+planned beside received, the same measure before it, coverage — for calories, steps, protein, sleep, cardio, training
+and supplements; shown on each Response in Learn. Outcome (outcomes, outcome.recorded): the measured change as its own
+record. Each Response refers to both and to planVersionId, the plan version in effect when the change began. Three
+projections (58-state-vectors.js), each with a consumer: regimes() — phases, context periods (travel, illness,
+holiday, injury), time off training and the return, weight-trend breaks — with a change inside a Response's window
+listed among its confounders (on the demo, the creatine Response's window holds a weight-trend break that was invisible
+before); stateVector() — each value with its standard deviation and the age of its newest data; capabilityVector() —
+strength by region with its trend, work capacity, endurance and mobility over four weeks. individualState carries all
+three, and the AI layer's get_state can read them. Self-tests compute their expectations from the data they write;
+one of them first had my own arithmetic wrong (the third week holds 1 + 2 sets, not 2). All 36 gates pass.
+
+## Future architecture, Stage C complete (build 2c6dfb3cbe)
+
+Marginal returns (§7.3, §7.4): one dose-response curve per lever with its source — hard sets per muscle a week
+(Schoenfeld 2017; Pelland 2024), protein (Morton 2018, breakpoint 1.62 g/kg/day), steps (Paluch 2022), cardio (WHO
+2020; Wilson 2012 on interference), sleep (Watson 2015), rate of loss (Garthe 2011; Helms 2014) — rising, diminishing,
+a plateau, possibly negative; marginalReturns() gives the next unit's benefit at the person's current dose, with its
+range, zone, fatigue and time. They are population curves and say so; personal scaling waits for Responses to changes
+in each dose. Goal conflicts (§32): five tensions detected from the person's state (a cut with a priority muscle, cardio
+past 150 minutes while strength or size leads, the plan's time against the schedule's, a fast loss against high
+fatigue, high volume against high fatigue), each with its evidence and trade-off; the person chooses, and the choice is
+kept. Arbitration (§33): arbitrateDecision, which was computed but used nowhere, is extended in place (87-governance,
+after its definition — the first version wrapped it from a file loaded earlier, which would never have applied) to all
+seven dimensions; a claim that breaks a constraint is set aside and shown; safety vetoes still lead; among close claims
+the chosen goal, then confidence, risk, reversibility and time decide. The Plan tab shows it as Goals and the next unit.
+Found on the way: the rate-of-loss curve was identified by object identity and came out null once copied for scaling
+(now a flag). All 36 gates pass; 1,636 self-tests.
+
+## Multidimensional maturity (§211)
+
+docs/capabilities.json rates every capability on eight axes — engineering (the existing ladder), scientific, data,
+personalisation, UX, operational, evidence, calibration — with levels and an evidence rule per level, so a capability
+can be solid engineering and early science at once and say so. tests/maturity.mjs (gate maturity) enforces them:
+population evidence needs a cited source; backtested needs a gate that scores it; workflow-tested needs a black-box
+workflow; independent evidence needs a black-box workflow or an independent gate; measured calibration only where a
+gate scores interval coverage (forecasting); prospective validation, real-world evidence, data at scale and production
+operations cannot be claimed yet. Injected dishonest claims (production operations for logging, calibrated for the
+optimiser, workflow-tested for the AI providers) were each refused. The README's table has a column per axis. Marginal
+returns and goal arbitration were added to the ledger.
+
+## Stage D begins: the personal training dose-response (build ce34f59a4f)
+
+personalDoseResponse() fits the scale s of the sets curve, gain = a·(1 − e^(−sets/(7s))), across the person's
+regions (weekly sets from Stage B exposure, strength gain with its standard error from the physique model), weighted
+by 1/SE², with a prior log s ~ N(0, 0.5²) centred on the population curve; personal weight is 1 − posterior
+variance / prior variance. Data simulated from known scales are recovered inside their intervals (0.6 → 0.61,
+1.0 → 1.01, 1.8 → 1.69). marginalReturn('sets') switches to the personal curve once the person's data carry a fifth
+of it, and says so; on the demo they carry 14%, so the population curve stays, and the reading says the data only hint
+(it first stated the hint as a finding). Limitation, stated with every result: it compares regions with each other, not
+changes over time. Registered as personal_dose_response (EMPIRICAL, input physique_regions, consumer marginalReturns);
+the model-contract check refused a first declaration with an undefined class and an input that did not resolve.
+Marginal returns now rate "early personal" on the personalisation axis. All 36 gates pass; 1,641 self-tests.
+
+## Stage D: the personal frequency response (build 0bdd5176aa)
+
+personalFrequencyResponse() removes volume's effect with the dose-response curve, then regresses what is left of each
+region's strength gain on its weekly exposures (weighted by 1/SE²), with a prior centred on no effect (SD 1.5% a month
+per extra weekly exposure), because at equal volume frequency adds little on average (Schoenfeld 2019 for size; Grgic
+2018 for strength). A known +2% effect is recovered inside its interval, no effect gives an interval around zero, and
+regions trained equally often are refused. On the demo the estimate is −0.7% (−3.4 to +2.0) with 18% personal weight,
+so the population statement is shown. It states what it does not measure: fatigue per exposure, so the reconstruction
+document's "response per unit fatigue" is not claimed. It appears in the Plan tab's next-unit view as one more weekly
+exposure at the same sets. Also found: the future-architecture plan and an older roadmap entry held literal \u escape
+text instead of characters (now decoded; none remain in any markdown file), and an earlier plan update had silently
+not applied because its edit carried no check.
+
+## Stage D: the personal sleep response; the black-box suite waits for conditions; handoff (build f8ea4c9780)
+
+personalSleepResponse() pairs each night's sleep with the same day's fatigue, hunger, steps and training performance
+(each session's estimated one-rep max against the exercise's best in the prior 30 days), as the slope per hour above
+or below the person's median sleep, with priors from population evidence (Watson 2015, Spiegel 2004, Fullagar 2015;
+steps near no effect), at least 14 paired days and sleep that varies. A known fatigue slope is recovered; constant
+sleep and missing outcomes are refused; it says it is an association, not proof of cause. On the demo: hunger −0.42
+points an hour (−0.81 to −0.04, 77% personal), training performance +2.8 points (0.3 to 5.2, 34% personal), no clear
+link with fatigue or steps. The next-unit view's sleep row becomes personal for outcomes the person's data carry.
+The black-box gate had failed twice in recorded runs and passed when rerun; under deliberate load it failed 3 of 3
+(fixed 900 ms waits: the app had not booted, the Tools section had not drawn). It now waits for conditions with a
+15-second ceiling, and under the same load passes 3 of 3. .gitattributes forces LF line endings (build identities hash
+source bytes; a CRLF checkout builds a different ID). CLAUDE.md (rules Claude Code loads automatically) and
+docs/handoff/TRANSITION.md (set-up, release procedure, backlog with acceptance criteria, known limits, trajectory) hand
+the work to Claude Code.

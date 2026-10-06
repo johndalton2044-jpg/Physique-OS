@@ -21,7 +21,11 @@ async function fresh(){CLOCK_OFFSET=0;const errors=[];const vc=new VirtualConsol
     const RD=w.Date;class ClockDate extends RD{constructor(...a){if(a.length)super(...a);else super(RD.now()+CLOCK_OFFSET);}static now(){return RD.now()+CLOCK_OFFSET;}}w.Date=ClockDate;
     /* the system boundary: a download is captured instead of saved */
     w.URL.createObjectURL=b=>{downloads.push(b);return 'blob:captured-'+downloads.length;};w.URL.revokeObjectURL=()=>{};}});
-  await wait(900);const w=dom.window,d=w.document;
+  const w=dom.window,d=w.document;
+  /* wait for the condition, not a fixed time: under load a fixed 900 ms was not enough for the app to boot (a person
+     simply waits for the screen) */
+  const until=async(test,what,ms)=>{const end=Date.now()+(ms||15000);while(Date.now()<end){try{if(test())return true;}catch(e){}await wait(50);}throw new Error('timed out waiting for '+what);};
+  await until(()=>typeof w.loadDemo==='function'&&d.querySelector('[data-act="welcome.skip"]'),'the app to boot');
   const ui={w,d,errors,downloads,
     /* press a control that is on screen; inside an open sheet when one is open */
     press(act,arg,within){const root=within?d.querySelector(within):d;const sel='[data-act="'+act+'"]'+(arg!=null?'[data-arg="'+arg+'"]':'');const el=(root||d).querySelector(sel);if(!el)throw new Error('no control on screen for '+act+(arg!=null?'('+arg+')':''));el.click();return el;},
@@ -33,6 +37,8 @@ async function fresh(){CLOCK_OFFSET=0;const errors=[];const vc=new VirtualConsol
     text(sel){const e=d.querySelector(sel);return e?e.textContent.replace(/\s+/g,' '):'';},
     view(name){return ui.text('#view-'+name);},
     async readDownload(i){const b=downloads[i==null?downloads.length-1:i];return b?await b.text():null;},
+    /* a control drawn asynchronously: wait until it is on screen */
+    async until(sel,ms){await until(()=>d.querySelector(sel),sel,ms);return d.querySelector(sel);},
     setClock(daysAgo){CLOCK_OFFSET=-daysAgo*86400000;},
     close(){dom.window.close();}};
   ui.press('welcome.skip');await wait(100);return ui;}
@@ -48,7 +54,7 @@ await run('V-002 nutrition',async ui=>{
   ui.tab('food');ui.press('food.custom');await wait(50);
   ui.type('f_name',FOOD.name);ui.type('f_kcal',FOOD.kcal);ui.type('f_protein',FOOD.protein);ui.type('f_carbs',FOOD.carbs);ui.type('f_fat',FOOD.fat);
   ui.press('food.customSave');await wait(80);
-  ui.press('food.add');await wait(50);ui.type('fs_q','Blackbox');await wait(450);
+  ui.press('food.add');await ui.until('#fs_q');ui.type('fs_q','Blackbox');await ui.until('#editBackdrop [data-act="foodsheet.pick"]');
   const pick=[...ui.d.querySelectorAll('#editBackdrop [data-act="foodsheet.pick"]')].find(b=>/Blackbox oats/.test(b.textContent));if(!pick)throw new Error('the saved food is not offered when searched for by name');pick.click();await wait(80);
   ui.type('f_amount',GRAMS);const u=ui.d.getElementById('f_unit');if(u){u.value='g';u.dispatchEvent(new ui.w.Event('change',{bubbles:true}));}
   ui.press('foodsheet.save');await wait(120);ui.tab('food');
@@ -90,14 +96,14 @@ await run('V-005 correction and retraction',async ui=>{
 /* V-010 BACKUP AND RESTORE, V-009 DELETION */
 await run('V-009/V-010 backup, erase, restore',async ui=>{
   await logAs(ui,'weight',188.2);await logAs(ui,'waist',34.5,'f_waist');
-  ui.tab('tools');ui.expand('tools-data');await wait(60);const n0=ui.downloads.length;ui.press('data.backup');await wait(80);const backup=await ui.readDownload();
+  ui.tab('tools');await ui.until('details[data-fold="tools-data"] summary');ui.expand('tools-data');await ui.until('[data-act="data.backup"]');const n0=ui.downloads.length;ui.press('data.backup');await wait(80);const backup=await ui.readDownload();
   line(ui.downloads.length===n0+1&&/188\.2/.test(backup||''),'V-010 a backup is offered as a download containing the data');
-  ui.expand('tools-demo');await wait(60);ui.press('demo.reset');await wait(60);ui.d.getElementById('confirmOk').click();await wait(200);
+  ui.expand('tools-demo');await ui.until('[data-act="demo.reset"]');ui.press('demo.reset');await wait(60);ui.d.getElementById('confirmOk').click();await wait(200);
   ui.tab('log');const after=ui.view('log');line(!/188\.2/.test(after)&&!/34\.5/.test(after),'V-009 erasing everything removes every entry from the screen');
   line(ui.w.DB.observations.filter(o=>!o.retracted).length===0,'V-009 second witness: the record holds no observations');
-  ui.tab('tools');ui.expand('tools-data');await wait(60);const input=ui.d.getElementById('restoreFile');if(!input)throw new Error('no restore file input');const file=new ui.w.File([backup],'backup.json',{type:'application/json'});
+  ui.tab('tools');await ui.until('details[data-fold="tools-data"] summary');ui.expand('tools-data');await ui.until('#restoreFile');const input=ui.d.getElementById('restoreFile');if(!input)throw new Error('no restore file input');const file=new ui.w.File([backup],'backup.json',{type:'application/json'});
   Object.defineProperty(input,'files',{value:[file],configurable:true});input.dispatchEvent(new ui.w.Event('change',{bubbles:true}));await wait(250);
-  const apply=ui.d.querySelector('#editBackdrop [data-act="data.restoreApply"]');if(!apply)throw new Error('the restore sheet did not open from the file');apply.click();await wait(200);
+  await ui.until('#editBackdrop [data-act="data.restoreApply"]').catch(()=>null);const apply=ui.d.querySelector('#editBackdrop [data-act="data.restoreApply"]');if(!apply)throw new Error('the restore sheet did not open from the file');apply.click();await wait(200);
   ui.tab('log');const back=ui.view('log');line(/188\.2/.test(back)&&/34\.5/.test(back),'V-010 restoring the backup brings every entry back',back.slice(0,160));});
 
 /* V-004 RECOVERY: poor sleep and high fatigue → Today changes its advice for training. The expectation is the

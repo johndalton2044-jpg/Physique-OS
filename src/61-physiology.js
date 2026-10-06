@@ -239,3 +239,46 @@ function photoComparisonValidity(a,b){
   {id:'diet_digestibility',name:'Protein quality and digestibility',cls:'PRIOR',version:'1.0',inputs:['calories'],minN:1,assumes:['food-group values represent these foods'],failsWhen:['unclassified foods'],output:'digestible protein (g) and energy adjustment',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'group values'},fn:'dietDigestibility'},
   {id:'recovery_allocation',name:'Recovery resource allocation',cls:'HEURISTIC',version:'1.0',inputs:['sleep','steps','cardio'],minN:7,assumes:['relative costs of lifting, cardio and steps'],failsWhen:['illness','unlogged training'],output:'weekly recovery budget and its split',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'relative units'},fn:'recoveryAllocation'}
 ].forEach(function(m){if(!MODELS.some(function(x){return x.id===m.id;}))MODELS.push(m);});})();
+/* ============================================================================
+   PERSONAL SLEEP RESPONSE (Stage D). Each night's sleep (dated the morning it ended) paired with the same day's
+   fatigue, hunger, steps and training performance; the slope per hour above or below the person's median sleep, with
+   a prior from population evidence (normal-normal posterior; personal weight as elsewhere). At least 14 paired days
+   per outcome, and sleep that varies (SD 0.3 h or more). Limits, stated: an association within one person, not proof
+   of cause; a late night can come from the same busy day that raises fatigue.
+   ============================================================================ */
+var SLEEP_OUTCOMES=[
+  {key:'fatigue',label:'fatigue',unit:'points (1\u201310)',prior:{mean:-0.4,sd:0.4},source:'sleep loss raises fatigue (Watson et al. 2015)'},
+  {key:'hunger',label:'hunger',unit:'points (1\u201310)',prior:{mean:-0.3,sd:0.4},source:'sleep restriction raises appetite (Spiegel et al. 2004)'},
+  {key:'performance',label:'training performance',unit:'% of the recent best',prior:{mean:1,sd:1.5},source:'small, inconsistent effects on strength (Fullagar et al. 2015)'},
+  {key:'steps',label:'steps',unit:'steps',prior:{mean:200,sd:500},source:'weak evidence; the prior is close to no effect'}];
+function _sessionPerformance(){var out={},best={};
+  sessionsOf({from:addDays(todayISO(),-365)}).slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(s){var day=[];
+    (s.sets||[]).forEach(function(x){var e=e1rm(num(x.load),num(x.reps));if(!e)return;var k=String(x.exercise||'').toLowerCase(),hist=(best[k]||[]).filter(function(h){return daysBetween(h.date,s.date)<=30&&h.date<s.date;});
+      if(hist.length){var mx=Math.max.apply(null,hist.map(function(h){return h.v;}));day.push(100*(e.value-mx)/mx);}(best[k]=best[k]||[]).push({date:s.date,v:e.value});});
+    if(day.length)out[s.date]=mean(day);});
+  return out;}
+function personalSleepResponse(series){
+  var sleep={};(series&&series.sleep||obsOf('sleep').filter(function(o){return !o.retracted;}).map(function(o){return {date:o.date,value:o.value};})).forEach(function(o){sleep[o.date]=o.value;});
+  var days=Object.keys(sleep);if(days.length<14)return {status:'insufficient',need:'14 nights of sleep logged',n:days.length};
+  var vals=days.map(function(d){return sleep[d];}).sort(function(a,b){return a-b;}),med=vals[Math.floor(vals.length/2)];
+  var perf=series&&series.performance||_sessionPerformance();
+  var outcomes=SLEEP_OUTCOMES.map(function(O){var src={};
+    /* performance is a map of date to % of the recent best; the other outcomes are lists of {date, value} */
+    if(O.key==='performance')src=perf;
+    else if(series&&Array.isArray(series[O.key]))series[O.key].forEach(function(o){src[o.date]=o.value;});
+    else obsOf(O.key).filter(function(o){return !o.retracted;}).forEach(function(o){src[o.date]=o.value;});
+    var pairs=days.filter(function(d){return src[d]!=null;}).map(function(d){return {x:sleep[d]-med,y:src[d]};});
+    if(pairs.length<14)return {key:O.key,label:O.label,status:'insufficient',need:'14 days with both sleep and '+O.label,n:pairs.length};
+    var mx=mean(pairs.map(function(p){return p.x;})),my=mean(pairs.map(function(p){return p.y;})),sxx=0,sxy=0;pairs.forEach(function(p){sxx+=(p.x-mx)*(p.x-mx);sxy+=(p.x-mx)*(p.y-my);});
+    if(Math.sqrt(sxx/pairs.length)<0.3)return {key:O.key,label:O.label,status:'insufficient',need:'sleep that varies by more than a few minutes',n:pairs.length};
+    var b=sxy/sxx,res=0;pairs.forEach(function(p){var e=p.y-my-b*(p.x-mx);res+=e*e;});var se=Math.sqrt(res/(pairs.length-2)/sxx);
+    var vp=1/(1/(O.prior.sd*O.prior.sd)+1/(se*se)),mp=vp*(O.prior.mean/(O.prior.sd*O.prior.sd)+b/(se*se)),pw=Math.max(0,Math.min(1,1-vp/(O.prior.sd*O.prior.sd)));
+    var lo=mp-2*Math.sqrt(vp),hi=mp+2*Math.sqrt(vp),dir=lo>0?'more':(hi<0?'less':null);
+    return {key:O.key,label:O.label,status:'ok',perHour:round(mp,2),interval:[round(lo,2),round(hi,2)],unit:O.unit,personalWeight:round(pw,2),n:pairs.length,source:O.source,
+      reading:pw<0.2?'not enough of your own data yet for '+O.label+'; the population evidence is used ('+O.source+')':(dir?'each extra hour above your usual goes with '+Math.abs(round(mp,O.key==='steps'?0:1))+' '+(O.key==='steps'?'steps':(O.key==='performance'?'percentage points':'points'))+' '+dir+' '+O.label:'no clear link between your sleep and '+O.label+' so far')};});
+  return {status:'ok',cls:'EMPIRICAL',medianSleep:med,nights:days.length,outcomes:outcomes,limits:'an association within one person, not proof of cause: a late night can come from the same busy day that raises fatigue'};}
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_sleep_response';}))return;
+  MODELS.push({id:'personal_sleep_response',name:'Personal sleep response',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue','hunger','steps'],minN:14,
+    assumes:['a night\u2019s sleep acts on the same day\u2019s fatigue, hunger, steps and training','the relationship is roughly linear around the person\u2019s usual sleep'],
+    failsWhen:['sleep that hardly varies','a common cause driving both sleep and the outcome'],
+    output:'per outcome, the change per extra hour of sleep above the person\u2019s usual, with its interval and how much is their own data',consumers:['marginalReturns'],freshnessDays:14,uncertainty:{kind:'posterior interval per outcome'},fn:'personalSleepResponse'});})();

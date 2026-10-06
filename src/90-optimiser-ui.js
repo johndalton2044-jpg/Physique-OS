@@ -9,3 +9,16 @@ function optimiserCard(){var O=unifiedOptimiser();if(O.status!=='ok'||!O.pareto.
     O.pareto.slice(0,5).map(row).join('')+'<div class="prov">'+esc(O.method)+'. Assumes '+esc(O.assumptions.join('; '))+'. '+esc(O.limits)+'</div>'});}
 registerAction('opt.pref',function(p){DB.settings.optimiserPreference=p;save('settings');renderAll();});
 registerAction('opt.apply',function(i){var O=unifiedOptimiser(),r=O.pareto[+i];if(!r)return;var res=applyOptimiserChoice(r);renderAll();toast(res.status==='ok'?('Plan updated: '+r.label+'. Its effect will be judged after 7 and 21 days.'):'Could not apply that',{undo:res.status==='ok'});});
+/* STAGE C on the Plan tab: goals in tension (you choose), the next unit (marginal returns), who decides today */
+function goalsCard(){var G=goalConflicts(),M=marginalReturns(),A=null;try{A=arbitrateDecision();}catch(e){}
+  var body='';
+  if(G.conflicts.length)body+='<div class="card-title">Goals in tension</div>'+G.conflicts.map(function(c){return '<div class="feat"><div class="feat-body"><b>'+esc(c.goals.join(' and '))+'</b><div class="hint">'+esc(c.evidence)+'. '+esc(c.tradeoff)+'</div></div>'+
+    c.options.map(function(o){var on=c.chosen===o[0];return '<button type="button" class="chip sm'+(on?' active':'')+'" data-act="goal.choose" data-arg="'+attrEsc(c.id+'|'+o[0])+'" aria-pressed="'+on+'">'+esc(o[1])+'</button>';}).join('')+'</div>';}).join('');
+  else body+='<div class="hint">Your goals are not pulling against each other at the moment.</div>';
+  if(M.status==='ok'){var rows=M.rows.filter(function(r){return r.lever!=='sets'||r.priority||r.zone!=='diminishing';}).slice(0,8);
+    body+='<div class="card-title" style="margin-top:10px">The next unit</div>'+rows.map(function(r){return uiRow(esc(r.next+(r.region?' for '+r.region:'')),esc(r.zone),{sub:esc(r.lever==='frequency'?r.basis:('at '+fmtNum(r.dose,r.dose%1?2:0)+' '+r.unit+': about '+r.marginalPct+'% more '+r.benefit+' (between '+r.range[0]+' and '+r.range[1]+')'+(r.warning?'; '+r.warning:'')+(r.timeMinutes?'; about '+r.timeMinutes+' more minutes':'')))});}).join('')+
+      '<div class="prov">'+esc(M.rows[0].basis)+'. '+esc(Array.from(new Set(M.rows.map(function(r){return r.source;}))).join('; '))+'</div>';}
+  if(A&&A.status==='ok')body+='<div class="card-title" style="margin-top:10px">Who decides today</div>'+uiRow(esc(A.winner.source),esc(A.winner.verb||''),{sub:esc(A.winner.dimensions?'confidence '+A.winner.dimensions.confidence+'; '+A.winner.dimensions.reversibility+(A.winner.dimensions.alignedWithYourChoice?'; matches the goal you chose':''):'')})+
+    (A.contested.length?'<div class="hint">Also proposed: '+esc(A.contested.map(function(c){return c.source+' ('+(c.verb||'')+')';}).join('; '))+'</div>':'')+(A.setAside&&A.setAside.length?'<div class="hint">Set aside: '+esc(A.setAside.map(function(c){return c.source+', '+c.reason;}).join('; '))+'</div>':'')+'<div class="prov">'+esc(A.rule)+'</div>';
+  return uiCard({fold:'plan-goals',title:'Goals and the next unit',sub:G.conflicts.length?plural(G.conflicts.length,'tension'):'no tensions',body:body});}
+registerAction('goal.choose',function(arg){var q=String(arg).split('|'),cur=(DB.settings.goalPriorities||{})[q[0]];DB.settings.goalPriorities=setGoalPriority(q[0],cur===q[1]?null:q[1]);save('settings');renderAll();});

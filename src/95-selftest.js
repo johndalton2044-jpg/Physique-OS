@@ -4002,6 +4002,76 @@ function runSelfTest(opts){
       ok('the acute advice names its readings',/fatigue 9\/10/.test(at({fatigue:9,sleep:4.4}).reasons.join(','))&&/4\.4 h/.test(at({fatigue:9,sleep:4.4}).reasons.join(',')));
       at({fatigue:9});ok('a severe reading raises a safety item, ranked above everything else',attentionQueue().items[0].id.indexOf('acute-recovery:')===0&&attentionQueue().items[0].severity==='safety');
       DB.observations=keep;_memoInvalidate();});
+    /* ---- Stage B: Exposure and Outcome as their own records, the Response referring to them ---- */
+    withFixture('successful_cut',function(){var keepX=DB.experiments,keepO=DB.observations;var start=addDays(todayISO(),-25);
+      DB.observations=DB.observations.filter(function(o){return o.type!=='steps';});
+      for(var i=0;i<=25;i++){var d=addDays(todayISO(),-25+i);DB.observations.push(makeObservation({type:'steps',date:d,value:i<1?7000:(i%2?10500:9500),source:'test'}));}
+      for(var j=1;j<=14;j++)DB.observations.push(makeObservation({type:'steps',date:addDays(start,-j),value:7000,source:'test'}));
+      createExperiment({variable:'steps',baselineValue:7000,interventionValue:10000,intervention:'steps +3,000/day',startDate:start,durationDays:14,question:'steps?'});_memoInvalidate();recordResponses();
+      var r=responsesOf().filter(function(x){return x.variable==='steps';})[0],E=r&&exposuresOf().filter(function(e){return e.id===r.exposureId;})[0],O=r&&outcomesOf().filter(function(o){return o.id===r.outcomeId;})[0];
+      /* computed here from the values written above: the after window's mean steps */
+      var A=E&&E.window,vals=[];if(A)for(var k=0;k<=25;k++){var dd=addDays(todayISO(),-25+k);if(dd>=A[0]&&dd<=A[1])vals.push(k<1?7000:(k%2?10500:9500));}
+      ok('an exposure records the dose actually received after the change',!!E&&vals.length>0&&Math.abs(E.received-vals.reduce(function(a,b){return a+b;},0)/vals.length)<1&&E.before===7000);
+      ok('an outcome is its own record, carrying the Response\u2019s measured effect',!!O&&O.effect===r.primary.effect&&O.se===r.primary.se);
+      ok('the Response refers to its exposure, its outcome and the plan version in effect',!!r.exposureId&&!!r.outcomeId&&('planVersionId' in r));
+      var db={exposures:[],outcomes:[]};EVENT_TYPES['exposure.recorded'].apply(db,{data:E});EVENT_TYPES['outcome.recorded'].apply(db,{data:O});
+      ok('exposures and outcomes replay from their events',db.exposures[0].id===E.id&&db.outcomes[0].id===O.id);
+      DB.experiments=keepX;DB.observations=keepO;_memoInvalidate();});
+    /* ---- Stage B projections: regimes, the state vector, the capability vector (expectations computed here) ---- */
+    withFixture('successful_cut',function(){var keepS=DB.sessions,keepO=DB.observations,t=todayISO();
+      DB.sessions=[{id:'g1',date:addDays(t,-30),sets:[{exercise:'Squat',load:200,reps:5}]},{id:'g2',date:addDays(t,-17),sets:[{exercise:'Squat',load:200,reps:5}]},{id:'g3',date:addDays(t,-15),sets:[{exercise:'Squat',load:200,reps:5},{exercise:'Squat',load:200,reps:5}]}];
+      DB.observations=DB.observations.filter(function(o){return o.type!=='context'&&o.type!=='cardio';});
+      [-9,-8,-7].forEach(function(d){DB.observations.push(makeObservation({type:'context',date:addDays(t,d),value:'illness',source:'test'}));});
+      [[-2,30],[-5,45],[-10,40]].forEach(function(x){DB.observations.push(makeObservation({type:'cardio',date:addDays(t,x[0]),value:x[1],source:'test'}));});_memoInvalidate();
+      var R=regimes(),br=R.filter(function(r){return r.kind==='training break';})[0],ill=R.filter(function(r){return r.kind==='context'&&r.label==='illness';});
+      ok('13 days between sessions is a training break from the day after one to the day before the next',!!br&&br.from===addDays(t,-29)&&br.to===addDays(t,-18));
+      ok('three consecutive illness days are one regime with an entry and an exit',ill.length===1&&ill[0].from===addDays(t,-9)&&ill[0].to===addDays(t,-7));
+      ok('a regime change inside a window is named for it',regimeChangesIn(addDays(t,-12),addDays(t,-1)).some(function(x){return /started: illness/.test(x);}));
+      var C=capabilityVector();ok('endurance is cardio minutes a week over four weeks (30+45 this week, 40 the one before, 0, 0)',C.endurance.weeks[0]===75&&C.endurance.weeks[1]===40&&C.endurance.cardioMinutesPerWeek===Math.round((75+40)/4));
+      ok('work capacity counts sets by week (days 14\u201320 ago hold 1 + 2 sets)',C.workCapacity.weeks[2]===3&&C.workCapacity.weeks[0]===0);
+      var V=stateVector(),w=V.components.filter(function(c){return c.key==='weight';})[0];
+      ok('every state value carries its uncertainty and its freshness',V.components.length>0&&V.components.every(function(c){return 'sd' in c&&'ageDays' in c;})&&w&&w.ageDays!=null);
+      DB.sessions=keepS;DB.observations=keepO;_memoInvalidate();});
+    /* ---- Stage C: marginal returns, goal conflicts, arbitration (expectations computed here) ---- */
+    (function(){var m=marginalReturn('sets',10),exp=100*((1-Math.exp(-11/7))-(1-Math.exp(-10/7)));
+      ok('the next set at 10 a week adds what the curve 1\u2212e^(\u2212d/7) says',!!m&&Math.abs(m.marginalPct-exp)<0.06&&m.range[0]<=m.marginalPct&&m.range[1]>=m.marginalPct);
+      ok('past 25 sets a week the next set is possibly negative, and says why',marginalReturn('sets',26).zone==='possibly negative'&&/recovery/.test(marginalReturn('sets',26).warning));
+      ok('protein past the 1.6 g/kg breakpoint is on the plateau, with the breakpoint\u2019s uncertainty kept',marginalReturn('protein',1.7).zone==='plateau'&&marginalReturn('protein',1.7).range[1]>0);
+      var dr=marginalReturn('deficit',0.5);ok('the rate of loss gives a number, and past 1% a week is flagged for lean mass',dr.marginalPct!=null&&isFinite(dr.marginalPct)&&marginalReturn('deficit',1.1).zone==='possibly negative');
+      ok('one set reads \u201c+1 set\u201d',marginalReturn('sets',5).next==='+1 set');})();
+    withFixture('successful_cut',function(){var keepO=DB.observations,keepP=DB.settings.goalPriorities,keepPr=DB.settings.physiquePriorities;
+      DB.observations=DB.observations.filter(function(o){return o.type!=='cardio';});for(var w=0;w<4;w++)for(var k=0;k<4;k++)DB.observations.push(makeObservation({type:'cardio',date:addDays(todayISO(),-7*w-k),value:55,source:'test'}));
+      DB.settings.physiquePriorities=['chest'];_memoInvalidate();var G=goalConflicts(),ids=G.conflicts.map(function(c){return c.id;});
+      ok('a cut with a priority muscle is shown as fat loss in tension with muscle',ids.indexOf('deficit-vs-muscle')>=0);
+      ok('220 cardio minutes a week while size is a priority is shown as cardio in tension with strength',ids.indexOf('cardio-vs-strength')>=0&&/220 cardio minutes/.test(G.conflicts.filter(function(c){return c.id==='cardio-vs-strength';})[0].evidence));
+      DB.settings.goalPriorities=setGoalPriority('deficit-vs-muscle','protect-muscle');var A=arbitrateDecision();
+      ok('arbitration scores every claim on all seven dimensions and states its rule',A.status!=='ok'||(A.claims.every(function(c){return c.dimensions&&['priority','constraints','risk','confidence','reversibility','expectedBenefit','opportunityCost'].every(function(k){return k in c.dimensions;});})&&/goal you chose/.test(A.rule)));
+      ok('a safety veto still leads whatever goal was chosen',A.status!=='ok'||!A.claims.some(function(c){return c.priority<10;})||A.winner.priority<10);
+      DB.observations=keepO;DB.settings.goalPriorities=keepP;DB.settings.physiquePriorities=keepPr;_memoInvalidate();});
+    /* ---- Stage D: personal training dose-response (data simulated here from a known scale) ---- */
+    (function(){var gen=function(sc){return [3,5,8,11,15,20].map(function(x){return {region:'r'+x,sets:x,gain:10*(1-Math.exp(-x/(7*sc))),se:0.4};});};
+      var R1=personalDoseResponse(gen(0.6)),R2=personalDoseResponse(gen(1.8));
+      ok('a known scale is recovered inside its interval (0.6 and 1.8)',R1.interval[0]<=0.6&&R1.interval[1]>=0.6&&R2.interval[0]<=1.8&&R2.interval[1]>=1.8&&Math.abs(R1.scale-0.6)<0.1);
+      ok('precise data from several regions are mostly the person\u2019s own',R1.personalWeight>0.8);
+      var weak=personalDoseResponse([3,6,9,12].map(function(x){return {region:'w'+x,sets:x,gain:5,se:6};}));
+      ok('noisy data stay near the population curve and say so',weak.status==='ok'&&weak.personalWeight<0.2&&/not enough of your own data/.test(weak.reading));
+      ok('fewer than four regions is not enough',personalDoseResponse(gen(1).slice(0,3)).status==='insufficient');
+      var pop=marginalReturn('sets',10,{population:true}),per=marginalReturn('sets',10,{personal:R1});
+      ok('the next set uses the personal curve once the person\u2019s data carry it, and says so',per.personal&&/personal curve/.test(per.basis)&&per.marginalPct<pop.marginalPct);})();
+    /* ---- Stage D: personal frequency response (simulated from a known slope, at equal volume) ---- */
+    (function(){var gen=function(b,noise){var fq=[0.8,1.2,1.6,2.0,2.4,2.8];return fq.map(function(f,i){return {region:'f'+i,sets:10,frequency:f,gain:8+b*(f-1.8)+(noise?noise[i]:0),se:0.3};});};
+      var R=personalFrequencyResponse(gen(2));ok('a known effect of frequency at equal volume is recovered inside its interval (+2%/month per exposure)',R.status==='ok'&&R.interval[0]<=2&&R.interval[1]>=2&&Math.abs(R.perExposure-2)<0.3);
+      var Z=personalFrequencyResponse(gen(0,[0.2,-0.1,0.15,-0.2,0.1,-0.05]));ok('no effect gives an interval around zero and says so',Z.interval[0]<0&&Z.interval[1]>0&&/no clear difference/.test(Z.reading));
+      var flat=gen(2).map(function(r){r.frequency=1.5;return r;});ok('regions trained equally often cannot show a frequency effect',personalFrequencyResponse(flat).status==='insufficient');
+      ok('the frequency estimate states what it does not measure',/fatigue per exposure is not measured/.test(R.limits));})();
+    /* ---- Stage D: personal sleep response (simulated from known slopes) ---- */
+    (function(){var t0=todayISO(),sl=[],fa=[],hu=[];for(var i=0;i<30;i++){var d=addDays(t0,-i),x=6+((i*7)%5)*0.6;sl.push({date:d,value:x});fa.push({date:d,value:5-0.8*(x-7.2)+((i%3)-1)*0.1});hu.push({date:d,value:4+((i%4)-1.5)*0.2});}
+      var R=personalSleepResponse({sleep:sl,fatigue:fa,hunger:hu,performance:{},steps:[]}),F=R.outcomes.filter(function(o){return o.key==='fatigue';})[0],H=R.outcomes.filter(function(o){return o.key==='hunger';})[0];
+      ok('a known effect of sleep on fatigue (\u22120.8 points an hour) is recovered inside its interval',F.status==='ok'&&F.interval[0]<=-0.8&&F.interval[1]>=-0.8&&F.personalWeight>0.5);
+      ok('no link with hunger leaves the interval around zero (pulled toward the prior)',H.status==='ok'&&H.interval[0]<0.05&&H.interval[1]>-0.6);
+      ok('an outcome without 14 paired days is not estimated',R.outcomes.filter(function(o){return o.key==='steps';})[0].status==='insufficient');
+      ok('sleep that does not vary cannot show an effect',personalSleepResponse({sleep:sl.map(function(o){return {date:o.date,value:7};}),fatigue:fa,hunger:hu,performance:{},steps:[]}).outcomes[0].status==='insufficient');
+      ok('the sleep response states it is an association, not proof of cause',/not proof of cause/.test(R.limits));})();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
