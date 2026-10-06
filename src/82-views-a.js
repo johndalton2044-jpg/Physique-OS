@@ -353,7 +353,8 @@ RENDERERS.plan=function(){
       programVersions().forEach(function(v){ev.push({date:v.from,lane:'Programme',short:'v'+v.version,label:v.change});});
       (DB.phases||[]).forEach(function(ph){if(ph.startDate)ev.push({date:ph.startDate,lane:'Phase',short:((PHASE_TYPES[ph.type]||{}).label||ph.type).slice(0,4),label:((PHASE_TYPES[ph.type]||{}).label||ph.type)+' phase started'});});
       if(ev.length<2)return;
-      try{out+=optimiserCard();}catch(e){_q(e,'P2');}   /* the unified optimiser: options across every domain */
+      try{out+=optimiserCard();}catch(e){_q(e,'P2');}
+      try{out+=goalsCard();}catch(e){_q(e,'P2');}   /* goals in tension, the next unit, who decides */   /* the unified optimiser: options across every domain */
       out+=uiCard({fold:'plan-history',foldOpen:true,title:'Plan history',sub:ev.length+' events',body:renderChartSpec('timeline',{title:'Plan versions, programme changes and phases',events:ev,lanes:['Plan','Programme','Phase'],to:todayISO()})});})();
     var P=plansOf();
     out+=uiCard({title:'Why the plan changed',sub:'every version keeps its reason, evidence and the alternatives considered',body:

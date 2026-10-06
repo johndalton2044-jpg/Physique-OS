@@ -56,7 +56,8 @@
     "layers": "node tests/layers.mjs",
     "blackbox": "node tests/blackbox.mjs",
     "maturity": "node tests/maturity.mjs",
-    "ai": "node tests/ai-proxy.mjs && node tests/ai-client.mjs"
+    "ai": "node tests/ai-proxy.mjs && node tests/ai-client.mjs",
+    "dictionary": "node tests/dictionary.mjs"
   },
   "devDependencies": {
     "jsdom": "^30.1.0",

@@ -86,12 +86,42 @@ function _evaluateResponseCore(iv){
 }
 /* ---- persistence: recorded when it matures (provisional, then final); replayed from the log ---- */
 function recordResponses(){
-  DB.responses=DB.responses||[];var n=0;
+  DB.responses=DB.responses||[];DB.exposures=DB.exposures||[];DB.outcomes=DB.outcomes||[];var n=0;
   responseInterventions().forEach(function(iv){var r=evaluateResponse(iv);if(r.stage==='pending')return;
     var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&(ex.stage===r.stage||ex.stage==='final'))return;
+    /* Stage B (future plan items 12, 13, 15): the exposure received and the outcome measured are their own records,
+       and the Response refers to them and to the plan version it judges */
+    var E=exposureFor(iv,r),O=outcomeFrom(iv,r);
+    if(E){DB.exposures=DB.exposures.filter(function(x){return x.id!==E.id;});DB.exposures.push(E);emitEvent('exposure.recorded',E,{at:r.evaluatedAt});r.exposureId=E.id;}
+    if(O){DB.outcomes=DB.outcomes.filter(function(x){return x.id!==O.id;});DB.outcomes.push(O);emitEvent('outcome.recorded',O,{at:r.evaluatedAt});r.outcomeId=O.id;}
+    r.planVersionId=planVersionAt(iv.start);
     DB.responses=DB.responses.filter(function(x){return x.id!==r.id;});DB.responses.push(r);emitEvent('response.recorded',r,{at:r.evaluatedAt});n++;});
   if(n)save('responses');return {status:'ok',recorded:n,total:DB.responses.length};
 }
+/* ---- EXPOSURE: the dose actually received in the window after a change, beside the dose before it ---- */
+function _dailyMean(type,from,to){var S=_rangeSeries(type,from,to);return S.length?{mean:mean(S.map(function(x){return x.value;})),days:S.length}:null;}
+function _exposureMeasure(variable,from,to){var span=Math.max(1,daysBetween(from,to)+1);
+  if(variable==='calories'||variable==='steps'||variable==='protein'||variable==='sleep'){var m=_dailyMean(variable,from,to);
+    return m?{received:round(m.mean,variable==='sleep'?1:0),unit:{calories:'kcal a day',steps:'steps a day',protein:'g a day',sleep:'hours a night'}[variable],coverage:round(m.days/span,2)}:null;}
+  if(variable==='cardio'){var c=obsOf('cardio').filter(function(o){return o.date>=from&&o.date<=to;});return {received:round(c.reduce(function(a,o){return a+(o.value||0);},0)/(span/7),0),unit:'minutes a week',coverage:null};}
+  if(variable==='training days'||variable==='training'){var ss=(DB.sessions||[]).filter(function(x){return !x.retracted&&x.date>=from&&x.date<=to;});
+    return {received:round(ss.reduce(function(a,x){return a+(x.sets||[]).length;},0)/(span/7),1),unit:'sets a week',sessions:ss.length,coverage:null};}
+  if(/^supplement: /.test(variable)){var name=variable.slice(12).toLowerCase(),days={};obsOf('supplement').forEach(function(o){if(o.date>=from&&o.date<=to&&String(o.value).toLowerCase().indexOf(name.split(' ')[0])>=0)days[o.date]=1;});
+    return {received:round(Object.keys(days).length/span,2),unit:'share of days taken',coverage:null};}
+  return null;}
+function exposureFor(iv,r){var A=r.windows&&r.windows.after,B=r.windows&&r.windows.before;if(!A)return null;var after=_exposureMeasure(iv.variable,A[0],A[1]);if(!after)return null;
+  var before=B?_exposureMeasure(iv.variable,B[0],B[1]):null;
+  return {id:'expo:'+iv.id+':'+r.stage,interventionId:iv.id,responseId:r.id,variable:iv.variable,window:[A[0],A[1]],stage:r.stage,
+    planned:typeof iv.to==='number'?iv.to:null,received:after.received,unit:after.unit,coverage:after.coverage,before:before?before.received:null,
+    adherence:r.adherence?r.adherence.share:null,recordedAt:r.evaluatedAt,method:'measured from the record in the window after the change'};}
+/* ---- OUTCOME: what was measured to change, its own record so more than one intervention can share it ---- */
+function outcomeFrom(iv,r){var P=r.primary;if(!P)return null;
+  return {id:'out:'+iv.id+':'+r.stage,responseId:r.id,quantity:P.quantity,unit:P.unit||null,window:r.windows.after,baselineWindow:r.windows.before,
+    before:P.before,after:P.after,effect:P.effect,se:P.se,n:P.n,method:P.method,stage:r.stage,recordedAt:r.evaluatedAt};}
+/* ---- the plan version a change was judged under ---- */
+function planVersionAt(date){var P=plansOf().filter(function(p){return p.effectiveFrom<=date;});return P.length?P[P.length-1].id:null;}
+function exposuresOf(){return (DB.exposures||[]).slice();}
+function outcomesOf(){return (DB.outcomes||[]).slice();}
 function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){return a.start<b.start?1:-1;});}
 (function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='intervention_response';}))return;
   MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
@@ -113,7 +143,8 @@ function canonicalResponse(r,iv){if(!r)return r;var A=r.windows&&r.windows.after
   /* context in the window, except the tag that records this intervention itself (it is not a confounder of itself) */
   var ctx=A?obsOf('context').filter(function(o){return o.date>=A[0]&&o.date<=A[1]&&!/^intervention:/i.test(String(o.value));}).map(function(o){return String(o.value);}):[];
   r.confounders=[].concat(r.placebo&&r.placebo.alreadyUnderWay?['the change was already under way before it started']:[],ctx.map(function(c){return 'context: '+c;}),
-    (r.unintended||[]).filter(function(u){return u.flag;}).map(function(u){return 'also changed: '+u.quantity;}),r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5?['carried out on only '+Math.round(r.adherence.share*100)+'% of days']:[]);
+    (r.unintended||[]).filter(function(u){return u.flag;}).map(function(u){return 'also changed: '+u.quantity;}),
+    A&&typeof regimeChangesIn==='function'?regimeChangesIn(A[0],A[1]).map(function(x){return 'regime change: '+x;}):[],r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5?['carried out on only '+Math.round(r.adherence.share*100)+'% of days']:[]);
   r.attribution=!P?'nothing to attribute':(r.placebo&&r.placebo.alreadyUnderWay?'a trend already under way, not the change':(Math.abs(P.effect)>2*P.se&&!(r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5)?'the change':'uncertain'));
   var ph=null;try{ph=activePhase(r.start);}catch(e){}r.applicability={phase:ph?ph.type:null,conditions:ctx,note:'what this says about you applies to a '+(ph?ph.type:'similar')+' phase under similar conditions'};
   r.evidence=[].concat(P?[{kind:P.quantity,method:P.method,n:P.n}]:[],r.placebo?[{kind:'placebo check',effect:r.placebo.effect,se:r.placebo.se}]:[],r.expectedOutcome?[{kind:'expectation',basis:r.expectedOutcome.basis}]:[]);
@@ -151,6 +182,8 @@ function individualState(){var g=function(f,d){try{return f();}catch(e){return d
     bodyComposition:g(function(){var r=physiqueRate();return {rate:r.status==='ok'?{pctPerWeek:r.pctPerWeek,range:r.range}:null};},null),
     execution:g(function(){return adherenceState(14);},null),response:g(function(){return personalResponseModel().rows.filter(function(r){return r.n>0;}).map(function(r){return {key:r.key,mean:r.posterior.mean,personal:r.personalWeight};});},[]),
     evidence:g(function(){return {responses:responsesOf().length,final:responsesOf().filter(function(r){return r.stage==='final';}).length};},null),
-    adaptation:g(function(){return {planVersions:plansOf().length,interventions:interventionLifecycles().map(function(l){return {id:l.id,state:l.state};})};},null)};
+    adaptation:g(function(){return {planVersions:plansOf().length,interventions:interventionLifecycles().map(function(l){return {id:l.id,state:l.state};})};},null),
+    /* Stage B: values with uncertainty and freshness, capabilities, and the regimes in force */
+    vector:g(stateVector,null),capability:g(capabilityVector,null),regimes:g(function(){return currentRegimes();},[])};
   return _deepFreeze(st);}
 function _deepFreeze(o){if(o&&typeof o==='object'&&!Object.isFrozen(o)){Object.freeze(o);Object.keys(o).forEach(function(k){_deepFreeze(o[k]);});}return o;}

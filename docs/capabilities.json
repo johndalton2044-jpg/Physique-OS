@@ -21,7 +21,17 @@
     {
      "gate": "persistence"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "backup-restore",
@@ -31,7 +41,17 @@
     {
      "blackbox": "V-010"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "data-deletion",
@@ -41,7 +61,17 @@
     {
      "blackbox": "V-009"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "nutrition-logging",
@@ -51,7 +81,17 @@
     {
      "blackbox": "V-002"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "training-logging",
@@ -61,7 +101,17 @@
     {
      "blackbox": "V-003"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "correction-retraction",
@@ -71,7 +121,17 @@
     {
      "blackbox": "V-005"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "plan-targets-today",
@@ -81,7 +141,17 @@
     {
      "blackbox": "V-001"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "recovery-advice",
@@ -91,7 +161,17 @@
     {
      "blackbox": "V-004"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
   },
   {
    "id": "plan-authority",
@@ -101,7 +181,17 @@
     {
      "gate": "authority"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "integrated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "temporal-replay",
@@ -114,7 +204,17 @@
     {
      "gate": "engine"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "encrypted-sync",
@@ -128,7 +228,17 @@
      "gate": "server"
     }
    ],
-   "note": "needs a persistent disk; production mode refuses to start without one and without off-host backups"
+   "note": "needs a persistent disk; production mode refuses to start without one and without off-host backups",
+   "axes": {
+    "engineering": "integrated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "server",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "server-backups",
@@ -139,7 +249,17 @@
      "gate": "server"
     }
    ],
-   "note": "tested against a mock S3 that checks signatures and payload hashes; not yet against a real provider"
+   "note": "tested against a mock S3 that checks signatures and payload hashes; not yet against a real provider",
+   "axes": {
+    "engineering": "integrated",
+    "scientific": "not applicable",
+    "data": "simulated",
+    "personalization": "not applicable",
+    "ux": "hidden",
+    "operational": "server",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "adaptive-plan",
@@ -149,7 +269,17 @@
     {
      "gate": "adapt"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
   },
   {
    "id": "personal-response",
@@ -159,7 +289,18 @@
     {
      "gate": "engine"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   },
+   "source": "population priors: 3,500 kcal per lb; 0.5 kcal per step per kg (Hall 2008 on the limits of the 3,500 rule); updated by the person’s Responses"
   },
   {
    "id": "forecasting",
@@ -169,7 +310,17 @@
     {
      "gate": "engine"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "measured"
+   }
   },
   {
    "id": "unified-optimiser",
@@ -179,7 +330,60 @@
     {
      "gate": "engine"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "marginal-returns",
+   "label": "Marginal returns: the next unit of each dose",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "population curves; the sets curve becomes personal (fitted across regions, Bayesian) once the person’s data carry a fifth of it",
+   "source": "Schoenfeld 2017; Pelland 2024; Morton 2018; Paluch 2022; WHO 2020; Wilson 2012; Watson 2015; Garthe 2011; Helms 2014",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "goal-arbitration",
+   "label": "Goal conflicts and arbitration on seven dimensions",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "declared rules; the person chooses which goal leads",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "digital-twin",
@@ -190,7 +394,17 @@
      "gate": "engine"
     }
    ],
-   "note": "a mathematical state model, not a validated twin"
+   "note": "a mathematical state model, not a validated twin",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
   },
   {
    "id": "file-import",
@@ -200,7 +414,17 @@
     {
      "gate": "integration"
     }
-   ]
+   ],
+   "axes": {
+    "engineering": "integrated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "wearable-oauth",
@@ -220,6 +444,16 @@
      "(Fitbit|Withings|Oura)[^.\\n]{0,80}production[- ]ready",
      "live connections? (to|with) (Fitbit|Withings|Oura) (are|is) (ready|available|proven)"
     ]
+   },
+   "axes": {
+    "engineering": "implemented",
+    "scientific": "not applicable",
+    "data": "simulated",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "server",
+    "evidence": "internal",
+    "calibration": "not applicable"
    }
   },
   {
@@ -231,6 +465,16 @@
     "mustNot": [
      "(connects?|syncs?) (to|with) (Garmin|WHOOP|Strava|Polar)"
     ]
+   },
+   "axes": {
+    "engineering": "specified",
+    "scientific": "not applicable",
+    "data": "none",
+    "personalization": "not applicable",
+    "ux": "hidden",
+    "operational": "not applicable",
+    "evidence": "none",
+    "calibration": "not applicable"
    }
   },
   {
@@ -248,7 +492,17 @@
      "AI coach"
     ]
    },
-   "note": "tested against mock providers that check each protocol; not yet against a real provider. Apple Foundation Models need a native app"
+   "note": "tested against mock providers that check each protocol; not yet against a real provider. Apple Foundation Models need a native app",
+   "axes": {
+    "engineering": "integrated",
+    "scientific": "not applicable",
+    "data": "simulated",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "server",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "ai-proposals",
@@ -259,7 +513,17 @@
      "gate": "ai"
     }
    ],
-   "note": "off until consent; read-only tools; validated output; nothing is written until the person confirms"
+   "note": "off until consent; read-only tools; validated output; nothing is written until the person confirms",
+   "axes": {
+    "engineering": "integrated",
+    "scientific": "heuristic",
+    "data": "simulated",
+    "personalization": "population",
+    "ux": "surfaced",
+    "operational": "server",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
   },
   {
    "id": "ocr",
@@ -270,13 +534,92 @@
     "must": [
      "No OCR engine is bundled"
     ]
+   },
+   "axes": {
+    "engineering": "not implemented",
+    "scientific": "none",
+    "data": "none",
+    "personalization": "not applicable",
+    "ux": "hidden",
+    "operational": "not applicable",
+    "evidence": "none",
+    "calibration": "not applicable"
    }
   },
   {
    "id": "body-morphology",
    "label": "Body shape from photos",
    "maturity": "not implemented",
-   "evidence": []
+   "evidence": [],
+   "axes": {
+    "engineering": "not implemented",
+    "scientific": "none",
+    "data": "none",
+    "personalization": "not applicable",
+    "ux": "hidden",
+    "operational": "not applicable",
+    "evidence": "none",
+    "calibration": "not applicable"
+   }
   }
- ]
+ ],
+ "axes": {
+  "engineering": "the single ladder: not implemented → specified → implemented → integrated → surfaced → validated → production-ready",
+  "scientific": [
+   "not applicable",
+   "none",
+   "heuristic",
+   "population evidence",
+   "backtested",
+   "prospectively validated"
+  ],
+  "data": [
+   "none",
+   "simulated",
+   "real data path",
+   "real data at scale"
+  ],
+  "personalization": [
+   "not applicable",
+   "population",
+   "early personal",
+   "personal"
+  ],
+  "ux": [
+   "hidden",
+   "surfaced",
+   "workflow-tested"
+  ],
+  "operational": [
+   "not applicable",
+   "local",
+   "server",
+   "production"
+  ],
+  "evidence": [
+   "none",
+   "internal",
+   "independent",
+   "real-world"
+  ],
+  "calibration": [
+   "not applicable",
+   "insufficient",
+   "measured",
+   "calibrated"
+  ]
+ },
+ "axisRules": {
+  "scientific: population evidence": "needs a cited source",
+  "scientific: backtested": "scored against the person’s own data by a release gate",
+  "scientific: prospectively validated": "not possible yet: no prospective validation exists",
+  "data: real data at scale": "not possible yet",
+  "personalization: personal": "fitted to the person’s own data",
+  "ux: workflow-tested": "needs a black-box workflow",
+  "operational: production": "needs operational evidence",
+  "evidence: independent": "needs a black-box workflow or a gate that checks results independently of the implementation",
+  "evidence: real-world": "not possible yet",
+  "calibration: measured": "interval coverage scored against data",
+  "calibration: calibrated": "measured and within its band"
+ }
 }

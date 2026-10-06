@@ -41,7 +41,10 @@
    "events": [
     "profile.changed",
     "equipment.changed",
-    "settings.changed"
+    "settings.changed",
+    "injury.recorded",
+    "injury.resolved",
+    "inventory.changed"
    ],
    "temporal": "current values; changes are profile and settings events, and each plan version keeps the constraints it was built on",
    "layer": "domains"
@@ -73,7 +76,9 @@
    ],
    "readModel": "currentPlan",
    "events": [
-    "plan.created"
+    "plan.created",
+    "program.customized",
+    "program.changed"
    ],
    "temporal": "effectiveFrom per version; the plan as of any date is the last version effective on it",
    "layer": "decision"
@@ -118,7 +123,13 @@
     "session.retracted",
     "food.logged",
     "observation.added",
-    "execution.marked"
+    "execution.marked",
+    "food.superseded",
+    "food.retracted",
+    "food.mealChanged",
+    "movement.logged",
+    "skill.changed",
+    "session.rated"
    ],
    "temporal": "intended from the plan as of the date; done from what was logged that date; a missing log is unknown, never a failure",
    "layer": "observations"
@@ -139,7 +150,8 @@
     "observation.added",
     "observation.corrected",
     "observation.retracted",
-    "observation.flagged"
+    "observation.flagged",
+    "nutrition.derived"
    ],
    "temporal": "date is what it describes, at is when it was recorded; replay answers as of any date",
    "layer": "observations"
@@ -197,7 +209,8 @@
    ],
    "readModel": "localFoods",
    "events": [
-    "food.logged"
+    "food.logged",
+    "userFood.saved"
    ],
    "temporal": "versioned by save; logged entries keep their own snapshot",
    "layer": "nutrition"
@@ -212,7 +225,8 @@
    "readModel": "pendingPredictions",
    "events": [
     "prediction.stamped",
-    "prediction.scored"
+    "prediction.scored",
+    "model.stage"
    ],
    "temporal": "made on one date about a later one",
    "layer": "models"
@@ -226,7 +240,8 @@
    ],
    "readModel": "snapshotsOf",
    "events": [
-    "snapshot.captured"
+    "snapshot.captured",
+    "record.snapshot"
    ],
    "temporal": "what was known on that day",
    "layer": "models"
@@ -276,6 +291,54 @@
    "temporal": "each transition dated by the record that shows it",
    "layer": "decision"
   },
+  "Undo": {
+   "stores": [],
+   "owners": [
+    "undoInLog"
+   ],
+   "readModel": "_revokedIds",
+   "events": [
+    "events.revoked"
+   ],
+   "temporal": "from the moment it is recorded: replay leaves the revoked events out",
+   "layer": "storage"
+  },
+  "Exposure": {
+   "stores": [
+    "exposures"
+   ],
+   "owners": [
+    "recordResponses"
+   ],
+   "readModel": "exposuresOf",
+   "events": [
+    "exposure.recorded"
+   ],
+   "temporal": "the window after the change, beside the same measure before it",
+   "layer": "models"
+  },
+  "Outcome": {
+   "stores": [
+    "outcomes"
+   ],
+   "owners": [
+    "recordResponses"
+   ],
+   "readModel": "outcomesOf",
+   "events": [
+    "outcome.recorded"
+   ],
+   "temporal": "the window after the change, against its baseline window",
+   "layer": "models"
+  },
+  "Regime": {
+   "stores": [],
+   "owners": [],
+   "readModel": "regimes",
+   "events": [],
+   "temporal": "from its entry to its exit (open while it lasts)",
+   "layer": "models"
+  },
   "Evidence": {
    "stores": [],
    "owners": [],
@@ -322,7 +385,11 @@
    ],
    "readModel": "decisionsOf",
    "events": [
-    "decision.recorded"
+    "decision.recorded",
+    "copilot.authorized",
+    "userRule.added",
+    "userRule.retired",
+    "decision.applied"
    ],
    "temporal": "dated when recorded, with the state it was made from",
    "layer": "decision"
@@ -354,7 +421,7 @@
    ],
    "writers": {
     "adoptMergedEvents": [
-     "24-events.js:563"
+     "24-events.js:565"
     ],
     "action:data.restoreApply": [
      "90-actions.js:649"
@@ -504,7 +571,7 @@
    "writers": {
     "recordResponses": [
      "58-response-entity.js:89",
-     "58-response-entity.js:92"
+     "58-response-entity.js:98"
     ]
    }
   },

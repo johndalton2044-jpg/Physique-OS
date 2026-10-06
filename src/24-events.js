@@ -192,6 +192,8 @@ var EVENT_TYPES={
   'experiment.created':{apply:function(db,e){db.experiments.push(JSON.parse(JSON.stringify(e.data)));}},
   /* a response matures (provisional, then final): the later record replaces the earlier for the same intervention */
   'cycle.recorded':{apply:function(db,e){db.cycles=(db.cycles||[]).filter(function(x){return x.id!==e.data.id;});db.cycles.push(JSON.parse(JSON.stringify(e.data)));}},
+  'exposure.recorded':{apply:function(db,e){db.exposures=(db.exposures||[]).filter(function(x){return x.id!==e.data.id;});db.exposures.push(JSON.parse(JSON.stringify(e.data)));}},
+  'outcome.recorded':{apply:function(db,e){db.outcomes=(db.outcomes||[]).filter(function(x){return x.id!==e.data.id;});db.outcomes.push(JSON.parse(JSON.stringify(e.data)));}},
   'response.recorded':{apply:function(db,e){db.responses=(db.responses||[]).filter(function(x){return x.id!==e.data.id;});db.responses.push(JSON.parse(JSON.stringify(e.data)));}},
   'experiment.evaluated':{apply:function(db,e){var x=db.experiments.filter(function(y){return y.id===e.data.id;})[0];
     if(!x)return;Object.keys(e.data.result).forEach(function(k){x[k]=e.data.result[k];});

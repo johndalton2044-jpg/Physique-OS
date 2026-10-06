@@ -1,0 +1,7 @@
+# Build identities hash source bytes: CRLF checkouts would build different IDs and fail the reproducible gate.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.woff2 binary
+*.gz binary
+*.zip binary

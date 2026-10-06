@@ -32,7 +32,7 @@ function aiCheck(schema,v,at){at=at||'';var e=[];if(!schema)return e;
 var _AI_TRUNC=function(o){var s=JSON.stringify(o);return s.length>4000?s.slice(0,4000)+'\u2026':s;};
 var AI_TOOLS={
   get_state:{description:'Read one part of the person\u2019s current state (a read-only projection of the record).',
-    schema:{type:'object',properties:{part:{type:'string',enum:['goal','constraints','plan','phase','training','nutrition','activity','recovery','bodyComposition','execution','response','evidence','adaptation']}},required:['part']},
+    schema:{type:'object',properties:{part:{type:'string',enum:['goal','constraints','plan','phase','training','nutrition','activity','recovery','bodyComposition','execution','response','evidence','adaptation','vector','capability','regimes']}},required:['part']},
     run:function(a){var s=individualState();return {asOf:s.asOf,part:a.part,value:s[a.part]};}},
   explain_plan:{description:'Why the current plan is what it is: its version, what changed, the reason and the expected outcome.',schema:{type:'object',properties:{}},
     run:function(){var p=currentPlan();if(!p)return {plan:null};return {version:p.version,since:p.effectiveFrom,changes:(p.changes||[]).slice(0,8),reason:p.trigger&&p.trigger.reason,expected:p.trigger&&p.trigger.expected,source:p.trigger&&p.trigger.source};}},

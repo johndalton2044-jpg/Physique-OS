@@ -19,7 +19,7 @@
    sourcing. Full event sourcing is the right end state (see docs/architecture-roadmap.md) but it is a
    rewrite of every mutator, not a layer that can be bolted underneath one.
    ============================================================================ */
-var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses','cycles'];
+var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses','cycles','exposures','outcomes'];
 var PERSIST_SCALARS=['schemaVersion','appVersion','revision','instance','createdAt','profile','settings','ledger','models','demo'];
 /* Save labels are already semantic. This maps them to the collections they can possibly have touched;
    anything unmatched falls back to writing everything, so a new label is slow rather than wrong. */
@@ -31,7 +31,7 @@ var LABEL_COLLECTIONS={
   'food-log:repeat':['foodLogs','observations'],food:['foods'],recipe:['recipes'],favorite:[],
   phase:['phases'],'phase:edit':['phases','interventions'],'phase:end':['phases'],
   decision:['decisions'],'decision:user':['decisions'],intervention:['interventions'],'intervention:user':['interventions'],
-  prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],responses:['responses'],cycles:['cycles'],
+  prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],responses:['responses','exposures','outcomes'],cycles:['cycles'],
   'experiment:evaluate':['experiments','negatives','interventions'],negative:['negatives'],
   snapshot:['snapshots'],archive:['archive','phases'],note:['notes'],
   program:[],settings:[],profile:[],focus:[],'device-test':[],'food-db-version':[],daily:['snapshots'],

@@ -225,6 +225,29 @@ function arbitrateDecision(){
     note:'Arbitration stated rather than emergent. Where two claims sit within ten of each other the decision is contested, and both are shown rather than one being silently dropped.',
     caveat:'Priority is a declared ordering, not a measured one. It encodes a judgement \u2014 that pain and recovery outrank rate \u2014 which is arguable and is therefore visible rather than buried.'};
 }
+/* ---- ARBITRATION (§33), extending arbitrateDecision in place: every claim scored on all seven dimensions ---- */
+var CLAIM_GOAL={recovery:['recover','ease-recovery','favour-strength','protect-muscle'],rate:['lose-faster','keep-pace'],training:['keep-stimulus','keep-volume','favour-strength'],nutrition:['protect-muscle']};
+(function(){var _base=arbitrateDecision;
+  arbitrateDecision=function(){var a=_base();if(!a||a.status!=='ok')return a;var P=DB.settings.goalPriorities||{},chosen=Object.keys(P).map(function(k){return P[k];});
+    var mins=null;try{var M=scheduleModel();mins=(M.minutes&&M.minutes.full)||null;}catch(e){}
+    a.claims.forEach(function(c){var src=String(c.source).toLowerCase(),key=/recover/.test(src)?'recovery':(/rate/.test(src)?'rate':(/train|volume|strength/.test(src)?'training':(/nutri|food|protein/.test(src)?'nutrition':'other')));
+      var verb=String(c.verb||'').toLowerCase();
+      c.dimensions={priority:c.priority,confidence:c.confidence||'low',
+        constraints:/add|more|increase/.test(verb)&&key==='training'&&mins!=null&&mins<45?'conflicts with the session length you set':'none',
+        risk:c.priority<10?'acting against it risks injury or poor recovery':(/cut|reduce|lower/.test(verb)&&key==='rate'?'a faster loss risks lean mass':'low'),
+        reversibility:/programme|program/.test(verb)?'slower to reverse':'easily reversed (a target)',
+        expectedBenefit:(c.why||[])[0]||null,opportunityCost:/add|more/.test(verb)?'more time each week':'none',
+        alignedWithYourChoice:(CLAIM_GOAL[key]||[]).some(function(x){return chosen.indexOf(x)>=0;})};});
+    var safety=a.claims.filter(function(c){return c.priority<10;}),blocked=a.claims.filter(function(c){return c.priority>=10&&c.dimensions.constraints!=='none';}),
+      open=a.claims.filter(function(c){return c.priority>=10&&c.dimensions.constraints==='none';});
+    var conf={high:3,medium:2,low:1,insufficient:0};var score=function(c){return (c.dimensions.alignedWithYourChoice?10:0)+(conf[c.confidence]||1)-(c.dimensions.risk==='low'?0:1)-(/slower/.test(c.dimensions.reversibility)?1:0)-(c.dimensions.opportunityCost==='none'?0:0.5);};
+    var winner=safety.length?safety.sort(function(x,y){return x.priority-y.priority;})[0]:null;
+    if(!winner&&open.length){open.sort(function(x,y){return x.priority-y.priority;});var lead=open[0],tie=open.filter(function(c){return c.priority<=lead.priority+10;});
+      winner=tie.sort(function(x,y){return score(y)-score(x)||x.priority-y.priority;})[0];}
+    if(winner){a.winner=winner;a.contested=a.claims.filter(function(c){return c!==winner&&c.priority<=winner.priority+10;});}
+    a.setAside=blocked.map(function(c){return {source:c.source,verb:c.verb,reason:c.dimensions.constraints};});
+    a.rule='Safety vetoes (priority under 10) lead. A claim that breaks a constraint is set aside and shown. Among claims within ten of the lowest priority, the one aligned with the goal you chose leads, then confidence, risk, reversibility and time cost; all are shown.';
+    a.dimensions=['priority','constraints','risk','confidence','reversibility','expected benefit','opportunity cost'];return a;};})();
 /* ---------------- automation idempotency ----------------
    Work.md names it twice. A background job that runs twice must not produce two of anything. */
 function idempotencyKey(job,date){return job+':'+(date||todayISO());}
