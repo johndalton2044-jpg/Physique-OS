@@ -3663,3 +3663,33 @@ own noise and removing the threshold each turned its intended checks red. On the
 narrower, 0.86 bits in 3 weeks, since nothing is known about it), then training days → weight (20%). Calories and steps
 would narrow by 5%, not worth a test after the steps experiment already run. An experiment-portfolio capability joins
 the ledger. All 36 gates pass (reproducible included); release 24/24; 1,709 self-tests. Stage E is complete.
+
+## Stage F: policy simulation (build 61bea62b51)
+
+The optimiser ranked its options by expected weekly effect; nothing carried them forward. `simulatePolicies()` does,
+for 8 weeks.
+- **The path with no change** is the forecast competition's winning model (`competitionForecast`: the lifecycle's
+  primary, its 80% interval calibrated on its own backtest).
+- **Each change in an option** adds its effect on the weekly rate from the personal response model (population figures
+  where it has none), counted only if it is carried out. One lever with effect m ± s, done with probability p, adds a
+  rate with mean p·m and variance p(s² + m²) − (p·m)²: a mixture of doing it and not. Levers add and are carried out
+  independently, as the optimiser assumes. The effect accumulates from three days after the change.
+- **Against changing nothing** the forecast's own noise is shared, so the difference carries the levers' uncertainty
+  alone.
+- **On screen and in the plan.** The options card shows where each option leaves you in 8 weeks and the path with no
+  change. Choosing an option records the simulated outcome in the plan version's expected result.
+
+The checks compute paths by hand:
+- an effect of −0.5 ± 0.1 lb a week done with probability 0.8 moves the 4-week mean by 0.8 × 0.5 × 25/7 and widens it by
+  that mixture variance;
+- two levers add;
+- a change never done leaves the forecast as it was, and a certain one shifts it without widening it;
+- the no-change path equals the competition's forecast week by week;
+- every option shown is simulated, in the optimiser's order;
+- the plan's expected result names the 8-week outcome.
+
+Ignoring the probability of doing it, dropping the mixture variance, removing the washout, letting the difference
+carry the forecast's noise, and moving the baseline off the competition's forecast each turned their intended checks
+red. On the demo, with no change: 237.9 lb in 8 weeks (231.9 to 243.9) from the 14-day Theil–Sen trend, the forecast that
+has scored best. The suggested option (300 kcal less a day and two cardio sessions a week, a 36% chance of doing all of
+it) moves that by −3.6 lb (−6.7 to −0.5). 1,717 self-tests pass; the full release record is in progress.

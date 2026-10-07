@@ -4232,6 +4232,23 @@ function runSelfTest(opts){
       DB.responses=[];_memoInvalidate();
       ok('the learning loop shows the portfolio behind its next test',loopCard().indexOf('narrower')>=0);
       DB.responses=keepR;DB.experiments=keepX;_memoInvalidate();});
+    /* ---- Policy simulation (Stage F): constructed options with paths computed by hand ---- */
+    (function(){var base=[1,2,3,4].map(function(w){return {week:w,date:addDays(todayISO(),7*w),mean:200,sd:1};}),z=1.2816,t=(28-3)/7;
+      var one=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0.8}]},base),e=one.end,vr=0.8*(0.01+0.25)-0.16,m=200-0.4*t,s=Math.sqrt(1+vr*t*t);
+      ok('a change carried out with probability 0.8 adds 0.8 of its effect, from three days in, with the variance of doing it or not',Math.abs(e.mean-m)<0.006&&Math.abs(e.lo-(m-z*s))<0.006&&Math.abs(e.hi-(m+z*s))<0.006,JSON.stringify([e,m,s]));
+      ok('against changing nothing the forecast’s own noise is shared, so the difference carries the change’s uncertainty alone',Math.abs(one.vsNothing.mean+0.4*t)<0.006&&Math.abs(one.vsNothing.lo-(-0.4*t-z*Math.sqrt(vr)*t))<0.006,JSON.stringify(one.vsNothing));
+      var two=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0.8},{mean:-0.2,sd:0.05,p:0.5}]},base).end,vr2=vr+(0.5*(0.0025+0.04)-0.01),m2=200-0.5*t;
+      ok('two changes add, and are carried out independently',Math.abs(two.mean-m2)<0.006&&Math.abs(two.hi-(m2+z*Math.sqrt(1+vr2*t*t)))<0.006,JSON.stringify([two,m2]));
+      var never=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0}]},base).end,sure=simulateOption({levers:[{mean:-0.5,sd:0,p:1}]},base).end;
+      ok('a change never carried out leaves the forecast as it was; a certain one moves it without widening it',never.mean===200&&Math.abs(never.hi-(200+z))<0.006&&Math.abs(sure.mean-(200-0.5*t))<0.006&&Math.abs((sure.hi-sure.lo)-2*z)<0.01);})();
+    withFixture('successful_cut',function(){var P=simulatePolicies(),O=unifiedOptimiser();
+      if(P.status!=='ok'){ok('the optimiser’s options are simulated forward on a record with a forecast',false,JSON.stringify(P));return;}
+      var L=DB.settings.modelLifecycle&&DB.settings.modelLifecycle.weight,want=L?L.primary:'theil_sen';
+      ok('the path with no change is the forecast competition’s winning model, week by week',P.model===want&&P.baseline.length===8&&P.baseline.every(function(b,i){var f=competitionForecast('weight',7*(i+1));return b.mean===f.mean&&b.lo===f.lo&&b.hi===f.hi;}));
+      ok('every option shown is simulated, in the optimiser’s order',P.options.length===Math.min(5,O.pareto.length)&&P.options.every(function(o,i){return o.label===O.pareto[i].label&&o.path.length===8;}));
+      var keepF=DB.settings.folds;DB.settings.folds=Object.assign({},keepF||{},{'plan-options':true});var card=optimiserCard();DB.settings.folds=keepF;ok('the options card shows where each option leaves you in 8 weeks, and the path with no change',card.indexOf('In 8 weeks about')>=0&&card.indexOf('With no change')>=0);
+      var n0=plansOf().length,res=applyOptimiserChoice(O.pareto[0]),last=plansOf().slice(-1)[0];
+      ok('choosing an option records its simulated outcome in the plan’s expected result',res.status==='ok'&&plansOf().length===n0+1&&/in 8 weeks about/.test(String(last.expected||(last.trigger&&last.trigger.expected)||'')),JSON.stringify(last&&{e:last.expected,t:last.trigger}));});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

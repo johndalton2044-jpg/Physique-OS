@@ -2190,7 +2190,7 @@
   {
    "id": "learning_loop",
    "cls": "DERIVED",
-   "output": "a weekly cycle: each stage’s status, what changed in what the app knows about you, loop health and the next test",
+   "output": "a weekly cycle: each stage’s status, what changed in what the app knows about you, loop health and the next test, chosen by expected information gain across levers",
    "uncertainty": "carried from each stage",
    "inputs": [
     "weight",
@@ -2450,7 +2450,7 @@
   {
    "id": "unified_optimiser",
    "cls": "PREDICTIVE",
-   "output": "the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference",
+   "output": "the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference; each simulated forward with an interval",
    "uncertainty": "combined standard deviation and robustness",
    "inputs": [
     "weight",

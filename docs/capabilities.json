@@ -327,7 +327,7 @@
    "id": "unified-optimiser",
    "label": "Unified optimiser",
    "maturity": "surfaced",
-   "note": "a deeper calorie cut is credited with the everyday movement it is expected to cost: the personal NEAT response (steps a day per 10% deficit, Bayesian from a population prior), applied only to the share of the calorie effect still resting on the population figure",
+   "note": "a deeper calorie cut is credited with the everyday movement it is expected to cost: the personal NEAT response (steps a day per 10% deficit, Bayesian from a population prior), applied only to the share of the calorie effect still resting on the population figure; each option simulated forward 8 weeks (simulatePolicies): the forecast competition’s winning model for the path with no change, plus each change’s effect counted only if carried out, with an 80% interval; the plan records the simulated outcome when an option is chosen",
    "source": "Martin et al. 2007 (CALERIE: spontaneous activity falls under energy restriction)",
    "evidence": [
     {

@@ -48,9 +48,9 @@ function _unifiedOptimiser(opts){opts=opts||{};
   var E={},A={};keys.forEach(function(k){E[k]={};A[k]={};OPT_LEVERS[k].doses.forEach(function(d){if(!d)return;E[k][d]=_leverEffect(k,d,kg);
     A[k][d]=typeof interventionAdherence==='function'?interventionAdherence(k==='training'?'training days':k,d,cur[k]||null):{p:0.7};});});
   var rows=cands.filter(function(c){return keys.some(function(k){return c[k];});}).map(function(c){
-    var eff=0,v=0,effective=0,pAll=1,burden=0,minutes=0,money=0,parts=[],risk=[],bases=[];
+    var eff=0,v=0,effective=0,pAll=1,burden=0,minutes=0,money=0,parts=[],risk=[],bases=[],levers=[];
     keys.forEach(function(k){var d=c[k];if(!d)return;var L=OPT_LEVERS[k],e=E[k][d],ad=A[k][d];
-      eff+=e.mean;v+=e.sd*e.sd;effective+=e.mean*ad.p;pAll*=ad.p;bases.push(L.label+': '+e.basis);
+      eff+=e.mean;v+=e.sd*e.sd;effective+=e.mean*ad.p;pAll*=ad.p;bases.push(L.label+': '+e.basis);levers.push({lever:k,dose:d,mean:e.mean,sd:e.sd,p:ad.p});
       var mins=Math.abs(L.minutesPer*d)*(k==='steps'?1:1);if(k==='steps')mins=L.minutesPer*d*7;minutes+=Math.max(0,d>0||k==='calories'?mins:0);
       burden+=(k==='calories'?L.hungerPer100*Math.abs(d)/100:0)+(mins/600)+(k==='sleep'?0.1:0)+(1-ad.p)*0.3;money+=(L.costPerUnit||0)*Math.max(0,d)*7;
       parts.push(_leverText(k,d));});
@@ -61,7 +61,7 @@ function _unifiedOptimiser(opts){opts=opts||{};
     if(lagging&&c.training<0)risk.push('drops a training day while a priority muscle is lagging');
     var toward=dir===0?-Math.abs(effective):dir*effective,robust=sd>0&&dir!==0?_normCdf(dir*eff/sd):(dir===0?1:0.5);
     return {changes:c,label:parts.join(', ').replace(/\s+/g,' '),effect:round(eff,3),effective:round(effective,3),sd:round(sd,3),pAll:round(pAll,2),toward:round(toward,3),
-      burden:round(burden,2),minutes:Math.round(minutes),money:round(money,1),risk:risk,riskScore:risk.length,robustness:round(robust,2),reversible:'yes: every target can be changed back',projectedRate:proj!=null?round(proj,2):null,bases:bases,
+      burden:round(burden,2),minutes:Math.round(minutes),money:round(money,1),risk:risk,riskScore:risk.length,robustness:round(robust,2),reversible:'yes: every target can be changed back',projectedRate:proj!=null?round(proj,2):null,bases:bases,levers:levers,
       feasible:minutes<=timeBudget&&!(fat!=null&&fat>=7&&(c.cardio>0||c.training>0))};});
   var feasible=rows.filter(function(r){return r.feasible&&(dir===0||r.toward>0)&&!(r.projectedRate!=null&&((dir<0&&r.projectedRate<band[0]-0.25)||(dir>0&&r.projectedRate>band[1]+0.1)));});
   /* the Pareto set: nothing else is at least as good on every count and better on one */
@@ -80,12 +80,37 @@ function _unifiedOptimiser(opts){opts=opts||{};
     assumptions:['effects of separate changes add','carrying them out is independent','the next weeks resemble the last'],limits:'Two weeks is short for a body-composition effect: the Response record judges whether a choice worked.'};}
 function _normCdf(z){var t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;}
 /* the person's choice, applied as a phase change (the Response entity evaluates it later) */
+/* POLICY SIMULATION (Stage F; TRANSITION item 9). Each option carried forward week by week. The forecast competition's
+   winning model (competitionForecast: the lifecycle's primary, its 80% interval calibrated on its own backtest) gives the
+   path if nothing changes; each change in the option adds its effect on the weekly rate from the personal response model
+   (population figures where it has none), counted only if it is carried out. One lever with effect m \u00b1 s, done with
+   probability p, adds a rate with mean p\u00b7m and variance p(s\u00b2 + m\u00b2) \u2212 (p\u00b7m)\u00b2 (a mixture of doing it and not);
+   levers add and are carried out independently, as the optimiser assumes; the effect accumulates over the days it has
+   acted, from three days after the change (the washout). The forecast's noise and the lever's are independent. Against
+   changing nothing the forecast's noise is shared, so the difference carries the levers' uncertainty alone. */
+var POLICY_WASHOUT_DAYS=3;
+function _policyBaseline(weeks){var out=[];for(var w=1;w<=weeks;w++){var f=competitionForecast('weight',7*w);if(!f)return null;out.push({week:w,date:addDays(todayISO(),7*w),mean:f.mean,sd:(f.hi-f.lo)/(2*1.2816),lo:f.lo,hi:f.hi,model:f.model,label:f.label});}return out;}
+function simulateOption(row,base){var mr=0,vr=0;(row.levers||[]).forEach(function(l){mr+=l.p*l.mean;vr+=l.p*(l.sd*l.sd+l.mean*l.mean)-Math.pow(l.p*l.mean,2);});
+  var path=base.map(function(b){var t=Math.max(0,7*b.week-POLICY_WASHOUT_DAYS)/7,m=b.mean+mr*t,s=Math.sqrt(b.sd*b.sd+vr*t*t);
+    return {week:b.week,date:b.date,mean:round(m,2),lo:round(m-1.2816*s,2),hi:round(m+1.2816*s,2),shift:round(mr*t,2),shiftSd:round(Math.sqrt(Math.max(0,vr))*t,3)};});
+  var e=path[path.length-1];return {path:path,end:e,vsNothing:{mean:e.shift,lo:round(e.shift-1.2816*e.shiftSd,2),hi:round(e.shift+1.2816*e.shiftSd,2)}};}
+function simulatePolicies(opts){opts=opts||{};var weeks=opts.weeks||8,O=unifiedOptimiser();
+  if(O.status!=='ok'||!O.pareto.length)return {status:'insufficient',need:['options from the optimiser']};
+  var base=_policyBaseline(weeks);if(!base)return {status:'insufficient',need:['20 weigh-ins, for the forecast competition']};
+  return {status:'ok',cls:'PREDICTIVE',weeks:weeks,model:base[0].model,modelLabel:base[0].label,
+    baseline:base.map(function(b){return {week:b.week,date:b.date,mean:b.mean,lo:b.lo,hi:b.hi};}),
+    options:O.pareto.slice(0,opts.limit||5).map(function(r,i){var s=simulateOption(r,base);return Object.assign({index:i,label:r.label,changes:r.changes,pAll:r.pAll},s);}),
+    method:'the forecast competition\u2019s winning model for the path with no change, plus each change\u2019s effect from your response model, counted only if carried out; 80% intervals',
+    assumptions:['effects of separate changes add','carrying them out is independent','the change acts from three days after it starts and holds steady'],
+    limits:'Weight, not composition; and the further ahead, the more a change in circumstances (illness, travel, a new phase) matters, which no forecast sees.'};}
 function applyOptimiserChoice(row){var ph=activePhase();if(!ph||!row)return {status:'refused'};var patch={};
   Object.keys(row.changes).forEach(function(k){var d=row.changes[k],L=OPT_LEVERS[k];if(!d||!L.field)return;var base=ph[L.field]!=null?ph[L.field]:(k==='steps'?Math.round(mean(seriesWindow('steps',7).map(function(x){return x.value;}))||8000):(k==='training'?4:0));patch[L.field]=Math.max(0,base+d);});
   if(row.changes.sleep)applyProfileFields({sleepTargetH:(DB.profile.sleepTargetH||8)+row.changes.sleep});   /* through the profile's owner */
-  if(Object.keys(patch).length)changePlan({kind:'optimiser choice',source:'optimiser',reason:'You chose: '+row.label,expected:(row.effective>0?'+':'')+row.effective+' lb a week (\u00b1'+round(2*row.sd,2)+'), allowing for a '+Math.round(row.pAll*100)+'% chance of carrying it all out',
+  var sim=null;try{var B=_policyBaseline(8);if(B)sim=simulateOption(row,B);}catch(e){_q(e,'P2');}
+  if(Object.keys(patch).length)changePlan({kind:'optimiser choice',source:'optimiser',reason:'You chose: '+row.label,expected:(row.effective>0?'+':'')+row.effective+' lb a week (\u00b1'+round(2*row.sd,2)+'), allowing for a '+Math.round(row.pAll*100)+'% chance of carrying it all out'+
+    (sim?'; in 8 weeks about '+fmtNum(sim.end.mean,1)+' lb ('+fmtNum(sim.end.lo,1)+' to '+fmtNum(sim.end.hi,1)+'), '+(sim.vsNothing.mean>0?'+':'')+sim.vsNothing.mean+' lb against changing nothing':''),
     apply:function(){return updatePhase(ph.id,patch,{label:'optimiser choice: '+row.label});}});_memoInvalidate();return {status:'ok',patch:patch};}
 (function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='unified_optimiser';}))return;
   MODELS.push({id:'unified_optimiser',name:'Unified intervention optimiser',cls:'PREDICTIVE',version:'1.0',inputs:['weight','steps','calories','fatigue'],minN:7,
     assumes:['effects of separate changes add','carrying them out is independent'],failsWhen:['changes that interact','a regime change in the coming weeks'],
-    output:'the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference',consumers:['optimiserCard'],freshnessDays:7,uncertainty:{kind:'combined standard deviation and robustness'},fn:'unifiedOptimiser'});})();
+    output:'the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference; each simulated forward with an interval',consumers:['optimiserCard','simulatePolicies','applyOptimiserChoice'],freshnessDays:7,uncertainty:{kind:'combined standard deviation and robustness'},fn:'unifiedOptimiser'});})();

@@ -1944,8 +1944,11 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
+    "addDays",
     "round",
+    "fmtNum",
     "mean"
    ],
    "20-schema-storage.js": [
@@ -1960,6 +1963,9 @@
    "40-models.js": [
     "tissueKcalPerLb",
     "energyBalance"
+   ],
+   "58-model-competition.js": [
+    "competitionForecast"
    ],
    "58-plan.js": [
     "changePlan"
@@ -3882,6 +3888,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_q",
     "round",
     "fmtNum",
     "esc",
@@ -3898,6 +3905,7 @@
    ],
    "73-unified-optimiser.js": [
     "unifiedOptimiser",
+    "simulatePolicies",
     "applyOptimiserChoice"
    ],
    "80-ui.js": [
@@ -4770,7 +4778,8 @@
     "runLearningCycle"
    ],
    "58-model-competition.js": [
-    "evaluateCompetition"
+    "evaluateCompetition",
+    "competitionForecast"
    ],
    "58-phase-criteria.js": [
     "phaseCriteriaStatus"
@@ -5029,6 +5038,8 @@
    "73-unified-optimiser.js": [
     "_leverEffect",
     "unifiedOptimiser",
+    "simulateOption",
+    "simulatePolicies",
     "applyOptimiserChoice"
    ],
    "75-gaps.js": [
@@ -5256,6 +5267,9 @@
     "automationMatches",
     "runAutomationsFor",
     "runShortcut"
+   ],
+   "90-optimiser-ui.js": [
+    "optimiserCard"
    ],
    "90-responses.js": [
     "loopCard"
