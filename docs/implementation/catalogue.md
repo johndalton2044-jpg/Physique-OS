@@ -4,7 +4,7 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 44 |
+| models | 45 |
 | capabilities | 22 |
 | entity contracts | 27 |
 | commands | 538 |
@@ -74,4 +74,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- added model: personal_neat_response
+- added model: body_composition_state

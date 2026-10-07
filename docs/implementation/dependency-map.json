@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-06T23:47:09.313Z",
-  "buildId": "6c47545fdc",
-  "nodes": 99,
-  "edges": 269,
-  "contractDerived": 87,
+  "generatedAt": "2026-10-07T00:08:02.382Z",
+  "buildId": "1a3e16e592",
+  "nodes": 100,
+  "edges": 275,
+  "contractDerived": 88,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -377,6 +377,11 @@
     },
     {
       "sourceId": "weight_trend",
+      "targetId": "body_composition_state",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
       "targetId": "personal_neat_response",
       "dependencyType": "model"
     },
@@ -598,6 +603,11 @@
     {
       "sourceId": "waist",
       "targetId": "fat_vs_other",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "waist",
+      "targetId": "body_composition_state",
       "dependencyType": "data"
     },
     {
@@ -956,6 +966,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "muscle_risk",
+      "targetId": "body_composition_state",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "steps",
       "targetId": "adherence",
       "dependencyType": "data"
@@ -1297,6 +1312,11 @@
     },
     {
       "sourceId": "bodyfat",
+      "targetId": "body_composition_state",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "bodyfat",
       "targetId": "physique_regions",
       "dependencyType": "data"
     },
@@ -1328,6 +1348,16 @@
     {
       "sourceId": "supplement_adherence",
       "targetId": "supplementsCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "body_composition_state",
+      "targetId": "physiqueCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "body_composition_state",
+      "targetId": "stateVector",
       "dependencyType": "model"
     },
     {

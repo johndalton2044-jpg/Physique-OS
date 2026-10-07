@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "6c47545fdc",
+ "build": "1a3e16e592",
  "models": [
   {
    "id": "adherence",
@@ -11,6 +11,11 @@
    "id": "appetite",
    "cls": "HEURISTIC",
    "fn": "appetiteState"
+  },
+  {
+   "id": "body_composition_state",
+   "cls": "EMPIRICAL",
+   "fn": "bodyCompositionState"
   },
   {
    "id": "bodycomp_circ",

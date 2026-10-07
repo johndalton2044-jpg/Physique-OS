@@ -3507,4 +3507,4 @@ same rate; no anchor means no masses. Removing the measurements and inventing ma
 Consumers: the physique card's "Fat and lean" row and four state-vector components (fat and lean rate; fat and lean mass
 when anchored). On the demo: fat −0.86 lb a week (−1.17 to −0.55), lean −0.12 (−0.45 to +0.20), 4% from its body-fat
 readings and waist, which are imprecise against a clear weight trend. A body-composition capability joins the ledger at
-"early personal". 1,667 self-tests pass; the full release record is in progress.
+"early personal". All 36 gates pass (reproducible included); release 24/24; 1,667 self-tests.

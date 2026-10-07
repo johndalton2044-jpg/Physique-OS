@@ -1,6 +1,6 @@
-# Release 6c47545fdc
+# Release 1a3e16e592
 
-Release id cf47f216473e · schema 2 · generated 2026-10-06T23:47:56.674Z
+Release id d226d1e3c799 · schema 2 · generated 2026-10-07T00:08:54.316Z
 
 **24 of 24 verification items pass**
 
@@ -8,16 +8,16 @@ Release id cf47f216473e · schema 2 · generated 2026-10-06T23:47:56.674Z
 
 | # | Item | Status | Evidence |
 |---|---|---|---|
-| 1 | Build | PASS | recorded against build 6c47545fdc: food data verified: fdc-2026-04-30, 1107 files · {"build":"6c47545fdc","release":"cf47f216473e","inputs":177,"version":"1.0.0 |
-| 2 | Engine | PASS | recorded against build 6c47545fdc: 65 passed, 0 failed  (1659 in-app self-test checks) |
-| 3 | Unit tests (in-app self-tests) | PASS | engine: recorded against build 6c47545fdc: 65 passed, 0 failed  (1659 in-app self-test checks) · shipped: recorded against build 6c47545fdc: pass  a second run  |
-| 4 | DOM tests | PASS | recorded against build 6c47545fdc: pass  with no layout measurement it falls back to the document end rather than failing · 399 passed, 0 failed |
-| 5 | Browser tests | PASS | recorded against build 6c47545fdc: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1 |
-| 6 | Audit | PASS | recorded against build 6c47545fdc: 124 passed, 0 finding(s): 0 P0, 0 P1, 0 P2 |
-| 7 | Conformance | PASS | recorded against build 6c47545fdc: 0 finding(s): 0 P1, 0 P2 |
-| 8 | Adversarial tests | PASS | recorded against build 6c47545fdc: 62 passed, 0 failed |
-| 9 | Performance tests | PASS | recorded against build 6c47545fdc: all operations within budget |
-| 10 | Cloud E2E | PASS | recorded against build 6c47545fdc: log lines: 17 |
+| 1 | Build | PASS | recorded against build 1a3e16e592: food data verified: fdc-2026-04-30, 1107 files · {"build":"1a3e16e592","release":"d226d1e3c799","inputs":177,"version":"1.0.0 |
+| 2 | Engine | PASS | recorded against build 1a3e16e592: 65 passed, 0 failed  (1667 in-app self-test checks) |
+| 3 | Unit tests (in-app self-tests) | PASS | engine: recorded against build 1a3e16e592: 65 passed, 0 failed  (1667 in-app self-test checks) · shipped: recorded against build 1a3e16e592: pass  a second run  |
+| 4 | DOM tests | PASS | recorded against build 1a3e16e592: pass  with no layout measurement it falls back to the document end rather than failing · 399 passed, 0 failed |
+| 5 | Browser tests | PASS | recorded against build 1a3e16e592: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1 |
+| 6 | Audit | PASS | recorded against build 1a3e16e592: 124 passed, 0 finding(s): 0 P0, 0 P1, 0 P2 |
+| 7 | Conformance | PASS | recorded against build 1a3e16e592: 0 finding(s): 0 P1, 0 P2 |
+| 8 | Adversarial tests | PASS | recorded against build 1a3e16e592: 62 passed, 0 failed |
+| 9 | Performance tests | PASS | recorded against build 1a3e16e592: all operations within budget |
+| 10 | Cloud E2E | PASS | recorded against build 1a3e16e592: log lines: 17 |
 | 11 | Replay verification | PASS | {"leaks":0,"future":0,"decided":true} |
 | 12 | Migration verification | PASS | {"upgraded":true,"applied":1,"newerRefused":true,"junkRefused":true} |
 | 13 | Provenance verification | PASS | {"audit":true,"missing":[]} |
@@ -25,11 +25,11 @@ Release id cf47f216473e · schema 2 · generated 2026-10-06T23:47:56.674Z
 | 15 | Dependency invalidation verification | PASS | {"reachesTrend":true,"reachesTdee":true,"identityChanges":true} |
 | 16 | Accessibility verification | PASS | browser gate: contrast and 44px targets at 6 viewports; audit: labels, focus, reachability |
 | 17 | Responsive verification | PASS | browser gate: 6 viewports × 12 tabs and every form sheet |
-| 18 | Visual regression verification | PASS | recorded against build 6c47545fdc: all passed |
+| 18 | Visual regression verification | PASS | recorded against build 1a3e16e592: all passed |
 | 19 | Export/import round trips | PASS | {"experiment":"ok","appearance":"ok","dashboard":"ok","visualizationPreset":"ok"} |
-| 20 | Model reproducibility | PASS | 44 models (from the live registry), identical results and run identities across independent loads at a pinned time |
-| 21 | Production build | PASS | recorded against build 6c47545fdc: data/reference: 2 files verified · dist verified. |
-| 22 | Release manifest | PASS | build 6c47545fdc, release cf47f216473e, 177 hashed inputs |
+| 20 | Model reproducibility | PASS | 45 models (from the live registry), identical results and run identities across independent loads at a pinned time |
+| 21 | Production build | PASS | recorded against build 1a3e16e592: data/reference: 2 files verified · dist verified. |
+| 22 | Release manifest | PASS | build 1a3e16e592, release d226d1e3c799, 177 hashed inputs |
 | 23 | Architecture/conformance report | PASS | docs/implementation/governance-report.md |
 | 24 | Capability maturity report | PASS | docs/release/capability-maturity.md |
 
