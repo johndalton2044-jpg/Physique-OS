@@ -4,13 +4,13 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 45 |
+| models | 49 |
 | capabilities | 22 |
 | entity contracts | 27 |
 | commands | 540 |
 | sheets | 120 |
 | event types | 52 |
-| observation types | 34 |
+| observation types | 39 |
 | exercises | 159 |
 | movement patterns | 28 |
 | progression families | 18 |
@@ -74,4 +74,12 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- none
+- added model: personal_conditioning_response
+- added model: personal_mobility_response
+- added model: personal_power_response
+- added model: personal_speed_response
+- added observationType: cmj
+- added observationType: hrr
+- added observationType: kneewall
+- added observationType: sitreach
+- added observationType: sprint

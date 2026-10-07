@@ -3932,4 +3932,4 @@ response says what it needs. A capacity-responses capability joins the ledger as
 The black-box harness gains `ui.waitFor` (a state reached asynchronously). V-014 waits only on conditions (CLAUDE.md
 rule 12), and choosing a level through the Display card now waits until the level applies instead of a fixed 80 ms
 (V-011, V-012 and V-013 use it). With the Fitness tests save disabled, V-014 times out waiting for the Log page.
-1,773 self-tests pass; the full release record is in progress.
+All 36 gates pass (reproducible included); release 24/24; 1,773 self-tests.

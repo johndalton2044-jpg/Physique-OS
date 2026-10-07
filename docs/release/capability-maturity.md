@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build 61bd73d843. Every status is derived from evidence the build can check; none is assigned by hand.
+Build 7dd314744b. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -63,6 +63,10 @@ Build 61bd73d843. Every status is derived from evidence the build can check; non
 | intervention_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | personal_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | friction | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_mobility_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_conditioning_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_power_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_speed_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | cardio_fitness_latent | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | hydration_balance | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | supplement_efficacy | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
