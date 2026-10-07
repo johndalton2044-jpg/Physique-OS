@@ -3761,4 +3761,4 @@ The known answers: a scale exactly on the line, and hand entries 1 lb heavier wi
 
 Not fusing, not correcting lone readings, calibrating on later readings, ignoring the preference, contradicting nothing
 and ignoring quality each turned their checks red. The demo's weight has one source, so nothing in it changes. A
-sensor-fusion capability joins the ledger. 1,731 self-tests pass; the full release record is in progress.
+sensor-fusion capability joins the ledger. All 36 gates pass (reproducible included); release 24/24; 1,731 self-tests.
