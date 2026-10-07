@@ -4364,6 +4364,31 @@ function runSelfTest(opts){
       ok('while a level chosen on another device, which arrives as an event, still wins',DB.settings.detail==='developer');});
     withFixture('normal_loss',function(){DB.settings.detail='insightful';loadDemo();var a=DB.settings.detail;DB.settings.detail='casual';loadDemo();var b=DB.settings.detail;
       ok('loading the demo replaces the record but keeps the detail level the person chose',a==='insightful'&&b==='casual');});
+    /* UNDO REACHES BACK ACROSS A RESTORE MERGE. A restore merge restarts the log from the merged record, so an undo of it,
+       or of anything before it, restarts the log again from the record the undo put back: checked after a restart, and on
+       a second device that syncs afterwards, which must converge on the same record. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedStack=_undoStack.slice();
+      try{var T=todayISO(),restart=function(){var stored=_EVENTS.slice();_EVENTS.length=0;adoptMergedEvents(mergeEvents([],stored));};
+        var has=function(id,db){return (db||DB).observations.some(function(o){return o.id===id&&!o.retracted;});};
+        /* the restore merge exactly as Data → Restore → Merge applies it */
+        var restoreMerge=function(backup){pushUndo('restore');var m=migrate(JSON.parse(JSON.stringify(backup)));mergeRecordCollections(m.db);resetEventLog('record restored from a backup');};
+        DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;clearUndo();resetEventLog('restore undo test');_memoInvalidate();
+        var keep=addObservation({type:'weight',date:addDays(T,-2),value:211,source:'manual'},{noSave:true});
+        var bk=JSON.parse(JSON.stringify(DB)),x={id:'obs-from-backup',type:'weight',date:addDays(T,-5),value:215,unit:'lb',source:'manual',at:addDays(T,-5)+'T08:00:00.000Z',createdAt:addDays(T,-5)+'T08:00:00.000Z',quality:'measured'};bk.observations.push(x);
+        var shared=_EVENTS.slice(),p=addObservation({type:'waist',date:T,value:38,source:'manual'},{noSave:true});
+        restoreMerge(bk);undo();restart();
+        ok('undoing a restore merge stays undone after a restart: the backup’s entry is gone, what came before it stays',!has(x.id)&&has(p.id)&&has(keep.id)&&projectionMatchesRecord().ok);
+        restoreMerge(bk);undo();undo();restart();
+        ok('undo reaches back across a restore merge: the entry made before it is undone too, and stays undone after a restart',!has(x.id)&&!has(p.id)&&has(keep.id)&&projectionMatchesRecord().ok);
+        var B=projectEvents(mergeEvents(shared,_EVENTS.slice()).events).db;
+        ok('another device that syncs afterwards converges on the same record: neither the backup’s entry nor the undone one',!has(x.id,B)&&!has(p.id,B)&&has(keep.id,B));
+        DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;clearUndo();resetEventLog('restore undo test 2');_memoInvalidate();
+        var k2=addObservation({type:'weight',date:addDays(T,-2),value:211,source:'manual'},{noSave:true}),bk2=JSON.parse(JSON.stringify(DB));bk2.observations.push(x);
+        restoreMerge(bk2);var synced=_EVENTS.slice();undo();var B2=projectEvents(mergeEvents(synced,_EVENTS.slice()).events).db;
+        ok('a device that already had the restored record loses the backup’s entry when it syncs the undo',!has(x.id,B2)&&has(k2.id,B2));
+      }finally{DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();}
+    })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

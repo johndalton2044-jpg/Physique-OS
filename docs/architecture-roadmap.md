@@ -3863,3 +3863,19 @@ whatever level the record opened at, so they now check it at Insightful, where t
 what it drops (the position rail and the palette) and keeps (the action rail and the log button); removing the Casual
 rule turns that check red. All 36 gates pass (reproducible included); release 24/24; 1,759 self-tests and the black-box
 workflows.
+
+## Undo reaches back across a restore merge (build 61bd73d843)
+
+A decision carried from earlier work, checked rather than built: undo should reach back across a restore merge. It
+already does, and the record now proves it. A restore merge restarts the event log from the merged record, so an undo
+of it, or of anything recorded before it, restarts the log again from the record the undo put back. Self-tests apply a
+restore merge exactly as Data → Restore → Merge does and then check:
+- undoing it leaves the backup's entry gone and the earlier entry in place, after the record is rebuilt from its log;
+- undoing it and the entry made before it removes both, and they stay removed;
+- another device that syncs afterwards converges on the same record;
+- a device that had already synced the restored record loses the backup's entry when it syncs the undo.
+
+Letting an undo of a restore revoke nothing, as an undo of a sync merge does, turned the checks red. The open question
+was misnamed earlier. It is about a different merge: undoing a sync merge of another device's changes is still not
+durable, because making it so would delete that device's entries on every device. That remains a decision for the
+person. 1,763 self-tests pass; the full release record is in progress.
