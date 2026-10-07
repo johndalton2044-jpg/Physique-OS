@@ -258,6 +258,9 @@
    "79-rigour.js": [
     "tissueEnergyDensity"
    ],
+   "85-latent.js": [
+    "neatOffset"
+   ],
    "96-bayes-engine.js": [
     "_logistic",
     "runIdentity"
@@ -695,7 +698,6 @@
     "round",
     "fmtNum",
     "mean",
-    "sd",
     "theilSen",
     "fmtWeight",
     "fmtRate"
@@ -720,6 +722,9 @@
     "uncertaintyChain",
     "responseFor",
     "counterfactual"
+   ],
+   "58-response-entity.js": [
+    "_rangeSeries"
    ],
    "79-rigour.js": [
     "kcalToLb"
@@ -1101,6 +1106,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "nowISO",
     "addDays",
@@ -1154,6 +1160,9 @@
    ],
    "64-physique.js": [
     "physiqueRate"
+   ],
+   "94-causal.js": [
+    "responseCausal"
    ]
   }
  },
@@ -1161,13 +1170,17 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
-    "round"
+    "round",
+    "mean"
    ],
    "20-schema-storage.js": [
     "memo"
    ],
    "61-physiology.js": [
     "_kgNow"
+   ],
+   "96-bayes-engine.js": [
+    "hierarchicalPosterior"
    ]
   }
  },
@@ -1221,8 +1234,12 @@
    "58-model-competition.js": [
     "_e1rmTop"
    ],
+   "61-physiology.js": [
+    "cardioFitnessModel"
+   ],
    "64-physique.js": [
-    "physiqueModel"
+    "physiqueModel",
+    "bodyCompositionState"
    ]
   }
  },
@@ -1556,21 +1573,37 @@
     "todayISO",
     "addDays",
     "daysBetween",
+    "clamp",
     "round",
     "mean",
     "_medianOf"
    ],
    "30-observations.js": [
+    "asOf",
     "activePhase",
     "obsOf",
+    "latestObs",
     "seriesWindow",
     "sessionsOf"
+   ],
+   "40-models.js": [
+    "prof",
+    "weightTrend",
+    "navyBodyFat",
+    "muscleRetentionRisk"
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
    ],
    "64-exercise.js": [
     "resolveExercise"
+   ],
+   "79-rigour.js": [
+    "tissueEnergyDensity"
+   ],
+   "96-bayes-engine.js": [
+    "bayesUpdate",
+    "hierarchicalPosterior"
    ]
   }
  },
@@ -1900,6 +1933,10 @@
     "updatePhase",
     "applyProfileFields"
    ],
+   "40-models.js": [
+    "tissueKcalPerLb",
+    "energyBalance"
+   ],
    "58-plan.js": [
     "changePlan"
    ],
@@ -1918,6 +1955,9 @@
    "64-physique.js": [
     "physiqueModel",
     "physiqueRate"
+   ],
+   "85-latent.js": [
+    "neatOffset"
    ]
   }
  },
@@ -2622,6 +2662,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "todayISO",
     "addDays",
     "daysBetween",
     "round",
@@ -2629,11 +2670,15 @@
     "sd",
     "theilSen"
    ],
+   "20-schema-storage.js": [
+    "memo"
+   ],
    "30-observations.js": [
     "asOf",
     "withAsOf",
     "activePhase",
     "obsOf",
+    "dailySeries",
     "seriesWindow",
     "sessionsOf"
    ],
@@ -2641,7 +2686,9 @@
     "currentWeight",
     "weightTrend",
     "bmrPrior",
+    "tissueKcalPerLb",
     "tdeePersonal",
+    "tdeeEstimate",
     "energyBalance"
    ],
    "48-domains-more.js": [
@@ -2657,6 +2704,9 @@
    "61-conditioning.js": [
     "conditioningState",
     "_weekKey"
+   ],
+   "61-physiology.js": [
+    "_kgNow"
    ],
    "62-food.js": [
     "_liveFoodLogs"
@@ -2820,7 +2870,8 @@
    "94-causal.js": [
     "dagValidate",
     "_allPaths",
-    "adjustmentSet"
+    "adjustmentSet",
+    "deliberateChangeEffect"
    ],
    "96-bayes-engine.js": [
     "propensityScoreModel"
@@ -3847,6 +3898,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_q",
     "round",
     "esc"
    ],
@@ -3855,7 +3907,8 @@
    ],
    "64-physique.js": [
     "physiquePriorities",
-    "physiqueModel"
+    "physiqueModel",
+    "bodyCompositionState"
    ],
    "80-ui.js": [
     "uiCard",
@@ -3912,6 +3965,9 @@
    ],
    "90-actions.js": [
     "registerAction"
+   ],
+   "94-causal.js": [
+    "responseCausal"
    ]
   }
  },
@@ -4096,6 +4152,9 @@
    "82-views-a.js": [
     "renderAll"
    ],
+   "85-latent.js": [
+    "personalNeatResponse"
+   ],
    "85-log-sheet.js": [
     "openSheet",
     "closeSheet",
@@ -4230,16 +4289,37 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "todayISO",
+    "addDays",
+    "daysBetween",
     "round",
     "mean",
     "median",
     "sd"
    ],
    "30-observations.js": [
+    "activePhase",
+    "obsOf",
     "seriesWindow"
    ],
    "50-decision.js": [
     "lagCorrelation"
+   ],
+   "54-scenarios.js": [
+    "interruptedTimeSeries"
+   ],
+   "58-response-entity.js": [
+    "_rangeSeries",
+    "_slopePerWeek",
+    "_levelChange",
+    "responseInterventions",
+    "responsesOf"
+   ],
+   "58-state-vectors.js": [
+    "regimes"
+   ],
+   "98-measurement.js": [
+    "_tCrit"
    ]
   }
  },
@@ -4493,6 +4573,8 @@
     "tissueKcalSd",
     "tdeePersonal",
     "tdeeEstimate",
+    "energyBalance",
+    "navyBodyFat",
     "rateBand",
     "canonicalGoal",
     "goalTrajectory",
@@ -4702,6 +4784,7 @@
    "58-response-model.js": [
     "RESPONSE_PRIORS",
     "_perUnit",
+    "poolResponseContexts",
     "personalResponseModel",
     "predictResponse"
    ],
@@ -4750,10 +4833,12 @@
     "cardioNormalisationAudit"
    ],
    "61-physiology.js": [
+    "_kgNow",
     "cardioIntensityClass",
     "_vo2Prior",
     "_modalityFamily",
     "cardioFitnessObservation",
+    "vo2Trend",
     "hydrationModel",
     "energyAvailability",
     "_foodGroup",
@@ -4825,8 +4910,10 @@
    ],
    "64-physique.js": [
     "physiqueModel",
+    "poolRegionalTrends",
     "exerciseRedundancy",
     "physiqueRate",
+    "bodyCompositionState",
     "bodyCompositionByMethod"
    ],
    "65-import.js": [
@@ -4912,6 +4999,7 @@
     "captureRequest"
    ],
    "73-unified-optimiser.js": [
+    "_leverEffect",
     "unifiedOptimiser",
     "applyOptimiserChoice"
    ],
@@ -5038,6 +5126,7 @@
     "waterGlycogenState",
     "adaptiveThermogenesis",
     "neatCompensation",
+    "personalNeatResponse",
     "distributedLag",
     "absorptionContext",
     "_dailyLoad",
@@ -5187,6 +5276,7 @@
     "adjustmentSet",
     "propensityAnalysis",
     "negativeControlCheck",
+    "deliberateChangeEffect",
     "poolNofOne"
    ],
    "94-navigation.js": [

@@ -4072,6 +4072,105 @@ function runSelfTest(opts){
       ok('an outcome without 14 paired days is not estimated',R.outcomes.filter(function(o){return o.key==='steps';})[0].status==='insufficient');
       ok('sleep that does not vary cannot show an effect',personalSleepResponse({sleep:sl.map(function(o){return {date:o.date,value:7};}),fatigue:fa,hunger:hu,performance:{},steps:[]}).outcomes[0].status==='insufficient');
       ok('the sleep response states it is an association, not proof of cause',/not proof of cause/.test(R.limits));})();
+    /* ---- Stage D: personal NEAT response (simulated from a known slope) ---- */
+    (function(){var gen=function(b,dpcts,noise){return dpcts.map(function(d,i){return {week:'w'+i,deficitPct:d,steps:9000+b*d/10+(noise?noise[i]:0)};});};
+      var D=[0,5,10,15,20,25,12,8],R=personalNeatResponse(gen(-800,D,[60,-40,30,-70,50,-20,10,-30]));
+      ok('a known NEAT decline (\u2212800 steps a day per 10% deficit) is recovered inside its interval',R.status==='ok'&&R.interval[0]<=-800&&R.interval[1]>=-800&&Math.abs(R.perTenPct+800)<60&&R.personalWeight>0.5,JSON.stringify(R.interval));
+      ok('it says the person\u2019s steps fall, in their units',/steps fall about \d+ a day for each 10% deficit/.test(R.reading));
+      var Z=personalNeatResponse(gen(0,D,[300,-250,200,-350,280,-200,150,-120]));
+      ok('no response leaves the interval around zero, pulled toward the small-decline prior',Z.status==='ok'&&Z.interval[0]<0&&Z.interval[1]>0&&Z.perTenPct<0&&Z.perTenPct>-250);
+      ok('a steady deficit cannot show a response',personalNeatResponse(gen(-800,[15,15,16,15,14,15,15])).status==='insufficient');
+      ok('fewer than six weeks are not estimated',personalNeatResponse(gen(-800,[0,10,20,5,15])).status==='insufficient');
+      ok('the NEAT response states what it cannot tell apart',/deliberate walks/.test(R.limits)&&/not proof of cause/.test(R.limits));
+      /* the optimiser: a 300 kcal cut, its effect on the population figure, gives back what the prior says the steps cost */
+      withFixture('normal_loss',function(){ok('the fixture is too short for a personal NEAT response, so the prior applies',personalNeatResponse().status==='insufficient');
+        var t=tdeeEstimate(),kg=_kgNow(),p=predictResponse('calories','weight',-300),e=_leverEffect('calories',-300,kg);
+        var steps=NEAT_PRIOR.mean*(100*300/t.value/10),kcal=steps*0.0005*kg,expect=p.mean+(-kcal*7/tissueKcalPerLb())*(1-(p.personalWeight||0));
+        ok('a deeper calorie cut is credited with the everyday movement it tends to cost',Math.abs(e.mean-expect)<0.002&&e.mean>p.mean&&/everyday movement/.test(e.basis),round(e.mean,3)+' vs '+round(expect,3)+' (plain '+p.mean+')');
+        var eb=energyBalance();ok('the energy balance states the movement its deficit is expected to cost',eb.status!=='ok'||eb.balance>=0||(eb.neat&&eb.neat.steps<0&&eb.neat.kcal<0));});})();
+    /* ---- Stage D: body-composition latent state (from stated inputs; expectations from precision arithmetic) ---- */
+    (function(){var d0='2026-01-01',pts=function(bf0,step,n,w){var o=[];for(var i=0;i<n;i++){var bf=bf0+step*i;o.push({date:addDays(d0,14*i),fat:w*bf/100,bf:bf});}return o;};
+      var base={trend:{slope:-1.0,se:0.1},share:{mean:0.75,sd:0.1,basis:'test'},methods:[],anchor:null};
+      var P=bodyCompositionState(base),pm=0.75*-1.0,psd=Math.sqrt(0.1*0.1*1+0.75*0.75*0.01+0.0025);
+      ok('with no measurements the fat rate is the partition prior, and it says so',Math.abs(P.fatRate.mean-pm)<0.005&&Math.abs(P.fatRate.sd-psd)<0.005&&P.measuredShare===0&&/population assumption/.test(P.reading));
+      ok('lean is the remainder of the weight trend',Math.abs(P.leanRate.mean-(-1.0-pm))<0.005&&Math.abs(P.leanRate.sd-Math.sqrt(0.01+psd*psd))<0.005);
+      ok('without a recent measured reading no masses are given',P.masses===null&&!P.anchored);
+      /* DEXA (error 1.5 points) at 200 lb: fat falls 0.5 lb a week; the posterior is the precision-weighted mean */
+      var dexa=pts(25,-0.35,7,200),M=bodyCompositionState(Object.assign({},base,{methods:[{method:'DEXA',se:1.5,points:dexa}],anchor:{bf:dexa[6].bf,method:'DEXA',date:dexa[6].date,se:1.5,weight:200}}));
+      var t=[0,2,4,6,8,10,12],tm=6,sxx=t.reduce(function(a,x){return a+(x-tm)*(x-tm);},0),oSd=200*0.015/Math.sqrt(sxx),oV=-0.35;
+      var want=(pm/(psd*psd)+oV/(oSd*oSd))/(1/(psd*psd)+1/(oSd*oSd));
+      ok('a measured fat trend moves the estimate by its precision (DEXA: \u22120.35 lb a week against a \u22120.75 prior)',Math.abs(M.fatRate.mean-want)<0.01&&M.fatRate.mean>pm&&M.measuredShare>0.15&&M.measuredShare<0.25,round(M.fatRate.mean,3)+' vs '+round(want,3));
+      ok('a recent measured reading anchors fat and lean masses, with trajectories that widen away from now',M.anchored&&Math.abs(M.masses.fat.mean-200*dexa[6].bf/100)<0.01&&M.trajectory[0].fat.sd>M.trajectory[4].fat.sd);
+      /* two methods with a fixed 6-point offset, both falling at the same rate: read separately, the offset is not change */
+      var bia=pts(31,-0.35,7,200),X=bodyCompositionState(Object.assign({},base,{methods:[{method:'DEXA',se:1.5,points:dexa},{method:'BIA scale',se:3.5,points:bia}]}));
+      ok('a fixed offset between methods does not read as change',X.methods.length===2&&X.methods.every(function(m){return Math.abs(m.fatPerWeek+0.35)<0.01;}));
+      ok('the latent state states its limits',/water/.test(P.limits)&&/not calibrated against each other/.test(P.limits));
+      ok('the circumference equation is the one bodyComp uses',Math.abs(navyBodyFat('male',70,36,15)-(86.010*Math.log10(21)-70.041*Math.log10(70)+36.76))<1e-9);})();
+    /* ---- Stage D: aerobic-capacity trend (simulated from a known slope) ---- */
+    (function(){var d0='2026-03-01',gen=function(b,n,noise){var o=[];for(var i=0;i<n;i++)o.push({date:addDays(d0,9*i),estimate:42+b*(9*i)/30+(noise?noise[i%noise.length]:0),sd:2});return o;};
+      var R=vo2Trend(gen(1.2,12,[0.6,-0.4,0.3,-0.6,0.2,-0.1]));
+      ok('a known rise in VO2max (+1.2 ml/kg/min a month) is recovered inside its interval',R.status==='ok'&&R.interval[0]<=1.2&&R.interval[1]>=1.2&&R.perMonth>0.6,JSON.stringify(R.interval));
+      var Z=vo2Trend(gen(0,12,[1.5,-1.2,0.8,-1.5,1.1,-0.7]));ok('a steady level leaves the trend interval around zero',Z.status==='ok'&&Z.interval[0]<0&&Z.interval[1]>0);
+      ok('three sessions, or four within a fortnight, are not a trend',vo2Trend(gen(1.2,3)).status==='insufficient'&&vo2Trend(gen(1.2,4).map(function(o,i){o.date=addDays(d0,3*i);return o;})).status==='insufficient');
+      var C=capabilityVector();ok('the capability vector\u2019s endurance entry carries capacity, or says what it needs, beside the minutes',C.endurance.cardioMinutesPerWeek!=null&&!!C.endurance.capacity&&(C.endurance.capacity.vo2max!=null||(C.endurance.capacity.need||[]).length>0));})();
+    /* ---- Stage E: hierarchical personalisation (properties that follow from the model, not its own numbers) ---- */
+    (function(){var same=hierarchicalPosterior([{id:'a',value:2,sd:1},{id:'b',value:2,sd:1},{id:'c',value:2,sd:1}]);
+      ok('identical units each end at the shared value, and borrowing narrows each below its own sd',same.rows.every(function(r){return Math.abs(r.posterior-2)<1e-6&&r.posteriorSd<1&&r.posteriorSd>0;}));
+      var far=hierarchicalPosterior([{id:'a',value:10,sd:0.2},{id:'b',value:-10,sd:0.2},{id:'c',value:0,sd:0.2}]);
+      ok('units far apart and precisely measured keep their own values and roughly their own sd',far.rows.every(function(r){return Math.abs(r.posterior-r.raw)<0.05&&Math.abs(r.posteriorSd-0.2)<0.03;}));
+      /* regions: four at about +2% a month; a precise slow one is lagging, a noisy slow one is pulled toward the others */
+      var U=[{id:'q',value:2.1,sd:0.3},{id:'h',value:1.9,sd:0.3},{id:'b',value:2.0,sd:0.3},{id:'l',value:2.2,sd:0.3}];
+      var precise=poolRegionalTrends(U.concat([{id:'c',value:0.0,sd:0.3}])),noisy=poolRegionalTrends(U.concat([{id:'c',value:-0.5,sd:1.0}]));
+      ok('a precisely measured slow region is still lagging after pooling',precise.byId.c.lagging&&!precise.byId.q.lagging);
+      ok('a slow region measured on few sessions is pulled toward the others and not called lagging',!noisy.byId.c.lagging&&noisy.byId.c.mean>0);
+      ok('the unpooled rule would have called that noisy region lagging (median 2.0, less twice its sd of 1.0)',-0.5<2.0-2*1.0);
+      /* contexts: two phase types whose estimates agree within their noise are pooled toward each other */
+      var prior={perUnit:0.002,sdAbs:0.0006},ctx={cut:[{y:0.003,se:0.0008},{y:0.0034,se:0.0008}],maintenance:[{y:0.0018,se:0.0008},{y:0.0022,se:0.0008}]};
+      var C=poolResponseContexts(prior,ctx),cu=C.filter(function(c){return c.context==='cut';})[0],ma=C.filter(function(c){return c.context==='maintenance';})[0];
+      ok('response contexts are pooled toward the person\u2019s own estimate, not the population figure',cu.pooled&&ma.pooled&&cu.mean<0.0032&&ma.mean>0.002&&cu.mean>ma.mean);
+      ok('with one context there is nothing of the person\u2019s to pool, so the population prior is used',poolResponseContexts(prior,{cut:ctx.cut}).every(function(c){return c.pooled===false;}));})();
+    /* ---- Causal estimation on Responses (Stage E): constructed records with known answers ---- */
+    ['failed_intervention','successful_intervention'].forEach(function(f){withFixture(f,function(){var e=DB.experiments[0],its=interruptedTimeSeries({changeDate:e.startDate});
+      if(f==='failed_intervention')ok('the interrupted series projects the old trend to the change: a change that did nothing (a flat trend before and after) shows no shift',its.status==='ok'&&/indistinguishable/.test(its.verdict),JSON.stringify([its.levelShift,its.slopeChangePerWeek,its.verdict]));
+      else ok('and a change that did work (flat, then 1.3 lb a week) shows a clear change in rate of about 1.25 lb a week',its.status==='ok'&&Math.abs(its.slopeChangePerWeek+1.25)<0.3&&its.tSlope<-2.5&&/clear shift/.test(its.verdict),JSON.stringify([its.slopeChangePerWeek,its.tSlope,its.verdict]));});});
+    withFixture('normal_loss',function(){
+      var keep={o:DB.observations,ph:DB.phases,s:DB.sessions,e:DB.experiments,p:DB.plans,r:DB.responses,st:DB.settings.supplementStack};
+      var today=todayISO(),day0=addDays(today,-209),seed=7,rnd=function(){seed=(seed*16807)%2147483647;return seed/2147483647;};
+      var put=function(slopeAt){DB.observations=keep.o.filter(function(o){return o.type!=='weight'&&o.type!=='context';});var w=250;seed=7;
+        for(var i=0;i<=209;i++){w+=slopeAt(i)/7;DB.observations.push(makeObservation({type:'weight',date:addDays(day0,i),value:round(w+(rnd()-0.5)*0.6,2),source:'test'}));}_memoInvalidate();};
+      DB.phases=[{id:'ph-t',type:'cut',startDate:day0,status:'active'}];DB.sessions=[];DB.experiments=[];DB.plans=[];DB.settings.supplementStack=[];DB.responses=[];
+      /* least-squares slope a week, written out here rather than borrowed from the module */
+      var slope=function(from,to){var P=obsOf('weight').filter(function(o){return o.date>=from&&o.date<=to;}).map(function(o){return [daysBetween(from,o.date),o.value];});
+        var n=P.length,sx=0,sy=0,sxx=0,sxy=0;P.forEach(function(q){sx+=q[0];sy+=q[1];sxx+=q[0]*q[0];sxy+=q[0]*q[1];});return 7*(n*sxy-sx*sy)/(n*sxx-sx*sx);};
+      var D=addDays(day0,189),iv={id:'tm',kind:'plan change',date:D,variable:'steps',from:8000,to:10000,reversible:'yes'};
+      /* stalls of three weeks alternating with three weeks of loss; the change is made as a stall ends */
+      put(function(i){return i%42<21?0:-1;});var r=evaluateResponse(iv),M=r.causal&&r.causal.matched;
+      ok('a change made as a stall ends looks like a clear response before and after',r.primary&&Math.abs(r.primary.effect+1)<0.3&&/clear response/.test(r.verdict),r.primary&&r.primary.effect+' '+r.verdict);
+      var bef=r.primary&&slope(addDays(D,-21),addDays(D,-1));
+      ok('the matched periods include every earlier stall end, each on the change’s weekday, clear of it, and starting from a trend within the caliper',M&&M.status==='ok'&&
+        [42,84,126,168].every(function(k){return M.dates.indexOf(addDays(D,-k))>=0;})&&M.dates.every(function(c){var g=daysBetween(c,D);return g%7===0&&(g>20||g<-42)&&Math.abs(slope(addDays(c,-21),addDays(c,-1))-bef)<=M.caliper+0.01;}),M&&JSON.stringify(M.dates||M.need));
+      var nul=M&&M.dates?M.dates.map(function(c){return slope(c,addDays(c,20))-slope(addDays(c,-21),addDays(c,-1));}):[],m0=nul.length?nul.reduce(function(a,x){return a+x;},0)/nul.length:null;
+      ok('the matched estimate is the effect less what those periods did on their own (markedly faster, with no change)',M&&m0!=null&&Math.abs(M.nullMean-m0)<0.02&&m0<-0.5&&Math.abs(M.estimate-(r.primary.effect-m0))<0.02,JSON.stringify({m:M&&M.nullMean,m0:m0,e:M&&M.estimate}));
+      var T={3:3.182,4:2.776,5:2.571,6:2.447,7:2.365,8:2.306,9:2.262,10:2.228,11:2.201,12:2.179,13:2.160,14:2.145,15:2.131};
+      ok('with few periods the interval uses Student’s t on their degrees of freedom (from the published table), and its noise is never below the comparison’s own',M&&T[M.periods-1]!=null&&Math.abs(M.tCritical-T[M.periods-1])<0.01&&M.se>=r.primary.se*Math.sqrt(1+1/M.periods)-0.006,M&&JSON.stringify([M.periods,M.tCritical,M.se,r.primary.se]));
+      ok('so it is within what comparable periods show, and the estimates are reported as disagreeing',M&&M.clear===false&&/within/.test(M.verdict)&&r.causal.agree===false&&/disagree/.test(r.causal.agreement),r.causal&&r.causal.agreement);
+      /* a real change: a steady half-pound loss that becomes a pound and a half */
+      put(function(i){return i<189?-0.5:-1.5;});var X=addDays(D,-70);DB.experiments=[{id:'x-other',startDate:X,variable:'calories',baselineValue:2200,interventionValue:2000}];r=evaluateResponse(iv);M=r.causal&&r.causal.matched;
+      ok('a change unlike anything in comparable periods stays clear against them, and the estimates agree',M&&M.status==='ok'&&M.clear&&Math.abs(M.estimate+1)<0.35&&r.causal.agree===true,JSON.stringify(M&&(M.status==='ok'?[M.estimate,M.se,M.periods]:M.need)));
+      ok('no matched period has this change or another one in its windows or the three weeks before them',M&&M.status==='ok'&&M.dates.every(function(c){return [D,X].every(function(x){return x<addDays(c,-42)||x>addDays(c,20);});}),M&&JSON.stringify(M.dates));
+      ok('the interrupted series reads it as a change in rate, about a pound a week',r.causal.interrupted.quantity==='change in rate'&&Math.abs(r.causal.interrupted.effect+1)<0.3,JSON.stringify(r.causal.interrupted));
+      /* the identification strategy built on deliberate changes uses it, per 1,000 steps a day */
+      DB.responses=[r];var dc=deliberateChangeEffect('steps','weight');
+      ok('deliberate changes give an effect per 1,000 steps a day: the matched estimate over a change of 2, its error widened for few periods',dc.status==='ok'&&dc.n===1&&Math.abs(dc.estimate-M.estimate/2)<0.01&&Math.abs(dc.se-M.se*_tCrit(M.periods-1)/1.96/2)<0.002,JSON.stringify(dc));
+      var st=identificationStrategy('steps','weight').strategies.filter(function(s){return s.strategy==='deliberate changes over time';})[0];
+      ok('identification lists deliberate changes over time as available',!!st&&st.available===true&&!st.blocked);
+      var C=causalAnalysis('steps','weight');
+      ok('where nothing else identifies the effect, the causal analysis estimates it from the deliberate changes, through every stage',C.status==='ok'&&C.identification.selected==='deliberate changes over time'&&C.effect.estimate===dc.estimate&&C.uncertainty.se===dc.se&&['estimator','effect','uncertainty','sensitivity'].every(function(s){return C.stages.indexOf(s)>=0;}),JSON.stringify({sel:C.identification&&C.identification.selected,st:C.status,at:C.stoppedAt}));
+      /* a record too short for four periods says so */
+      DB.observations=DB.observations.filter(function(o){return o.type!=='weight'||o.date>=addDays(D,-40);});_memoInvalidate();r=evaluateResponse(iv);
+      ok('a record too short for four matched periods says how much more is needed, and gives no matched estimate',r.causal.matched.status==='insufficient'&&/more stretch/.test((r.causal.matched.need||[]).join())&&r.causal.estimates.length===2,JSON.stringify(r.causal.matched));
+      DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();
+    });
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

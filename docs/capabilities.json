@@ -290,6 +290,7 @@
      "gate": "engine"
     }
    ],
+   "note": "Hierarchical (Stage E): the phase contexts of a response are pooled toward the person’s own estimate through the shared Bayes engine once two contexts have their own data, and the strength trends of trained regions are pooled the same way before one is called lagging. Partial pooling as in Gelman et al., Bayesian Data Analysis (3rd ed., ch. 5).",
    "axes": {
     "engineering": "surfaced",
     "scientific": "population evidence",
@@ -326,6 +327,8 @@
    "id": "unified-optimiser",
    "label": "Unified optimiser",
    "maturity": "surfaced",
+   "note": "a deeper calorie cut is credited with the everyday movement it is expected to cost: the personal NEAT response (steps a day per 10% deficit, Bayesian from a population prior), applied only to the share of the calorie effect still resting on the population figure",
+   "source": "Martin et al. 2007 (CALERIE: spontaneous activity falls under energy restriction)",
    "evidence": [
     {
      "gate": "engine"
@@ -383,6 +386,72 @@
     "operational": "local",
     "evidence": "internal",
     "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "body-composition",
+   "label": "Body composition: fat and lean trajectories",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the fat-mass rate from the weight trend's partition prior and each body-fat method's own trend (weighted by that method's error, methods never mixed), lean as the remainder; masses only when a measured reading from the last 60 days anchors them",
+   "source": "method errors in BODYFAT_METHOD_SE; the US Navy circumference equation (Hodgdon & Beckett 1984); the partition prior of tissueEnergyDensity",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "aerobic-fitness",
+   "label": "Aerobic fitness: VO2max level and trend",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "per modality family, from steady sessions with heart rate and pace or power (a Kalman filter for the level, its intervals scored against the next session); the trend a weighted regression with a prior centred on no change; capacity sits beside the cardio minutes in the capability vector",
+   "source": "ACSM metabolic equations; Milanović et al. 2015 (VO2max gains from training)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "causal-estimation",
+   "label": "Causal estimates of each change: interrupted series and matched periods",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each Response's before/after estimate is reported beside an interrupted series (level and rate against the old trend projected to the change, standard errors widened for day-to-day carry-over) and a matched-periods estimate (the same comparison at dates in the person's own record with no change: same weekday and phase, a similar starting trend, Student's t for few periods); a person's deliberate changes, pooled per unit, are an identification strategy of their own. Observational: it rules out drift and regression to the mean, not a cause that arrived with the change",
+   "source": "segmented regression of interrupted time series (Wagner et al. 2002, J Clin Pharm Ther); the AR(1) variance factor for a trend regressor; caliper matching (Austin 2011, Pharm Stat)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
    }
   },
   {

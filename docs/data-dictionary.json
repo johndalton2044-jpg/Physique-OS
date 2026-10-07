@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "35f69b0642fb",
+ "ontologyVersion": "42c3137480d6",
  "observationTypes": [
   {
    "id": "adherence",
@@ -42,7 +42,8 @@
    "min": 2,
    "max": 70,
    "consumers": [
-    "composition estimate cross-check"
+    "composition estimate cross-check",
+    "body_composition_state"
    ],
    "semantic": "adherence",
    "meaning": null,
@@ -60,7 +61,8 @@
     "TDEE",
     "energy balance",
     "calorie adherence",
-    "deficit estimate"
+    "deficit estimate",
+    "personal_neat_response"
    ],
    "semantic": "intake",
    "meaning": "energy INTAKE as logged",
@@ -408,7 +410,8 @@
     "step baseline",
     "NEAT trend",
     "activity target",
-    "TDEE context"
+    "TDEE context",
+    "personal_neat_response"
    ],
    "semantic": "steps",
    "meaning": null,
@@ -1758,6 +1761,9 @@
     "burden": [
      "object"
     ],
+    "causal": [
+     "object"
+    ],
     "cls": [
      "string"
     ],
@@ -2003,6 +2009,18 @@
    ]
   },
   {
+   "id": "body_composition_state",
+   "cls": "EMPIRICAL",
+   "output": "fat and lean rates (lb a week) with intervals, how much rests on measurement, and fat and lean masses with trajectories when a recent measurement anchors them",
+   "uncertainty": "posterior interval on the fat rate; lean by subtraction",
+   "inputs": [
+    "weight_trend",
+    "bodyfat",
+    "waist",
+    "muscle_risk"
+   ]
+  },
+  {
    "id": "bodycomp_circ",
    "cls": "HEURISTIC",
    "output": "body-fat range and fat/lean mass ranges",
@@ -2017,7 +2035,7 @@
   {
    "id": "cardio_fitness_latent",
    "cls": "EMPIRICAL",
-   "output": "VO2max per modality family, with uncertainty",
+   "output": "VO2max per modality family, with uncertainty, and its trend a month with an interval",
    "uncertainty": "kalman posterior",
    "inputs": [
     "cardio",
@@ -2155,7 +2173,7 @@
   {
    "id": "intervention_response",
    "cls": "EMPIRICAL",
-   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual",
+   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate",
    "uncertainty": "standard error of the difference in trends",
    "inputs": [
     "weight",
@@ -2266,6 +2284,17 @@
    "uncertainty": "posterior interval on the slope",
    "inputs": [
     "physique_regions"
+   ]
+  },
+  {
+   "id": "personal_neat_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in everyday steps a day for each 10% of expenditure in deficit, with its interval and how much is the person’s own data",
+   "uncertainty": "posterior interval on the slope",
+   "inputs": [
+    "steps",
+    "calories",
+    "weight_trend"
    ]
   },
   {
@@ -2648,6 +2677,7 @@
   "models": [
    "adherence",
    "appetite",
+   "body_composition_state",
    "bodycomp_circ",
    "cardio_fitness_latent",
    "change_point",
@@ -2671,6 +2701,7 @@
    "personal_baseline",
    "personal_dose_response",
    "personal_frequency_response",
+   "personal_neat_response",
    "personal_response",
    "personal_sleep_response",
    "physique_regions",

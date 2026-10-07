@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "f8ea4c9780",
+ "build": "88304dc6bc",
  "models": [
   {
    "id": "adherence",
@@ -11,6 +11,11 @@
    "id": "appetite",
    "cls": "HEURISTIC",
    "fn": "appetiteState"
+  },
+  {
+   "id": "body_composition_state",
+   "cls": "EMPIRICAL",
+   "fn": "bodyCompositionState"
   },
   {
    "id": "bodycomp_circ",
@@ -126,6 +131,11 @@
    "id": "personal_frequency_response",
    "cls": "EMPIRICAL",
    "fn": "personalFrequencyResponse"
+  },
+  {
+   "id": "personal_neat_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalNeatResponse"
   },
   {
    "id": "personal_response",

@@ -28,6 +28,9 @@ function stateVector(){var C=[],push=function(key,label,value,unit,sd,fresh,sour
   try{var D=tdeePersonal();if(D&&D.status==='ok')push('tdee','Energy expenditure',D.value,'kcal a day',(D.hi-D.lo)/3.92,_fresh('calories'),'intake and weight trend, '+D.window+' days');}catch(e){}
   try{var E=_e1rmTop();if(E&&E.series.length){var last=E.series.slice(-4).map(function(x){return x.value;});push('strength','Strength ('+E.exercise+', estimated one-rep max)',last[last.length-1],'lb',_sdOfMean(last),{asOf:E.series[E.series.length-1].date,ageDays:daysBetween(E.series[E.series.length-1].date,asOf())},'sessions');}}catch(e){}
   try{var A=adherenceState(14);if(A&&A.overall!=null){var p=A.overall/100,n=14;push('adherence','Plan followed',A.overall,'%',100*Math.sqrt(p*(1-p)/n),null,'executions, 14 days');}}catch(e){}
+  try{var BC=bodyCompositionState();if(BC.status==='ok'){var bf=_fresh('bodyfat'),src=BC.methods.length?('weight trend and '+BC.methods.map(function(m){return m.method;}).join(', ')):'weight trend, partition prior';
+    push('fatRate','Fat mass, rate',BC.fatRate.mean,'lb a week',BC.fatRate.sd,_fresh('weight'),src);push('leanRate','Lean mass, rate',BC.leanRate.mean,'lb a week',BC.leanRate.sd,_fresh('weight'),src);
+    if(BC.masses){push('fatMass','Fat mass',BC.masses.fat.mean,'lb',BC.masses.fat.sd,bf,BC.masses.from);push('leanMass','Lean mass',BC.masses.lean.mean,'lb',BC.masses.lean.sd,bf,BC.masses.from);}}}catch(e){}
   try{var F=seriesWindow('fatigue',7).map(function(x){return x.value;});push('fatigue','Fatigue, 7-day average',F.length?mean(F):null,'1\u201310',_sdOfMean(F),_fresh('fatigue'),'recovery check-ins');}catch(e){}
   return {asOf:asOf(),components:C,stale:C.filter(function(c){return c.ageDays!=null&&c.ageDays>7;}).map(function(c){return c.key;}),note:'each value with its uncertainty (standard deviation) and how old its newest data is'};}
 
@@ -39,6 +42,10 @@ function capabilityVector(){var weeks=4,cap={asOf:asOf(),weeks:weeks};
   cap.workCapacity={setsPerWeek:round(mean(sets),1),sd:sets.length>1?round(Math.sqrt(sets.reduce(function(a,x){var m=mean(sets);return a+(x-m)*(x-m);},0)/(sets.length-1)),1):null,weeks:sets};
   var card=_weekly(function(f,t){return obsOf('cardio').filter(function(o){return o.date>=f&&o.date<=t;}).reduce(function(a,o){return a+(o.value||0);},0);},weeks);
   cap.endurance={cardioMinutesPerWeek:round(mean(card),0),weeks:card};
+  /* minutes are the dose; capacity is the aerobic estimate and its trend, where heart rate and pace or power allow one */
+  try{var CF=cardioFitnessModel(),h=CF.status==='ok'?CF.headline:null;
+    cap.endurance.capacity=h?{vo2max:h.estimate,sd:h.sd,ci80:h.ci80,family:h.family,sessions:h.n,trend:h.trend&&h.trend.status==='ok'?h.trend:null,trendNeed:h.trend&&h.trend.status!=='ok'?h.trend.need:null}:
+      {status:'insufficient',need:CF.need||['steady sessions with heart rate and pace or power']};}catch(e){cap.endurance.capacity={status:'insufficient',need:['the aerobic model could not run']};}
   var mob=_weekly(function(f,t){return obsOf('mobility').filter(function(o){return o.date>=f&&o.date<=t;}).length;},weeks);
   cap.mobility={sessionsPerWeek:round(mean(mob),1),weeks:mob};
   cap.note='strength by region from the physique model; work capacity, endurance and mobility from the last '+weeks+' weeks, newest first';

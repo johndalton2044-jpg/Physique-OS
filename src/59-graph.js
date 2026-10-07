@@ -140,7 +140,7 @@ function causalSupport(variable){
   ivs.slice(-4).forEach(function(iv){
     try{var r=interruptedTimeSeries({changeDate:iv.date});if(r.status==='ok')its.push(r);}catch(e){}
   });
-  var clear=its.filter(function(r){return Math.abs(r.t||0)>2.5;}).length;
+  var clear=its.filter(function(r){return Math.max(Math.abs(r.t||0),Math.abs(r.tSlope||0))>2.5;}).length;
   var confounded=0;
   ivs.forEach(function(iv){
     var others=(DB.interventions||[]).filter(function(o){

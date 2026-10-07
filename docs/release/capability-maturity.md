@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build f8ea4c9780. Every status is derived from evidence the build can check; none is assigned by hand.
+Build 88304dc6bc. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -72,7 +72,9 @@ Build f8ea4c9780. Every status is derived from evidence the build can check; non
 | personal_sleep_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| body_composition_state | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | unified_optimiser | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_neat_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 
 Production-ready capabilities: 0. Experimentally validated engines: 0.

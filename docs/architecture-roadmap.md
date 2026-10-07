@@ -3470,3 +3470,131 @@ The black-box gate had failed twice in recorded runs and passed when rerun; unde
 source bytes; a CRLF checkout builds a different ID). CLAUDE.md (rules Claude Code loads automatically) and
 docs/handoff/TRANSITION.md (set-up, release procedure, backlog with acceptance criteria, known limits, trajectory) hand
 the work to Claude Code.
+
+## Stage D: the personal NEAT response (build 6c47545fdc)
+
+personalNeatResponse() asks whether the person moves less when they eat less. Each week's deficit is measured rather
+than assumed: the energy the weight trend implies (its 14-day slope at the week's end, times the tissue's energy
+density) against what was eaten, as a share of expenditure. The week's mean steps are regressed on that share, per 10
+points, with a prior centred on a small decline (−250 steps a day, SD 400), because spontaneous activity falls under
+energy restriction in controlled studies (Martin et al. 2007, CALERIE) by amounts that vary widely between people. It
+needs six weeks and deficits that differ by 5 points or more. A known −800 is recovered inside its interval, no
+response gives an interval around zero pulled toward the prior, and a steady deficit or fewer than six weeks are
+refused; it states that deliberate walks look like compensation and that it is an association, not proof of cause.
+Consumers: the energy balance now states the movement its deficit is expected to cost; the optimiser credits a deeper
+calorie cut with that cost, applied only to the share of the calorie effect still resting on the population figure
+(the person's own calorie responses are measured on the scale and already contain it); the steps lever states the pull
+the current deficit puts on everyday steps; the Learn tab's physiology card shows the response. On the demo: 9 weeks,
+−298 steps a day per 10% deficit (−655 to +59, 80% personal), so the interval includes no change and the reading says
+so; the current deficit is expected to cost about 308 steps (18 kcal) a day. Both deliberate breakages (no offset; the
+regression's sign flipped) turned the intended checks red. Steps and calories list the model as a consumer; the
+ledger's optimiser entry carries the source. All 36 gates pass (reproducible included); release 24/24; 1,659 self-tests.
+
+## Stage D: the body-composition latent state (build 1a3e16e592)
+
+bodyCompositionState() estimates the fat-mass rate, in lb a week, through the one Bayesian engine (bayesUpdate). Its
+prior is the share of the weight trend that is fat, from tissueEnergyDensity (body-fat level, rate of loss, protein,
+lifting), moved toward lean by the muscle-retention risk in a cut; that model's own stated partition range (±0.15) is
+taken as one standard deviation, because partitioning cannot be measured from the record. Each body-fat method's fat
+mass is fitted on its own and enters as an observation weighted by that method's error (BODYFAT_METHOD_SE), so a fixed
+offset between methods cannot read as change; the waist enters as one more method through the circumference equation
+(now one function, navyBodyFat, which bodyComp also uses), as a change, not a level. Lean is the remainder, its interval
+taken as if independent of the fat rate (wider than the truth, and said so). Masses and trajectories are given only when
+a measured reading from the last 60 days anchors them, the rule bodyComp() already follows. Self-tests from stated inputs
+with expectations from precision arithmetic: with no measurement the prior stands and says so; a DEXA trend moves the
+estimate by exactly its precision; a 6-point offset between DEXA and a BIA scale falling at the same rate reads as the
+same rate; no anchor means no masses. Removing the measurements and inventing masses each turned the intended check red.
+Consumers: the physique card's "Fat and lean" row and four state-vector components (fat and lean rate; fat and lean mass
+when anchored). On the demo: fat −0.86 lb a week (−1.17 to −0.55), lean −0.12 (−0.45 to +0.20), 4% from its body-fat
+readings and waist, which are imprecise against a clear weight trend. A body-composition capability joins the ledger at
+"early personal". All 36 gates pass (reproducible included); release 24/24; 1,667 self-tests.
+
+## Stage D: the aerobic-capacity trend (build 8461bd89d9)
+
+cardioFitnessModel() already estimated VO2max per modality family with a Kalman filter whose intervals are scored
+against the next session; what was missing was the direction. vo2Trend() regresses each session's estimate on time
+(weights 1/sd², scatter beyond those errors inflating the standard error), in ml/kg/min a month, with a prior centred on
+no change (SD 1.5), because fitness moves slowly: a training block raises VO2max by a few ml/kg/min over two to three
+months in someone untrained (Milanović et al. 2015). It needs four sessions spanning three weeks, and works one family at
+a time, never mixing walking or running with cycling. Each family's state now carries its trend. A known +1.2 a month is
+recovered inside its interval, a steady level leaves the interval around zero, and too few sessions are refused; making
+the trend ignore its data, or dropping capacity from the capability vector, each turned the intended checks red. The
+capability vector's endurance entry carries the capacity (level, interval, trend) beside the cardio minutes, which are a
+dose, not a capacity; the Learn tab's aerobic row shows the trend. On the demo: 23 weight-bearing sessions, VO2max 47.8
+(45.6 to 50.1), trend +0.57 a month (−1.97 to +3.12, 28% personal): no clear change. An aerobic-fitness capability joins
+the ledger. All 36 gates pass (reproducible included); release 24/24; 1,671 self-tests. Stage D is complete except the mobility,
+conditioning and power responses, which wait for observation types that measure them (TRANSITION item 4).
+
+## Stage E: hierarchical personalisation (build 88304dc6bc)
+
+Each personal model kept its own prior, so two estimates of the same person could not inform each other. They now pool
+through the shared engine (`hierarchicalPosterior` in 96-bayes-engine), with no new uncertainty system. The engine now
+returns each unit's posterior SD as well as its mean (by the law of total variance over its grid of between-unit spreads).
+The strength trends of the trained regions are pooled by `poolRegionalTrends` (with an SD floor of 0.25% a month). A
+region is lagging only when its pooled interval sits wholly below the shared mean. Before, the rule was below the median
+by twice its own SD, so a region measured on a few noisy sessions could be called lagging from noise alone. The phase
+contexts of a personal response (cut, maintenance) are pooled by `poolResponseContexts` toward the person's own estimate
+once two contexts have data of their own; with one, the population prior stands, and the record says which. The checks
+are properties that follow from the model, not its own numbers:
+- identical units end at the shared value, narrower than their own SD;
+- units far apart and precisely measured keep their values;
+- a precise slow region stays lagging, while a noisy one (−0.5 ± 1.0 against four at +2) is pulled up and not called
+  lagging, where the unpooled rule would have called it;
+- two agreeing contexts move toward each other.
+
+Replacing the pooling with each unit's own value, leaving contexts unpooled, and reporting each unit's own SD each turned
+its intended check red. On the demo, the three pooled regions (glutes, quads, hamstrings) gain about 7.6% a month, with
+pooled SDs of 1.42 to 1.53 against their own 1.93 to 3.34; none lags. The personal-response capability's note records the
+pooling. All 36 gates pass (reproducible included); release 24/24; 1,678 self-tests.
+
+## Stage E: causal estimation on Responses (build 0a3671e46f)
+
+Each Response judged a change by its before/after estimate alone: the trend after against the trend before, continued.
+It now carries two more estimates beside that one, reported and never substituted for it (`responseCausal` in
+94-causal).
+- **Interrupted series.** The existing `interruptedTimeSeries` had a defect. Each window's day count starts from that
+  window's own first day, so the pre-change fit was projected with the post window's numbers. That evaluated the old
+  trend at the start of the pre window, a month before the change, and the "level shift" was the whole drift across that
+  month: a steady loss read as a clear shift. Its level after the change was also one reading rather than the fit. Both
+  segments now share one axis (days from the change). The level is the fit at the boundary, and the change in rate is
+  reported as well, both with standard errors widened by the AR(1) factor for carry-over (autocorrelation never taken
+  below zero, so the correction only widens; before, a negative value let the effective n exceed the nominal).
+- **Matched periods** (`matchedPeriods`). The same comparison, with the Response's own windows, at dates in the person's
+  record with no change of any kind in the windows or the three weeks before them. They share the change's weekday and
+  phase, have no new phase, context period or training break, and start from a similar trend. The caliper is half the
+  spread of such periods, or twice the standard error of a difference between two trends if that is wider. The effect
+  minus their average is the estimate. Their spread is its noise, never taken below the before/after standard error, and
+  "clear" uses Student's t on k−1 degrees of freedom. At least four periods; fewer is reported with what is missing.
+- **Deliberate changes over time** (`deliberateChangeEffect`). A person's final Responses, per unit of each change and
+  pooled by inverse variance, form an identification strategy in 86-identification with its own estimator in
+  `causalAnalysis`. It is listed after the backdoor, front door and instruments.
+
+The Response records whether the estimates agree. Its details sheet shows "Allowing for carry-over", "Against comparable
+periods" and "Do the estimates agree?". The Response contract notes the new fields, and the response model version is
+1.2.
+
+The known answers come from the generators' own parameters:
+- the failed_intervention fixture (flat before and after) now shows no shift, where the old series called it clear
+  (t −7.4);
+- the successful one shows a change in rate of −1.14 lb a week (built as −1.25);
+- a change made as a three-week stall ends looks like a clear response before and after (−1 lb a week), but the matched
+  periods are the earlier stall ends, which did the same on their own, so the matched estimate is within their range and
+  the estimates are reported as disagreeing;
+- a real change (−0.5 to −1.5 lb a week) stays clear against them and every estimate agrees;
+- no matched period sits near this change or another;
+- with few periods the t quantile matches the published table.
+
+The tests hold on 60 noise seeds. Restoring the original series, removing the caliper, ignoring the comparable periods,
+not dividing by the size of the change, and not excluding dates near a change each turned their intended checks red.
+
+On the demo:
+- creatine has too few readings before it for the series;
+- caffeine's +0.72 ± 0.40 h of sleep (before/after) is +0.16 ± 0.80 against the projected trend, so the estimates
+  disagree;
+- the steps experiment's −0.50 ± 0.60 lb a week is −0.52 ± 0.60 in rate, so they agree: no clear change;
+- the 67-day record needs four more nine-week stretches without a change for matched periods, and says so.
+
+The series fix also corrects its other consumers: the demo's steps change, which the old series called "a clear shift",
+now reads "larger than the noise, but not decisively", and steps' causal-support grade moves from "weakly supported" to
+"correlated", in line with the Response's own "no clear response yet". A causal-estimation capability joins the ledger.
+1,692 self-tests pass; the full release record is in progress.

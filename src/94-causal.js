@@ -302,6 +302,87 @@ function negativeControlCheck(treatment,opts){
     note:'A negative control tests the method rather than the hypothesis. Finding an effect where none can exist is evidence about the analysis, not about the body.',
     caveat:'Passing a negative control does not establish that a real effect is causal. It only fails to find one specific kind of problem.'};
 }
+/* ---------------- matched periods (Stage E; TRANSITION item 6) ----------------
+   A Response compares the trend after a change with the trend before it, continued. Trends move on their own: a
+   steep loss slows, a stall gives way, a bad week of sleep is followed by a better one (regression to the mean). Matched
+   periods measure how much of that happens when nothing was changed: the same comparison, with the same windows, at
+   other dates in this person's own record that fall on the same weekday (so weekly rhythms cancel), in the same kind of
+   phase, with no change of any kind in the windows or in the three weeks before them and no new phase, context period
+   or training break, and that start from a similar trend: within half the spread of all such periods, or, where that is
+   narrower, within twice the standard error of the difference between two such trends (matching finer than the
+   measurement can tell apart is matching on noise). The Response's
+   effect minus their average is the matched estimate; their spread is its noise, and that spread already carries the
+   day-to-day carry-over the textbook standard error ignores. Four periods at least; fewer is reported, never padded.
+   With so few, their spread is itself uncertain, so "clear" and the interval use Student's t on k-1 degrees of freedom
+   (3.18 at four periods), not the normal 2; and the spread is never taken below the before/after estimate's own standard
+   error, because four periods can agree closely by chance while carry-over only ever adds noise. */
+var MATCHED_MIN=4;
+function _contrastAt(oc,c,lenB,lenA){var B=[addDays(c,-lenB),addDays(c,-1)],A=[c,addDays(c,lenA-1)];
+  if(oc==='weight'){var sb=_slopePerWeek(_rangeSeries('weight',B[0],B[1])),sa=_slopePerWeek(_rangeSeries('weight',A[0],A[1]));return sb&&sa?{date:c,before:sb.slope,beforeSe:sb.se,effect:sa.slope-sb.slope}:null;}
+  var lc=_levelChange(oc,B,A);return lc?{date:c,before:lc.before,beforeSe:lc.se/Math.SQRT2,effect:lc.change}:null;}
+function matchedPeriods(R){
+  var P=R&&R.primary,oc=R&&R.outcome,d=R&&R.start,W=R&&R.windows;
+  if(!P||!oc||!d||!W||!W.before||!W.after)return {status:'insufficient',need:['a judged response with a measured outcome']};
+  if(!OBS_TYPES[oc])return {status:'insufficient',need:[oc+' is not a daily measure, so there are no periods to match']};
+  var lenB=daysBetween(W.before[0],W.before[1])+1,lenA=daysBetween(W.after[0],W.after[1])+1,today=todayISO();
+  var first=obsOf(oc).map(function(o){return o.date;}).sort()[0];if(!first)return {status:'insufficient',need:['readings of '+oc]};
+  var changes=responseInterventions().map(function(i){return i.date;}).concat([d]);
+  var R0=typeof regimes==='function'?regimes().filter(function(g){return g.kind!=='trend break';}):[];
+  var ptype=function(x){var ph=null;try{ph=activePhase(x);}catch(e){}return ph?ph.type:null;},pd=ptype(d);
+  var cands=[];
+  for(var k=-1;;k--){var c=addDays(d,7*k);if(addDays(c,-lenB)<first)break;cands.push(c);}
+  for(k=1;;k++){c=addDays(d,7*k);if(addDays(c,lenA-1)>today)break;cands.push(c);}
+  var rows=cands.filter(function(c){var from=addDays(c,-lenB-21),to=addDays(c,lenA-1);
+      return !changes.some(function(x){return x>=from&&x<=to;})&&
+        !R0.some(function(g){return (g.from>addDays(c,-lenB)&&g.from<=to)||(g.to&&g.to>=addDays(c,-lenB)&&g.to<to);})&&ptype(c)===pd;})
+    .map(function(c){return _contrastAt(oc,c,lenB,lenA);}).filter(Boolean);
+  var phaseText=pd?('a '+pd+' phase'):'no phase';
+  if(rows.length<MATCHED_MIN)return {status:'insufficient',candidates:rows.length,
+    need:[(MATCHED_MIN-rows.length)+' more stretch'+(MATCHED_MIN-rows.length===1?'':'es')+' of about '+Math.round((lenB+lenA+21)/7)+' weeks with no change, in '+phaseText]};
+  var caliper=Math.max(0.5*(sd(rows.map(function(r){return r.before;}))||0),2*Math.SQRT2*(median(rows.map(function(r){return r.beforeSe;}))||0));
+  var M=rows.filter(function(r){return Math.abs(r.before-P.before)<=caliper+1e-9;});
+  if(M.length<MATCHED_MIN)return {status:'insufficient',candidates:rows.length,matched:M.length,caliper:round(caliper,3),
+    need:['only '+M.length+' of '+rows.length+' periods without a change started from a trend like this one; '+MATCHED_MIN+' are needed']};
+  var nulls=M.map(function(r){return r.effect;}),m0=mean(nulls),s0=sd(nulls)||0,est=P.effect-m0,se=Math.max(s0,P.se||0)*Math.sqrt(1+1/M.length),tc=_tCrit(M.length-1);
+  var share=(nulls.filter(function(x){return Math.abs(x-m0)>=Math.abs(P.effect-m0);}).length+1)/(M.length+1);
+  var clear=se>0&&Math.abs(est)>tc*se;
+  return {status:'ok',cls:'EMPIRICAL',model:'matched_periods',periods:M.length,candidates:rows.length,caliper:round(caliper,3),dates:M.map(function(r){return r.date;}),
+    nullMean:round(m0,2),nullSd:round(s0,2),estimate:round(est,2),se:round(se,2),tCritical:round(tc,2),interval95:[round(est-tc*se,2),round(est+tc*se,2)],share:round(share,2),unit:P.unit||null,clear:clear,
+    verdict:clear?'larger than the change comparable periods without one show':'within what comparable periods without a change show',
+    method:'the same comparison at '+M.length+' dates in your record with no change, in '+phaseText+', starting from a similar trend; the effect minus their average, with their spread as its noise',
+    caveat:'Matched periods rule out drift and regression to the mean, not a cause that arrived with the change (an illness, a holiday). It is still one person, without randomisation.'};
+}
+/* The causal estimates of one Response, beside its before/after estimate: the interrupted series (the change in rate
+   for weight, in level otherwise, with standard errors allowing for carry-over) and the matched periods. */
+function responseCausal(R){
+  var P=R&&R.primary;if(!P||!R.outcome)return null;
+  var its=null;try{its=interruptedTimeSeries({type:R.outcome,changeDate:R.start,before:R.windows.before,after:R.windows.after});}catch(e){}
+  var rate=R.outcome==='weight',I=its&&its.status==='ok'?{effect:rate?its.slopeChangePerWeek:its.levelShift,se:rate?its.slopeChangeSe:its.levelShiftSe,autocorrelation:its.autocorrelation,
+      quantity:rate?'change in rate':'change in level'}:null;
+  var mp=matchedPeriods(R),E=[{method:'before and after',effect:P.effect,se:P.se}];
+  if(I)E.push({method:'interrupted series',effect:round(I.effect,2),se:round(I.se,2)});
+  if(mp.status==='ok')E.push({method:'matched periods',effect:mp.estimate,se:mp.se,clear:mp.clear});
+  E.forEach(function(e){if(e.clear==null)e.clear=e.se>0&&Math.abs(e.effect)>2*e.se;});
+  var clearOnes=E.filter(function(e){return e.clear;}),signs=clearOnes.map(function(e){return Math.sign(e.effect);});
+  var agree=E.length<2?null:((clearOnes.length===0||clearOnes.length===E.length)&&signs.every(function(s){return s===signs[0];}));
+  return {interrupted:I?Object.assign({},I,{effect:round(I.effect,2),se:round(I.se,2),verdict:its.verdict}):{status:its?its.status:'not computed',need:its&&its.need||null},
+    matched:mp,estimates:E,agree:agree,
+    agreement:agree==null?'only the before/after estimate is available':(agree?('the '+E.length+' estimates agree: '+(clearOnes.length?'a clear change':'no clear change')):
+      ('the estimates disagree: '+clearOnes.map(function(e){return e.method;}).join(' and ')+' see'+(clearOnes.length===1?'s':'')+' a clear change, '+
+        E.filter(function(e){return !e.clear;}).map(function(e){return e.method;}).join(' and ')+' do'+(E.length-clearOnes.length===1?'es':'')+' not'))};
+}
+/* Deliberate changes to a lever, pooled: each final Response's matched estimate per unit of the change (the lever's
+   own scale, e.g. per 1,000 steps a day), combined by inverse variance. The identification strategy that rests on
+   changes the person made at a date rather than on day-to-day association. */
+function deliberateChangeEffect(treatment,outcome){
+  var sc=(typeof RESPONSE_VARS!=='undefined'&&RESPONSE_VARS[treatment])?RESPONSE_VARS[treatment]:{scale:1,unit:'unit'};
+  var rows=responsesOf().filter(function(r){return r.variable===treatment&&r.outcome===outcome&&r.stage==='final'&&r.dose;}).map(function(r){var m=matchedPeriods(r);
+    /* the standard error each change carries is its t interval's half-width over 1.96, so few matched periods widen it */
+    return m.status==='ok'&&m.se>0?{id:r.id,start:r.start,perUnit:m.estimate/(r.dose/sc.scale),se:m.se*m.tCritical/1.96/Math.abs(r.dose/sc.scale)}:null;}).filter(Boolean);
+  if(!rows.length)return {status:'insufficient',need:['a final response to a change in '+treatment+' with matched periods behind it']};
+  var W=0,S=0;rows.forEach(function(r){var w=1/(r.se*r.se);W+=w;S+=w*r.perUnit;});var est=S/W,se=Math.sqrt(1/W);
+  return {status:'ok',cls:'EMPIRICAL',treatment:treatment,outcome:outcome,n:rows.length,per:sc.unit,estimate:round(est,3),se:round(se,3),lo:round(est-1.96*se,3),hi:round(est+1.96*se,3),rows:rows};
+}
 /* ---------------- hierarchical N-of-1 pooling ----------------
    Several runs of the same self-experiment, pooled so that each run informs the others without any one
    dominating. This is the same shrinkage logic as the response matrix, applied across repeats. */

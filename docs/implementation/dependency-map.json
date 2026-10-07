@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-06T22:21:46.094Z",
-  "buildId": "f8ea4c9780",
-  "nodes": 98,
-  "edges": 263,
-  "contractDerived": 86,
+  "generatedAt": "2026-10-07T00:45:06.245Z",
+  "buildId": "88304dc6bc",
+  "nodes": 100,
+  "edges": 276,
+  "contractDerived": 88,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -376,6 +376,16 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "weight_trend",
+      "targetId": "body_composition_state",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "personal_neat_response",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "water_noise",
       "targetId": "fat_vs_other",
       "dependencyType": "model"
@@ -546,6 +556,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "calories",
+      "targetId": "personal_neat_response",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "tdee_personal",
       "targetId": "energy_balance",
       "dependencyType": "model"
@@ -588,6 +603,11 @@
     {
       "sourceId": "waist",
       "targetId": "fat_vs_other",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "waist",
+      "targetId": "body_composition_state",
       "dependencyType": "data"
     },
     {
@@ -946,6 +966,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "muscle_risk",
+      "targetId": "body_composition_state",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "steps",
       "targetId": "adherence",
       "dependencyType": "data"
@@ -983,6 +1008,11 @@
     {
       "sourceId": "steps",
       "targetId": "unified_optimiser",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "steps",
+      "targetId": "personal_neat_response",
       "dependencyType": "data"
     },
     {
@@ -1246,6 +1276,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "cardio_fitness_latent",
+      "targetId": "capabilityVector",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "water",
       "targetId": "hydration_balance",
       "dependencyType": "data"
@@ -1278,6 +1313,11 @@
     {
       "sourceId": "bodyfat",
       "targetId": "energy_availability",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "bodyfat",
+      "targetId": "body_composition_state",
       "dependencyType": "data"
     },
     {
@@ -1316,8 +1356,33 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "body_composition_state",
+      "targetId": "physiqueCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "body_composition_state",
+      "targetId": "stateVector",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "unified_optimiser",
       "targetId": "optimiserCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_neat_response",
+      "targetId": "energyBalance",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_neat_response",
+      "targetId": "unifiedOptimiser",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_neat_response",
+      "targetId": "physiologySummary",
       "dependencyType": "model"
     }
   ],

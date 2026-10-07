@@ -21,6 +21,18 @@ function _perUnit(r){var P=r.primary;if(!P||r.dose==null||!r.dose||P.se==null||r
 function _posterior(prior,obs){var pm=prior?prior.perUnit:0,pv=prior?prior.sdAbs*prior.sdAbs:1;
   var prec=1/pv,num=pm/pv;obs.forEach(function(o){prec+=1/(o.se*o.se);num+=o.y/(o.se*o.se);});
   var dataPrec=obs.reduce(function(a,o){return a+1/(o.se*o.se);},0);return {mean:num/prec,sd:Math.sqrt(1/prec),personalWeight:dataPrec/prec};}
+/* HIERARCHICAL PERSONALISATION across contexts (Stage E; TRANSITION item 5). With responses in two or more phase types,
+   each context's estimate is pooled toward the person's own estimate across contexts (hierarchicalPosterior), not drawn
+   separately from the population prior, so two contexts differ only when the person's own data say so. With one context,
+   the population prior is the only thing to borrow from, as before. ctx is {context: [per-unit estimates {y, se}]}. */
+function poolResponseContexts(prior,ctx){
+  var keys=Object.keys(ctx).filter(function(c){return ctx[c].length>=2;});
+  var units=keys.map(function(c){var P=0,S=0;ctx[c].forEach(function(o){P+=1/(o.se*o.se);S+=o.y/(o.se*o.se);});return {id:c,value:S/P,sd:Math.sqrt(1/P),n:ctx[c].length};});
+  /* pooled on a scale where the standard errors are about 1: the engine rounds to three decimals, and an effect per unit
+     of dose is often a few thousandths */
+  if(units.length>=2){var k=1/mean(units.map(function(u){return u.sd;})),H=hierarchicalPosterior(units.map(function(u){return {id:u.id,value:u.value*k,sd:u.sd*k};}));
+    if(H.status==='ok')return H.rows.map(function(r,i){return {context:r.id,n:units[i].n,mean:r.posterior/k,sd:r.posteriorSd/k,pooled:true};});}
+  return keys.map(function(c){var p=_posterior(prior,ctx[c]);return {context:c,n:ctx[c].length,mean:p.mean,sd:p.sd,pooled:false};});}
 function personalResponseModel(opts){opts=opts||{};if(typeof memo==='function')return memo('prm:'+(opts.excludeId||'')+':'+(DB.responses||[]).map(function(r){return r.id+'/'+r.stage+'/'+(r.primary&&r.primary.effect)+'/'+(r.primary&&r.primary.se)+'/'+(r.adherence&&r.adherence.share)+'/'+r.dose;}).join('|'),function(){   /* keyed by content: a count went stale when a response changed */return _personalResponseModel(opts);});return _personalResponseModel(opts);}
 function _personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by={};
   (DB.responses||[]).forEach(function(r){if(opts.excludeId&&(r.id===opts.excludeId||r.interventionId===opts.excludeId))return;var u=_perUnit(r);if(!u)return;(by[_respKey(r)]=by[_respKey(r)]||[]).push(u);});
@@ -29,7 +41,7 @@ function _personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by=
     if(prior.sdAbs==null){var spread=obs.length?Math.max.apply(null,obs.map(function(o){return Math.abs(o.y)+2*o.se;})):1;prior=Object.assign({},prior,{sdAbs:spread*2});}   /* wide, scaled to the data */
     var post=_posterior(prior,obs),sc=prior.scale;
     var ctx={};obs.forEach(function(o){(ctx[o.context]=ctx[o.context]||[]).push(o);});
-    var contexts=Object.keys(ctx).filter(function(c){return ctx[c].length>=2;}).map(function(c){var p=_posterior(prior,ctx[c]);return {context:c,n:ctx[c].length,mean:round(p.mean*sc,3),sd:round(p.sd*sc,3)};});
+    var contexts=poolResponseContexts(prior,ctx).map(function(c){return {context:c.context,n:c.n,mean:round(c.mean*sc,3),sd:round(c.sd*sc,3),pooled:c.pooled};});
     var differs=contexts.length>=2&&contexts.some(function(a){return contexts.some(function(b){return a!==b&&Math.abs(a.mean-b.mean)>2*Math.sqrt(a.sd*a.sd+b.sd*b.sd);});});
     return {key:k,variable:k.split('\u2192')[0],outcome:k.split('\u2192')[1],label:prior.label,unit:prior.unit,n:obs.length,finals:obs.filter(function(o){return o.stage==='final';}).length,
       prior:{mean:round(prior.perUnit*sc,3),sd:round(prior.sdAbs*sc,3),basis:prior.basis},

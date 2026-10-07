@@ -21,6 +21,12 @@ SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x
   if(P)out+=uiRow(esc(P.quantity)+' before',esc(String(P.before)+(P.unit?' '+P.unit:'')))+uiRow('after',esc(String(P.after)+(P.unit?' '+P.unit:'')))+uiRow('Effect',esc(_respEffect(r)),{sub:esc(P.method)});
   if(r.expected)out+=uiRow('Expected',esc(round(Math.min(r.expected.lo,r.expected.hi),2)+' to '+round(Math.max(r.expected.lo,r.expected.hi),2)+' '+r.expected.unit),{sub:esc(r.expected.basis+' \u00b7 '+(r.expectation||''))});
   if(r.placebo)out+=uiRow('Already under way?',r.placebo.alreadyUnderWay?'yes':'no',{sub:'the same comparison a week earlier: '+r.placebo.effect+' \u00b1 '+round(2*r.placebo.se,2)});
+  /* the causal estimates beside it (Stage E): computed now for records judged before they existed */
+  var C=r.causal||(P&&typeof responseCausal==='function'?responseCausal(r):null),u=P&&P.unit?' '+P.unit:'';
+  if(C){var I=C.interrupted,M=C.matched;
+    out+=uiRow('Allowing for carry-over',I&&I.effect!=null?esc((I.effect>0?'+':'')+I.effect+' \u00b1 '+round(2*I.se,2)+u):'\u2014',{sub:esc(I&&I.effect!=null?('interrupted series, '+I.quantity+'; day-to-day carry-over '+I.autocorrelation+' \u00b7 '+I.verdict):'not enough readings either side')});
+    out+=uiRow('Against comparable periods',M.status==='ok'?esc((M.estimate>0?'+':'')+M.estimate+' \u00b1 '+round(M.interval95[1]-M.estimate,2)+u):'\u2014',{sub:esc(M.status==='ok'?(M.verdict+'; '+M.periods+' periods without a change moved '+(M.nullMean>0?'+':'')+M.nullMean+' on their own'):(M.need||[]).join('; '))});
+    out+=uiRow('Do the estimates agree?',C.agree==null?'\u2014':(C.agree?'yes':'no'),{sub:esc(C.agreement)});}
   out+=uiRow('Unintended effects',r.unintended&&r.unintended.length?esc(r.unintended.map(function(u){return u.text+' ('+(u.change>0?'+':'')+u.change+')';}).join(', ')):'none detected');
   if(r.burden)out+=uiRow('Burden',esc(r.burden.note));out+=uiRow('Reversible',esc(r.reversible||'\u2014'));
   if(r.followedBy&&(r.followedBy.planVersions.length||r.followedBy.decisions.length))out+=uiRow('What followed',esc((r.followedBy.planVersions.length?'plan version '+r.followedBy.planVersions.join(', '):'')+(r.followedBy.decisions.length?' \u00b7 '+r.followedBy.decisions.length+' decision(s)':'')));

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-06T22:21:46.094Z",
-  "sourceBuildId": "f8ea4c9780",
-  "releaseId": "527b8123c60c",
+  "generatedAt": "2026-10-07T00:45:06.245Z",
+  "sourceBuildId": "88304dc6bc",
+  "releaseId": "c95d9e04a90d",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -81,12 +81,12 @@
       "jsdom": true,
       "playwright-core": true
     },
-    "browser": "/opt/google/chrome/chrome"
+    "browser": "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
   },
   "registries": {
     "quantities": 38,
     "quantitySingleSource": true,
-    "models": 43,
+    "models": 45,
     "actions": 498,
     "capabilities": 22
   },

@@ -91,7 +91,7 @@ var ENTITY_CONTRACTS={
     temporal:'the before and after windows of its intervention; provisional after 7 days, final after 21',provenance:'response.recorded events carrying the evaluation, its windows and its method',
     correction:'recomputed from the record at the next stage; the earlier stage stays in the event log',events:['response.recorded'],
     existing:['planResponse','responseFor','exerciseResponse','forecastTrackRecord','evaluateResponse'],
-    note:'intervention \u2192 adherence \u2192 outcome \u2192 expectation \u2192 effect \u00b1 uncertainty \u2192 what followed; experiments, plan changes, adaptations and supplements alike'},
+    note:'intervention \u2192 adherence \u2192 outcome \u2192 expectation \u2192 effect \u00b1 uncertainty, with the interrupted-series and matched-periods estimates beside it (causal, responseCausal) \u2192 what followed; experiments, plan changes, adaptations and supplements alike'},
   LearningCycle:{status:'implemented',stores:['cycles'],identity:'one per ISO week (cycle:<week>)',lifecycle:['recorded'],owners:['runLearningCycle'],readModel:'runLearningCycle',registry:null,layer:'models',
     temporal:'the week it closes',provenance:'cycle.recorded events carrying each stage, the beliefs, what changed and loop health',correction:'a forced rerun in the same week replaces it; earlier weeks stay',events:['cycle.recorded'],
     existing:['loopStages','loopBeliefs','nextTest','loopHealth'],note:'observe \u2192 understand \u2192 decide \u2192 act \u2192 measure \u2192 explain \u2192 learn \u2192 adapt \u2192 predict \u2192 test \u2192 personalize'},

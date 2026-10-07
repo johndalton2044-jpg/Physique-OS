@@ -570,8 +570,8 @@
    ],
    "writers": {
     "recordResponses": [
-     "58-response-entity.js:89",
-     "58-response-entity.js:98"
+     "58-response-entity.js:91",
+     "58-response-entity.js:100"
     ]
    }
   },

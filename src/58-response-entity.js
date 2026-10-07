@@ -82,6 +82,8 @@ function _evaluateResponseCore(iv){
     rec.verdict=!clear?'no clear response yet':(expDir&&Math.sign(P.effect)!==expDir?'the opposite of what was expected':'a clear response');
     if(rec.placebo&&rec.placebo.alreadyUnderWay)rec.verdict+=' \u2014 but the change was already under way before it started';}
   rec.confidence=!P?'none':(rec.stage==='final'&&Math.abs(P.effect)>3*P.se&&!(rec.placebo&&rec.placebo.alreadyUnderWay)?'high':(Math.abs(P.effect)>2*P.se?'medium':'low'));
+  /* causal estimates beside the before/after one (Stage E, 94-causal.js): reported, never substituted for it */
+  if(P&&typeof responseCausal==='function'){try{rec.causal=responseCausal(rec);}catch(e){_q(e,'P2');}}
   return rec;
 }
 /* ---- persistence: recorded when it matures (provisional, then final); replayed from the log ---- */
@@ -126,13 +128,14 @@ function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){retu
 (function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='intervention_response';}))return;
   MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
     assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
-    failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)'],
-    output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual',consumers:['responsesOf'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
+    failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)','the record is too short for four matched periods (that estimate is then omitted)'],
+    output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate',consumers:['responsesOf'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
 /* ============================================================================
    CANONICAL RESPONSE (audit A-002): every Response record carries the canonical field set explicitly, whatever produced
    the intervention (plan change, experiment, adaptation, supplement, optimiser choice), pending records included.
    ============================================================================ */
-var RESPONSE_MODEL_VERSION='response-1.1';
+/* 1.2: each record carries its causal estimates beside the before/after one (Stage E) */
+var RESPONSE_MODEL_VERSION='response-1.2';
 function canonicalResponse(r,iv){if(!r)return r;var A=r.windows&&r.windows.after,P=r.primary||null,today=todayISO();
   r.exposureWindow=A?{from:A[0],to:A[1],days:Math.max(0,daysBetween(A[0],A[1]<today?A[1]:today)+1)}:null;
   r.executionIds=A?(DB.executions||[]).filter(function(x){return x.date>=A[0]&&x.date<=A[1]&&(!r.variable||!x.item||x.item===r.variable||x.item==='nutrition'&&r.variable==='calories'||x.item==='steps'&&r.variable==='steps');}).map(function(x){return x.id;}):[];
@@ -147,7 +150,8 @@ function canonicalResponse(r,iv){if(!r)return r;var A=r.windows&&r.windows.after
     A&&typeof regimeChangesIn==='function'?regimeChangesIn(A[0],A[1]).map(function(x){return 'regime change: '+x;}):[],r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5?['carried out on only '+Math.round(r.adherence.share*100)+'% of days']:[]);
   r.attribution=!P?'nothing to attribute':(r.placebo&&r.placebo.alreadyUnderWay?'a trend already under way, not the change':(Math.abs(P.effect)>2*P.se&&!(r.adherence&&r.adherence.share!=null&&r.adherence.share<0.5)?'the change':'uncertain'));
   var ph=null;try{ph=activePhase(r.start);}catch(e){}r.applicability={phase:ph?ph.type:null,conditions:ctx,note:'what this says about you applies to a '+(ph?ph.type:'similar')+' phase under similar conditions'};
-  r.evidence=[].concat(P?[{kind:P.quantity,method:P.method,n:P.n}]:[],r.placebo?[{kind:'placebo check',effect:r.placebo.effect,se:r.placebo.se}]:[],r.expectedOutcome?[{kind:'expectation',basis:r.expectedOutcome.basis}]:[]);
+  r.evidence=[].concat(P?[{kind:P.quantity,method:P.method,n:P.n}]:[],r.placebo?[{kind:'placebo check',effect:r.placebo.effect,se:r.placebo.se}]:[],r.expectedOutcome?[{kind:'expectation',basis:r.expectedOutcome.basis}]:[],
+    r.causal?(r.causal.estimates||[]).slice(1).map(function(e){return {kind:e.method,effect:e.effect,se:e.se};}):[]);
   r.modelVersion=RESPONSE_MODEL_VERSION;r.status=r.stage;r.confidence=r.confidence||'none';return r;}
 /* ============================================================================
    ONE INTERVENTION LIFECYCLE (audit A-003), for every domain: proposed \u2192 accepted \u2192 scheduled \u2192 attempted \u2192 executed \u2192
