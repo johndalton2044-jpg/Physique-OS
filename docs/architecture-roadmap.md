@@ -3662,4 +3662,4 @@ Restoring the old choice, dropping the adherence probability from the dose, igno
 own noise and removing the threshold each turned its intended checks red. On the demo, protein → hunger leads (45%
 narrower, 0.86 bits in 3 weeks, since nothing is known about it), then training days → weight (20%). Calories and steps
 would narrow by 5%, not worth a test after the steps experiment already run. An experiment-portfolio capability joins
-the ledger. 1,709 self-tests pass; the full release record is in progress.
+the ledger. All 36 gates pass (reproducible included); release 24/24; 1,709 self-tests. Stage E is complete.
