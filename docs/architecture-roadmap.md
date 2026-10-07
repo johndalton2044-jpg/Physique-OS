@@ -3725,4 +3725,4 @@ On the demo:
 - caffeine's sleep: +0.72 h (0.46 to 0.98);
 - creatine's interval is wide, from four readings before it.
 
-1,723 self-tests pass; the full release record is in progress.
+All 36 gates pass (reproducible included); release 24/24; 1,723 self-tests.
