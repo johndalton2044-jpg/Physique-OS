@@ -3835,3 +3835,28 @@ A self-calibration capability joins the ledger with measured calibration. Aerobi
 too, and the maturity gate lists both as scored. All 36 gates pass (reproducible included); release 24/24; 1,753 self-tests. Stage H
 is complete, and with it every backlog item that does not need credentials: item 4 waits for observation types, and
 item 11 for real accounts.
+
+## New records start at the Casual detail level (build 3011e209bd)
+
+A decision carried from earlier work, now taken: a new record starts at Casual, the answer and what to do. The
+analysis tabs, method notes and badges are one setting away (Tools → Display). Nobody's existing view changes:
+- a stored record keeps the level it chose;
+- one stored before the level existed was showing Insightful, so the schema backfill gives it Insightful rather than
+  the new default;
+- a startup merge does not replace a person's level with the default its projection carries, while a level chosen on
+  another device, which arrives as an event, still wins;
+- loading the demo replaces the record but keeps the person's level (it used to reset it to the default).
+
+Checks:
+- self-tests from the setting's definition, covering a new record, an old record, a chosen level, both sides of the
+  merge, and the demo;
+- black-box workflow V-013: a new record opens at Casual, the Display card shows Casual in use, and choosing
+  Insightful shows the analysis and is stored;
+- V-011 and V-012 now choose Insightful through the Display card before opening Archive and Learn, as a person at
+  Casual would; jsdom ignores the CSS that hides those tabs, so the workflows had been pressing buttons a Casual
+  person could not see.
+
+Starting new records at Insightful again, dropping the backfill's exception, and letting the demo reset the level each
+turned their checks red. The visual baseline was updated for the intended change: at Casual the left rail (analysis
+navigation) is hidden and the right rail is shorter. 1,759 self-tests and the black-box workflows pass; the full
+release record is in progress.

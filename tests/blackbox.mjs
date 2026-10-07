@@ -45,6 +45,9 @@ async function fresh(){CLOCK_OFFSET=0;const errors=[];const vc=new VirtualConsol
 /* the quick log as a person uses it: open it, choose the type, enter the value, save */
 async function logAs(ui,type,value,field){ui.press('log.open');await wait(40);const t=ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="'+type+'"]');if(!t)throw new Error('no "'+type+'" choice in the quick log');t.click();await wait(40);
   ui.type(field||'f_value',value);ui.press('log.save',null,'#logBackdrop');await wait(100);}
+/* the detail level, chosen as a person does: Tools → Display (a new record starts at Casual, which keeps the analysis tabs
+   for Insightful) */
+async function useLevel(ui,level){ui.tab('tools');await ui.until('details[data-fold="tools-display"] summary');ui.expand('tools-display');await ui.until('[data-act="settings.detail"][data-arg="'+level+'"]');ui.press('settings.detail',level);await wait(80);}
 const run=async(name,fn)=>{let ui;try{ui=await fresh();await fn(ui);}catch(e){line(false,name,e.message);}finally{if(ui){if(ui.errors.length)line(false,name+': no uncaught errors',ui.errors.slice(0,2).join(' | '));ui.close();}}};
 
 /* V-002 NUTRITION: a food \u2192 a portion \u2192 the day's total */
@@ -125,9 +128,20 @@ await run('V-011 temporal replay',async ui=>{const day=n=>{const t=new Date(Date
   const id=ui.w.DB.observations.filter(o=>o.type==='weight')[0].id;ui.press('obs.correct',id);await wait(60);ui.type('promptInput',190.0);
   [...ui.d.querySelectorAll('#promptBackdrop button')].find(b=>/btn-primary/.test(b.className)).click();await wait(120);
   ui.tab('log');ui.d.querySelector('[data-act="log.day"][data-arg="'+day(3)+'"]').click();await wait(60);line(/190\.0/.test(ui.view('log')),'V-011 the Log page shows the corrected value now');
-  ui.tab('archive');const rd=ui.d.getElementById('replayDate');if(!rd)throw new Error('no replay date field');ui.type(rd,day(2));ui.press('replay.run');await wait(200);
+  await useLevel(ui,'insightful');ui.tab('archive');const rd=ui.d.getElementById('replayDate');if(!rd)throw new Error('no replay date field');ui.type(rd,day(2));ui.press('replay.run');await wait(200);
   const v=ui.view('archive'),rep=(v.match(/Replay a single day[^]{0,400}/)||[''])[0];
   line(/200\.0/.test(rep)&&!/190\.0/.test(rep),'V-011 replaying two days ago shows what was known then (200.0), not the later correction',rep.slice(0,200));});
+
+/* V-013 DETAIL LEVEL: a new record starts at Casual, the answer and what to do; the analysis is one setting away, and the
+   choice is kept. Expected by the setting's definition. */
+await run('V-013 a new record starts at Casual',async ui=>{
+  line(ui.d.documentElement.getAttribute('data-detail')==='casual','V-013 a new record opens at the Casual detail level');
+  ui.tab('tools');await ui.until('details[data-fold="tools-display"] summary');ui.expand('tools-display');await ui.until('[data-act="settings.detail"][data-arg="casual"]');
+  const chosen=()=>[...ui.d.querySelectorAll('[data-act="settings.detail"]')].filter(b=>/btn-primary/.test(b.className)).map(b=>b.getAttribute('data-arg')).join();
+  line(chosen()==='casual','V-013 the Display card shows Casual as the level in use',chosen());
+  await useLevel(ui,'insightful');
+  line(ui.d.documentElement.getAttribute('data-detail')==='insightful'&&chosen()==='insightful','V-013 choosing Insightful shows the analysis, and the card says so');
+  line(ui.w.DB.settings.detail==='insightful','V-013 second witness: the choice is stored in the record');});
 
 /* V-001 TODAY: a phase with its targets \u2192 Today shows them */
 await run('V-001 today',async ui=>{
@@ -155,7 +169,7 @@ await run('V-012 automation approval',async ui=>{
   line(water()===w0+1,'V-012 after weighing in, the approved rule logged 0.5 L of water (second witness)');
   ui.tab('log');line(/0\.5\s*L/.test(ui.view('log')),'V-012 the Log page shows the 0.5 L of water');
   const plans0=ui.w.DB.plans.length;
-  ui.tab('learn');await ui.until('details[data-fold="learn-loop"] summary');ui.expand('learn-loop');await wait(300);
+  await useLevel(ui,'insightful');ui.tab('learn');await ui.until('details[data-fold="learn-loop"] summary');ui.expand('learn-loop');await wait(300);
   await openAutomation();
   line(/Waiting for your approval/.test(sheet())&&!!ui.d.querySelector('#editBackdrop [data-act="auto.approve"]'),'V-012 the weekly review held a plan change for approval instead of making it',sheet().slice(0,240));
   line(ui.w.DB.plans.length===plans0,'V-012 the plan did not change while the change was waiting (second witness)');

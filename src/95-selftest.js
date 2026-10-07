@@ -4353,6 +4353,17 @@ function runSelfTest(opts){
       var keepDB=DB,A;try{DB=replayHistory(generateRecord(DEMO_SPEC,11),DEMO_SPEC);_memoInvalidate();A=cardioFitnessModel();}finally{DB=keepDB;_memoInvalidate();}
       ok('the aerobic filter calibrates its interval by its own one-step-ahead record, by the same rule (on the demo’s sessions)',A.status==='ok'&&A.states.some(function(s){return s.calibration.applied;})&&A.states.every(function(s){var c=intervalCalibration(s.scored);return s.calibration.applied===(c.n>=10)&&s.calibration.scale===round(c.n>=10?c.scale:1,2);}),JSON.stringify(A.states&&A.states.map(function(s){return s.calibration;})));
       DB.responses=keep;_memoInvalidate();});
+    /* ---- A new record starts at the Casual detail level; an existing one keeps the level it shows ---- */
+    (function(){ok('a new record starts at the Casual detail level',emptyDB().settings.detail==='casual');
+      var old=emptyDB();delete old.settings.detail;var m=migrate(JSON.parse(JSON.stringify(old)));
+      ok('a stored record with no detail level was showing Insightful, so it keeps Insightful rather than a new record’s default',m.ok&&m.db.settings.detail==='insightful');
+      var dev=emptyDB();dev.settings.detail='developer';ok('a stored record keeps the level it chose',migrate(JSON.parse(JSON.stringify(dev))).db.settings.detail==='developer');})();
+    withFixture('normal_loss',function(){DB.settings.detail='insightful';adoptMergedEvents({events:_EVENTS.slice()});
+      ok('a startup merge does not replace a person’s level with the new-record default its projection carries',DB.settings.detail==='insightful');
+      emitEvent('settings.changed',{detail:'developer'});DB.settings.detail='insightful';adoptMergedEvents({events:_EVENTS.slice()});
+      ok('while a level chosen on another device, which arrives as an event, still wins',DB.settings.detail==='developer');});
+    withFixture('normal_loss',function(){DB.settings.detail='insightful';loadDemo();var a=DB.settings.detail;DB.settings.detail='casual';loadDemo();var b=DB.settings.detail;
+      ok('loading the demo replaces the record but keeps the detail level the person chose',a==='insightful'&&b==='casual');});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

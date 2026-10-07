@@ -88,7 +88,10 @@ var DEMO_SPEC={name:'Demo cut',days:70,weight0:270,goal:180,
   experiments:[{day:49,variable:'steps',from:7500,to:9500,predLo:-0.4,predHi:-0.2,recheckDays:14}]};
 function loadDemo(){
   if(typeof _PLAN_HOOKS_OFF!=='undefined')_PLAN_HOOKS_OFF++;
-  try{return _loadDemoInner();}finally{if(typeof _PLAN_HOOKS_OFF!=='undefined')_PLAN_HOOKS_OFF=Math.max(0,_PLAN_HOOKS_OFF-1);
+  /* the demo replaces the record, not how the person chose to see it: their detail level carries over (a new record
+     starts at Casual, so the demo would otherwise move anyone who chose Insightful back to Casual) */
+  var keepDetail=DB&&DB.settings&&DB.settings.detail;
+  try{var r=_loadDemoInner();if(keepDetail&&DB&&DB.settings&&DB.settings.detail!==keepDetail){DB.settings.detail=keepDetail;if(typeof save==='function')save('settings');}return r;}finally{if(typeof _PLAN_HOOKS_OFF!=='undefined')_PLAN_HOOKS_OFF=Math.max(0,_PLAN_HOOKS_OFF-1);
     if(typeof ensurePlan==='function'){try{ensurePlan();}catch(e){_q(e,'P1');}}}
 }
 function _loadDemoInner(){

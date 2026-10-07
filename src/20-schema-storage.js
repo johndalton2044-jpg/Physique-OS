@@ -49,6 +49,9 @@ var PHASE_TYPES={
   recovery:{label:'Recovery / deload',objective:'Reduce training load to restore performance and recovery.'},
   goal_complete:{label:'Goal complete',objective:'Goal reached; review and choose the next objective.'}
 };
+/* A new record starts at the Casual detail level: the answer and what to do, with the analysis one setting away (Tools →
+   Display). An existing record keeps the level it shows: see the backfill in the migration below. */
+var NEW_RECORD_DETAIL='casual';
 function emptyDB(){
   return {
     schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
@@ -56,7 +59,7 @@ function emptyDB(){
     phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
     decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],exposures:[],outcomes:[],environment:[],
     models:{calibration:{},versions:{}},
-    settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
+    settings:{units:'imperial',detail:NEW_RECORD_DETAIL,textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
     ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},
     demo:{active:false,generatedAt:null,scenario:null}
   };
@@ -99,6 +102,9 @@ function migrate(db){
   /* every persisted collection (PERSIST_COLLECTIONS, 22-persistence.js): a hand list here missed plans, executions and environment */
   PERSIST_COLLECTIONS.forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
   if(!db.settings||typeof db.settings!=='object')db.settings=fresh.settings;
+  /* a stored record with no detail level was showing Insightful (the level every record had before new ones started at
+     Casual), so it keeps that rather than taking a new record's default */
+  if(db.settings.detail===undefined)db.settings.detail='insightful';
   Object.keys(fresh.settings).forEach(function(k){if(db.settings[k]===undefined)db.settings[k]=fresh.settings[k];});
   if(!db.profile||typeof db.profile!=='object')db.profile=fresh.profile;
   if(!db.ledger||typeof db.ledger!=='object')db.ledger=fresh.ledger;
