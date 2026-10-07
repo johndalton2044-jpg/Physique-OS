@@ -3545,4 +3545,4 @@ are properties that follow from the model, not its own numbers:
 Replacing the pooling with each unit's own value, leaving contexts unpooled, and reporting each unit's own SD each turned
 its intended check red. On the demo, the three pooled regions (glutes, quads, hamstrings) gain about 7.6% a month, with
 pooled SDs of 1.42 to 1.53 against their own 1.93 to 3.34; none lags. The personal-response capability's note records the
-pooling. 1,678 self-tests pass; the full release record is in progress.
+pooling. All 36 gates pass (reproducible included); release 24/24; 1,678 self-tests.

@@ -1,68 +1,68 @@
 {
-  "build": "8461bd89d9",
-  "release": "d5f271d701f4",
+  "build": "88304dc6bc",
+  "release": "c95d9e04a90d",
   "schema": 2,
-  "generatedAt": "2026-10-07T00:26:57.761Z",
+  "generatedAt": "2026-10-07T00:45:52.285Z",
   "verification": [
     {
       "n": 1,
       "label": "Build",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"8461bd89d9\",\"release\":\"d5f271d701f4\",\"inputs\":177,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3534,\"scriptLines\":31544,\"sources\":99,\"files\":32,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
+      "evidence": "recorded against build 88304dc6bc: food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"88304dc6bc\",\"release\":\"c95d9e04a90d\",\"inputs\":177,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3537,\"scriptLines\":31570,\"sources\":99,\"files\":32,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}"
     },
     {
       "n": 2,
       "label": "Engine",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: 65 passed, 0 failed  (1671 in-app self-test checks)"
+      "evidence": "recorded against build 88304dc6bc: 65 passed, 0 failed  (1678 in-app self-test checks)"
     },
     {
       "n": 3,
       "label": "Unit tests (in-app self-tests)",
       "status": "PASS",
-      "evidence": "engine: recorded against build 8461bd89d9: 65 passed, 0 failed  (1671 in-app self-test checks) · shipped: recorded against build 8461bd89d9: pass  a second run in the same page passes too (1678 passed, 0 failed) · all passed"
+      "evidence": "engine: recorded against build 88304dc6bc: 65 passed, 0 failed  (1678 in-app self-test checks) · shipped: recorded against build 88304dc6bc: pass  a second run in the same page passes too (1685 passed, 0 failed) · all passed"
     },
     {
       "n": 4,
       "label": "DOM tests",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: pass  with no layout measurement it falls back to the document end rather than failing · 399 passed, 0 failed"
+      "evidence": "recorded against build 88304dc6bc: pass  with no layout measurement it falls back to the document end rather than failing · 399 passed, 0 failed"
     },
     {
       "n": 5,
       "label": "Browser tests",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1"
+      "evidence": "recorded against build 88304dc6bc: 6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1"
     },
     {
       "n": 6,
       "label": "Audit",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: 124 passed, 0 finding(s): 0 P0, 0 P1, 0 P2"
+      "evidence": "recorded against build 88304dc6bc: 124 passed, 0 finding(s): 0 P0, 0 P1, 0 P2"
     },
     {
       "n": 7,
       "label": "Conformance",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: 0 finding(s): 0 P1, 0 P2"
+      "evidence": "recorded against build 88304dc6bc: 0 finding(s): 0 P1, 0 P2"
     },
     {
       "n": 8,
       "label": "Adversarial tests",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: 62 passed, 0 failed"
+      "evidence": "recorded against build 88304dc6bc: 62 passed, 0 failed"
     },
     {
       "n": 9,
       "label": "Performance tests",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: all operations within budget"
+      "evidence": "recorded against build 88304dc6bc: all operations within budget"
     },
     {
       "n": 10,
       "label": "Cloud E2E",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: log lines: 17"
+      "evidence": "recorded against build 88304dc6bc: log lines: 17"
     },
     {
       "n": 11,
@@ -110,7 +110,7 @@
       "n": 18,
       "label": "Visual regression verification",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: all passed"
+      "evidence": "recorded against build 88304dc6bc: all passed"
     },
     {
       "n": 19,
@@ -128,13 +128,13 @@
       "n": 21,
       "label": "Production build",
       "status": "PASS",
-      "evidence": "recorded against build 8461bd89d9: data/reference: 2 files verified · dist verified."
+      "evidence": "recorded against build 88304dc6bc: data/reference: 2 files verified · dist verified."
     },
     {
       "n": 22,
       "label": "Release manifest",
       "status": "PASS",
-      "evidence": "build 8461bd89d9, release d5f271d701f4, 177 hashed inputs"
+      "evidence": "build 88304dc6bc, release c95d9e04a90d, 177 hashed inputs"
     },
     {
       "n": 23,
@@ -187,7 +187,7 @@
     {
       "file": "BUILD-MANIFEST.json",
       "bytes": 32179,
-      "sha256": "269fd92a4d41294edc647d5da4d63d76dbe73f92135c1447ef0ad56ee6983cdc"
+      "sha256": "c33a8e568caa1f43e82a641432f37f2bbf2fe76306c3ff3358209f81f67c49ca"
     },
     {
       "file": "DEPLOYMENT.md",
@@ -202,7 +202,7 @@
     {
       "file": "SHA256SUMS",
       "bytes": 2796,
-      "sha256": "5cd6502e112a3fab0b9876945aa8bface0b563e43c4e0168fc873c21ae1d01a8"
+      "sha256": "9cc847a03d0991399b4ccbc9ef469a29a700e5c1b29776bbadb457b3ee02af1e"
     },
     {
       "file": "data/reference/SHA256SUMS",
@@ -226,8 +226,8 @@
     },
     {
       "file": "docs/architecture-roadmap.md",
-      "bytes": 282022,
-      "sha256": "59d1ce4cc0acc8d229dc4de51f9f9e9ffe4189c4365379c49e08618c0cf253c6"
+      "bytes": 283911,
+      "sha256": "f34c2c20ecc5fdf4331e52272399e6590dc6da02ae9ea590480c9183a7fdc492"
     },
     {
       "file": "docs/data-adapters.md",
@@ -241,8 +241,8 @@
     },
     {
       "file": "docs/future-architecture-plan.md",
-      "bytes": 9424,
-      "sha256": "3a1de4502e2853fd73c08f1d626480b7b21de40f611b7255b3d2709a445a7745"
+      "bytes": 9754,
+      "sha256": "c04294971266a3259178c41978bbbe91e64ac0bebf5c47289b0f3be1abbba06f"
     },
     {
       "file": "docs/interaction-spec.md",
@@ -316,8 +316,8 @@
     },
     {
       "file": "index.html",
-      "bytes": 3618385,
-      "sha256": "d504705d020c42542aaa7771e9059868645ea9be908fe420ce7bcfea51ba201c"
+      "bytes": 3621877,
+      "sha256": "80f3160c7b7821dbf699037d74be41136c3522142d1f517de16326d142033a2d"
     },
     {
       "file": "manifest.webmanifest",
@@ -327,7 +327,7 @@
     {
       "file": "sw.js",
       "bytes": 3721,
-      "sha256": "f1516db0b990363bc015ca952f46522f68a413413b59b76fa7b7d78ad9360b29"
+      "sha256": "46a010addc5d846517583883e1301815c5569157de7fe691772bfc4b3ea99526"
     },
     {
       "file": "vercel.json",
@@ -342,7 +342,7 @@
     {
       "file": "version.json",
       "bytes": 3114,
-      "sha256": "9b31d7423470395d62da041b84fa5fd51d1adf10952828e0b04b1726f3476b70"
+      "sha256": "d5791da68565a91119b88872675abbcc1d5ebac77d283fc626061ae7e66b6ab6"
     }
   ]
 }
