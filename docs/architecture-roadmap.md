@@ -3832,6 +3832,6 @@ aerobic filter each turned their checks red. On the demo:
 - strength and the personal response model have too few scored predictions yet.
 
 A self-calibration capability joins the ledger with measured calibration. Aerobic fitness's calibration is now measured
-too, and the maturity gate lists both as scored. 1,753 self-tests pass; the full release record is in progress. Stage H
+too, and the maturity gate lists both as scored. All 36 gates pass (reproducible included); release 24/24; 1,753 self-tests. Stage H
 is complete, and with it every backlog item that does not need credentials: item 4 waits for observation types, and
 item 11 for real accounts.
