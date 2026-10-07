@@ -42,6 +42,10 @@ function capabilityVector(){var weeks=4,cap={asOf:asOf(),weeks:weeks};
   cap.workCapacity={setsPerWeek:round(mean(sets),1),sd:sets.length>1?round(Math.sqrt(sets.reduce(function(a,x){var m=mean(sets);return a+(x-m)*(x-m);},0)/(sets.length-1)),1):null,weeks:sets};
   var card=_weekly(function(f,t){return obsOf('cardio').filter(function(o){return o.date>=f&&o.date<=t;}).reduce(function(a,o){return a+(o.value||0);},0);},weeks);
   cap.endurance={cardioMinutesPerWeek:round(mean(card),0),weeks:card};
+  /* minutes are the dose; capacity is the aerobic estimate and its trend, where heart rate and pace or power allow one */
+  try{var CF=cardioFitnessModel(),h=CF.status==='ok'?CF.headline:null;
+    cap.endurance.capacity=h?{vo2max:h.estimate,sd:h.sd,ci80:h.ci80,family:h.family,sessions:h.n,trend:h.trend&&h.trend.status==='ok'?h.trend:null,trendNeed:h.trend&&h.trend.status!=='ok'?h.trend.need:null}:
+      {status:'insufficient',need:CF.need||['steady sessions with heart rate and pace or power']};}catch(e){cap.endurance.capacity={status:'insufficient',need:['the aerobic model could not run']};}
   var mob=_weekly(function(f,t){return obsOf('mobility').filter(function(o){return o.date>=f&&o.date<=t;}).length;},weeks);
   cap.mobility={sessionsPerWeek:round(mean(mob),1),weeks:mob};
   cap.note='strength by region from the physique model; work capacity, endurance and mobility from the last '+weeks+' weeks, newest first';

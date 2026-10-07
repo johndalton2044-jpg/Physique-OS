@@ -3508,3 +3508,19 @@ Consumers: the physique card's "Fat and lean" row and four state-vector componen
 when anchored). On the demo: fat −0.86 lb a week (−1.17 to −0.55), lean −0.12 (−0.45 to +0.20), 4% from its body-fat
 readings and waist, which are imprecise against a clear weight trend. A body-composition capability joins the ledger at
 "early personal". All 36 gates pass (reproducible included); release 24/24; 1,667 self-tests.
+
+## Stage D: the aerobic-capacity trend (build 8461bd89d9)
+
+cardioFitnessModel() already estimated VO2max per modality family with a Kalman filter whose intervals are scored
+against the next session; what was missing was the direction. vo2Trend() regresses each session's estimate on time
+(weights 1/sd², scatter beyond those errors inflating the standard error), in ml/kg/min a month, with a prior centred on
+no change (SD 1.5), because fitness moves slowly: a training block raises VO2max by a few ml/kg/min over two to three
+months in someone untrained (Milanović et al. 2015). It needs four sessions spanning three weeks, and works one family at
+a time, never mixing walking or running with cycling. Each family's state now carries its trend. A known +1.2 a month is
+recovered inside its interval, a steady level leaves the interval around zero, and too few sessions are refused; making
+the trend ignore its data, or dropping capacity from the capability vector, each turned the intended checks red. The
+capability vector's endurance entry carries the capacity (level, interval, trend) beside the cardio minutes, which are a
+dose, not a capacity; the Learn tab's aerobic row shows the trend. On the demo: 23 weight-bearing sessions, VO2max 47.8
+(45.6 to 50.1), trend +0.57 a month (−1.97 to +3.12, 28% personal): no clear change. An aerobic-fitness capability joins
+the ledger. 1,671 self-tests pass; the full release record is in progress. Stage D is complete except the mobility,
+conditioning and power responses, which wait for observation types that measure them (TRANSITION item 4).

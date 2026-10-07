@@ -66,6 +66,25 @@ function cardioFitnessObservation(r){
   var est=3.5+(vo2-3.5)/hrr,sd=Math.sqrt(Math.pow(0.15*est,2)+Math.pow(est*(mx.sd/(mx.value-rest.value)),2));
   return {use:true,family:fam,date:r.date,estimate:round(est,1),sd:round(sd,1),hrr:round(hrr,2),method:(fam==='cycling'?'ACSM cycling (power)':'ACSM '+(run?'running':'walking')+' (pace, grade)')+' + %HRR; max HR '+mx.basis+(r._steady?'; the steadiest 10 minutes from streams':'')};
 }
+/* AEROBIC-CAPACITY TREND (Stage D; TRANSITION item 3). The filter below gives the level; this gives its direction: a
+   weighted regression of each session's VO2max estimate on time (weights 1/sd\u00b2, the scatter beyond those errors
+   inflating the standard error), in ml/kg/min a month, with a prior centred on no change (SD 1.5 a month), because
+   fitness moves slowly: a training block raises VO2max by a few ml/kg/min over two to three months in someone who was
+   untrained (Milanovi\u0107 et al. 2015, meta-analysis). At least four sessions spanning three weeks. Observations are
+   {date, estimate, sd}, one modality family at a time, never mixed. */
+var VO2_TREND_PRIOR={mean:0,sd:1.5,source:'endurance training raises VO2max by a few ml/kg/min over two to three months in untrained people (Milanovi\u0107 et al. 2015)'};
+function vo2Trend(obs){
+  obs=(obs||[]).filter(function(o){return o&&o.estimate!=null&&o.sd>0;}).sort(function(a,b){return a.date<b.date?-1:1;});
+  if(obs.length<4)return {status:'insufficient',need:'4 sessions with heart rate and pace or power',n:obs.length};
+  var t0=obs[0].date,xs=obs.map(function(o){return daysBetween(t0,o.date)/30;});if((xs[xs.length-1]-xs[0])*30<21)return {status:'insufficient',need:'sessions spread over at least three weeks',n:obs.length};
+  var W=0,mx=0,my=0;obs.forEach(function(o,i){var w=1/(o.sd*o.sd);W+=w;mx+=w*xs[i];my+=w*o.estimate;});mx/=W;my/=W;
+  var sxx=0,sxy=0;obs.forEach(function(o,i){var w=1/(o.sd*o.sd);sxx+=w*(xs[i]-mx)*(xs[i]-mx);sxy+=w*(xs[i]-mx)*(o.estimate-my);});
+  var b=sxy/sxx,chi=0;obs.forEach(function(o,i){var e=o.estimate-my-b*(xs[i]-mx);chi+=e*e/(o.sd*o.sd);});
+  var se=Math.sqrt(Math.max(1,chi/(obs.length-2))/sxx),pv=VO2_TREND_PRIOR.sd*VO2_TREND_PRIOR.sd,vp=1/(1/pv+1/(se*se)),mp=vp*(VO2_TREND_PRIOR.mean/pv+b/(se*se)),pw=Math.max(0,Math.min(1,1-vp/pv));
+  var sdp=Math.sqrt(vp),lo=mp-2*sdp,hi=mp+2*sdp;
+  return {status:'ok',perMonth:round(mp,2),sd:round(sdp,2),interval:[round(lo,2),round(hi,2)],personalWeight:round(pw,2),n:obs.length,
+    reading:pw<0.2?'not enough sessions yet to see a direction; fitness is assumed steady':(lo>0?'rising, about '+round(mp,1)+' ml/kg/min a month':(hi<0?'falling, about '+round(-mp,1)+' ml/kg/min a month':'no clear change'))};
+}
 function cardioFitnessModel(){
   var cs=cardioSessions(84);var rows=cs&&cs.rows?cs.rows:[];var classes={known:0,proxy:0,unknown:0},excluded=[],obs={};
   rows.forEach(function(r){classes[cardioIntensityClass(r).cls]++;var o=cardioFitnessObservation(r);if(!o.use){excluded.push({date:r.date,modality:r.modality,why:o.why});return;}(obs[o.family]=obs[o.family]||[]).push(o);});
@@ -80,7 +99,7 @@ function cardioFitnessModel(){
       var K=P/S;m=m+K*(o.estimate-m);P=(1-K)*P;last=o.date;});
     var idle=last?daysBetween(last,todayISO()):0;if(idle>0){P+=q*idle;if(idle>14)m=pr.mean+(m-pr.mean)*Math.exp(-Math.log(2)/90*(idle-14));}
     var sd=Math.sqrt(P),n=obs[f].length,cov=bt.length?bt.filter(function(b){return b.within80;}).length/bt.length:null;
-    return {family:f,estimate:round(m,1),sd:round(sd,1),ci80:[round(m-1.2816*sd,1),round(m+1.2816*sd,1)],n:n,lastDate:last,daysSince:idle,decaying:idle>14,prior:pr,
+    return {family:f,estimate:round(m,1),sd:round(sd,1),ci80:[round(m-1.2816*sd,1),round(m+1.2816*sd,1)],n:n,lastDate:last,daysSince:idle,decaying:idle>14,prior:pr,trend:vo2Trend(obs[f]),
       backtest:{n:bt.length,mae:bt.length?round(bt.reduce(function(a,b){return a+b.err;},0)/bt.length,1):null,coverage80:cov!=null?round(cov,2):null,
         verdict:bt.length<6?'too few observations to judge the model':(cov>=0.65&&cov<=0.95?'intervals are calibrated':'intervals are '+(cov<0.65?'too narrow':'too wide'))}};});
   var head=states.slice().sort(function(a,b){return b.n-a.n;})[0];
@@ -232,7 +251,7 @@ function photoComparisonValidity(a,b){
 
 /* ---- registration in the canonical model registry (each inherits contracts, infer(), provenance, the gate) ---- */
 (function(){if(typeof MODELS==='undefined')return;[
-  {id:'cardio_fitness_latent',name:'Cardio fitness (latent state)',cls:'EMPIRICAL',version:'1.0',inputs:['cardio','rhr','weight'],minN:1,assumes:['%HRR tracks %VO2 reserve in steady exercise','ACSM equations hold for the modality'],failsWhen:['intervals','beta blockers or other heart-rate modifiers','no heart rate'],output:'VO2max per modality family, with uncertainty',consumers:['physiologySummary'],freshnessDays:28,uncertainty:{kind:'kalman posterior'},fn:'cardioFitnessModel'},
+  {id:'cardio_fitness_latent',name:'Cardio fitness (latent state)',cls:'EMPIRICAL',version:'1.0',inputs:['cardio','rhr','weight'],minN:1,assumes:['%HRR tracks %VO2 reserve in steady exercise','ACSM equations hold for the modality'],failsWhen:['intervals','beta blockers or other heart-rate modifiers','no heart rate'],output:'VO2max per modality family, with uncertainty, and its trend a month with an interval',consumers:['physiologySummary','capabilityVector'],freshnessDays:28,uncertainty:{kind:'kalman posterior'},fn:'cardioFitnessModel'},
   {id:'hydration_balance',name:'Hydration balance',cls:'HEURISTIC',version:'1.0',inputs:['water','calories','cardio'],minN:1,assumes:['EFSA adequate intake','sweat scales with intensity and heat'],failsWhen:['very hot or humid climates beyond the scaling','illness'],output:'daily water balance (L)',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'fixed',sd:0.8},fn:'hydrationBalance'},
   {id:'supplement_efficacy',name:'Supplement personal efficacy',cls:'EMPIRICAL',version:'1.0',inputs:['supplement'],minN:20,assumes:['on and off days otherwise comparable'],failsWhen:['unblinded expectation','supplements with slow effects'],output:'on-vs-off difference per supplement',consumers:['physiologySummary'],freshnessDays:60,uncertainty:{kind:'standard error'},fn:'supplementEfficacy'},
   {id:'energy_availability',name:'Energy availability',cls:'DERIVED',version:'1.0',inputs:['calories','weight','bodyfat','cardio'],minN:4,assumes:['logged intake is complete','MET estimates of exercise'],failsWhen:['no body-fat reading'],output:'kcal per kg fat-free mass per day',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'propagated'},fn:'energyAvailability'},

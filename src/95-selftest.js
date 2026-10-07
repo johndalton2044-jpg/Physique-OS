@@ -4106,6 +4106,13 @@ function runSelfTest(opts){
       ok('a fixed offset between methods does not read as change',X.methods.length===2&&X.methods.every(function(m){return Math.abs(m.fatPerWeek+0.35)<0.01;}));
       ok('the latent state states its limits',/water/.test(P.limits)&&/not calibrated against each other/.test(P.limits));
       ok('the circumference equation is the one bodyComp uses',Math.abs(navyBodyFat('male',70,36,15)-(86.010*Math.log10(21)-70.041*Math.log10(70)+36.76))<1e-9);})();
+    /* ---- Stage D: aerobic-capacity trend (simulated from a known slope) ---- */
+    (function(){var d0='2026-03-01',gen=function(b,n,noise){var o=[];for(var i=0;i<n;i++)o.push({date:addDays(d0,9*i),estimate:42+b*(9*i)/30+(noise?noise[i%noise.length]:0),sd:2});return o;};
+      var R=vo2Trend(gen(1.2,12,[0.6,-0.4,0.3,-0.6,0.2,-0.1]));
+      ok('a known rise in VO2max (+1.2 ml/kg/min a month) is recovered inside its interval',R.status==='ok'&&R.interval[0]<=1.2&&R.interval[1]>=1.2&&R.perMonth>0.6,JSON.stringify(R.interval));
+      var Z=vo2Trend(gen(0,12,[1.5,-1.2,0.8,-1.5,1.1,-0.7]));ok('a steady level leaves the trend interval around zero',Z.status==='ok'&&Z.interval[0]<0&&Z.interval[1]>0);
+      ok('three sessions, or four within a fortnight, are not a trend',vo2Trend(gen(1.2,3)).status==='insufficient'&&vo2Trend(gen(1.2,4).map(function(o,i){o.date=addDays(d0,3*i);return o;})).status==='insufficient');
+      var C=capabilityVector();ok('the capability vector\u2019s endurance entry carries capacity, or says what it needs, beside the minutes',C.endurance.cardioMinutesPerWeek!=null&&!!C.endurance.capacity&&(C.endurance.capacity.vo2max!=null||(C.endurance.capacity.need||[]).length>0));})();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

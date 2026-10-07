@@ -410,6 +410,28 @@
    }
   },
   {
+   "id": "aerobic-fitness",
+   "label": "Aerobic fitness: VO2max level and trend",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "per modality family, from steady sessions with heart rate and pace or power (a Kalman filter for the level, its intervals scored against the next session); the trend a weighted regression with a prior centred on no change; capacity sits beside the cardio minutes in the capability vector",
+   "source": "ACSM metabolic equations; Milanović et al. 2015 (VO2max gains from training)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

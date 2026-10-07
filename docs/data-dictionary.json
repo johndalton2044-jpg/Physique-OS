@@ -2032,7 +2032,7 @@
   {
    "id": "cardio_fitness_latent",
    "cls": "EMPIRICAL",
-   "output": "VO2max per modality family, with uncertainty",
+   "output": "VO2max per modality family, with uncertainty, and its trend a month with an interval",
    "uncertainty": "kalman posterior",
    "inputs": [
     "cardio",

@@ -1224,6 +1224,9 @@
    "58-model-competition.js": [
     "_e1rmTop"
    ],
+   "61-physiology.js": [
+    "cardioFitnessModel"
+   ],
    "64-physique.js": [
     "physiqueModel",
     "bodyCompositionState"
@@ -4798,6 +4801,7 @@
     "_vo2Prior",
     "_modalityFamily",
     "cardioFitnessObservation",
+    "vo2Trend",
     "hydrationModel",
     "energyAvailability",
     "_foodGroup",
