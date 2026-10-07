@@ -7,7 +7,7 @@ making AI the authoritative analytical engine. The engineering-control audit rea
 canonical loops before adding capabilities.
 
 Status, per item of §210, with where it lives. **Exists**: implemented, integrated and gated. **Partial**: real code
-that covers part of the item. **Missing**: nothing yet. Ratings are from the code at build 11bbf10590.
+that covers part of the item. **Missing**: nothing yet. Ratings are from the code at build ed2073643a.
 
 ## Stage A — make the existing substrate authoritative
 
@@ -70,7 +70,10 @@ in science, and say so.
 1. Stage A1 and A2: done (gate `dictionary`).
 2. Stage B: done.
 3. Stage C: done; personal scaling of the marginal curves waits for Responses to changes in each dose.
-4. Multidimensional maturity: done. Stages D to H in order, each item only when the items it depends on are in place.
+4. Multidimensional maturity: done.
+5. Stages D to H: done in order (TRANSITION items 1–3, 5–10, 12–14), except what needs something the record does not yet
+   have: the mobility, conditioning and power responses (item 4) wait for observation types that measure them, and
+   real-provider validation (item 11) waits for credentials; computer vision and movement telemetry remain unbuilt.
 
 Not to be built (§213): any second registry, event system, decision engine, uncertainty system, provenance system,
 dependency graph, unit system, navigation architecture or presentation calculation layer; AI as the analytical

@@ -125,3 +125,32 @@ Each item is done only when every common acceptance criterion holds:
 Stage D (items 1–4) → Stage E (5–8) → Stage F (9–10) → real-provider validation (11) as soon as credentials exist → Stage G (12) → Stage H (13–14).
 
 Never start an item before what it depends on is in place.
+
+## 6. State at ed2073643a (after the Stage D–H session)
+
+- **Gates and tests:** all 36 gates pass, none skipped, and the release check passes 24/24 at every item's build. There
+  are 1,753 in-app self-tests, 399 interface tests and 8 black-box workflows (V-012 is new: user-approved automation).
+- **Done, each released on its own build** (see `docs/architecture-roadmap.md` for each entry):
+  - **Stage D:** items 1–3 (the NEAT response, body-composition latent state, aerobic capacity with its trend).
+  - **Stage E:** items 5–8:
+    - hierarchical pooling across regions and phase contexts;
+    - causal estimates on Responses: an interrupted series (with the projection defect fixed), matched periods, and
+      deliberate changes as an identification strategy;
+    - knowledge versioning, conflict and decay;
+    - the experiment portfolio by expected information gain.
+  - **Stage F:** items 9–10 (policy simulation; counterfactual paths).
+  - **Stage G:** item 12 (sensor fusion, on the measurement model's per-source parameters, used by `dailySeries`).
+  - **Stage H:** items 13–14:
+    - an approval policy and audit for every automated action;
+    - one calibration rule for every model that makes interval predictions.
+- **Waiting:**
+  - item 4 needs new observation types (CLAUDE.md rule 7) and a logging path;
+  - item 11 needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key.
+- **Carried from earlier work, needing a decision rather than code:**
+  - whether undo should reach back across a restore merge;
+  - whether new users start in the Casual detail level.
+- **New limits to state:**
+  - the matched-periods estimate needs about nine weeks without a change per period, four periods at least, so short
+    records report what they need instead of an estimate;
+  - the demo's weight comes from one source, so sensor fusion changes nothing in it;
+  - the aerobic filter's demo intervals were too wide and are now narrowed by its own record.
