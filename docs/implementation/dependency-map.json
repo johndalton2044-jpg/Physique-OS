@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-07T00:08:02.382Z",
-  "buildId": "1a3e16e592",
+  "generatedAt": "2026-10-07T00:26:09.355Z",
+  "buildId": "8461bd89d9",
   "nodes": 100,
-  "edges": 275,
+  "edges": 276,
   "contractDerived": 88,
   "dependencies": [
     {
@@ -1273,6 +1273,11 @@
     {
       "sourceId": "cardio_fitness_latent",
       "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "cardio_fitness_latent",
+      "targetId": "capabilityVector",
       "dependencyType": "model"
     },
     {

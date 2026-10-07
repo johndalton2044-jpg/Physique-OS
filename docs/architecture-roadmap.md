@@ -3522,5 +3522,5 @@ the trend ignore its data, or dropping capacity from the capability vector, each
 capability vector's endurance entry carries the capacity (level, interval, trend) beside the cardio minutes, which are a
 dose, not a capacity; the Learn tab's aerobic row shows the trend. On the demo: 23 weight-bearing sessions, VO2max 47.8
 (45.6 to 50.1), trend +0.57 a month (−1.97 to +3.12, 28% personal): no clear change. An aerobic-fitness capability joins
-the ledger. 1,671 self-tests pass; the full release record is in progress. Stage D is complete except the mobility,
+the ledger. All 36 gates pass (reproducible included); release 24/24; 1,671 self-tests. Stage D is complete except the mobility,
 conditioning and power responses, which wait for observation types that measure them (TRANSITION item 4).
