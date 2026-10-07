@@ -3878,4 +3878,4 @@ restore merge exactly as Data → Restore → Merge does and then check:
 Letting an undo of a restore revoke nothing, as an undo of a sync merge does, turned the checks red. The open question
 was misnamed earlier. It is about a different merge: undoing a sync merge of another device's changes is still not
 durable, because making it so would delete that device's entries on every device. That remains a decision for the
-person. 1,763 self-tests pass; the full release record is in progress.
+person. All 36 gates pass (reproducible included); release 24/24; 1,763 self-tests.
