@@ -26,11 +26,52 @@ function _loopDeltas(prev,now){var out=[];if(!prev)return ['the first cycle: a b
   if(now.adherence!=null&&prev.adherence!=null&&Math.abs(now.adherence-prev.adherence)>=10)out.push('plan followed '+now.adherence+'% of the time (was '+prev.adherence+'%)');
   return out.length?out:['nothing changed enough to report: the estimates held'];}
 /* TEST: the next experiment, where the personal model is least certain and the change matters for the goal */
-function nextTest(){var M=_safe(function(){return personalResponseModel();},{rows:[]}),running={};(DB.experiments||[]).forEach(function(e){if(e.status==='running'||e.status==='active')running[e.variable]=1;});
-  var c=M.rows.filter(function(r){return LOOP_TEST_TEMPLATE[r.variable]&&!running[r.variable]&&r.outcome==='weight'&&Math.abs(r.prior.mean)>0;})
-    .map(function(r){return {r:r,u:(1-r.personalWeight)*Math.abs(r.prior.mean)};}).sort(function(a,b){return b.u-a.u;})[0];
-  if(!c)return {status:'none',note:'an experiment is already running on each lever, or nothing is uncertain enough to test'};
-  return {status:'ok',variable:c.r.variable,template:LOOP_TEST_TEMPLATE[c.r.variable],why:'your '+c.r.variable+' response is '+Math.round(c.r.personalWeight*100)+'% your own data; a test would tell how '+c.r.variable+' work for you rather than for people in general'};}
+/* EXPERIMENT PORTFOLIO (Stage E; TRANSITION item 8). Every lever's ready-made test, on one scale: the information it is
+   expected to give. A lever's effect per unit is believed to be normal with SD s0 (the personal response model's
+   posterior, already discounted for age, widened by half of the largest disagreement between its findings); a test
+   gives a result with standard error se per unit; the expected information gain is 1/2 ln(1 + s0^2/se^2) nats
+   (Lindley 1956; for a normal model it does not depend on the result), and the estimate's SD would fall to
+   1/sqrt(1/s0^2 + 1/se^2). se is the outcome's noise over a Response's two 21-day windows, divided by the dose expected
+   to be carried out (the template's change times the probability it is done, interventionAdherence); where this person
+   has final responses on that outcome measured over most of both windows (14 readings a side), their median standard
+   error replaces the formula, because it carries their real day-to-day carry-over (a response with a few readings on one
+   side measures the gap in the record, not the person). Ranked by gain per week of testing, because tests run one at a time. A test that would narrow
+   the estimate by less than 10% is not worth running. */
+var PORTFOLIO_MIN_GAIN=-Math.log(0.9);
+function _testNoise(outcome){
+  var past=(DB.responses||[]).filter(function(r){var n=r.primary&&r.primary.n;return r.outcome===outcome&&r.stage==='final'&&r.primary.se>0&&n&&n[0]>=14&&n[1]>=14;}).map(function(r){return r.primary.se;});
+  if(past.length)return {se:median(past),basis:'the median standard error of your '+past.length+' earlier response'+(past.length===1?'':'s')+' on '+outcome};
+  if(outcome==='weight'){var w=personalBaselines().streams.weight,s=w&&w.status==='ok'?w.baseline:0.45;
+    return {se:s*7*Math.SQRT2/Math.sqrt(770),basis:'your day-to-day weight swing ('+round(s,2)+' lb) over two 21-day trends'};}
+  var v=seriesWindow(outcome,56).map(function(d){return d.value;}),s2=v.length>=7?sd(v):null;
+  return s2?{se:s2*Math.sqrt(2/21),basis:'the day-to-day spread of '+outcome+' ('+round(s2,2)+') over two 21-day averages'}:null;}
+function experimentPortfolio(){
+  var M=personalResponseModel(),PR=RESPONSE_PRIORS(),T={},running={},C=[];try{C=knowledgeConflicts();}catch(e){_q(e,'P2');}
+  EXPERIMENT_TEMPLATES.forEach(function(t){T[t.id]=t;});
+  (DB.experiments||[]).forEach(function(e){if(e.status==='running'||e.status==='active')running[e.variable]=1;});
+  var base=personalBaselines().streams;
+  var rows=M.rows.map(function(r){var tid=LOOP_TEST_TEMPLATE[r.variable],t=T[tid];if(!t||!t.delta)return null;
+    var noise=_testNoise(r.outcome);
+    if(!noise)return {variable:r.variable,outcome:r.outcome,key:r.key,template:tid,status:'insufficient',need:['readings of '+r.outcome+' to know its noise']};
+    var sc=(PR[r.key]||{}).scale||1,cur=base[r.variable]&&base[r.variable].status==='ok'?base[r.variable].baseline:null,p=interventionAdherence(r.variable,t.delta,cur).p;
+    var doseUnits=Math.abs(t.delta)*p/sc,seU=noise.se/doseUnits;
+    var dis=C.filter(function(c){return c.subject===r.key&&c.difference!=null;}).map(function(c){return Math.abs(c.difference);}),half=dis.length?Math.max.apply(null,dis)/2:0;
+    var s0=Math.sqrt(r.posterior.sd*r.posterior.sd+half*half),eig=0.5*Math.log(1+s0*s0/(seU*seU)),s1=1/Math.sqrt(1/(s0*s0)+1/(seU*seU)),days=21+(t.washoutDays||0);
+    var busy=!!(running[r.variable]||running[t.variable]);
+    return {variable:r.variable,outcome:r.outcome,key:r.key,template:tid,todo:t.todo,delta:t.delta,pDone:p,label:r.label,unit:r.unit,
+      sdNow:round(s0,3),testSe:round(seU,3),sdAfter:round(s1,3),narrowing:round(1-s1/s0,2),eig:round(eig,3),bits:round(eig/Math.LN2,2),days:days,perWeek:round(eig/(days/7),3),
+      conflicted:half>0,noiseBasis:noise.basis,status:busy?'running':(eig<PORTFOLIO_MIN_GAIN?'not worth it':'ok')};}).filter(Boolean);
+  var order={ok:0,'not worth it':1,running:2,insufficient:3};
+  rows.sort(function(a,b){return (order[a.status]-order[b.status])||((b.perWeek||0)-(a.perWeek||0));});
+  return {status:'ok',cls:'DERIVED',rows:rows,
+    method:'expected information gain of each lever\u2019s ready-made test, 1/2 ln(1 + s0\u00b2/se\u00b2), per week of testing; s0 from the personal response model, se from the outcome\u2019s noise and the dose likely to be carried out',
+    limits:'Assumes the effect is the same in the test as in earlier responses, and that one test runs at a time. Information about different outcomes is counted alike; what matters more to you is your call.'};}
+function nextTest(){var P=_safe(function(){return experimentPortfolio();},{rows:[]}),c=(P.rows||[]).filter(function(r){return r.status==='ok';})[0];
+  if(!c)return {status:'none',portfolio:(P.rows||[]).slice(0,4),note:(P.rows||[]).some(function(r){return r.status==='not worth it';})?'no test would narrow what is known by 10% or more; an experiment is running on, or nothing is left to learn from, the rest':'an experiment is already running on each lever, or nothing is uncertain enough to test'};
+  var u=c.unit?' '+c.unit:'';
+  return {status:'ok',variable:c.variable,outcome:c.outcome,template:c.template,eig:c.eig,bits:c.bits,portfolio:P.rows.slice(0,4),
+    why:'a '+Math.round(c.days/7)+'-week test ('+c.todo+') would narrow your '+c.variable+' \u2192 '+c.outcome+' estimate from \u00b1'+round(2*c.sdNow,2)+' to \u00b1'+round(2*c.sdAfter,2)+u+' '+c.label+
+      ': the most expected learning per week of any lever'+(c.conflicted?' (its findings disagree)':'')};}
 function loopStages(){var st=[],push=function(id,label,f){var r=_safe(f,{status:'attention',figure:'\u2014',detail:'could not be read'});st.push(Object.assign({id:id,label:label},r));};
   push('observe','Observe',function(){var m=missingness(14),w=m.weight.pct,c=m.calories.pct;return {status:w>=70&&c>=50?'ok':(w<30?'starved':'attention'),figure:'weigh-ins '+w+'%, food '+c+'%',detail:'the last 14 days'};});
   push('understand','Understand',function(){var t=personalStateModel();return {status:t.fidelity>=60?'ok':'attention',figure:'twin fidelity '+t.fidelity+'%',detail:'how much of the state model has data'};});
@@ -56,6 +97,6 @@ function runLearningCycle(opts){opts=opts||{};DB.cycles=DB.cycles||[];var wk=_is
   DB.cycles=DB.cycles.filter(function(c){return c.id!==rec.id;});DB.cycles.push(rec);emitEvent('cycle.recorded',rec,{at:rec.at});save('cycles');return rec;}
 (function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='learning_loop';}))return;
   MODELS.push({id:'learning_loop',name:'Learning loop',cls:'DERIVED',version:'1.0',inputs:['weight','calories'],minN:1,assumes:['a week is long enough to see a change in beliefs'],failsWhen:['stages starved of data'],
-    output:'a weekly cycle: each stage\u2019s status, what changed in what the app knows about you, loop health and the next test',consumers:['loopCard'],freshnessDays:7,uncertainty:{kind:'carried from each stage'},fn:'learningCycleView'});})();
+    output:'a weekly cycle: each stage\u2019s status, what changed in what the app knows about you, loop health and the next test, chosen by expected information gain across levers',consumers:['loopCard'],freshnessDays:7,uncertainty:{kind:'carried from each stage'},fn:'learningCycleView'});})();
 /* the model's own output: the cycle computed from the record, without its timestamp or a write, so it reproduces */
 function learningCycleView(){var r=runLearningCycle({dryRun:true,force:true});delete r.at;return r;}

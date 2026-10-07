@@ -63,7 +63,7 @@ function _evaluateResponseCore(iv){
   /* the expectation: stated when the change began; else this person's own model, leaving this change out (never judged
      against itself); else the population figure */
   var ex=iv.expected||(function(){if(rec.dose!=null&&oc&&typeof predictResponse==='function'){var pr=predictResponse(iv.variable,oc,rec.dose,{excludeId:iv.id});
-      if(pr&&pr.n)return {lo:pr.lo,hi:pr.hi,unit:pr.unit,basis:pr.basis};}return oc==='weight'?_expectedWeightChange(iv):null;})();
+      if(pr&&pr.n)return {lo:pr.lo,hi:pr.hi,mean:pr.mean,unit:pr.unit,basis:pr.basis,source:'personal_response'};}   /* source: scored for self-calibration */return oc==='weight'?_expectedWeightChange(iv):null;})();
   if(ex&&rec.primary){rec.expected=ex;var lo=Math.min(ex.lo,ex.hi),hi=Math.max(ex.lo,ex.hi);rec.expectation=rec.primary.effect>=lo-rec.primary.se&&rec.primary.effect<=hi+rec.primary.se?'as expected':(Math.abs(rec.primary.effect)<Math.abs((lo+hi)/2)?'less than expected':'more than expected');}
   /* unintended consequences */
   rec.unintended=[];RESPONSE_SECONDARY.forEach(function(s){if(s[0]===oc)return;var lc=s[0]==='e1rm'?(function(){var b=_e1rmSeries(B[0],B[1]).map(function(x){return x.value;}),a=_e1rmSeries(A[0],A[1]).map(function(x){return x.value;});
@@ -90,7 +90,11 @@ function _evaluateResponseCore(iv){
 function recordResponses(){
   DB.responses=DB.responses||[];DB.exposures=DB.exposures||[];DB.outcomes=DB.outcomes||[];var n=0;
   responseInterventions().forEach(function(iv){var r=evaluateResponse(iv);if(r.stage==='pending')return;
-    var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&(ex.stage===r.stage||ex.stage==='final'))return;
+    /* KNOWLEDGE VERSIONING (Stage E; TRANSITION item 7): a finding is derived again when it matures (provisional, then
+       final) or when the method that derives it changes (RESPONSE_MODEL_VERSION). Each derivation is a new version that
+       names the one it replaced; the earlier one stays in the event log. */
+    var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&ex.modelVersion===RESPONSE_MODEL_VERSION&&(ex.stage===r.stage||ex.stage==='final'))return;
+    r.version=ex?(ex.version||1)+1:1;if(ex)r.previous={version:ex.version||1,stage:ex.stage,modelVersion:ex.modelVersion||'response-1.0',effect:ex.primary?ex.primary.effect:null,se:ex.primary?ex.primary.se:null,evaluatedAt:ex.evaluatedAt||null};
     /* Stage B (future plan items 12, 13, 15): the exposure received and the outcome measured are their own records,
        and the Response refers to them and to the plan version it judges */
     var E=exposureFor(iv,r),O=outcomeFrom(iv,r);
@@ -129,7 +133,7 @@ function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){retu
   MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
     assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
     failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)','the record is too short for four matched periods (that estimate is then omitted)'],
-    output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate',consumers:['responsesOf'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
+    output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate; and the day-by-day path without the change',consumers:['responsesOf','responseCounterfactual'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
 /* ============================================================================
    CANONICAL RESPONSE (audit A-002): every Response record carries the canonical field set explicitly, whatever produced
    the intervention (plan change, experiment, adaptation, supplement, optimiser choice), pending records included.

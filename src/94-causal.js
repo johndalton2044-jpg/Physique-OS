@@ -371,6 +371,34 @@ function responseCausal(R){
       ('the estimates disagree: '+clearOnes.map(function(e){return e.method;}).join(' and ')+' see'+(clearOnes.length===1?'s':'')+' a clear change, '+
         E.filter(function(e){return !e.clear;}).map(function(e){return e.method;}).join(' and ')+' do'+(E.length-clearOnes.length===1?'es':'')+' not'))};
 }
+/* COUNTERFACTUAL (Stage F; TRANSITION item 10): what would have happened without the change, day by day through the
+   Response's after-window. The Response's counterfactual is the trend before, continued; where matched periods exist it
+   continues with the change those periods made on their own (their mean), because trends drift with no change at all
+   and a plain continuation would credit the drift to the change. Weight: the before-window least-squares line's level at
+   the change, then the before slope plus that drift; the interval is the line's own prediction error, or, with matched
+   periods, the level's error plus their spread (never below the Response's own standard error) growing with the days,
+   all widened for day-to-day carry-over. A level (sleep, hunger): the before average plus the drift. 80% intervals, like
+   the forecasts. The difference at the end of the window is what the change did by then, with both errors. */
+function responseCounterfactual(R){
+  var P=R&&R.primary,oc=R&&R.outcome,W=R&&R.windows,d0=R&&R.start;if(!P||!oc||!W||!W.before||!W.after)return {status:'insufficient',need:['a judged response with a measured outcome']};
+  var B=_rangeSeries(oc,W.before[0],W.before[1]),A=_rangeSeries(oc,W.after[0],W.after[1]);if(B.length<4||A.length<2)return {status:'insufficient',need:['readings on both sides of the change']};
+  var M=matchedPeriods(R),its=null;try{its=interruptedTimeSeries({type:oc,changeDate:d0,before:W.before,after:W.after});}catch(e){}
+  var rho=its&&its.status==='ok'?its.autocorrelation:0,infl=Math.sqrt((1+rho)/(1-rho)),z=1.2816,rate=oc==='weight';
+  var fit=function(S){var x=S.map(function(d){return daysBetween(d0,d.date);}),y=S.map(function(d){return d.value;}),n=S.length,xm=mean(x),ym=mean(y),sxx=0,sxy=0;
+    for(var i=0;i<n;i++){sxx+=(x[i]-xm)*(x[i]-xm);sxy+=(x[i]-xm)*(y[i]-ym);}var b=sxx?sxy/sxx:0,res=0;for(i=0;i<n;i++)res+=Math.pow(y[i]-ym-b*(x[i]-xm),2);
+    return {n:n,xm:xm,ym:ym,sxx:sxx||1,b:b,s:Math.sqrt(res/Math.max(1,n-2)),sdY:sd(y)||0};};
+  var fb=fit(B),fa=fit(A),drift=M.status==='ok'?M.nullMean:0,sdM=M.status==='ok'?Math.max(M.nullSd,P.se||0):null;
+  var cf=function(x){if(rate){var slope=fb.b+drift/7,m=fb.ym+fb.b*(0-fb.xm)+slope*x,v=sdM!=null?infl*infl*fb.s*fb.s*(1/fb.n+fb.xm*fb.xm/fb.sxx)+Math.pow(sdM/7*x,2):infl*infl*fb.s*fb.s*(1/fb.n+(x-fb.xm)*(x-fb.xm)/fb.sxx);return {mean:m,sd:Math.sqrt(v)};}
+    var v2=infl*infl*fb.sdY*fb.sdY/fb.n+(sdM!=null?sdM*sdM:0);return {mean:fb.ym+drift,sd:Math.sqrt(v2)};};
+  var act=function(x){if(rate)return {mean:fa.ym+fa.b*(x-fa.xm),sd:infl*fa.s*Math.sqrt(1/fa.n+(x-fa.xm)*(x-fa.xm)/fa.sxx)};return {mean:fa.ym,sd:infl*fa.sdY/Math.sqrt(fa.n)};};
+  var path=[],len=daysBetween(W.after[0],W.after[1]);for(var k=0;k<=len;k++){var dt=addDays(W.after[0],k),x=daysBetween(d0,dt),c=cf(x);path.push({date:dt,x:x,mean:round(c.mean,2),lo:round(c.mean-z*c.sd,2),hi:round(c.mean+z*c.sd,2)});}
+  var xe=daysBetween(d0,W.after[1]),ce=cf(xe),ae=act(xe),dm=ae.mean-ce.mean,ds=Math.sqrt(ce.sd*ce.sd+ae.sd*ae.sd),un=rate?'lb':((OBS_TYPES[oc]||{}).unit||null),u=un?' '+un:'';
+  return {status:'ok',cls:'PREDICTIVE',outcome:oc,unit:un,matched:M.status==='ok',drift:M.status==='ok'?M.nullMean:null,path:path,
+    before:B.map(function(d){return {date:d.date,x:daysBetween(d0,d.date),value:d.value};}),actual:A.map(function(d){return {date:d.date,x:daysBetween(d0,d.date),value:d.value};}),
+    end:{date:W.after[1],actual:round(ae.mean,2),counterfactual:{mean:round(ce.mean,2),lo:round(ce.mean-z*ce.sd,2),hi:round(ce.mean+z*ce.sd,2)},difference:{mean:round(dm,2),lo:round(dm-z*ds,2),hi:round(dm+z*ds,2)}},
+    basis:(rate?'the trend before the change, continued':'the average before the change')+(M.status==='ok'?', with the change '+M.periods+' comparable periods made on their own ('+(M.nullMean>0?'+':'')+M.nullMean+(rate?' lb a week':'')+')':'')+'; 80% interval',
+    text:'without the change, about '+fmtNum(ce.mean,1)+u+' on '+shortDate(W.after[1])+' ('+fmtNum(ce.mean-z*ce.sd,1)+' to '+fmtNum(ce.mean+z*ce.sd,1)+'), against '+fmtNum(ae.mean,1)+u+' measured'};
+}
 /* Deliberate changes to a lever, pooled: each final Response's matched estimate per unit of the change (the lever's
    own scale, e.g. per 1,000 steps a day), combined by inverse variance. The identification strategy that rests on
    changes the person made at a date rather than on day-to-day association. */

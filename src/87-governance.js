@@ -307,31 +307,41 @@ var SOURCE_RELIABILITY={
   estimate:{weight:0.4,note:'derived rather than measured'},
   unspecified:{weight:0.6}
 };
-function fuseObservations(type,date){
-  var day=(obsOf(type)||[]).filter(function(o){return o.date===date;});
+function fuseObservations(type,date,opts){opts=opts||{};
+  var day=opts.obs||(obsOf(type,{asOf:opts.asOf})||[]).filter(function(o){return o.date===date;});
   if(!day.length)return {status:'none',type:type,date:date};
-  if(day.length===1)return {status:'single',type:type,date:date,value:day[0].value,
-    source:day[0].source||'unspecified',
-    note:'One reading, so there is nothing to fuse.'};
+  /* Stage G: the shared per-source parameters (_sourceParams), as of the date asked about; a reading from a source with a
+     measured bias is put on the reference scale even when it is the day's only one, so the series does not jump on the
+     days one source is missing */
+  var SP=_sourceParams(type,opts.asOf||asOf()),P=SP.params;
+  if(day.length===1){var p1=P[sourceKeyOf(day[0])],b1=p1&&p1.bias||0;return {status:'single',type:type,date:date,value:round(day[0].value-b1,3),exact:day[0].value-b1,raw:day[0].value,
+    source:sourceKeyOf(day[0]),correction:b1,reference:SP.ref,
+    note:'One reading, so there is nothing to fuse'+(b1?'; it is put on the reference scale':'')+'.'};}
   /* Two fusion paths had survived side by side: this one weighted sources by a FIXED reliability table, and
      measurementModel() estimates each source's bias and noise from the data. The same day could be fused
      two different ways. This now uses the measurement model — bias-corrected, weighted by measured noise —
      and falls back to the declared table only for a source whose noise could not be measured, saying so. */
-  var mm=null;try{mm=measurementModel(type);}catch(e){}
-  var P={};(mm&&mm.parameters||[]).forEach(function(x){P[x.source]=x;});
+  /* each reading: bias-corrected to the reference, weighted by its quality (measurementQuality) over its source's measured
+     noise squared; a source whose noise cannot be measured falls back to the declared table, and says so */
   var rows=day.map(function(o){
-    var src=o.source||'unspecified',p=P[src];
+    var src=sourceKeyOf(o),p=P[src],q=Math.max(0.01,measurementQuality(o).score);
     if(p&&p.noise){
-      return {value:round(o.value-(p.bias||0),3),raw:o.value,source:src,weight:1/(p.noise*p.noise),weightFrom:'measured noise'};
+      return {value:round(o.value-(p.bias||0),3),exact:o.value-(p.bias||0),raw:o.value,source:src,quality:q,noise:p.noise,weight:q/(p.noise*p.noise),weightFrom:'quality over measured noise squared'};
     }
-    var r=SOURCE_RELIABILITY[o.source]||SOURCE_RELIABILITY.unspecified;
-    return {value:o.value,raw:o.value,source:src,weight:r.weight,weightFrom:'declared reliability (noise not measurable)'};});
-  var wsum=rows.reduce(function(a,r){return a+r.weight;},0);
-  var fused=rows.reduce(function(a,r){return a+r.value*r.weight;},0)/wsum;
+    var r=SOURCE_RELIABILITY[o.source]||SOURCE_RELIABILITY[src.split(':').slice(-1)[0]]||SOURCE_RELIABILITY.unspecified;
+    return {value:o.value,exact:o.value,raw:o.value,source:src,quality:q,noise:null,weight:q*r.weight,weightFrom:'declared reliability (noise not measurable)'};});
+  /* with three or more sources, a reading more than four combined standard deviations from the others' fused value is
+     set aside as contradicted (only between readings whose noise is measured) */
+  var fz=function(R){var W=0,S=0;R.forEach(function(r){W+=r.weight;S+=r.weight*r.exact;});return {v:S/W,se:Math.sqrt(1/W)};},nsrc={};rows.forEach(function(r){nsrc[r.source]=1;});
+  if(Object.keys(nsrc).length>=3)rows.forEach(function(r){if(!r.noise)return;var o=rows.filter(function(x){return x!==r&&x.source!==r.source&&x.noise;});if(o.length<2)return;var f=fz(o);r.contradicted=Math.abs(r.exact-f.v)>4*Math.sqrt(r.noise*r.noise+f.se*f.se);});
+  var kept=rows.filter(function(r){return !r.contradicted;});if(!kept.length)kept=rows;
+  var wsum=kept.reduce(function(a,r){return a+r.weight;},0);
+  var fused=kept.reduce(function(a,r){return a+r.exact*r.weight;},0)/wsum;
+  rows.forEach(function(r){r.share=r.contradicted?0:round(r.weight/wsum,3);});
   var spread=Math.max.apply(null,rows.map(function(r){return r.value;}))-
              Math.min.apply(null,rows.map(function(r){return r.value;}));
-  return {status:'ok',cls:'DERIVED',type:type,date:date,
-    value:round(fused,2),sources:rows,spread:round(spread,2),
+  return {status:'ok',cls:'DERIVED',type:type,date:date,reference:SP.ref,
+    value:round(fused,2),exact:fused,sources:rows,spread:round(spread,2),contradicted:rows.filter(function(r){return r.contradicted;}).map(function(r){return r.source;}),
     disagreement:spread>Math.abs(fused)*0.02,
     note:'Multiple readings for one day, combined by how much each source is trusted rather than by which arrived last.',
     caveat:spread>Math.abs(fused)*0.02?

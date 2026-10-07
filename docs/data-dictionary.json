@@ -1873,6 +1873,9 @@
     "verdict": [
      "string"
     ],
+    "version": [
+     "number"
+    ],
     "windows": [
      "object"
     ]
@@ -2173,7 +2176,7 @@
   {
    "id": "intervention_response",
    "cls": "EMPIRICAL",
-   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate",
+   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate; and the day-by-day path without the change",
    "uncertainty": "standard error of the difference in trends",
    "inputs": [
     "weight",
@@ -2187,7 +2190,7 @@
   {
    "id": "learning_loop",
    "cls": "DERIVED",
-   "output": "a weekly cycle: each stage’s status, what changed in what the app knows about you, loop health and the next test",
+   "output": "a weekly cycle: each stage’s status, what changed in what the app knows about you, loop health and the next test, chosen by expected information gain across levers",
    "uncertainty": "carried from each stage",
    "inputs": [
     "weight",
@@ -2447,7 +2450,7 @@
   {
    "id": "unified_optimiser",
    "cls": "PREDICTIVE",
-   "output": "the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference",
+   "output": "the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference; each simulated forward with an interval",
    "uncertainty": "combined standard deviation and robustness",
    "inputs": [
     "weight",

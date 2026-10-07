@@ -1,12 +1,16 @@
 /* The unified optimiser on the Plan tab (the model is 73-unified-optimiser.js). */
 function optimiserCard(){var O=unifiedOptimiser();if(O.status!=='ok'||!O.pareto.length)return '';var R=O.recommended;
+  /* each option simulated forward (Stage F): where it leaves you in 8 weeks, and against changing nothing */
+  var SIM=null;try{SIM=simulatePolicies();}catch(e){_q(e,'P2');}
+  var simLine=function(i){var s=SIM&&SIM.status==='ok'?SIM.options[i]:null;return s?'<div class="hint">'+esc('In 8 weeks about '+fmtNum(s.end.mean,1)+' lb ('+fmtNum(s.end.lo,1)+' to '+fmtNum(s.end.hi,1)+'); '+(s.vsNothing.mean>0?'+':'')+s.vsNothing.mean+' lb against changing nothing ('+s.vsNothing.lo+' to '+s.vsNothing.hi+')')+'</div>':'';};
   var row=function(r,i){return '<div class="feat"><div class="feat-body"><b>'+esc(r.label)+'</b>'+(i===0?' '+uiPill('suggested','good'):'')+
-    '<div class="hint">'+esc((r.effective>0?'+':'')+r.effective+' lb a week expected (\u00b1'+round(2*r.sd,2)+'), allowing for a '+Math.round(r.pAll*100)+'% chance of carrying it all out \u00b7 '+r.minutes+' min a week \u00b7 '+Math.round(r.robustness*100)+'% likely to move the right way')+'</div>'+
+    '<div class="hint">'+esc((r.effective>0?'+':'')+r.effective+' lb a week expected (\u00b1'+round(2*r.sd,2)+'), allowing for a '+Math.round(r.pAll*100)+'% chance of carrying it all out \u00b7 '+r.minutes+' min a week \u00b7 '+Math.round(r.robustness*100)+'% likely to move the right way')+'</div>'+simLine(i)+
     (r.risk.length?'<div class="hint">'+esc(r.risk.join('; '))+'</div>':'')+'</div>'+uiBtn('Use this','opt.apply',String(i),'btn-sm '+(i===0?'btn-primary':'btn-secondary'))+'</div>';};
   var prefs=[['balanced','Balanced'],['effort','Least effort'],['time','Least time'],['fastest','Fastest within range']];
   return uiCard({fold:'plan-options',title:'Options for the next two weeks',sub:R?esc(R.label):'',body:'<div class="hint">To '+esc(O.goal)+': '+O.searched+' combinations weighed, '+O.feasible+' fit your time and the safe range; these are the ones nothing beats on every count.</div>'+
     '<div class="chips">'+prefs.map(function(p){return '<button type="button" class="chip sm'+(O.preference===p[0]?' active':'')+'" data-act="opt.pref" data-arg="'+p[0]+'">'+p[1]+'</button>';}).join('')+'</div>'+
-    O.pareto.slice(0,5).map(row).join('')+'<div class="prov">'+esc(O.method)+'. Assumes '+esc(O.assumptions.join('; '))+'. '+esc(O.limits)+'</div>'});}
+    O.pareto.slice(0,5).map(row).join('')+(SIM&&SIM.status==='ok'?'<div class="hint">'+esc('With no change: about '+fmtNum(SIM.baseline[SIM.baseline.length-1].mean,1)+' lb in 8 weeks ('+fmtNum(SIM.baseline[SIM.baseline.length-1].lo,1)+' to '+fmtNum(SIM.baseline[SIM.baseline.length-1].hi,1)+'), from '+SIM.modelLabel.toLowerCase()+', the forecast that has scored best on your record')+'</div>':'')+
+    '<div class="prov">'+esc(O.method)+'. Assumes '+esc(O.assumptions.join('; '))+'. '+esc(O.limits)+(SIM&&SIM.status==='ok'?' '+esc(SIM.limits):'')+'</div>'});}
 registerAction('opt.pref',function(p){DB.settings.optimiserPreference=p;save('settings');renderAll();});
 registerAction('opt.apply',function(i){var O=unifiedOptimiser(),r=O.pareto[+i];if(!r)return;var res=applyOptimiserChoice(r);renderAll();toast(res.status==='ok'?('Plan updated: '+r.label+'. Its effect will be judged after 7 and 21 days.'):'Could not apply that',{undo:res.status==='ok'});});
 /* STAGE C on the Plan tab: goals in tension (you choose), the next unit (marginal returns), who decides today */

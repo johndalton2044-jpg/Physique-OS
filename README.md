@@ -32,8 +32,13 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Marginal returns: the next unit of each dose | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | real data path | population | surfaced | local | internal | — | gate engine |
 | Body composition: fat and lean trajectories | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
-| Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
+| Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | measured | gate engine |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
+| Personal knowledge: versions, conflicts and decay | surfaced | heuristic | real data path | early personal | surfaced | local | internal | — | gate engine |
+| Experiment portfolio: the next test by expected information gain | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
+| Sensor fusion: one value from several sources | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
+| User-approved automation: approval policy and audit | surfaced | — | real data path | — | workflow-tested | local | independent | — | gate engine, workflow V-012 |
+| Self-calibration of every interval | surfaced | backtested | real data path | early personal | surfaced | local | internal | measured | gate engine |
 | State model (the 'digital twin') | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | — | real data path | — | surfaced | local | independent | — | gate integration |
 | Live connections to Fitbit, Withings and Oura | implemented | — | simulated | — | surfaced | server | internal | — | gate connect |

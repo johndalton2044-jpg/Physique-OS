@@ -13,7 +13,7 @@ function _howYouRespond(){var M=personalResponseModel(),rows=M.rows.filter(funct
     '<div class="prov">'+esc(M.method)+'. '+esc(M.limits)+'</div>';}
 registerAction('responses.open',function(id){openSheet('edit',{form:'response',title:'What happened because of it',desc:'',buf:{id:id}});});
 SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x.id===b.id;})[0];if(!r)return {body:'<div class="hint">That response is no longer in the record.</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
-  var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
+  var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))+' \u00b7 version '+(r.version||1)+(r.previous?(', replacing the '+esc(r.previous.stage)+' one ('+esc(r.previous.modelVersion)+(r.previous.effect!=null?', '+r.previous.effect:'')+')'):'')})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
   /* the exposure actually received, beside what was planned and what came before (Stage B) */
   var _E=exposuresOf().filter(function(e){return e.id===r.exposureId;})[0];
   if(_E)out+=uiRow('Received',fmtNum(_E.received,_E.received%1?2:0)+' '+esc(_E.unit),{sub:esc([_E.planned!=null?'planned '+fmtNum(_E.planned,0):null,_E.before!=null?fmtNum(_E.before,_E.before%1?2:0)+' before':null,_E.coverage!=null?'logged on '+Math.round(_E.coverage*100)+'% of days':null].filter(Boolean).join('; '))});
@@ -27,6 +27,15 @@ SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x
     out+=uiRow('Allowing for carry-over',I&&I.effect!=null?esc((I.effect>0?'+':'')+I.effect+' \u00b1 '+round(2*I.se,2)+u):'\u2014',{sub:esc(I&&I.effect!=null?('interrupted series, '+I.quantity+'; day-to-day carry-over '+I.autocorrelation+' \u00b7 '+I.verdict):'not enough readings either side')});
     out+=uiRow('Against comparable periods',M.status==='ok'?esc((M.estimate>0?'+':'')+M.estimate+' \u00b1 '+round(M.interval95[1]-M.estimate,2)+u):'\u2014',{sub:esc(M.status==='ok'?(M.verdict+'; '+M.periods+' periods without a change moved '+(M.nullMean>0?'+':'')+M.nullMean+' on their own'):(M.need||[]).join('; '))});
     out+=uiRow('Do the estimates agree?',C.agree==null?'\u2014':(C.agree?'yes':'no'),{sub:esc(C.agreement)});}
+  /* what would have happened without it (Stage F), day by day, beside what was measured */
+  var CF=P&&typeof responseCounterfactual==='function'?responseCounterfactual(r):null;
+  if(CF&&CF.status==='ok'){var e=CF.end;
+    out+=uiRow('Without the change',esc(fmtNum(e.counterfactual.mean,1)+(CF.unit?' '+CF.unit:'')),{sub:esc(CF.text+'; the change made '+(e.difference.mean>0?'+':'')+e.difference.mean+(CF.unit?' '+CF.unit:'')+' ('+e.difference.lo+' to '+e.difference.hi+') by '+shortDate(e.date)+' \u00b7 '+CF.basis)});
+    out+=svgChart({height:120,aria:'what would have happened without the change, beside what was measured',series:[
+      {type:'band',uncertaintyType:'forecast',pts:CF.path.map(function(p){return {x:p.x,lo:p.lo,hi:p.hi};})},
+      {type:'line',cls:'pred',epistemic:'PREDICTIVE',pts:CF.path.map(function(p){return {x:p.x,y:p.mean};})},
+      {type:'dots',pts:CF.before.concat(CF.actual).map(function(p){return {x:p.x,y:p.value};})}],
+      xMarkers:[{x:0,label:'change'}]})+chartLegend([['obs','measured'],['pred','without the change (80% band)']]);}
   out+=uiRow('Unintended effects',r.unintended&&r.unintended.length?esc(r.unintended.map(function(u){return u.text+' ('+(u.change>0?'+':'')+u.change+')';}).join(', ')):'none detected');
   if(r.burden)out+=uiRow('Burden',esc(r.burden.note));out+=uiRow('Reversible',esc(r.reversible||'\u2014'));
   if(r.followedBy&&(r.followedBy.planVersions.length||r.followedBy.decisions.length))out+=uiRow('What followed',esc((r.followedBy.planVersions.length?'plan version '+r.followedBy.planVersions.join(', '):'')+(r.followedBy.decisions.length?' \u00b7 '+r.followedBy.decisions.length+' decision(s)':'')));
@@ -42,6 +51,10 @@ function competitionCard(){var out=[];Object.keys(MODEL_COMPETITIONS).forEach(fu
     out.push('<div class="card-title" style="margin-top:6px">'+esc(E.label)+' ('+h+' days ahead)</div>'+(E.warning?'<div class="hint">'+esc(E.warning)+'</div>':'')+
       E.rows.map(function(r){var m=r.metrics[h],st=E.states[r.candidate]||'EXPERIMENTAL';return uiRow(esc(r.label),m?('\u00b1'+m.mae+' '+E.unit):'\u2014',{sub:esc(m?('bias '+(m.bias>0?'+':'')+m.bias+' \u00b7 80% interval held '+Math.round(m.coverage*100)+'% of the time'+(Math.abs(m.scale-1)>0.05?' ('+(m.scale>1?'widened':'narrowed')+' \u00d7'+m.scale+' to calibrate'+(m.calibratedCoverage!=null?': '+Math.round(m.calibratedCoverage*100)+'% on newer forecasts':'')+')':'')+(m.recentMae!=null?' \u00b7 last 30 days \u00b1'+m.recentMae:'')+' \u00b7 '+m.n+' forecasts'):'too few forecasts to score'),rsub:st.toLowerCase()});}).join('')+
       (E.history.length?'<div class="hint">'+esc(E.history.slice(-2).map(function(c){return c.type+': '+c.to+' ('+c.why+')';}).join('; '))+'</div>':''));});
+  /* every model that makes interval predictions, on one rule (Stage H): are its intervals honest? */
+  var SC=_safe(function(){return selfCalibration();},{rows:[]});
+  if(out.length&&SC.rows.length)out.push('<div class="card-title" style="margin-top:8px">Are the intervals honest?</div>'+SC.rows.map(function(r){return uiRow(esc(r.label),r.coverage!=null?Math.round(r.coverage*100)+'% held':'\u2014',
+    {sub:esc((r.n?r.n+' scored against '+r.against+' \u00b7 ':'')+(r.inUse?'widened \u00d7'+r.scale+' \u00b7 ':'')+r.status)});}).join('')+'<div class="prov">'+esc(SC.rule)+'.</div>');
   if(!out.length)return '';
   return uiFold('learn-competition','Which forecast to trust',Object.keys(MODEL_COMPETITIONS).map(function(id){var L=(DB.settings.modelLifecycle||{})[id];return MODEL_COMPETITIONS[id].label.split(' ')[0]+': '+(L?COMPETITION_CANDIDATES[L.primary].label.split(' (')[0]:'not scored');}).join(' \u00b7 '),
     out.join('')+'<div class="prov">Each forecast is replayed every 3 days over the last 90, using only what was known then. A challenger replaces the primary only when clearly better and calibrated; newer is not assumed better.</div>');}
@@ -52,4 +65,7 @@ function loopCard(){var C=runLearningCycle(),tone={ok:'good',attention:'attentio
   var H=C.health;body+='<div class="card-title" style="margin-top:8px">Is the loop closing?</div>'+uiRow('Changes judged',H.judged!=null?Math.round(H.judged*100)+'% of '+H.interventions:'\u2014',{sub:H.medianDaysToVerdict!=null?'a verdict about '+H.medianDaysToVerdict+' days after a change':''})+
     (C.starved.length?'<div class="hint">Short of data: '+esc(C.starved.join(', '))+'.</div>':'');
   if(C.next&&C.next.status==='ok')body+='<div class="card-title" style="margin-top:8px">Next test</div><div class="feat"><div class="feat-body">'+esc(C.next.why)+'</div>'+uiBtn('Start','exp.fromTemplate',C.next.template,'btn-sm btn-primary')+'</div>';
+  /* the portfolio behind it (Stage E): what each lever's test would teach, computed now so it is never stale */
+  var PF=_safe(function(){return experimentPortfolio();},{rows:[]}).rows.filter(function(r){return r.eig!=null;});
+  if(PF.length>1)body+=PF.slice(0,4).map(function(r){return uiRow(esc(r.variable+' \u2192 '+r.outcome),Math.round(r.narrowing*100)+'% narrower',{sub:esc(r.todo+' for '+Math.round(r.days/7)+' weeks \u00b7 '+r.bits+' bits'+(r.status==='ok'?'':' \u00b7 '+r.status)+(r.conflicted?' \u00b7 its findings disagree':''))});}).join('');
   return uiFold('learn-loop','The learning loop','week '+esc(C.week.split('-W')[1])+' \u00b7 '+C.stages.filter(function(s){return s.status==='ok';}).length+' of '+C.stages.length+' stages working',body+'<div class="prov">observe \u2192 understand \u2192 decide \u2192 act \u2192 measure \u2192 explain \u2192 learn \u2192 adapt \u2192 predict \u2192 test \u2192 personalize, recorded once a week</div>');}

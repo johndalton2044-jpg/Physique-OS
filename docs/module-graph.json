@@ -189,6 +189,12 @@
     "plansOf",
     "notePlanChange"
    ],
+   "65-import.js": [
+    "sourceKeyOf"
+   ],
+   "87-governance.js": [
+    "fuseObservations"
+   ],
    "90-sources.js": [
     "pickDayTotal"
    ]
@@ -835,6 +841,11 @@
    "54-scenarios.js": [
     "designExperiment"
    ],
+   "58-response-model.js": [
+    "RESPONSE_PRIORS",
+    "_respKey",
+    "_perUnit"
+   ],
    "62-food.js": [
     "foodLogsOn"
    ]
@@ -918,11 +929,14 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "nowISO",
     "daysBetween",
     "round",
-    "mean"
+    "mean",
+    "median",
+    "sd"
    ],
    "20-schema-storage.js": [
     "save"
@@ -931,13 +945,20 @@
     "emitEvent"
    ],
    "30-observations.js": [
+    "seriesWindow",
     "missingness"
    ],
    "40-models.js": [
     "adherenceState"
    ],
+   "45-baselines.js": [
+    "personalBaselines"
+   ],
    "50-decision.js": [
     "decide"
+   ],
+   "56-knowledge.js": [
+    "knowledgeConflicts"
    ],
    "58-model-competition.js": [
     "evaluateCompetition"
@@ -950,10 +971,12 @@
     "responsesOf"
    ],
    "58-response-model.js": [
+    "RESPONSE_PRIORS",
     "personalResponseModel"
    ],
    "59-friction.js": [
-    "frictionModel"
+    "frictionModel",
+    "interventionAdherence"
    ],
    "64-physique.js": [
     "physiqueModel"
@@ -970,6 +993,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "nowISO",
     "addDays",
@@ -992,6 +1016,9 @@
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
+   ],
+   "61-physiology.js": [
+    "cardioFitnessModel"
    ]
   }
  },
@@ -1044,6 +1071,10 @@
    "20-schema-storage.js": [
     "save",
     "memo"
+   ],
+   "22-persistence.js": [
+    "auditAppend",
+    "auditLog"
    ],
    "24-events.js": [
     "emitEvent"
@@ -1170,11 +1201,21 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "daysBetween",
     "round",
     "mean"
    ],
    "20-schema-storage.js": [
     "memo"
+   ],
+   "30-observations.js": [
+    "asOf"
+   ],
+   "56-knowledge.js": [
+    "_decay"
+   ],
+   "58-model-competition.js": [
+    "calibrationScale"
    ],
    "61-physiology.js": [
     "_kgNow"
@@ -1408,6 +1449,9 @@
    ],
    "50-decision.js": [
     "_detrended"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "61-conditioning.js": [
     "cardioSessions",
@@ -1920,8 +1964,11 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
+    "addDays",
     "round",
+    "fmtNum",
     "mean"
    ],
    "20-schema-storage.js": [
@@ -1936,6 +1983,9 @@
    "40-models.js": [
     "tissueKcalPerLb",
     "energyBalance"
+   ],
+   "58-model-competition.js": [
+    "competitionForecast"
    ],
    "58-plan.js": [
     "changePlan"
@@ -2892,6 +2942,7 @@
     "round"
    ],
    "30-observations.js": [
+    "asOf",
     "withAsOf",
     "obsOf"
    ],
@@ -2901,6 +2952,9 @@
     "tdeePersonal",
     "energyBalance",
     "forecastHoldoutValidation"
+   ],
+   "45-baselines.js": [
+    "measurementQuality"
    ],
    "50-decision.js": [
     "decide"
@@ -2916,6 +2970,9 @@
    ],
    "58-schedule.js": [
     "scheduleModel"
+   ],
+   "65-import.js": [
+    "sourceKeyOf"
    ],
    "71-integration.js": [
     "unifiedRecovery"
@@ -2945,7 +3002,7 @@
    ],
    "98-measurement.js": [
     "registryDrift",
-    "measurementModel",
+    "_sourceParams",
     "resolveQuantity"
    ]
   }
@@ -3760,15 +3817,24 @@
     "save",
     "pushUndo"
    ],
-   "22-persistence.js": [
-    "auditAppend"
-   ],
    "30-observations.js": [
     "addObservation",
     "obsOf"
    ],
    "50-decision.js": [
     "trainingProgram"
+   ],
+   "58-plan.js": [
+    "plansOf",
+    "automationLevel",
+    "_autoAudit",
+    "setAutomationApproval",
+    "automationDecision",
+    "automationProposal",
+    "automationPending",
+    "holdAutomation",
+    "resolveAutomation",
+    "automationHistory"
    ],
    "58-schedule.js": [
     "scheduledPlan"
@@ -3858,6 +3924,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_q",
     "round",
     "fmtNum",
     "esc",
@@ -3874,6 +3941,7 @@
    ],
    "73-unified-optimiser.js": [
     "unifiedOptimiser",
+    "simulatePolicies",
     "applyOptimiserChoice"
    ],
    "80-ui.js": [
@@ -3940,10 +4008,13 @@
     "attrEsc"
    ],
    "58-learning-loop.js": [
+    "_safe",
+    "experimentPortfolio",
     "runLearningCycle"
    ],
    "58-model-competition.js": [
-    "evaluateCompetition"
+    "evaluateCompetition",
+    "selfCalibration"
    ],
    "58-response-entity.js": [
     "exposuresOf",
@@ -3958,7 +4029,9 @@
    "80-ui.js": [
     "uiRow",
     "uiFold",
-    "uiBtn"
+    "uiBtn",
+    "svgChart",
+    "chartLegend"
    ],
    "85-log-sheet.js": [
     "openSheet"
@@ -3967,7 +4040,8 @@
     "registerAction"
    ],
    "94-causal.js": [
-    "responseCausal"
+    "responseCausal",
+    "responseCounterfactual"
    ]
   }
  },
@@ -4014,6 +4088,9 @@
    "90-connections.js": [
     "loadConnectedServices",
     "renderConnectedServices"
+   ],
+   "98-measurement.js": [
+    "_sourceParams"
    ]
   }
  },
@@ -4292,7 +4369,9 @@
     "todayISO",
     "addDays",
     "daysBetween",
+    "shortDate",
     "round",
+    "fmtNum",
     "mean",
     "median",
     "sd"
@@ -4504,6 +4583,7 @@
     "persistIncremental",
     "writeCheckpoint",
     "auditAppend",
+    "auditLog",
     "severityOf",
     "storageManager",
     "integrityCheck"
@@ -4719,6 +4799,7 @@
    "56-knowledge.js": [
     "detectEpisodes",
     "personalKnowledge",
+    "knowledgeConflicts",
     "knowledgeGaps",
     "decayConfidence"
    ],
@@ -4738,11 +4819,18 @@
    ],
    "58-learning-loop.js": [
     "_loopDeltas",
+    "experimentPortfolio",
     "nextTest",
     "runLearningCycle"
    ],
    "58-model-competition.js": [
-    "evaluateCompetition"
+    "backtestCompetition",
+    "evaluateCompetition",
+    "intervalCalibration",
+    "_competitionScored",
+    "calibrationScale",
+    "selfCalibration",
+    "competitionForecast"
    ],
    "58-phase-criteria.js": [
     "phaseCriteriaStatus"
@@ -4769,6 +4857,11 @@
     "adaptationProposals",
     "applyAdaptation",
     "adaptationOutcome",
+    "automationLevel",
+    "automationDecision",
+    "automationPending",
+    "holdAutomation",
+    "resolveAutomation",
     "recoverySuggestion",
     "changePlan"
    ],
@@ -4839,6 +4932,7 @@
     "_modalityFamily",
     "cardioFitnessObservation",
     "vo2Trend",
+    "cardioFitnessModel",
     "hydrationModel",
     "energyAvailability",
     "_foodGroup",
@@ -4982,6 +5076,7 @@
    "70-demo.js": [
     "_rng",
     "generateRecord",
+    "replayHistory",
     "loadDemo",
     "withFixture"
    ],
@@ -5001,6 +5096,8 @@
    "73-unified-optimiser.js": [
     "_leverEffect",
     "unifiedOptimiser",
+    "simulateOption",
+    "simulatePolicies",
     "applyOptimiserChoice"
    ],
    "75-gaps.js": [
@@ -5229,8 +5326,16 @@
     "runAutomationsFor",
     "runShortcut"
    ],
+   "90-optimiser-ui.js": [
+    "optimiserCard"
+   ],
+   "90-responses.js": [
+    "competitionCard",
+    "loopCard"
+   ],
    "90-sources.js": [
     "setSourcePreference",
+    "sourcesOverview",
     "deleteSourceData"
    ],
    "90-workout.js": [
@@ -5276,6 +5381,8 @@
     "adjustmentSet",
     "propensityAnalysis",
     "negativeControlCheck",
+    "matchedPeriods",
+    "responseCounterfactual",
     "deliberateChangeEffect",
     "poolNofOne"
    ],
@@ -5348,6 +5455,7 @@
     "missingnessWeights",
     "multipleImputation",
     "mnarSensitivity",
+    "_sourceParams",
     "measurementModel",
     "validateQuantityValue",
     "assertDimensionallyCompatible",
@@ -5617,6 +5725,9 @@
     "sd",
     "theilSen"
    ],
+   "20-schema-storage.js": [
+    "memo"
+   ],
    "30-observations.js": [
     "asOf",
     "obsOf",
@@ -5636,6 +5747,9 @@
    "54-scenarios.js": [
     "_mulberry32",
     "_gaussFrom"
+   ],
+   "65-import.js": [
+    "sourceKeyOf"
    ],
    "71-integration.js": [
     "unifiedRecovery",

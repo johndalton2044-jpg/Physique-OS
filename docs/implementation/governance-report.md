@@ -1,6 +1,6 @@
 # Governance report
 
-Build 88304dc6bc · generated 2026-10-07T00:35:09.627Z
+Build ed2073643a · generated 2026-10-07T02:43:48.764Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **25 passing**
 
@@ -17,7 +17,7 @@ Build 88304dc6bc · generated 2026-10-07T00:35:09.627Z
 - **goal-ownership** — every goal read goes through canonicalGoal()
 - **sheet-defined-twice** — no sheet is silently redefined
 - **registry-without-consumer** — every registry is read somewhere or classified with a reason (1 classified)
-- **audit-never-run** — 47 audit functions, every one invoked
+- **audit-never-run** — 48 audit functions, every one invoked
 - **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 27 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 45 models, each versioned

@@ -3597,4 +3597,241 @@ On the demo:
 The series fix also corrects its other consumers: the demo's steps change, which the old series called "a clear shift",
 now reads "larger than the noise, but not decisively", and steps' causal-support grade moves from "weakly supported" to
 "correlated", in line with the Response's own "no clear response yet". A causal-estimation capability joins the ledger.
-1,692 self-tests pass; the full release record is in progress.
+All 36 gates pass (reproducible included); release 24/24; 1,692 self-tests.
+
+## Stage E: knowledge versioning, conflict and decay (build 8c7cf50de7)
+
+What the record had learned had no version, aged only as a label, and could contradict itself in silence.
+- **Versioning.** A Response is derived again when it matures (provisional, then final) or when the method that derives
+  it changes (`RESPONSE_MODEL_VERSION`). Each derivation is a new version that names the one it replaced (stage, method,
+  effect, standard error) and leaves the earlier in the event log. A final Response recorded under an older method is
+  re-derived once and then left alone. Negative knowledge carries the method version that judged it and its version
+  among findings about the same change, with the one it follows named. It stays append-only, as its contract says. The
+  Response sheet shows the version and what it replaced.
+- **Conflict.** `knowledgeConflicts()` is a projection, with nothing stored. It sets side by side two responses to the
+  same lever whose effects per unit differ by more than twice the standard error of their difference, and a "did not
+  work" record beside a clear response to the same lever. Each side carries its age weight, and the record says what
+  would settle it. Conflicts appear in the knowledge sheet ("Findings that disagree") and its open questions.
+- **Decay.** In the personal response model each response's precision is multiplied by the weight personal knowledge
+  already used for its labels: half every 270 days after the response's window closed, one half-life rather than a
+  second one. Each row reports its effective number of responses and the age of the oldest.
+
+The known answers:
+- a response one half-life old has a standard error √2 times its own;
+- two responses at three and one times the energy arithmetic, 540 days apart, give the age-weighted average,
+  (0.25 × 0.6 + 0.2) / 1.25 = 0.28 lb a week per 100 kcal, and are a conflict whose newer side counts fully and whose
+  older counts a quarter;
+- two that agree within their noise are not a conflict;
+- a "did not work" 100 days old beside a clear response is one, its side weighted 0.5^(100/270);
+- repeated negatives on the same change number 1, 2;
+- a finding recorded under method 1.1 becomes version 2 naming it, with one more event, and is not derived again.
+
+Removing the decay, the conflicts, the re-derivation or the negatives' versions, or swapping older and newer, each turned
+its intended checks red. On the demo every Response is version 1, there is no negative knowledge and nothing
+conflicts; the steps response is days old and counts fully. A knowledge-versioning capability joins the ledger. All 36
+gates pass (reproducible included); release 24/24; 1,702 self-tests.
+
+## Stage E: the experiment portfolio (build e8c0eabd28)
+
+`nextTest()` picked the lever with the largest (1 − personal weight) × |population effect|, among weight outcomes only.
+It now takes the top of `experimentPortfolio()`, which puts every lever's ready-made test on one scale: the information
+it is expected to give. A lever's effect per unit is believed normal with SD s0: the personal response model's
+posterior, already discounted for age, widened by half of the largest disagreement between its findings. A test returns
+a result with standard error se per unit. Its expected information gain is ½ ln(1 + s0²/se²) nats (Lindley 1956; for a
+normal model it does not depend on the result), and the estimate's SD would fall to 1/√(1/s0² + 1/se²).
+- **The test's noise.** se is the outcome's noise over a Response's two 21-day windows, divided by the dose likely
+  carried out: the template's change times the adherence model's probability. For weight that noise is the day-to-day
+  swing over two 21-day trends; for a level, its spread over two 21-day averages. Where the person has final responses
+  on that outcome measured over most of both windows (14 readings a side), their median standard error replaces the
+  formula. A response with a few readings on one side measures the gap in the record, not the person: the demo's
+  creatine response, with 4 readings before it, would otherwise have made every weight test look worthless.
+- **Ranking.** Tests are ranked by gain per week of testing, since they run one at a time. One that would narrow its
+  estimate by less than 10% is not worth running.
+- **On screen.** The learning loop shows the portfolio under its next test.
+
+Checks:
+- the gain and the SD afterwards match ½ ln(1 + s0²/se²) computed by hand, from the weight swing, the 770 that the
+  squared day offsets of a 21-day window sum to, and the steps likely walked;
+- a level outcome's noise is its sample SD × √(2/21);
+- ranking is by gain per week, and the next test is the top one worth running;
+- everything below 10% is "not worth it";
+- after twenty precise responses, steps is not worth testing again;
+- two disagreeing calorie findings widen that lever by half their 0.4 lb difference.
+
+Restoring the old choice, dropping the adherence probability from the dose, ignoring conflicts, ignoring the person's
+own noise and removing the threshold each turned its intended checks red. On the demo, protein → hunger leads (45%
+narrower, 0.86 bits in 3 weeks, since nothing is known about it), then training days → weight (20%). Calories and steps
+would narrow by 5%, not worth a test after the steps experiment already run. An experiment-portfolio capability joins
+the ledger. All 36 gates pass (reproducible included); release 24/24; 1,709 self-tests. Stage E is complete.
+
+## Stage F: policy simulation (build 61bea62b51)
+
+The optimiser ranked its options by expected weekly effect; nothing carried them forward. `simulatePolicies()` does,
+for 8 weeks.
+- **The path with no change** is the forecast competition's winning model (`competitionForecast`: the lifecycle's
+  primary, its 80% interval calibrated on its own backtest).
+- **Each change in an option** adds its effect on the weekly rate from the personal response model (population figures
+  where it has none), counted only if it is carried out. One lever with effect m ± s, done with probability p, adds a
+  rate with mean p·m and variance p(s² + m²) − (p·m)²: a mixture of doing it and not. Levers add and are carried out
+  independently, as the optimiser assumes. The effect accumulates from three days after the change.
+- **Against changing nothing** the forecast's own noise is shared, so the difference carries the levers' uncertainty
+  alone.
+- **On screen and in the plan.** The options card shows where each option leaves you in 8 weeks and the path with no
+  change. Choosing an option records the simulated outcome in the plan version's expected result.
+
+The checks compute paths by hand:
+- an effect of −0.5 ± 0.1 lb a week done with probability 0.8 moves the 4-week mean by 0.8 × 0.5 × 25/7 and widens it by
+  that mixture variance;
+- two levers add;
+- a change never done leaves the forecast as it was, and a certain one shifts it without widening it;
+- the no-change path equals the competition's forecast week by week;
+- every option shown is simulated, in the optimiser's order;
+- the plan's expected result names the 8-week outcome.
+
+Ignoring the probability of doing it, dropping the mixture variance, removing the washout, letting the difference
+carry the forecast's noise, and moving the baseline off the competition's forecast each turned their intended checks
+red. On the demo, with no change: 237.9 lb in 8 weeks (231.9 to 243.9) from the 14-day Theil–Sen trend, the forecast that
+has scored best. The suggested option (300 kcal less a day and two cardio sessions a week, a 36% chance of doing all of
+it) moves that by −3.6 lb (−6.7 to −0.5). All 36 gates pass (reproducible included); release 24/24; 1,717 self-tests.
+
+## Stage F: counterfactuals (build 48be6a5ce1)
+
+Each Response stated its counterfactual as one number, the trend before it. `responseCounterfactual()` turns that into
+a path: what the outcome would have done without the change, day by day through the Response's after-window, beside
+what was measured.
+- **Weight.** The before-window least-squares line's level at the change, then the before slope plus the drift matched
+  periods showed on their own where they exist. Trends move without any change, and a plain continuation would credit
+  the drift to the change.
+- **The interval.** The line's own prediction error; or, with matched periods, the level's error plus their spread
+  (never below the Response's own standard error), growing with the days. Both are widened for day-to-day carry-over.
+- **A level** (sleep, hunger): the before average, plus the drift.
+- **The result.** 80% bands, like the forecasts; the difference at the end of the window is what the change did by then,
+  with both errors.
+- **On screen.** The Response sheet says "Without the change: about … against … measured" and charts the band beside
+  the readings.
+
+The checks build their expectations from their own least-squares fits:
+- on a short record, a half-pound loss that becomes a pound and a half follows the before line to the window's end,
+  and the difference is about 20/7 lb;
+- where three-week stalls alternate with losses and the change comes as a stall ends, matched periods carry the path on
+  as they did, so the change is credited with little, inside an interval spanning zero;
+- the band at day 20 is more than 1.5 times its width at the change;
+- for hunger two points higher, the path is the before average and the difference about 2.
+
+Removing the drift, using the before average for weight, and a band that does not widen each turned their checks red.
+On the demo:
+- the steps experiment: without it about 253.0 lb on 7 Oct (251.7 to 254.3), against 252.2 measured, a difference of
+  −0.8 lb (−2.2 to +0.6);
+- caffeine's sleep: +0.72 h (0.46 to 0.98);
+- creatine's interval is wide, from four readings before it.
+
+All 36 gates pass (reproducible included); release 24/24; 1,723 self-tests.
+
+## Stage G: sensor fusion (build 37276f7eef)
+
+Device totals (steps, sleep) already chose one source per day. Every other measured quantity with two sources was
+averaged: a scale and a hand entry 1 lb apart gave a value halfway between, which jumped by half a pound whenever one
+was missing. A fusion path existed beside that and nothing used it. `fuseObservations` bias-corrected and weighted one
+day by `measurementModel`'s measured noise, but it lumped every import as "import" and calibrated on today's data even
+for past days.
+
+It is now the one path, and `dailySeries` uses it, so every model reads the fused value.
+- **`_sourceParams`.** The measurement model's per-source parameters, computed once and shared:
+  - sources are told apart by provenance (provider or device);
+  - the reference is the person's preferred source for the type, else the one with the most readings;
+  - each other source's bias is the mean same-day difference from it;
+  - each source's noise is its own scatter, never below its resolution;
+  - only readings known by the date asked about count.
+- **Fusion.** A reading from a source with a measured bias is put on the reference scale even on days it alone
+  measured. Readings are weighted by quality (`measurementQuality`) over noise squared. With three sources, a reading
+  more than four combined standard deviations from the others' fused value is set aside.
+- **Exclusion.** Body fat is not fused: its methods differ by design, and `bodyCompositionState` reconciles them.
+- **On screen.** The sources sheet shows each source's correction, noise and share of the weight, and lets the person
+  choose the reference.
+
+The known answers: a scale exactly on the line, and hand entries 1 lb heavier with ±0.5 noise from day 21.
+- The scale is the reference, and the entries are 1 lb heavier on the 39 shared days.
+- On shared days the fused weight stays within 0.02 lb of the scale, where the plain mean was half a pound off.
+- On the three days only the entries exist, they are 1 lb lighter, on the scale's footing.
+- By day 30 only ten shared days are known.
+- Choosing the hand entries as reference moves the series 1 lb up throughout.
+- A third source's reading 20 lb off is set aside.
+- An off-protocol weigh-in counts three-quarters.
+- The sheet shows the scale carrying over 90% of the weight.
+
+Not fusing, not correcting lone readings, calibrating on later readings, ignoring the preference, contradicting nothing
+and ignoring quality each turned their checks red. The demo's weight has one source, so nothing in it changes. A
+sensor-fusion capability joins the ledger. All 36 gates pass (reproducible included); release 24/24; 1,731 self-tests.
+
+## Stage H: user-approved automation (build 9a390e35e2)
+
+Automation rules ran an action when something happened: log the supplements due, add water, show today's plan. Turning
+a rule on was its only consent, and a run was audited without saying what it rested on. Nothing stopped a rule from
+being given an action that changes the plan. Section 213 rules out automation that changes important state without
+policy and audit, so every automated action now has an approval level (`AUTOMATION_POLICY`, 58-plan.js):
+- **View** (changes nothing): runs.
+- **Routine** (a small record that can be undone): runs under the standing approval recorded, with its date and scope,
+  when the rule is turned on. Turning the rule off withdraws it.
+- **Important** (the plan, a target, the programme, the profile, or any deletion): never runs on a trigger. The trigger
+  holds a proposal, which is applied only when the person approves it, through the action's own path into `changePlan`.
+  A decline is kept too.
+- **Undeclared:** an action with no declared level is important.
+
+Every decision goes to the audit log with the rule, the level and the approval it rests on: ran, held, approved,
+applied, declined, refused, approval granted or withdrawn. The first important rule is "When the weekly review is
+recorded → propose the plan change the week suggests". The automation sheet shows what waits (Approve, Decline), what
+each rule may do and on whose approval, and what automation did.
+
+Checks:
+- self-tests from the policy's definition: fail closed, standing approval granted and withdrawn with audit entries,
+  holding without changing anything, no duplicates, declining and approving audited, and the sheet;
+- black-box workflow V-012, on the demo:
+  - turning on "After weighing in → add 0.5 L of water" shows its approval;
+  - a weigh-in logs the water;
+  - turning on the weekly-review rule and opening Learn (which records the week) holds "Train 3 days a week instead of
+    4" instead of applying it, so the plan is unchanged;
+  - Approve adds exactly one plan version;
+  - the sheet shows held, approved and applied.
+
+Letting the important action run without approval turned V-012 red. Treating undeclared actions as routine, granting
+approval without an audit entry, holding the same change twice and not auditing answers turned the self-tests red. An
+automation-approval capability joins the ledger as workflow-tested. All 36 gates pass (reproducible included); release 24/24; 1,743 self-tests, 8 workflow checks.
+
+## Stage H: self-calibration (build ed2073643a)
+
+The forecast competition calibrated its intervals: the factor that would have made the 80% interval hold 80% of the
+time, learned on older forecasts and checked on newer ones, widening or narrowing the live interval. No other model did.
+The aerobic filter scored its own intervals and only reported the result, and the personal response model's
+predictions were never scored at all.
+- **One rule.** `intervalCalibration` (58-model-competition) is now the rule; the competition uses it unchanged.
+- **Every interval model.** `INTERVAL_MODELS` lists every model that makes interval predictions, with what it is scored
+  against and where its factor is applied:
+  - the weight and strength forecasts, against the backtest;
+  - aerobic capacity, against the next session;
+  - the personal response model's predictions, against the effect each change then had, now that a Response records
+    when its expectation came from the model.
+- **When it applies.** Once ten predictions are scored, the factor widens or narrows the live interval: in
+  `competitionForecast`, in each modality family of `cardioFitnessModel`, and in `predictResponse`. With fewer,
+  intervals are used as they are, and the report says so.
+- **On screen.** `selfCalibration()` puts them on the forecast card under "Are the intervals honest?".
+
+The known answers:
+- 20 ratios 0.1 to 2.0 give coverage 0.6, a factor of 1.7/1.2816, and coverage 0 on the newer half with a factor from
+  the older half: not calibrated;
+- an interval far too wide narrows to the 0.25 floor;
+- the competition's factor equals the registry's;
+- nine scored responses leave the intervals alone, and twelve, landing 0.2 to 2.4 SD from their predictions, give
+  2.0/1.2816, which `predictResponse` then applies;
+- on the demo's sessions the aerobic filter applies the same rule.
+
+Ignoring the response factor, checking on the data the factor came from, removing the floor, and not calibrating the
+aerobic filter each turned their checks red. On the demo:
+- the weight forecast's raw interval held 35% of 17 backtest forecasts; widened 1.76 times, it held on every newer one;
+- the aerobic filter's held every time (too wide); narrowed to the floor, it held 75% on newer sessions, which narrows
+  the VO2max interval;
+- strength and the personal response model have too few scored predictions yet.
+
+A self-calibration capability joins the ledger with measured calibration. Aerobic fitness's calibration is now measured
+too, and the maturity gate lists both as scored. All 36 gates pass (reproducible included); release 24/24; 1,753 self-tests. Stage H
+is complete, and with it every backlog item that does not need credentials: item 4 waits for observation types, and
+item 11 for real accounts.

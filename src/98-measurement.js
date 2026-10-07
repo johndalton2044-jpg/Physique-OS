@@ -358,16 +358,27 @@ function _resolution(list){
   var dp=v.reduce(function(a,x){var s=String(x),i=s.indexOf('.');return Math.max(a,i<0?0:s.length-i-1);},0);
   return {decimals:dp,step:Math.pow(10,-dp)};
 }
+/* THE PER-SOURCE PARAMETERS (sensor fusion, Stage G; TRANSITION item 12), computed once and shared by measurementModel
+   and fuseObservations. Sources are told apart by provenance (sourceKeyOf: the provider or device, not just "import").
+   The reference is your preferred source for the type, else the one with the most readings: bias is only ever relative
+   to a choice. Each other source's bias is the mean same-day difference from it (three days at least); each source's
+   noise is _sourceNoise, never below its own resolution, so a perfectly regular source cannot take all the weight. Only
+   readings known by asOfDate count, so a past day is never fused with what was recorded later. */
+function _sourceParams(type,asOfDate,days){asOfDate=asOfDate||asOf();days=days||180;return memo('srcp:'+type+':'+asOfDate+':'+days,function(){
+  var obs=obsOf(type,{asOf:asOfDate,from:addDays(asOfDate,-days)}),by={};obs.forEach(function(o){var k=sourceKeyOf(o);(by[k]=by[k]||[]).push(o);});
+  var keys=Object.keys(by),pref=((DB.settings||{}).sourcePreference||{})[type],ref=pref&&by[pref]?pref:(keys.slice().sort(function(a,b){return by[b].length-by[a].length;})[0]||null);
+  var refByDate={};if(ref)by[ref].forEach(function(o){refByDate[o.date]=o.value;});
+  var P={};keys.forEach(function(k){var L=by[k],nz=_sourceNoise(L),ds=k===ref?[]:L.filter(function(o){return refByDate[o.date]!=null;}).map(function(o){return o.value-refByDate[o.date];});
+    P[k]={source:k,n:L.length,reference:k===ref,bias:k===ref?0:(ds.length>=3?mean(ds):null),overlap:ds.length,noise:nz!=null?Math.max(nz,_resolution(L).step):null};});
+  return {ref:ref,preferred:!!(pref&&by[pref]),keys:keys,bySource:by,params:P,obs:obs};});}
 function measurementModel(type,opts){
   opts=opts||{};
   var days=opts.days||180;
-  var obs=obsOf(type,{from:addDays(asOf(),-days)});
+  var SP=_sourceParams(type,opts.asOf,days),obs=SP.obs;
   if(obs.length<10)return {status:'insufficient',need:['more observations']};
-  var bySource={};
-  obs.forEach(function(o){(bySource[o.source||'unspecified']=bySource[o.source||'unspecified']||[]).push(o);});
+  var bySource=SP.bySource;
   var sources=Object.keys(bySource);
-  /* Reference source: the one with the most readings. Bias is only ever relative to a choice. */
-  var ref=sources.slice().sort(function(a,b){return bySource[b].length-bySource[a].length;})[0];
+  var ref=SP.ref;
   var refByDate={};bySource[ref].forEach(function(o){refByDate[o.date]=o.value;});
   var cal=null;try{cal=sourceCalibration(type,{days:days});}catch(e){}
   var miss=null;try{miss=missingnessMechanism(type);}catch(e){}
@@ -408,10 +419,10 @@ function measurementModel(type,opts){
   var latest=obs[obs.length-1].date;
   var sameDay=obs.filter(function(o){return o.date===latest;});
   var contributions=sameDay.map(function(o){
-    var p=params.filter(function(x){return x.source===(o.source||'unspecified');})[0];
+    var p=params.filter(function(x){return x.source===sourceKeyOf(o);})[0];
     var bias=p&&p.bias!=null?p.bias:0;
     var noise=p&&p.noise;
-    return {source:o.source||'unspecified',raw:o.value,corrected:round(o.value-bias,2),
+    return {source:sourceKeyOf(o),raw:o.value,corrected:round(o.value-bias,2),
       noise:noise,precision:noise?1/(noise*noise):null};
   });
   var weighted=contributions.filter(function(c){return c.precision;});
@@ -428,7 +439,7 @@ function measurementModel(type,opts){
     raw:'untouched \u2014 the fused estimate is derived on demand and never written back over a reading',
     note:'A latent true value behind the readings, with every source property measured from the record: bias and drift against the reference, noise from each source\u2019s own scatter, resolution from the values it records, reliability and missingness from coverage, calibration from same-day agreement.',
     caveat:'Bias is relative to whichever source was chosen as reference \u2014 here '+ref+
-      ', because it has the most readings. That choice is a decision, not a measurement, and a biased reference makes every other bias wrong by the same amount.'};
+      (SP.preferred?', because you chose it':', because it has the most readings')+'. That choice is a decision, not a measurement, and a biased reference makes every other bias wrong by the same amount.'};
 }
 
 

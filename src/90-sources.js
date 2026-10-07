@@ -30,7 +30,11 @@ function sourcesOverview(){
   Object.keys(S).forEach(function(k){var s=S[k],agree=[];Object.keys(s.types).forEach(function(t){var byDay={};(DB.observations||[]).forEach(function(o){if(o.type!==t||o.retracted||o.correctedBy)return;var kk=sourceKeyOf(o);(byDay[o.date]=byDay[o.date]||{})[kk]=((byDay[o.date]||{})[kk]||0)+o.value;});
       var diffs=[];Object.keys(byDay).forEach(function(d){var row=byDay[d];if(row[k]==null)return;Object.keys(row).forEach(function(o2){if(o2!==k&&row[o2])diffs.push(Math.abs(row[k]-row[o2])/Math.max(1e-9,Math.abs(row[o2])));});});
       if(diffs.length>=3)agree.push({type:t,days:diffs.length,medianDifferencePct:round(100*_medianOf(diffs),1)});});
-    s.agreement=agree;s.kind=(k.indexOf('import:')===0||(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])||(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]))?'import':(k==='manual'?'you':(k==='food-log'?'derived':(k==='demo'?'demo':'other')));
+    s.agreement=agree;
+    /* its part in the fusion, per measured type (Stage G) */
+    s.fusion=Object.keys(s.types).filter(function(t){return !SUM_TYPES[t]&&t!=='bodyfat';}).map(function(t){var SP=_sourceParams(t),p=SP.params[k];if(SP.keys.length<2||!p)return null;
+      var W=0;SP.keys.forEach(function(x){var n=SP.params[x].noise;if(n)W+=1/(n*n);});return {type:t,reference:p.reference,bias:p.bias!=null?round(p.bias,2):null,overlap:p.overlap,noise:p.noise!=null?round(p.noise,2):null,share:p.noise&&W?round(1/(p.noise*p.noise)/W,2):null};}).filter(Boolean);
+    s.kind=(k.indexOf('import:')===0||(typeof WEARABLE_PROVIDERS!=='undefined'&&WEARABLE_PROVIDERS[k])||(typeof IMPORT_SOURCES!=='undefined'&&IMPORT_SOURCES[k]))?'import':(k==='manual'?'you':(k==='food-log'?'derived':(k==='demo'?'demo':'other')));
     s.deletable=s.kind!=='derived';});
   var ext=[];try{var ws=DB.settings.weatherSync;if(ws)ext.push({key:'open-meteo',label:'Weather ('+((EXTERNAL_SOURCES[DB.settings.weatherProvider||'open-meteo']||{}).name||'Open-Meteo')+')',kind:'connected',lastAt:ws.lastSuccess,state:ws.state,error:ws.error&&ws.error.text,manage:'weather.open'});
     var c=DB.settings.cloud||{};if(c.enabled)ext.push({key:'cloud',label:'Sync server',kind:'connected',lastAt:c.lastSyncAt,state:'enabled',manage:'nav.cloud'});}catch(e){}
@@ -58,12 +62,17 @@ SHEETS.sources=function(b){var O=sourcesOverview(),out='';
     uiBtn('Remove them','sources.deleteConfirm',b.confirmKey,'btn-sm btn-primary')+uiBtn('Cancel','sources.deleteCancel',null,'btn-sm btn-ghost')+'</div>';}
   out+='<div class="card-title">Where your record comes from</div>'+O.sources.map(function(s){return '<div class="feat"><div class="feat-body"><b>'+esc(s.label)+'</b> '+uiPill(s.kind,'neutral')+
     '<div class="hint">'+s.count+' entries \u00b7 '+esc(Object.keys(s.types).slice(0,5).map(function(t){return t+' '+s.types[t];}).join(', '))+(Object.keys(s.types).length>5?'\u2026':'')+' \u00b7 '+esc(shortDate(s.first))+' \u2013 '+esc(shortDate(s.last))+'</div>'+
-    (s.agreement.length?'<div class="hint">Agreement with other sources: '+esc(s.agreement.map(function(a){return a.type+' typically '+a.medianDifferencePct+'% apart over '+a.days+' shared days';}).join('; '))+'</div>':'')+'</div>'+
+    (s.agreement.length?'<div class="hint">Agreement with other sources: '+esc(s.agreement.map(function(a){return a.type+' typically '+a.medianDifferencePct+'% apart over '+a.days+' shared days';}).join('; '))+'</div>':'')+
+    (s.fusion&&s.fusion.length?'<div class="hint">Combined with the others: '+esc(s.fusion.map(function(f){return f.type+(f.reference?' (the reference)':(f.bias!=null?' corrected by '+(f.bias>0?'\u2212':'+')+Math.abs(f.bias)+' from '+f.overlap+' shared days':' not yet corrected (too few shared days)'))+(f.noise!=null?', day-to-day noise '+f.noise:'')+(f.share!=null?', about '+Math.round(f.share*100)+'% of the weight':'');}).join('; '))+'</div>':'')+'</div>'+
     (s.deletable?uiBtn('Remove its data','sources.deletePreview',s.key,'btn-sm btn-ghost'):'')+'</div>';}).join('');
   try{out+=renderConnectedServices(b);}catch(e){_q(e,'P2');}
   if(O.connections.length)out+='<div class="card-title" style="margin-top:12px">Connections</div>'+O.connections.map(function(c){return uiRow(esc(c.label),esc(c.state||''),{sub:(c.lastAt?'last updated '+esc(String(c.lastAt).replace('T',' ').slice(0,16)):'')+(c.error?' \u00b7 '+esc(c.error):'')})+'<div class="btn-row">'+uiBtn('Manage',c.manage,null,'btn-sm btn-ghost')+'</div>';}).join('');
   out+='<div class="card-title" style="margin-top:12px">When two sources measure the same day</div><div class="hint">Steps and sleep from two devices are one quantity measured twice: one source is used. Choose which, or leave it to the most complete record.</div>'+
     Object.keys(DEVICE_TOTAL_TYPES).map(function(t){var keys=O.sources.filter(function(s){return s.types[t];}).map(function(s){return s.key;}),cur=O.preferences[t]||'auto';
       return '<div class="sched-rule"><span>'+esc(t)+'</span><div class="btn-row wrap">'+['auto'].concat(keys).map(function(k){return uiBtn(k==='auto'?'Most complete':sourceLabel(k),'sources.prefer',t+'|'+k,'btn-sm '+(cur===k?'btn-primary':'btn-ghost'));}).join('')+'</div></div>';}).join('')+
+    (function(){var F=Object.keys(OBS_TYPES).filter(function(t){return !SUM_TYPES[t]&&t!=='bodyfat'&&O.sources.filter(function(s){return s.types[t];}).length>=2;});if(!F.length)return '';
+      return '<div class="hint" style="margin-top:8px">Other measurements from two sources are combined: each put on one reference scale, then weighted by how steady each source is and how well each reading was taken. Choose the reference, or leave it to the source with the most readings.</div>'+
+        F.map(function(t){var keys=O.sources.filter(function(s){return s.types[t];}).map(function(s){return s.key;}),cur=O.preferences[t]||'auto';
+          return '<div class="sched-rule"><span>'+esc(t)+'</span><div class="btn-row wrap">'+['auto'].concat(keys).map(function(k){return uiBtn(k==='auto'?'Most readings':sourceLabel(k),'sources.prefer',t+'|'+k,'btn-sm '+(cur===k?'btn-primary':'btn-ghost'));}).join('')+'</div></div>';}).join('');})()+
     '<div class="hint" style="margin-top:8px">'+esc(O.note)+'</div>';
   return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};

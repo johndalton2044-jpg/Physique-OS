@@ -4171,6 +4171,188 @@ function runSelfTest(opts){
       ok('a record too short for four matched periods says how much more is needed, and gives no matched estimate',r.causal.matched.status==='insufficient'&&/more stretch/.test((r.causal.matched.need||[]).join())&&r.causal.estimates.length===2,JSON.stringify(r.causal.matched));
       DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();
     });
+    /* ---- Knowledge versioning, conflict and decay (Stage E): constructed findings with known answers ---- */
+    withFixture('normal_loss',function(){var keep=DB.responses,keepN=DB.negatives,per=7/3500,today=todayISO();
+      var mk=function(id,dose,effect,se,endDaysAgo){var end=addDays(today,-endDaysAgo),start=addDays(end,-20);return {id:id,interventionId:id,variable:'calories',outcome:'weight',dose:dose,stage:'final',start:start,
+        windows:{before:[addDays(start,-21),addDays(start,-1)],after:[start,end]},primary:{effect:effect,se:se},verdict:'a clear response',attribution:'the change'};};
+      /* decay: one half-life (270 days) after it was measured, a response has half its precision */
+      var a=_perUnit(mk('a',-500,-500*per,0.05,270)),b=_perUnit(mk('b',-500,-500*per,0.05,0));
+      ok('a response measured 270 days ago counts half: its standard error is √2 times its own; a new one counts fully',Math.abs(a.se/a.seRaw-Math.SQRT2)<1e-6&&Math.abs(a.weight-0.5)<1e-9&&Math.abs(b.se/b.seRaw-1)<1e-9,JSON.stringify([a.weight,b.weight]));
+      /* one response two half-lives old (weight 1/4) at three times the arithmetic, one new at the arithmetic: the personal
+         estimate is their age-weighted average, (0.25 × 0.6 + 1 × 0.2) / 1.25 = 0.28 lb a week per 100 kcal */
+      DB.responses=[mk('o',-500,-500*per*3,0.02,540),mk('n',-500,-500*per,0.02,0)];_memoInvalidate();
+      var row=personalResponseModel().rows.filter(function(r){return r.key==='calories→weight';})[0];
+      ok('older responses count for less in the personal response model: its estimate is the age-weighted average',row.n===2&&Math.abs(row.personal.mean-0.28)<0.002&&Math.abs(row.effectiveN-1.25)<0.01&&row.oldestDays===540,JSON.stringify([row.personal,row.effectiveN,row.oldestDays]));
+      /* those two disagree far beyond their noise */
+      var C=knowledgeConflicts();
+      ok('two responses to the same lever that disagree beyond their noise are shown side by side, the newer counting for more',C.length===1&&C[0].kind==='two responses'&&C[0].older.id==='o'&&C[0].newer.id==='n'&&C[0].older.weight===0.25&&C[0].newer.weight===1&&Math.abs(C[0].difference+0.4)<0.01,JSON.stringify(C));
+      var K=personalKnowledge(),G=knowledgeGaps(),sheet=SHEETS.knowledge();
+      ok('the conflict reaches personal knowledge, its open questions and the knowledge sheet',K.conflicts.length===1&&G.gaps.some(function(g){return /^Which holds for calories/.test(g.question);})&&sheet.body.indexOf('Findings that disagree')>=0);
+      DB.responses=[mk('o',-500,-500*per*1.1,0.2,540),mk('n',-500,-500*per,0.2,0)];_memoInvalidate();
+      ok('two responses that agree within their noise are not a conflict',knowledgeConflicts().length===0&&SHEETS.knowledge().body.indexOf('Findings that disagree')<0);
+      /* recorded as not working 100 days ago; a clear response to the same lever since */
+      var nd=addDays(today,-100);DB.negatives=[{id:'neg-t',date:nd,at:nd+'T08:00:00.000Z',createdAt:nd+'T08:00:00.000Z',variable:'calories',intervention:'calories 2400→2200',observed:'no change in the trend'}];
+      DB.responses=[mk('n',-500,-500*per,0.02,0)];_memoInvalidate();C=knowledgeConflicts();
+      ok('a change recorded as not working, then a clear response to the same lever, is a conflict, each side with its age weight',C.length===1&&C[0].kind==='did not work, then did'&&C[0].older.id==='neg-t'&&C[0].newer.id==='n'&&Math.abs(C[0].older.weight-Math.pow(0.5,100/270))<0.006&&C[0].newer.weight===1,JSON.stringify(C));
+      /* versioning of negative knowledge */
+      DB.negatives=[];var n1=addNegative({intervention:'steps 8000→10000',variable:'steps',silent:true}),n2=addNegative({intervention:'steps 8000→10000',variable:'steps',silent:true}),n3=addNegative({intervention:'calories 2400→2200',variable:'calories',silent:true});
+      ok('negative knowledge carries the method that judged it and its version among findings about the same change',n1.version===1&&n2.version===2&&n2.follows===n1.id&&n3.version===1&&n3.follows===null&&n1.modelVersion==='negative-1.0');
+      DB.responses=keep;DB.negatives=keepN;_memoInvalidate();});
+    withFixture('successful_intervention',function(){
+      recordResponses();var r=responsesOf().filter(function(x){return /^resp:exp:/.test(x.id);})[0];
+      ok('a Response is recorded as version 1 of its finding',!!r&&r.version===1&&!r.previous,r&&JSON.stringify([r.version,r.stage]));
+      if(r){var id=r.id,eff=r.primary&&r.primary.effect,events=function(){return _EVENTS.filter(function(e){return e.type==='response.recorded'&&e.data&&e.data.id===id;}).length;},e0=events();
+        r.modelVersion='response-1.1';var n=recordResponses().recorded,r2=responsesOf().filter(function(x){return x.id===id;})[0];
+        ok('a finding derived by an earlier method is derived again as a new version that names the one it replaced, and the earlier stays in the log',n>=1&&r2.version===2&&r2.previous&&r2.previous.modelVersion==='response-1.1'&&r2.previous.stage==='final'&&r2.previous.effect===eff&&r2.modelVersion===RESPONSE_MODEL_VERSION&&events()===e0+1,JSON.stringify([n,r2.version,r2.previous,events(),e0]));
+        ok('and once current it is not derived again',recordResponses().recorded===0&&responsesOf().filter(function(x){return x.id===id;})[0].version===2);}});
+    /* ---- Experiment portfolio (Stage E): expected information gain across levers, with known answers ---- */
+    withFixture('normal_loss',function(){var keepR=DB.responses,keepX=DB.experiments,today=todayISO();DB.responses=[];DB.experiments=[];_memoInvalidate();
+      var P=experimentPortfolio(),row=function(k){return experimentPortfolio().rows.filter(function(r){return r.key===k;})[0];},s=P.rows.filter(function(r){return r.key==='steps→weight';})[0];
+      var M=personalResponseModel().rows.filter(function(r){return r.key==='steps→weight';})[0];
+      /* by hand: the weight swing over two 21-day trends (the squared day offsets about the middle of 21 days sum to 770),
+         over the thousands of steps likely to be walked */
+      var sw=personalBaselines().streams.weight.baseline,se=sw*7*Math.sqrt(2)/Math.sqrt(770)/(2500*s.pDone/1000),s0=M.posterior.sd,eig=0.5*Math.log(1+s0*s0/(se*se));
+      ok('a test’s expected information gain is ½ ln(1 + s0²/se²): s0 the lever’s SD now, se the weight swing over two 21-day trends over the steps likely walked',
+        Math.abs(s.testSe-se)<0.002&&Math.abs(s.eig-eig)<0.002&&Math.abs(s.sdAfter-1/Math.sqrt(1/(s0*s0)+1/(se*se)))<0.002,JSON.stringify([s.testSe,se,s.eig,eig]));
+      var h=P.rows.filter(function(r){return r.key==='protein→hunger';})[0],hv=seriesWindow('hunger',56).map(function(d){return d.value;});
+      if(h&&hv.length>=7){var hm=hv.reduce(function(a,x){return a+x;},0)/hv.length,hs=Math.sqrt(hv.reduce(function(a,x){return a+(x-hm)*(x-hm);},0)/(hv.length-1)),hse=hs*Math.sqrt(2/21)/(30*h.pDone/20);
+        ok('for an outcome measured as a level, the noise is its day-to-day spread over two 21-day averages',Math.abs(h.testSe-hse)<0.002,JSON.stringify([h.testSe,hse]));}
+      else ok('for an outcome measured as a level, the noise is its day-to-day spread over two 21-day averages',false,'no hunger readings in the fixture');
+      var okRows=P.rows.filter(function(r){return r.status==='ok';});
+      ok('levers are ranked by expected learning per week of testing, and the next test is the top one worth running',okRows.length>0&&okRows.every(function(r,i){return i===0||okRows[i-1].perWeek>=r.perWeek;})&&nextTest().variable===okRows[0].variable&&nextTest().eig===okRows[0].eig);
+      ok('every test not worth running would narrow its estimate by less than 10%',P.rows.filter(function(r){return r.status==='not worth it';}).every(function(r){return r.narrowing<0.1;})&&okRows.every(function(r){return r.narrowing>=0.1-0.005;}));
+      /* twenty responses to steps, each 0.3 lb a week precise: the lever is known; another test teaches little */
+      var mk=function(id,v,dose,eff,se,ago){var end=addDays(today,-ago),start=addDays(end,-20);return {id:id,interventionId:id,variable:v,outcome:'weight',dose:dose,stage:'final',start:start,windows:{before:[addDays(start,-21),addDays(start,-1)],after:[start,end]},primary:{effect:eff,se:se,n:[21,21]},verdict:'a clear response',attribution:'the change'};};
+      DB.responses=[];for(var i=0;i<20;i++)DB.responses.push(mk('s'+i,'steps',2000,-0.25,0.3,i));_memoInvalidate();
+      var s2=row('steps→weight');ok('a lever already measured precisely is not worth testing again',s2.status==='not worth it'&&s2.narrowing<0.1&&s2.noiseBasis.indexOf('20 earlier responses')>=0,JSON.stringify([s2.status,s2.narrowing,s2.noiseBasis]));
+      /* two calorie responses that disagree by 0.4 lb a week per 100 kcal: the lever is less known than its posterior says */
+      var per=7/3500;DB.responses=[mk('o','calories',-500,-500*per*3,0.02,540),mk('n','calories',-500,-500*per,0.02,0)];_memoInvalidate();
+      var c=row('calories→weight'),Mc=personalResponseModel().rows.filter(function(r){return r.key==='calories→weight';})[0];
+      ok('findings that disagree widen the lever’s uncertainty by half their difference before the gain is computed',c.conflicted&&Math.abs(c.sdNow-Math.sqrt(Mc.posterior.sd*Mc.posterior.sd+0.2*0.2))<0.002,JSON.stringify([c.sdNow,Mc.posterior.sd]));
+      DB.responses=[];_memoInvalidate();
+      ok('the learning loop shows the portfolio behind its next test',loopCard().indexOf('narrower')>=0);
+      DB.responses=keepR;DB.experiments=keepX;_memoInvalidate();});
+    /* ---- Policy simulation (Stage F): constructed options with paths computed by hand ---- */
+    (function(){var base=[1,2,3,4].map(function(w){return {week:w,date:addDays(todayISO(),7*w),mean:200,sd:1};}),z=1.2816,t=(28-3)/7;
+      var one=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0.8}]},base),e=one.end,vr=0.8*(0.01+0.25)-0.16,m=200-0.4*t,s=Math.sqrt(1+vr*t*t);
+      ok('a change carried out with probability 0.8 adds 0.8 of its effect, from three days in, with the variance of doing it or not',Math.abs(e.mean-m)<0.006&&Math.abs(e.lo-(m-z*s))<0.006&&Math.abs(e.hi-(m+z*s))<0.006,JSON.stringify([e,m,s]));
+      ok('against changing nothing the forecast’s own noise is shared, so the difference carries the change’s uncertainty alone',Math.abs(one.vsNothing.mean+0.4*t)<0.006&&Math.abs(one.vsNothing.lo-(-0.4*t-z*Math.sqrt(vr)*t))<0.006,JSON.stringify(one.vsNothing));
+      var two=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0.8},{mean:-0.2,sd:0.05,p:0.5}]},base).end,vr2=vr+(0.5*(0.0025+0.04)-0.01),m2=200-0.5*t;
+      ok('two changes add, and are carried out independently',Math.abs(two.mean-m2)<0.006&&Math.abs(two.hi-(m2+z*Math.sqrt(1+vr2*t*t)))<0.006,JSON.stringify([two,m2]));
+      var never=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0}]},base).end,sure=simulateOption({levers:[{mean:-0.5,sd:0,p:1}]},base).end;
+      ok('a change never carried out leaves the forecast as it was; a certain one moves it without widening it',never.mean===200&&Math.abs(never.hi-(200+z))<0.006&&Math.abs(sure.mean-(200-0.5*t))<0.006&&Math.abs((sure.hi-sure.lo)-2*z)<0.01);})();
+    withFixture('successful_cut',function(){var P=simulatePolicies(),O=unifiedOptimiser();
+      if(P.status!=='ok'){ok('the optimiser’s options are simulated forward on a record with a forecast',false,JSON.stringify(P));return;}
+      var L=DB.settings.modelLifecycle&&DB.settings.modelLifecycle.weight,want=L?L.primary:'theil_sen';
+      ok('the path with no change is the forecast competition’s winning model, week by week',P.model===want&&P.baseline.length===8&&P.baseline.every(function(b,i){var f=competitionForecast('weight',7*(i+1));return b.mean===f.mean&&b.lo===f.lo&&b.hi===f.hi;}));
+      ok('every option shown is simulated, in the optimiser’s order',P.options.length===Math.min(5,O.pareto.length)&&P.options.every(function(o,i){return o.label===O.pareto[i].label&&o.path.length===8;}));
+      var keepF=DB.settings.folds;DB.settings.folds=Object.assign({},keepF||{},{'plan-options':true});var card=optimiserCard();DB.settings.folds=keepF;ok('the options card shows where each option leaves you in 8 weeks, and the path with no change',card.indexOf('In 8 weeks about')>=0&&card.indexOf('With no change')>=0);
+      var n0=plansOf().length,res=applyOptimiserChoice(O.pareto[0]),last=plansOf().slice(-1)[0];
+      ok('choosing an option records its simulated outcome in the plan’s expected result',res.status==='ok'&&plansOf().length===n0+1&&/in 8 weeks about/.test(String(last.expected||(last.trigger&&last.trigger.expected)||'')),JSON.stringify(last&&{e:last.expected,t:last.trigger}));});
+    /* ---- Counterfactuals (Stage F): constructed records, the path without the change computed by hand ---- */
+    withFixture('normal_loss',function(){
+      var keep={o:DB.observations,ph:DB.phases,s:DB.sessions,e:DB.experiments,p:DB.plans,r:DB.responses,st:DB.settings.supplementStack};
+      var today=todayISO(),day0=addDays(today,-209),seed=11,rnd=function(){seed=(seed*16807)%2147483647;return seed/2147483647;};
+      var put=function(slopeAt,from,hungerJump){DB.observations=keep.o.filter(function(o){return o.type!=='weight'&&o.type!=='context'&&o.type!=='hunger';});var w=250;seed=11;
+        for(var i=0;i<=209;i++){w+=slopeAt(i)/7;var d=addDays(day0,i);if(i>=(from||0))DB.observations.push(makeObservation({type:'weight',date:d,value:round(w+(rnd()-0.5)*0.6,2),source:'test'}));
+          if(hungerJump!=null&&i>=(from||0))DB.observations.push(makeObservation({type:'hunger',date:d,value:round(4+(i>=189?hungerJump:0)+(rnd()-0.5)*0.6,2),source:'test'}));}_memoInvalidate();};
+      DB.phases=[{id:'ph-t',type:'cut',startDate:day0,status:'active'}];DB.sessions=[];DB.experiments=[];DB.plans=[];DB.settings.supplementStack=[];DB.responses=[];
+      var D=addDays(day0,189),iv={id:'tc',kind:'plan change',date:D,variable:'steps',from:8000,to:10000,reversible:'yes'};
+      /* least-squares line on the before window, days counted from the change, written out here */
+      var line=function(from,to,t){var P=obsOf(t||'weight').filter(function(o){return o.date>=from&&o.date<=to;}).map(function(o){return [daysBetween(D,o.date),o.value];});
+        var n=P.length,sx=0,sy=0,sxx=0,sxy=0;P.forEach(function(q){sx+=q[0];sy+=q[1];sxx+=q[0]*q[0];sxy+=q[0]*q[1];});var b=(n*sxy-sx*sy)/(n*sxx-sx*sx);return {b:b,a:(sy-b*sx)/n,mean:sy/n};};
+      /* a half-pound loss that becomes a pound and a half, on a record too short for matched periods */
+      put(function(i){return i<189?-0.5:-1.5;},150);var r=evaluateResponse(iv),C=responseCounterfactual(r),L=line(addDays(D,-21),addDays(D,-1)),A=line(D,addDays(D,20));
+      var cfEnd=L.a+L.b*20,actEnd=A.a+A.b*20;
+      ok('without matched periods the path without the change is the trend before, continued to the end of the window',C.status==='ok'&&!C.matched&&Math.abs(C.end.counterfactual.mean-cfEnd)<0.02&&Math.abs(C.path[0].mean-L.a)<0.02&&C.path.length===21,JSON.stringify([C.end,cfEnd]));
+      ok('and the difference at the end is what the change did by then: about a pound a week faster for 20 days',Math.abs(C.end.difference.mean-(actEnd-cfEnd))<0.02&&Math.abs(C.end.difference.mean+20/7)<0.3&&C.end.difference.hi<0,JSON.stringify(C.end.difference));
+      /* stalls alternating with losses, the change made as a stall ends: comparable periods lost as fast on their own */
+      put(function(i){return i%42<21?0:-1;},0);r=evaluateResponse(iv);C=responseCounterfactual(r);var M=matchedPeriods(r);
+      ok('with matched periods the path without the change carries on with what they did on their own, so the change is credited with little',C.matched&&C.drift===M.nullMean&&Math.abs(C.end.difference.mean)<0.6&&C.end.difference.lo<0&&C.end.difference.hi>0,JSON.stringify([C.drift,C.end.difference]));
+      ok('its band widens with the days since the change, as the drift’s uncertainty accumulates',(C.path[20].hi-C.path[20].lo)>1.5*(C.path[0].hi-C.path[0].lo),JSON.stringify([C.path[0],C.path[20]]));
+      /* a level outcome: hunger two points higher after the change */
+      put(function(){return -0.5;},150,2);var ivh={id:'th',kind:'plan change',date:D,variable:'protein',from:150,to:120,reversible:'yes'};
+      r=evaluateResponse(ivh);C=responseCounterfactual(r);var H=line(addDays(D,-21),addDays(D,-1),'hunger');
+      ok('for a level, the path without the change is the average before it, and the difference is the change in level',C.status==='ok'&&C.outcome==='hunger'&&Math.abs(C.end.counterfactual.mean-H.mean)<0.02&&Math.abs(C.end.difference.mean-2)<0.3,JSON.stringify([C.end,H.mean]));
+      DB.responses=[r];var sheet=SHEETS.response({id:r.id}).body;
+      ok('the response sheet shows the path without the change, with a chart',sheet.indexOf('Without the change')>=0&&sheet.indexOf('<svg')>=0);
+      DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();});
+    /* ---- Sensor fusion (Stage G): two and three sources of one quantity, with known answers ---- */
+    withFixture('normal_loss',function(){var keepO=DB.observations,keepP=DB.settings.sourcePreference,today=todayISO(),day0=addDays(today,-62);
+      var w=function(i){return round(250-i/7,2);},e=function(i){return [-0.5,0,0.5][i%3];},mk=function(i,v,src,meta){var o=makeObservation({type:'weight',date:addDays(day0,i),value:round(v,2),source:src,meta:meta});o.at=o.createdAt=addDays(day0,i)+'T08:00:00.000Z';return o;};
+      var build=function(third){DB.observations=keepO.filter(function(o){return o.type!=='weight';});
+        for(var i=0;i<=59;i++)DB.observations.push(mk(i,w(i),'import',{importSource:'withings'}));          /* a scale, exactly on the line */
+        for(i=21;i<=62;i++)DB.observations.push(mk(i,w(i)+1+e(i),'manual'));                               /* entered by hand: 1 lb heavier, ±0.5 */
+        if(third){for(i=10;i<=59;i++)DB.observations.push(mk(i,w(i)+0.3+(i%2?0.05:-0.05)+(i===45?20:0),'import',{importSource:'fitbit'}));
+          DB.observations.forEach(function(o){if(o.type==='weight'&&o.date===addDays(day0,45)&&sourceKeyOf(o)==='import:withings')o.meta=Object.assign({},o.meta,{protocol:'off'});});}
+        _memoInvalidate();};
+      build(false);var S=seriesWindow('weight',63),at=function(i){return S.filter(function(r){return r.date===addDays(day0,i);})[0];};
+      ok('the scale is the reference, having the most readings, and the hand entries are 1 lb heavier on the 39 days both measured',(function(){var P=_sourceParams('weight');return P.ref==='import:withings'&&P.params.manual.overlap===39&&Math.abs(P.params.manual.bias-1)<1e-9;})(),JSON.stringify(_sourceParams('weight').params.manual));
+      ok('on days both measured, the fused weight stays on the steady scale rather than halfway to the hand entries',[21,30,40,50,59].every(function(i){return Math.abs(at(i).value-w(i))<0.02&&at(i).fusion;}),JSON.stringify([21,30,59].map(function(i){return [at(i).value,w(i)];})));
+      ok('on days only the hand entry exists, it is put on the scale’s footing (1 lb lighter), so the series does not jump',[60,61,62].every(function(i){return Math.abs(at(i).value-(w(i)+e(i)))<1e-6;}),JSON.stringify([60,61,62].map(function(i){return [at(i).value,w(i)+e(i)];})));
+      ok('a past day is fused only with what was known by then: ten shared days by day 30',_sourceParams('weight',addDays(day0,30)).params.manual.overlap===10);
+      DB.settings.sourcePreference=Object.assign({},keepP||{},{weight:'manual'});_memoInvalidate();S=seriesWindow('weight',63);
+      ok('choosing the hand entries as the reference puts the series on their footing: 1 lb heavier throughout',[10,30,59].every(function(i){return Math.abs(at(i).value-(w(i)+1))<0.02;})&&measurementModel('weight').reference==='manual'&&/because you chose it/.test(measurementModel('weight').caveat),JSON.stringify([10,30].map(function(i){return [at(i).value,w(i)+1];})));
+      DB.settings.sourcePreference=keepP;build(true);var f=fuseObservations('weight',addDays(day0,45),{asOf:today});
+      ok('with three sources, a reading the other two contradict by 20 lb is set aside, and the day stays on the line',f.status==='ok'&&f.contradicted.join()==='import:fitbit'&&Math.abs(f.exact-w(45))<0.05,JSON.stringify([f.contradicted,f.exact,w(45)]));
+      var sc=f.sources.filter(function(r){return r.source==='import:withings';})[0];
+      ok('each reading counts by its quality over its source’s noise squared: an off-protocol weigh-in (quality 0.75) counts three-quarters',!!sc&&Math.abs(sc.quality-0.75)<1e-9&&Math.abs(sc.weight-0.75/(sc.noise*sc.noise))<1e-6,JSON.stringify(sc));
+      var part=function(key){var s=sourcesOverview().sources.filter(function(x){return x.key===key;})[0];return s&&s.fusion.filter(function(x){return x.type==='weight';})[0];},fu=part('manual'),fs=part('import:withings');
+      ok('the sources sheet shows each source’s part: the hand entries corrected by 1 lb and noisier, the steady scale the reference carrying almost all the weight',!!fu&&!!fs&&fs.reference&&!fu.reference&&Math.abs(fu.bias-1)<0.01&&fu.overlap===39&&fu.noise>fs.noise&&fs.share>0.9&&fu.share<0.05,JSON.stringify([fu,fs]));
+      DB.observations=keepO;DB.settings.sourcePreference=keepP;_memoInvalidate();});
+    /* ---- User-approved automation (Stage H): the approval policy, checked against its definition ---- */
+    withFixture('normal_loss',function(){var keep={a:DB.settings.automations,ap:DB.settings.automationApprovals,p:DB.settings.automationPending};
+      DB.settings.automations=[];DB.settings.automationApprovals={};DB.settings.automationPending=[];
+      var audits=function(kind){return auditLog(400).filter(function(e){return e.kind==='automation.'+kind;}).length;},W={id:'weighIn|qa.water',action:'qa.water'},I={id:'weeklyReview|adapt.apply',action:'adapt.apply'};
+      ok('an action with no declared level is treated as important: it never runs on a trigger',automationLevel('something.new')==='important'&&automationDecision({id:'x|something.new',action:'something.new'}).run===false);
+      ok('opening a screen changes nothing, so it runs without an approval',automationDecision({id:'weighIn|nav.today',action:'nav.today'}).run===true);
+      var g0=audits('approval-granted');
+      ok('a routine action does not run until its rule is turned on',automationDecision(W).run===false);
+      setAutomation('weighIn','qa.water',true);var D=automationDecision(W);
+      ok('turning a routine rule on records a standing approval, in the audit log, and the rule then runs on it',D.run===true&&!!D.approval&&audits('approval-granted')===g0+1);
+      var w0=audits('approval-withdrawn');setAutomation('weighIn','qa.water',false);
+      ok('turning it off withdraws the approval, in the audit log, and it no longer runs',automationDecision(W).run===false&&audits('approval-withdrawn')===w0+1);
+      setAutomation('weeklyReview','adapt.apply',true);var Di=automationDecision(I);
+      ok('turning on a rule that would change the plan grants no standing approval: it can only hold a change for you',Di.run===false&&Di.hold===true&&!DB.settings.automationApprovals[I.id]);
+      var n0=plansOf().length,h0=audits('held'),H=holdAutomation(I,{arg:'a-test-change',title:'A test change',why:'',expected:''});
+      ok('a held change alters nothing until you answer it, and holding it is in the audit log',!!H&&plansOf().length===n0&&automationPending().length===1&&audits('held')===h0+1);
+      ok('the same change is not held twice',holdAutomation(I,{arg:'a-test-change',title:'A test change'})===null&&automationPending().length===1);
+      var sheet=SHEETS.automation().body;
+      ok('the automation sheet shows what waits for your approval, with Approve and Decline, and what each rule may do',sheet.indexOf('Waiting for your approval')>=0&&sheet.indexOf('data-act="auto.approve"')>=0&&sheet.indexOf('data-act="auto.decline"')>=0&&sheet.indexOf('each one waits for your approval')>=0);
+      var d0=audits('declined'),R=resolveAutomation(H.id,false);
+      ok('declining it is kept and audited, and nothing waits any more',R.status==='ok'&&R.pending.status==='declined'&&automationPending().length===0&&audits('declined')===d0+1&&resolveAutomation(H.id,true).status==='refused');
+      var H2=holdAutomation(I,{arg:'another-change',title:'Another test change'}),a0=audits('approved'),R2=resolveAutomation(H2.id,true);
+      ok('approving is recorded and audited; the change itself then goes through the plan’s own authority, from the screen',R2.status==='ok'&&R2.pending.status==='approved'&&audits('approved')===a0+1&&plansOf().length===n0&&automationPending().length===0);
+      ok('the automation sheet lists what automation did',SHEETS.automation().body.indexOf('What automation did')>=0);
+      DB.settings.automations=keep.a;DB.settings.automationApprovals=keep.ap;DB.settings.automationPending=keep.p;});
+    /* ---- Self-calibration (Stage H): the competition's rule, for every model that makes interval predictions ---- */
+    (function(){var R=[];for(var i=0;i<20;i++)R.push({at:'2026-01-'+(i<9?'0':'')+(i+1),ratio:0.1*(i+1)});var C=intervalCalibration(R);
+      /* by hand: 12 of the 20 ratios are within 1.2816; the 80th percentile (the 17th of 20) is 1.7; on the older ten it is 0.9,
+         and none of the newer ten (1.1 to 2.0) is within 1.2816 x 0.9/1.2816 */
+      ok('the calibration factor is the one that would have made the 80% interval hold 80% of the time: 1.7 / 1.2816 here',C.n===20&&Math.abs(C.coverage-0.6)<1e-9&&Math.abs(C.scale-1.7/1.2816)<1e-9,JSON.stringify(C));
+      ok('it is checked on the newer half with a factor learned on the older half only, and called calibrated only if that holds',C.calibrationN===10&&C.calibratedCoverage===0&&C.calibrated===false);
+      ok('an interval far too wide is narrowed, never below a quarter',Math.abs(intervalCalibration(R.map(function(r){return {at:r.at,ratio:0.01};})).scale-0.25)<1e-9);})();
+    withFixture('calibration',function(){var B=backtestCompetition('weight'),L=DB.settings.modelLifecycle&&DB.settings.modelLifecycle.weight,c=L?L.primary:'theil_sen',row=B.status==='ok'&&B.rows.filter(function(r){return r.candidate===c;})[0];
+      ok('the forecast competition uses the same rule: its factor is the registry’s for the weight forecast',!!row&&!!row.metrics[14]&&row.metrics[14].scale===round(intervalCalibration(_competitionScored('weight')).scale,2),JSON.stringify(row&&row.metrics[14]));});
+    withFixture('normal_loss',function(){var keep=DB.responses,per=7/3500,today=todayISO();
+      /* twelve changes predicted at sd 0.1, whose effects then landed 0.2, 0.4 … 2.4 sd from the prediction: the 80th
+         percentile (the 10th of 12) is 2.0, so the factor is 2.0 / 1.2816 */
+      var mk=function(i){var start=addDays(today,-30-7*i),mid=-500*per*100/100;return {id:'pr'+i,interventionId:'pr'+i,variable:'calories',outcome:'weight',dose:-500,stage:'final',start:start,windows:{before:[addDays(start,-21),addDays(start,-1)],after:[start,addDays(start,20)]},
+        expected:{lo:mid-0.2,hi:mid+0.2,mean:mid,source:'personal_response',unit:'lb/week'},primary:{effect:mid+0.1*0.2*(i+1),se:0.05}};};
+      DB.responses=[];for(var i=0;i<9;i++)DB.responses.push(mk(i));_memoInvalidate();
+      ok('with nine scored predictions there are too few to calibrate, and the intervals are used as they are',calibrationScale('personal_response')===1);
+      for(i=9;i<12;i++)DB.responses.push(mk(i));_memoInvalidate();var k=calibrationScale('personal_response');
+      ok('with twelve, the personal response model’s factor is 2.0 / 1.2816, from the effects its predictions were scored against',Math.abs(k-2/1.2816)<1e-9,String(k));
+      var p=predictResponse('calories','weight',-500),M=personalResponseModel().rows.filter(function(r){return r.key==='calories→weight';})[0],sd0=Math.abs(M.posterior.sd*-5);
+      ok('and its predictions’ intervals are widened by that factor',Math.abs((p.hi-p.lo)/4-sd0*k)<0.003,JSON.stringify([p,sd0,k]));
+      var S=selfCalibration();
+      ok('the calibration report covers every model that makes interval predictions',['weight_forecast','strength_forecast','aerobic_capacity','personal_response'].every(function(id){return S.rows.some(function(r){return r.id===id;});})&&S.rows.filter(function(r){return r.id==='personal_response';})[0].inUse===true);
+      var keepF=DB.settings.folds;DB.settings.folds=Object.assign({},keepF||{},{'learn-competition':true});var card=competitionCard();DB.settings.folds=keepF;
+      ok('the forecast card asks whether the intervals are honest, model by model',card.indexOf('Are the intervals honest?')>=0&&card.indexOf('Personal response predictions')>=0);
+      /* the demo record has cardio with heart rate: built as loadDemo builds it, used only for this check */
+      var keepDB=DB,A;try{DB=replayHistory(generateRecord(DEMO_SPEC,11),DEMO_SPEC);_memoInvalidate();A=cardioFitnessModel();}finally{DB=keepDB;_memoInvalidate();}
+      ok('the aerobic filter calibrates its interval by its own one-step-ahead record, by the same rule (on the demo’s sessions)',A.status==='ok'&&A.states.some(function(s){return s.calibration.applied;})&&A.states.every(function(s){var c=intervalCalibration(s.scored);return s.calibration.applied===(c.n>=10)&&s.calibration.scale===round(c.n>=10?c.scale:1,2);}),JSON.stringify(A.states&&A.states.map(function(s){return s.calibration;})));
+      DB.responses=keep;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

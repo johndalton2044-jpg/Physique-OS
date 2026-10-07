@@ -327,7 +327,7 @@
    "id": "unified-optimiser",
    "label": "Unified optimiser",
    "maturity": "surfaced",
-   "note": "a deeper calorie cut is credited with the everyday movement it is expected to cost: the personal NEAT response (steps a day per 10% deficit, Bayesian from a population prior), applied only to the share of the calorie effect still resting on the population figure",
+   "note": "a deeper calorie cut is credited with the everyday movement it is expected to cost: the personal NEAT response (steps a day per 10% deficit, Bayesian from a population prior), applied only to the share of the calorie effect still resting on the population figure; each option simulated forward 8 weeks (simulatePolicies): the forecast competition’s winning model for the path with no change, plus each change’s effect counted only if carried out, with an 80% interval; the plan records the simulated outcome when an option is chosen",
    "source": "Martin et al. 2007 (CALERIE: spontaneous activity falls under energy restriction)",
    "evidence": [
     {
@@ -419,8 +419,30 @@
      "gate": "engine"
     }
    ],
-   "note": "per modality family, from steady sessions with heart rate and pace or power (a Kalman filter for the level, its intervals scored against the next session); the trend a weighted regression with a prior centred on no change; capacity sits beside the cardio minutes in the capability vector",
+   "note": "per modality family, from steady sessions with heart rate and pace or power (a Kalman filter for the level, its intervals scored against the next session); the trend a weighted regression with a prior centred on no change; capacity sits beside the cardio minutes in the capability vector; its 80% interval calibrated by its own one-step-ahead record (self-calibration)",
    "source": "ACSM metabolic equations; Milanović et al. 2015 (VO2max gains from training)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "measured"
+   }
+  },
+  {
+   "id": "causal-estimation",
+   "label": "Causal estimates of each change: interrupted series and matched periods",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each Response's before/after estimate is reported beside an interrupted series (level and rate against the old trend projected to the change, standard errors widened for day-to-day carry-over) and a matched-periods estimate (the same comparison at dates in the person's own record with no change: same weekday and phase, a similar starting trend, Student's t for few periods); a person's deliberate changes, pooled per unit, are an identification strategy of their own. Observational: it rules out drift and regression to the mean, not a cause that arrived with the change; and the day-by-day path without the change (responseCounterfactual): the trend before continued, with what matched periods did on their own where they exist, an 80% band, shown with a chart in each Response’s sheet",
+   "source": "segmented regression of interrupted time series (Wagner et al. 2002, J Clin Pharm Ther); the AR(1) variance factor for a trend regressor; caliper matching (Austin 2011, Pharm Stat)",
    "axes": {
     "engineering": "surfaced",
     "scientific": "population evidence",
@@ -433,16 +455,37 @@
    }
   },
   {
-   "id": "causal-estimation",
-   "label": "Causal estimates of each change: interrupted series and matched periods",
+   "id": "knowledge-versioning",
+   "label": "Personal knowledge: versions, conflicts and decay",
    "maturity": "surfaced",
    "evidence": [
     {
      "gate": "engine"
     }
    ],
-   "note": "each Response's before/after estimate is reported beside an interrupted series (level and rate against the old trend projected to the change, standard errors widened for day-to-day carry-over) and a matched-periods estimate (the same comparison at dates in the person's own record with no change: same weekday and phase, a similar starting trend, Student's t for few periods); a person's deliberate changes, pooled per unit, are an identification strategy of their own. Observational: it rules out drift and regression to the mean, not a cause that arrived with the change",
-   "source": "segmented regression of interrupted time series (Wagner et al. 2002, J Clin Pharm Ther); the AR(1) variance factor for a trend regressor; caliper matching (Austin 2011, Pharm Stat)",
+   "note": "each Response carries its version and the method version that derived it, and is derived again (a new version naming the one it replaced) when it matures or the method changes; negative knowledge carries its method version and its place among findings about the same change; findings that disagree (two responses beyond their noise, or 'did not work' beside a clear response) are shown side by side with their age weights; in the personal response model each response counts for half as much every 270 days",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "experiment-portfolio",
+   "label": "Experiment portfolio: the next test by expected information gain",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "every lever's ready-made test on one scale: the expected information gain 1/2 ln(1 + s0^2/se^2), with s0 the lever's SD now (widened by half of any disagreement between its findings) and se the outcome's noise over a Response's windows over the dose likely carried out (the person's own response errors where measured over most of both windows); ranked per week of testing; a test that would narrow the estimate by less than 10% is not worth running",
+   "source": "expected information gain for a normal model (Lindley 1956, Ann Math Stat); Bayesian experimental design (Chaloner & Verdinelli 1995, Stat Sci)",
    "axes": {
     "engineering": "surfaced",
     "scientific": "population evidence",
@@ -451,7 +494,74 @@
     "ux": "surfaced",
     "operational": "local",
     "evidence": "internal",
-    "calibration": "insufficient"
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "sensor-fusion",
+   "label": "Sensor fusion: one value from several sources",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a measured quantity from two or more sources (told apart by provider or device) is fused on every day: each source put on the reference source’s scale (your preferred one, else the one with the most readings) by its mean same-day difference, each reading weighted by its quality over its source’s measured noise squared, a reading the others contradict set aside when there are three; from readings known by the date asked about only; body fat left to its own reconciliation",
+   "source": "inverse-variance weighting of measurements (e.g. Hartung, Knapp & Sinha 2008, Statistical Meta-Analysis); measurementModel's per-source bias and noise",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "automation-approval",
+   "label": "User-approved automation: approval policy and audit",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    },
+    {
+     "blackbox": "V-012"
+    }
+   ],
+   "note": "every automated action has a level: view (changes nothing) runs; routine (an undoable record) runs under the standing approval recorded when its rule is turned on; important (the plan, targets, programme, profile, any deletion) never runs on a trigger, only holds a proposal that applies when approved, through changePlan; an undeclared action is important; every decision is in the audit log",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "self-calibration",
+   "label": "Self-calibration of every interval",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the forecast competition’s calibration made the one rule for every model that makes interval predictions (weight and strength forecasts, aerobic capacity, personal response predictions): the factor that would have made the 80% interval hold 80% of the time, learned on older predictions and checked on newer ones, widening or narrowing the live interval once ten predictions are scored; one report says whether each model’s intervals are honest",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "measured"
    }
   },
   {

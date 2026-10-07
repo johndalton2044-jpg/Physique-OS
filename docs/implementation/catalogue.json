@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "88304dc6bc",
+ "build": "ed2073643a",
  "models": [
   {
    "id": "adherence",
@@ -648,6 +648,14 @@
   },
   {
    "id": "attention.snooze",
+   "level": "developer"
+  },
+  {
+   "id": "auto.approve",
+   "level": "developer"
+  },
+  {
+   "id": "auto.decline",
    "level": "developer"
   },
   {
