@@ -3546,3 +3546,55 @@ Replacing the pooling with each unit's own value, leaving contexts unpooled, and
 its intended check red. On the demo, the three pooled regions (glutes, quads, hamstrings) gain about 7.6% a month, with
 pooled SDs of 1.42 to 1.53 against their own 1.93 to 3.34; none lags. The personal-response capability's note records the
 pooling. All 36 gates pass (reproducible included); release 24/24; 1,678 self-tests.
+
+## Stage E: causal estimation on Responses (build 0a3671e46f)
+
+Each Response judged a change by its before/after estimate alone: the trend after against the trend before, continued.
+It now carries two more estimates beside that one, reported and never substituted for it (`responseCausal` in
+94-causal).
+- **Interrupted series.** The existing `interruptedTimeSeries` had a defect. Each window's day count starts from that
+  window's own first day, so the pre-change fit was projected with the post window's numbers. That evaluated the old
+  trend at the start of the pre window, a month before the change, and the "level shift" was the whole drift across that
+  month: a steady loss read as a clear shift. Its level after the change was also one reading rather than the fit. Both
+  segments now share one axis (days from the change). The level is the fit at the boundary, and the change in rate is
+  reported as well, both with standard errors widened by the AR(1) factor for carry-over (autocorrelation never taken
+  below zero, so the correction only widens; before, a negative value let the effective n exceed the nominal).
+- **Matched periods** (`matchedPeriods`). The same comparison, with the Response's own windows, at dates in the person's
+  record with no change of any kind in the windows or the three weeks before them. They share the change's weekday and
+  phase, have no new phase, context period or training break, and start from a similar trend. The caliper is half the
+  spread of such periods, or twice the standard error of a difference between two trends if that is wider. The effect
+  minus their average is the estimate. Their spread is its noise, never taken below the before/after standard error, and
+  "clear" uses Student's t on k−1 degrees of freedom. At least four periods; fewer is reported with what is missing.
+- **Deliberate changes over time** (`deliberateChangeEffect`). A person's final Responses, per unit of each change and
+  pooled by inverse variance, form an identification strategy in 86-identification with its own estimator in
+  `causalAnalysis`. It is listed after the backdoor, front door and instruments.
+
+The Response records whether the estimates agree. Its details sheet shows "Allowing for carry-over", "Against comparable
+periods" and "Do the estimates agree?". The Response contract notes the new fields, and the response model version is
+1.2.
+
+The known answers come from the generators' own parameters:
+- the failed_intervention fixture (flat before and after) now shows no shift, where the old series called it clear
+  (t −7.4);
+- the successful one shows a change in rate of −1.14 lb a week (built as −1.25);
+- a change made as a three-week stall ends looks like a clear response before and after (−1 lb a week), but the matched
+  periods are the earlier stall ends, which did the same on their own, so the matched estimate is within their range and
+  the estimates are reported as disagreeing;
+- a real change (−0.5 to −1.5 lb a week) stays clear against them and every estimate agrees;
+- no matched period sits near this change or another;
+- with few periods the t quantile matches the published table.
+
+The tests hold on 60 noise seeds. Restoring the original series, removing the caliper, ignoring the comparable periods,
+not dividing by the size of the change, and not excluding dates near a change each turned their intended checks red.
+
+On the demo:
+- creatine has too few readings before it for the series;
+- caffeine's +0.72 ± 0.40 h of sleep (before/after) is +0.16 ± 0.80 against the projected trend, so the estimates
+  disagree;
+- the steps experiment's −0.50 ± 0.60 lb a week is −0.52 ± 0.60 in rate, so they agree: no clear change;
+- the 67-day record needs four more nine-week stretches without a change for matched periods, and says so.
+
+The series fix also corrects its other consumers: the demo's steps change, which the old series called "a clear shift",
+now reads "larger than the noise, but not decisively", and steps' causal-support grade moves from "weakly supported" to
+"correlated", in line with the Response's own "no clear response yet". A causal-estimation capability joins the ledger.
+1,692 self-tests pass; the full release record is in progress.

@@ -433,6 +433,28 @@
    }
   },
   {
+   "id": "causal-estimation",
+   "label": "Causal estimates of each change: interrupted series and matched periods",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each Response's before/after estimate is reported beside an interrupted series (level and rate against the old trend projected to the change, standard errors widened for day-to-day carry-over) and a matched-periods estimate (the same comparison at dates in the person's own record with no change: same weekday and phase, a similar starting trend, Student's t for few periods); a person's deliberate changes, pooled per unit, are an identification strategy of their own. Observational: it rules out drift and regression to the mean, not a cause that arrived with the change",
+   "source": "segmented regression of interrupted time series (Wagner et al. 2002, J Clin Pharm Ther); the AR(1) variance factor for a trend regressor; caliper matching (Austin 2011, Pharm Stat)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

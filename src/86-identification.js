@@ -234,6 +234,13 @@ function identificationStrategy(treatment,outcome){
       blocked:(!r||r.status!=='ok')?'not computable':
         (r.weak?('instrument too weak: '+round(r.instrumentStrength,2)+' SD of movement, first-stage F about '+(r.firstStageF!=null?Math.round(r.firstStageF):'?')):null)});
   });
+  /* Deliberate changes over time (Stage E): this person's own Responses to changing the treatment, each against matched
+     periods without a change. Listed last because it rests on few changes; where the graph identifies nothing it is
+     the design in the record closest to an experiment. */
+  var dc=null;try{dc=deliberateChangeEffect(treatment,outcome);}catch(e){}
+  if(dc)out.push({strategy:'deliberate changes over time',available:dc.status==='ok',
+    detail:dc.status==='ok'?(dc.n+' change'+(dc.n===1?'':'s')+' to '+treatment+', each against matched periods without a change'):(dc.need||[]).join('; '),
+    blocked:dc.status==='ok'?null:'no judged change with matched periods'});
   var usable=out.filter(function(o){return o.available&&!o.blocked;});
   return {treatment:treatment,outcome:outcome,strategies:out,
     usable:usable.length,best:usable[0]||null,cls:'POLICY',
@@ -366,6 +373,16 @@ function causalAnalysis(treatment,outcome,opts){
     out.sensitivity={note:fd.caveat};stages.push('sensitivity');
     return Object.assign({status:'ok',stages:stages,cls:'EMPIRICAL',strategy:strat},out);
   }
+  if(/^deliberate changes/.test(strat)){var dc=deliberateChangeEffect(treatment,outcome);
+    if(dc.status!=='ok')return stop('estimator','deliberate changes: '+(dc.need||[]).join('; '));
+    out.estimand={id:'effect of a deliberate change',means:'the effect on '+outcome+' of changing '+treatment+' by '+dc.per+', as this person changed it'};
+    out.treatmentModel={method:'none needed: each change was made deliberately, at a known date',changes:dc.n};stages.push('treatment-model');
+    out.estimator={method:'each change\u2019s effect against matched periods without a change, per '+dc.per+', pooled by inverse variance',estimand:'effect of a deliberate change'};stages.push('estimator');
+    out.balance={note:'matched on phase, weekday and the trend before; periods with any other change or a new regime were left out'};stages.push('balance');
+    out.effect={estimate:dc.estimate,n:dc.n,per:dc.per};stages.push('effect');
+    out.uncertainty={source:'causal',se:dc.se,lo:dc.lo,hi:dc.hi,basis:'the spread of matched periods without a change, pooled across changes'};stages.push('uncertainty');
+    out.sensitivity={note:'Something that arrived with a change (an illness, a holiday, a new job) would be read as its effect; matched periods rule out drift and regression to the mean, not that.'};stages.push('sensitivity');
+    return Object.assign({status:'ok',stages:stages,cls:'EMPIRICAL',strategy:strat},out,{note:'Estimated from changes made deliberately, each against comparable periods without a change.'});}
   /* backdoor adjustment: treatment model, estimator, balance/positivity */
   var ps=propensityScoreModel(treatment,outcome,opts);
   if(ps.status!=='ok')return stop('treatment-model',ps.note||('treatment model: '+ps.status),{need:ps.need,untracked:ps.untracked});

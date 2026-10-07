@@ -1761,6 +1761,9 @@
     "burden": [
      "object"
     ],
+    "causal": [
+     "object"
+    ],
     "cls": [
      "string"
     ],
@@ -2170,7 +2173,7 @@
   {
    "id": "intervention_response",
    "cls": "EMPIRICAL",
-   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual",
+   "output": "the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate",
    "uncertainty": "standard error of the difference in trends",
    "inputs": [
     "weight",

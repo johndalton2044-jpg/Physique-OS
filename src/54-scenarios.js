@@ -144,40 +144,51 @@ function interruptedTimeSeries(opts){
   opts=opts||{};
   var type=opts.type||'weight';
   var change=opts.changeDate;if(!change)return {status:'insufficient',need:['a change date']};
-  var washout=opts.washoutDays!=null?opts.washoutDays:3;
-  /* seriesWindow(type, days, asOfDate) returns the window ENDING at asOfDate, so the pre window ends the
-     day before the change and the post window ends `postDays` after the washout. */
-  var pre=seriesWindow(type,opts.preDays||28,addDays(change,-1));
-  var postEnd=addDays(change,washout+(opts.postDays||28));
-  if(postEnd>todayISO())postEnd=todayISO();
-  var post=seriesWindow(type,opts.postDays||28,postEnd).filter(function(d){return d.date>=addDays(change,washout);});
+  var washout=opts.washoutDays!=null?opts.washoutDays:3,pre,post;
+  /* Explicit windows (a Response passes its own before and after, Stage E), or windows around the change date:
+     seriesWindow(type, days, asOfDate) returns the window ENDING at asOfDate, so the pre window ends the day before the
+     change and the post window ends `postDays` after the washout. */
+  if(opts.before&&opts.after){pre=_rangeSeries(type,opts.before[0],opts.before[1]);post=_rangeSeries(type,opts.after[0],opts.after[1]);washout=Math.max(0,daysBetween(change,opts.after[0]));}
+  else{pre=seriesWindow(type,opts.preDays||28,addDays(change,-1));
+    var postEnd=addDays(change,washout+(opts.postDays||28));
+    if(postEnd>todayISO())postEnd=todayISO();
+    post=seriesWindow(type,opts.postDays||28,postEnd).filter(function(d){return d.date>=addDays(change,washout);});}
   if(pre.length<10||post.length<10)return {status:'insufficient',
     need:[(pre.length<10?(10-pre.length)+' more days before the change':''),(post.length<10?(10-post.length)+' more days after it':'')].filter(Boolean),cls:'EMPIRICAL'};
-  var preFit=theilSen(pre.map(function(d){return {x:d.x,y:d.value};}));
-  var postFit=theilSen(post.map(function(d){return {x:d.x,y:d.value};}));
-  /* Counterfactual: project the pre-change trend across the washout into the post window and compare. */
-  var x0=post[0].x;
-  var predicted=preFit.intercept!=null?(preFit.intercept+preFit.slope*x0):(pre[pre.length-1].value);
-  var observed=post[0].value;
+  /* Both segments on one axis, days from the change. Each window's own x counts from that window's first day, so the
+     first version projected the pre-change fit with the post window's x: it evaluated the old trend at the START of the
+     pre window, a month before the change, and the "level shift" was the whole drift across that month \u2014 a steady
+     loss read as a clear shift. And the level after the change is the post fit at the boundary, not one reading. */
+  var pts=function(S){return S.map(function(d){return {x:daysBetween(change,d.date),y:d.value};});};
+  var pp=pts(pre),qp=pts(post);
+  var preFit=theilSen(pp),postFit=theilSen(qp);
+  /* Counterfactual: project the pre-change trend across the washout to where the post window begins, and compare. */
+  var x0=qp[0].x;
+  var predicted=preFit.intercept+preFit.slope*x0,observed=postFit.intercept+postFit.slope*x0;
   var levelShift=observed-predicted;
-  var slopeChange=(postFit.slope!=null&&preFit.slope!=null)?(postFit.slope-preFit.slope)*7:null;
-  var resid=post.map(function(d,i){return d.value-(postFit.intercept+postFit.slope*d.x);});
-  var rho=_lag1(resid);
-  var sdResid=sd(resid)||0;
+  var slopeChange=(postFit.slope-preFit.slope)*7;
+  var rp=pp.map(function(q){return q.y-(preFit.intercept+preFit.slope*q.x);}),rq=qp.map(function(q){return q.y-(postFit.intercept+postFit.slope*q.x);});
+  /* lag-1 autocorrelation of the residuals, both segments; never below zero, so the correction only ever widens */
+  var rho=Math.max(0,(_lag1(rp)*rp.length+_lag1(rq)*rq.length)/(rp.length+rq.length));
+  var sdResid=Math.sqrt((rp.concat(rq)).reduce(function(a,r){return a+r*r;},0)/Math.max(1,rp.length+rq.length-4));
   /* Effective sample size under autocorrelation: n_eff = n * (1-rho)/(1+rho). With rho around 0.7 \u2014 typical
      for daily weight \u2014 this is roughly a fifth of the nominal n, and ignoring it is how people convince
-     themselves a two-week change is significant. */
-  var nEff=post.length*(1-rho)/(1+rho);
-  var se=sdResid/Math.sqrt(Math.max(2,nEff));
-  var t=se?levelShift/se:null;
+     themselves a two-week change is significant. Every standard error below is inflated by sqrt((1+rho)/(1-rho)),
+     the AR(1) variance factor for a slowly varying regressor such as time. */
+  var nEff=post.length*(1-rho)/(1+rho),infl=Math.sqrt((1+rho)/(1-rho));
+  var seg=function(Q){var xm=mean(Q.map(function(q){return q.x;})),sxx=Q.reduce(function(a,q){return a+(q.x-xm)*(q.x-xm);},0);return {n:Q.length,xm:xm,sxx:sxx||1};};
+  var a=seg(pp),b=seg(qp);
+  var se=infl*sdResid*Math.sqrt(1/a.n+(x0-a.xm)*(x0-a.xm)/a.sxx+1/b.n+(x0-b.xm)*(x0-b.xm)/b.sxx);
+  var seSlope=infl*sdResid*Math.sqrt(1/a.sxx+1/b.sxx)*7;
+  var t=se?levelShift/se:null,tSlope=seSlope?slopeChange/seSlope:null,tMax=Math.max(Math.abs(t||0),Math.abs(tSlope||0));
   return {status:'ok',cls:'EMPIRICAL',model:'interrupted_time_series',type:type,changeDate:change,washoutDays:washout,
-    preDays:pre.length,postDays:post.length,preSlopePerWeek:preFit.slope!=null?round(preFit.slope*7,3):null,
-    postSlopePerWeek:postFit.slope!=null?round(postFit.slope*7,3):null,
-    levelShift:round(levelShift,2),slopeChangePerWeek:slopeChange!=null?round(slopeChange,3):null,
-    autocorrelation:round(rho,2),effectiveN:round(nEff,1),nominalN:post.length,t:t!=null?round(t,2):null,
-    verdict:t==null?'not estimable':(Math.abs(t)>2.5?'a clear shift relative to the pre-existing trend':
-      (Math.abs(t)>1.5?'a shift larger than the noise, but not decisively':'indistinguishable from the trend that was already there')),
-    note:'Compared against the projected pre-change trend, not the pre-change average, and discounted for day-to-day autocorrelation ('+
+    preDays:pre.length,postDays:post.length,preSlopePerWeek:round(preFit.slope*7,3),
+    postSlopePerWeek:round(postFit.slope*7,3),
+    levelShift:round(levelShift,2),levelShiftSe:round(se,2),slopeChangePerWeek:round(slopeChange,3),slopeChangeSe:round(seSlope,3),
+    autocorrelation:round(rho,2),effectiveN:round(nEff,1),nominalN:post.length,t:t!=null?round(t,2):null,tSlope:tSlope!=null?round(tSlope,2):null,
+    verdict:t==null?'not estimable':(tMax>2.5?'a clear shift relative to the pre-existing trend':
+      (tMax>1.5?'a shift larger than the noise, but not decisively':'indistinguishable from the trend that was already there')),
+    note:'Compared against the projected pre-change trend, not the pre-change average, in level and in rate, and discounted for day-to-day autocorrelation ('+
       'effective n '+round(nEff,1)+' from '+post.length+' days).',
     caveat:'A single interrupted series is still observational. It answers whether something changed at that moment, not whether the intervention caused it.'};
 }

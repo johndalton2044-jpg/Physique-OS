@@ -698,7 +698,6 @@
     "round",
     "fmtNum",
     "mean",
-    "sd",
     "theilSen",
     "fmtWeight",
     "fmtRate"
@@ -723,6 +722,9 @@
     "uncertaintyChain",
     "responseFor",
     "counterfactual"
+   ],
+   "58-response-entity.js": [
+    "_rangeSeries"
    ],
    "79-rigour.js": [
     "kcalToLb"
@@ -1104,6 +1106,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "nowISO",
     "addDays",
@@ -1157,6 +1160,9 @@
    ],
    "64-physique.js": [
     "physiqueRate"
+   ],
+   "94-causal.js": [
+    "responseCausal"
    ]
   }
  },
@@ -2864,7 +2870,8 @@
    "94-causal.js": [
     "dagValidate",
     "_allPaths",
-    "adjustmentSet"
+    "adjustmentSet",
+    "deliberateChangeEffect"
    ],
    "96-bayes-engine.js": [
     "propensityScoreModel"
@@ -3958,6 +3965,9 @@
    ],
    "90-actions.js": [
     "registerAction"
+   ],
+   "94-causal.js": [
+    "responseCausal"
    ]
   }
  },
@@ -4279,16 +4289,37 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "todayISO",
+    "addDays",
+    "daysBetween",
     "round",
     "mean",
     "median",
     "sd"
    ],
    "30-observations.js": [
+    "activePhase",
+    "obsOf",
     "seriesWindow"
    ],
    "50-decision.js": [
     "lagCorrelation"
+   ],
+   "54-scenarios.js": [
+    "interruptedTimeSeries"
+   ],
+   "58-response-entity.js": [
+    "_rangeSeries",
+    "_slopePerWeek",
+    "_levelChange",
+    "responseInterventions",
+    "responsesOf"
+   ],
+   "58-state-vectors.js": [
+    "regimes"
+   ],
+   "98-measurement.js": [
+    "_tCrit"
    ]
   }
  },
@@ -5245,6 +5276,7 @@
     "adjustmentSet",
     "propensityAnalysis",
     "negativeControlCheck",
+    "deliberateChangeEffect",
     "poolNofOne"
    ],
    "94-navigation.js": [

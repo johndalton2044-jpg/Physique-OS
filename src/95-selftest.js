@@ -4129,6 +4129,48 @@ function runSelfTest(opts){
       var C=poolResponseContexts(prior,ctx),cu=C.filter(function(c){return c.context==='cut';})[0],ma=C.filter(function(c){return c.context==='maintenance';})[0];
       ok('response contexts are pooled toward the person\u2019s own estimate, not the population figure',cu.pooled&&ma.pooled&&cu.mean<0.0032&&ma.mean>0.002&&cu.mean>ma.mean);
       ok('with one context there is nothing of the person\u2019s to pool, so the population prior is used',poolResponseContexts(prior,{cut:ctx.cut}).every(function(c){return c.pooled===false;}));})();
+    /* ---- Causal estimation on Responses (Stage E): constructed records with known answers ---- */
+    ['failed_intervention','successful_intervention'].forEach(function(f){withFixture(f,function(){var e=DB.experiments[0],its=interruptedTimeSeries({changeDate:e.startDate});
+      if(f==='failed_intervention')ok('the interrupted series projects the old trend to the change: a change that did nothing (a flat trend before and after) shows no shift',its.status==='ok'&&/indistinguishable/.test(its.verdict),JSON.stringify([its.levelShift,its.slopeChangePerWeek,its.verdict]));
+      else ok('and a change that did work (flat, then 1.3 lb a week) shows a clear change in rate of about 1.25 lb a week',its.status==='ok'&&Math.abs(its.slopeChangePerWeek+1.25)<0.3&&its.tSlope<-2.5&&/clear shift/.test(its.verdict),JSON.stringify([its.slopeChangePerWeek,its.tSlope,its.verdict]));});});
+    withFixture('normal_loss',function(){
+      var keep={o:DB.observations,ph:DB.phases,s:DB.sessions,e:DB.experiments,p:DB.plans,r:DB.responses,st:DB.settings.supplementStack};
+      var today=todayISO(),day0=addDays(today,-209),seed=7,rnd=function(){seed=(seed*16807)%2147483647;return seed/2147483647;};
+      var put=function(slopeAt){DB.observations=keep.o.filter(function(o){return o.type!=='weight'&&o.type!=='context';});var w=250;seed=7;
+        for(var i=0;i<=209;i++){w+=slopeAt(i)/7;DB.observations.push(makeObservation({type:'weight',date:addDays(day0,i),value:round(w+(rnd()-0.5)*0.6,2),source:'test'}));}_memoInvalidate();};
+      DB.phases=[{id:'ph-t',type:'cut',startDate:day0,status:'active'}];DB.sessions=[];DB.experiments=[];DB.plans=[];DB.settings.supplementStack=[];DB.responses=[];
+      /* least-squares slope a week, written out here rather than borrowed from the module */
+      var slope=function(from,to){var P=obsOf('weight').filter(function(o){return o.date>=from&&o.date<=to;}).map(function(o){return [daysBetween(from,o.date),o.value];});
+        var n=P.length,sx=0,sy=0,sxx=0,sxy=0;P.forEach(function(q){sx+=q[0];sy+=q[1];sxx+=q[0]*q[0];sxy+=q[0]*q[1];});return 7*(n*sxy-sx*sy)/(n*sxx-sx*sx);};
+      var D=addDays(day0,189),iv={id:'tm',kind:'plan change',date:D,variable:'steps',from:8000,to:10000,reversible:'yes'};
+      /* stalls of three weeks alternating with three weeks of loss; the change is made as a stall ends */
+      put(function(i){return i%42<21?0:-1;});var r=evaluateResponse(iv),M=r.causal&&r.causal.matched;
+      ok('a change made as a stall ends looks like a clear response before and after',r.primary&&Math.abs(r.primary.effect+1)<0.3&&/clear response/.test(r.verdict),r.primary&&r.primary.effect+' '+r.verdict);
+      var bef=r.primary&&slope(addDays(D,-21),addDays(D,-1));
+      ok('the matched periods include every earlier stall end, each on the change’s weekday, clear of it, and starting from a trend within the caliper',M&&M.status==='ok'&&
+        [42,84,126,168].every(function(k){return M.dates.indexOf(addDays(D,-k))>=0;})&&M.dates.every(function(c){var g=daysBetween(c,D);return g%7===0&&(g>20||g<-42)&&Math.abs(slope(addDays(c,-21),addDays(c,-1))-bef)<=M.caliper+0.01;}),M&&JSON.stringify(M.dates||M.need));
+      var nul=M&&M.dates?M.dates.map(function(c){return slope(c,addDays(c,20))-slope(addDays(c,-21),addDays(c,-1));}):[],m0=nul.length?nul.reduce(function(a,x){return a+x;},0)/nul.length:null;
+      ok('the matched estimate is the effect less what those periods did on their own (markedly faster, with no change)',M&&m0!=null&&Math.abs(M.nullMean-m0)<0.02&&m0<-0.5&&Math.abs(M.estimate-(r.primary.effect-m0))<0.02,JSON.stringify({m:M&&M.nullMean,m0:m0,e:M&&M.estimate}));
+      var T={3:3.182,4:2.776,5:2.571,6:2.447,7:2.365,8:2.306,9:2.262,10:2.228,11:2.201,12:2.179,13:2.160,14:2.145,15:2.131};
+      ok('with few periods the interval uses Student’s t on their degrees of freedom (from the published table), and its noise is never below the comparison’s own',M&&T[M.periods-1]!=null&&Math.abs(M.tCritical-T[M.periods-1])<0.01&&M.se>=r.primary.se*Math.sqrt(1+1/M.periods)-0.006,M&&JSON.stringify([M.periods,M.tCritical,M.se,r.primary.se]));
+      ok('so it is within what comparable periods show, and the estimates are reported as disagreeing',M&&M.clear===false&&/within/.test(M.verdict)&&r.causal.agree===false&&/disagree/.test(r.causal.agreement),r.causal&&r.causal.agreement);
+      /* a real change: a steady half-pound loss that becomes a pound and a half */
+      put(function(i){return i<189?-0.5:-1.5;});var X=addDays(D,-70);DB.experiments=[{id:'x-other',startDate:X,variable:'calories',baselineValue:2200,interventionValue:2000}];r=evaluateResponse(iv);M=r.causal&&r.causal.matched;
+      ok('a change unlike anything in comparable periods stays clear against them, and the estimates agree',M&&M.status==='ok'&&M.clear&&Math.abs(M.estimate+1)<0.35&&r.causal.agree===true,JSON.stringify(M&&(M.status==='ok'?[M.estimate,M.se,M.periods]:M.need)));
+      ok('no matched period has this change or another one in its windows or the three weeks before them',M&&M.status==='ok'&&M.dates.every(function(c){return [D,X].every(function(x){return x<addDays(c,-42)||x>addDays(c,20);});}),M&&JSON.stringify(M.dates));
+      ok('the interrupted series reads it as a change in rate, about a pound a week',r.causal.interrupted.quantity==='change in rate'&&Math.abs(r.causal.interrupted.effect+1)<0.3,JSON.stringify(r.causal.interrupted));
+      /* the identification strategy built on deliberate changes uses it, per 1,000 steps a day */
+      DB.responses=[r];var dc=deliberateChangeEffect('steps','weight');
+      ok('deliberate changes give an effect per 1,000 steps a day: the matched estimate over a change of 2, its error widened for few periods',dc.status==='ok'&&dc.n===1&&Math.abs(dc.estimate-M.estimate/2)<0.01&&Math.abs(dc.se-M.se*_tCrit(M.periods-1)/1.96/2)<0.002,JSON.stringify(dc));
+      var st=identificationStrategy('steps','weight').strategies.filter(function(s){return s.strategy==='deliberate changes over time';})[0];
+      ok('identification lists deliberate changes over time as available',!!st&&st.available===true&&!st.blocked);
+      var C=causalAnalysis('steps','weight');
+      ok('where nothing else identifies the effect, the causal analysis estimates it from the deliberate changes, through every stage',C.status==='ok'&&C.identification.selected==='deliberate changes over time'&&C.effect.estimate===dc.estimate&&C.uncertainty.se===dc.se&&['estimator','effect','uncertainty','sensitivity'].every(function(s){return C.stages.indexOf(s)>=0;}),JSON.stringify({sel:C.identification&&C.identification.selected,st:C.status,at:C.stoppedAt}));
+      /* a record too short for four periods says so */
+      DB.observations=DB.observations.filter(function(o){return o.type!=='weight'||o.date>=addDays(D,-40);});_memoInvalidate();r=evaluateResponse(iv);
+      ok('a record too short for four matched periods says how much more is needed, and gives no matched estimate',r.causal.matched.status==='insufficient'&&/more stretch/.test((r.causal.matched.need||[]).join())&&r.causal.estimates.length===2,JSON.stringify(r.causal.matched));
+      DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();
+    });
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
