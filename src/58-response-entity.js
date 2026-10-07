@@ -63,7 +63,7 @@ function _evaluateResponseCore(iv){
   /* the expectation: stated when the change began; else this person's own model, leaving this change out (never judged
      against itself); else the population figure */
   var ex=iv.expected||(function(){if(rec.dose!=null&&oc&&typeof predictResponse==='function'){var pr=predictResponse(iv.variable,oc,rec.dose,{excludeId:iv.id});
-      if(pr&&pr.n)return {lo:pr.lo,hi:pr.hi,unit:pr.unit,basis:pr.basis};}return oc==='weight'?_expectedWeightChange(iv):null;})();
+      if(pr&&pr.n)return {lo:pr.lo,hi:pr.hi,mean:pr.mean,unit:pr.unit,basis:pr.basis,source:'personal_response'};}   /* source: scored for self-calibration */return oc==='weight'?_expectedWeightChange(iv):null;})();
   if(ex&&rec.primary){rec.expected=ex;var lo=Math.min(ex.lo,ex.hi),hi=Math.max(ex.lo,ex.hi);rec.expectation=rec.primary.effect>=lo-rec.primary.se&&rec.primary.effect<=hi+rec.primary.se?'as expected':(Math.abs(rec.primary.effect)<Math.abs((lo+hi)/2)?'less than expected':'more than expected');}
   /* unintended consequences */
   rec.unintended=[];RESPONSE_SECONDARY.forEach(function(s){if(s[0]===oc)return;var lc=s[0]==='e1rm'?(function(){var b=_e1rmSeries(B[0],B[1]).map(function(x){return x.value;}),a=_e1rmSeries(A[0],A[1]).map(function(x){return x.value;});

@@ -3796,3 +3796,42 @@ Checks:
 Letting the important action run without approval turned V-012 red. Treating undeclared actions as routine, granting
 approval without an audit entry, holding the same change twice and not auditing answers turned the self-tests red. An
 automation-approval capability joins the ledger as workflow-tested. All 36 gates pass (reproducible included); release 24/24; 1,743 self-tests, 8 workflow checks.
+
+## Stage H: self-calibration (build ed2073643a)
+
+The forecast competition calibrated its intervals: the factor that would have made the 80% interval hold 80% of the
+time, learned on older forecasts and checked on newer ones, widening or narrowing the live interval. No other model did.
+The aerobic filter scored its own intervals and only reported the result, and the personal response model's
+predictions were never scored at all.
+- **One rule.** `intervalCalibration` (58-model-competition) is now the rule; the competition uses it unchanged.
+- **Every interval model.** `INTERVAL_MODELS` lists every model that makes interval predictions, with what it is scored
+  against and where its factor is applied:
+  - the weight and strength forecasts, against the backtest;
+  - aerobic capacity, against the next session;
+  - the personal response model's predictions, against the effect each change then had, now that a Response records
+    when its expectation came from the model.
+- **When it applies.** Once ten predictions are scored, the factor widens or narrows the live interval: in
+  `competitionForecast`, in each modality family of `cardioFitnessModel`, and in `predictResponse`. With fewer,
+  intervals are used as they are, and the report says so.
+- **On screen.** `selfCalibration()` puts them on the forecast card under "Are the intervals honest?".
+
+The known answers:
+- 20 ratios 0.1 to 2.0 give coverage 0.6, a factor of 1.7/1.2816, and coverage 0 on the newer half with a factor from
+  the older half: not calibrated;
+- an interval far too wide narrows to the 0.25 floor;
+- the competition's factor equals the registry's;
+- nine scored responses leave the intervals alone, and twelve, landing 0.2 to 2.4 SD from their predictions, give
+  2.0/1.2816, which `predictResponse` then applies;
+- on the demo's sessions the aerobic filter applies the same rule.
+
+Ignoring the response factor, checking on the data the factor came from, removing the floor, and not calibrating the
+aerobic filter each turned their checks red. On the demo:
+- the weight forecast's raw interval held 35% of 17 backtest forecasts; widened 1.76 times, it held on every newer one;
+- the aerobic filter's held every time (too wide); narrowed to the floor, it held 75% on newer sessions, which narrows
+  the VO2max interval;
+- strength and the personal response model have too few scored predictions yet.
+
+A self-calibration capability joins the ledger with measured calibration. Aerobic fitness's calibration is now measured
+too, and the maturity gate lists both as scored. 1,753 self-tests pass; the full release record is in progress. Stage H
+is complete, and with it every backlog item that does not need credentials: item 4 waits for observation types, and
+item 11 for real accounts.

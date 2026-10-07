@@ -419,7 +419,7 @@
      "gate": "engine"
     }
    ],
-   "note": "per modality family, from steady sessions with heart rate and pace or power (a Kalman filter for the level, its intervals scored against the next session); the trend a weighted regression with a prior centred on no change; capacity sits beside the cardio minutes in the capability vector",
+   "note": "per modality family, from steady sessions with heart rate and pace or power (a Kalman filter for the level, its intervals scored against the next session); the trend a weighted regression with a prior centred on no change; capacity sits beside the cardio minutes in the capability vector; its 80% interval calibrated by its own one-step-ahead record (self-calibration)",
    "source": "ACSM metabolic equations; Milanović et al. 2015 (VO2max gains from training)",
    "axes": {
     "engineering": "surfaced",
@@ -429,7 +429,7 @@
     "ux": "surfaced",
     "operational": "local",
     "evidence": "internal",
-    "calibration": "insufficient"
+    "calibration": "measured"
    }
   },
   {
@@ -541,6 +541,27 @@
     "operational": "local",
     "evidence": "independent",
     "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "self-calibration",
+   "label": "Self-calibration of every interval",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the forecast competition’s calibration made the one rule for every model that makes interval predictions (weight and strength forecasts, aerobic capacity, personal response predictions): the factor that would have made the 80% interval hold 80% of the time, learned on older predictions and checked on newer ones, widening or narrowing the live interval once ten predictions are scored; one report says whether each model’s intervals are honest",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "measured"
    }
   },
   {

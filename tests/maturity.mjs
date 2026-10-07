@@ -15,7 +15,7 @@ for(const c of C.capabilities){
   for(const m of (c.readme&&c.readme.must)||[])if(!new RegExp(m,'i').test(readme))problems.push(c.id+': the README must say "'+m+'"');
   for(const m of (c.readme&&c.readme.mustNot)||[]){const hit=readme.match(new RegExp(m,'i'));if(hit)problems.push(c.id+': the README claims "'+hit[0]+'", beyond '+c.maturity);}}
 /* MULTIDIMENSIONAL MATURITY (§211): every capability rated on each axis, each level earned */
-const AX=C.axes||{},INDEPENDENT_GATES=['persistence','integration','cloud:e2e','blackbox','browser'],CALIBRATION_MEASURED=['forecasting'];
+const AX=C.axes||{},INDEPENDENT_GATES=['persistence','integration','cloud:e2e','blackbox','browser'],CALIBRATION_MEASURED=['forecasting','self-calibration','aerobic-fitness'];   /* their interval coverage is scored by the engine gate */
 for(const c of C.capabilities){const a=c.axes;if(!a){problems.push(c.id+': no axes');continue;}
   for(const k of Object.keys(AX)){if(k==='engineering'){if(a.engineering!==c.maturity)problems.push(c.id+': engineering ('+a.engineering+') differs from its ladder level ('+c.maturity+')');continue;}
     if(!Array.isArray(AX[k])||AX[k].indexOf(a[k])<0)problems.push(c.id+': '+k+' "'+a[k]+'" is not a level of that axis');}

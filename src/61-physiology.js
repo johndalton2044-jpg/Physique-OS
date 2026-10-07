@@ -95,11 +95,15 @@ function cardioFitnessModel(){
   var states=fams.map(function(f){var pr=_vo2Prior(f),m=pr.mean,P=pr.sd*pr.sd,q=0.02,last=null,bt=[];
     obs[f].sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(o){
       if(last){var gap=daysBetween(last,o.date);P+=q*gap;if(gap>14){var lam=Math.log(2)/90*(gap-14);m=pr.mean+(m-pr.mean)*Math.exp(-lam);}}
-      var R=o.sd*o.sd,S=P+R,z=(o.estimate-m)/Math.sqrt(S);bt.push({err:Math.abs(o.estimate-m),within80:Math.abs(z)<=1.2816});
+      var R=o.sd*o.sd,S=P+R,z=(o.estimate-m)/Math.sqrt(S);bt.push({err:Math.abs(o.estimate-m),within80:Math.abs(z)<=1.2816,at:o.date,ratio:Math.abs(z)});
       var K=P/S;m=m+K*(o.estimate-m);P=(1-K)*P;last=o.date;});
     var idle=last?daysBetween(last,todayISO()):0;if(idle>0){P+=q*idle;if(idle>14)m=pr.mean+(m-pr.mean)*Math.exp(-Math.log(2)/90*(idle-14));}
-    var sd=Math.sqrt(P),n=obs[f].length,cov=bt.length?bt.filter(function(b){return b.within80;}).length/bt.length:null;
+    var sd0=Math.sqrt(P),n=obs[f].length,cov=bt.length?bt.filter(function(b){return b.within80;}).length/bt.length:null;
+    /* self-calibration (Stage H): the interval widened or narrowed by the factor its own one-step-ahead record supports,
+       once it has ten scored predictions (intervalCalibration, the competition's rule) */
+    var IC=intervalCalibration(bt),k=IC.n>=CALIBRATION_MIN_N?IC.scale:1,sd=sd0*k;
     return {family:f,estimate:round(m,1),sd:round(sd,1),ci80:[round(m-1.2816*sd,1),round(m+1.2816*sd,1)],n:n,lastDate:last,daysSince:idle,decaying:idle>14,prior:pr,trend:vo2Trend(obs[f]),
+      calibration:{n:IC.n,scale:round(k,2),calibratedCoverage:IC.calibratedCoverage!=null?round(IC.calibratedCoverage,2):null,applied:IC.n>=CALIBRATION_MIN_N},scored:bt.map(function(b){return {at:b.at,ratio:b.ratio};}),
       backtest:{n:bt.length,mae:bt.length?round(bt.reduce(function(a,b){return a+b.err;},0)/bt.length,1):null,coverage80:cov!=null?round(cov,2):null,
         verdict:bt.length<6?'too few observations to judge the model':(cov>=0.65&&cov<=0.95?'intervals are calibrated':'intervals are '+(cov<0.65?'too narrow':'too wide'))}};});
   var head=states.slice().sort(function(a,b){return b.n-a.n;})[0];

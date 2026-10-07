@@ -59,7 +59,8 @@ function _personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by=
 /* what a change of this size is expected to do for this person */
 function predictResponse(variable,outcome,dose,opts){opts=opts||{};var M=personalResponseModel({excludeId:opts.excludeId}),row=M.rows.filter(function(r){return r.variable===variable&&r.outcome===outcome;})[0];
   if(!row||dose==null)return null;var c=opts.context&&row.contexts.filter(function(x){return x.context===opts.context;})[0],src=c||row.posterior,per=dose/(RESPONSE_PRIORS()[row.key]?RESPONSE_PRIORS()[row.key].scale:1);
-  var m=src.mean*per,s=Math.abs(src.sd*per);return {mean:round(m,3),lo:round(m-2*s,3),hi:round(m+2*s,3),unit:row.unit,n:row.n,personalWeight:row.personalWeight,
+  /* self-calibration (Stage H): the interval widened or narrowed by the factor its own record of predictions supports */
+  var k=typeof calibrationScale==='function'?calibrationScale('personal_response'):1,m=src.mean*per,s=Math.abs(src.sd*per)*k;return {mean:round(m,3),lo:round(m-2*s,3),hi:round(m+2*s,3),unit:row.unit,n:row.n,personalWeight:row.personalWeight,
     basis:row.n?('your '+row.n+' earlier response'+(row.n===1?'':'s')+' with the population figure ('+Math.round(row.personalWeight*100)+'% yours)'+(c?', in '+c:'')):row.prior.basis};}
 (function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_response';}))return;
   MODELS.push({id:'personal_response',name:'Personal response model',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','steps','calories'],minN:1,

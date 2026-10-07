@@ -4325,6 +4325,34 @@ function runSelfTest(opts){
       ok('approving is recorded and audited; the change itself then goes through the plan’s own authority, from the screen',R2.status==='ok'&&R2.pending.status==='approved'&&audits('approved')===a0+1&&plansOf().length===n0&&automationPending().length===0);
       ok('the automation sheet lists what automation did',SHEETS.automation().body.indexOf('What automation did')>=0);
       DB.settings.automations=keep.a;DB.settings.automationApprovals=keep.ap;DB.settings.automationPending=keep.p;});
+    /* ---- Self-calibration (Stage H): the competition's rule, for every model that makes interval predictions ---- */
+    (function(){var R=[];for(var i=0;i<20;i++)R.push({at:'2026-01-'+(i<9?'0':'')+(i+1),ratio:0.1*(i+1)});var C=intervalCalibration(R);
+      /* by hand: 12 of the 20 ratios are within 1.2816; the 80th percentile (the 17th of 20) is 1.7; on the older ten it is 0.9,
+         and none of the newer ten (1.1 to 2.0) is within 1.2816 x 0.9/1.2816 */
+      ok('the calibration factor is the one that would have made the 80% interval hold 80% of the time: 1.7 / 1.2816 here',C.n===20&&Math.abs(C.coverage-0.6)<1e-9&&Math.abs(C.scale-1.7/1.2816)<1e-9,JSON.stringify(C));
+      ok('it is checked on the newer half with a factor learned on the older half only, and called calibrated only if that holds',C.calibrationN===10&&C.calibratedCoverage===0&&C.calibrated===false);
+      ok('an interval far too wide is narrowed, never below a quarter',Math.abs(intervalCalibration(R.map(function(r){return {at:r.at,ratio:0.01};})).scale-0.25)<1e-9);})();
+    withFixture('calibration',function(){var B=backtestCompetition('weight'),L=DB.settings.modelLifecycle&&DB.settings.modelLifecycle.weight,c=L?L.primary:'theil_sen',row=B.status==='ok'&&B.rows.filter(function(r){return r.candidate===c;})[0];
+      ok('the forecast competition uses the same rule: its factor is the registry’s for the weight forecast',!!row&&!!row.metrics[14]&&row.metrics[14].scale===round(intervalCalibration(_competitionScored('weight')).scale,2),JSON.stringify(row&&row.metrics[14]));});
+    withFixture('normal_loss',function(){var keep=DB.responses,per=7/3500,today=todayISO();
+      /* twelve changes predicted at sd 0.1, whose effects then landed 0.2, 0.4 … 2.4 sd from the prediction: the 80th
+         percentile (the 10th of 12) is 2.0, so the factor is 2.0 / 1.2816 */
+      var mk=function(i){var start=addDays(today,-30-7*i),mid=-500*per*100/100;return {id:'pr'+i,interventionId:'pr'+i,variable:'calories',outcome:'weight',dose:-500,stage:'final',start:start,windows:{before:[addDays(start,-21),addDays(start,-1)],after:[start,addDays(start,20)]},
+        expected:{lo:mid-0.2,hi:mid+0.2,mean:mid,source:'personal_response',unit:'lb/week'},primary:{effect:mid+0.1*0.2*(i+1),se:0.05}};};
+      DB.responses=[];for(var i=0;i<9;i++)DB.responses.push(mk(i));_memoInvalidate();
+      ok('with nine scored predictions there are too few to calibrate, and the intervals are used as they are',calibrationScale('personal_response')===1);
+      for(i=9;i<12;i++)DB.responses.push(mk(i));_memoInvalidate();var k=calibrationScale('personal_response');
+      ok('with twelve, the personal response model’s factor is 2.0 / 1.2816, from the effects its predictions were scored against',Math.abs(k-2/1.2816)<1e-9,String(k));
+      var p=predictResponse('calories','weight',-500),M=personalResponseModel().rows.filter(function(r){return r.key==='calories→weight';})[0],sd0=Math.abs(M.posterior.sd*-5);
+      ok('and its predictions’ intervals are widened by that factor',Math.abs((p.hi-p.lo)/4-sd0*k)<0.003,JSON.stringify([p,sd0,k]));
+      var S=selfCalibration();
+      ok('the calibration report covers every model that makes interval predictions',['weight_forecast','strength_forecast','aerobic_capacity','personal_response'].every(function(id){return S.rows.some(function(r){return r.id===id;});})&&S.rows.filter(function(r){return r.id==='personal_response';})[0].inUse===true);
+      var keepF=DB.settings.folds;DB.settings.folds=Object.assign({},keepF||{},{'learn-competition':true});var card=competitionCard();DB.settings.folds=keepF;
+      ok('the forecast card asks whether the intervals are honest, model by model',card.indexOf('Are the intervals honest?')>=0&&card.indexOf('Personal response predictions')>=0);
+      /* the demo record has cardio with heart rate: built as loadDemo builds it, used only for this check */
+      var keepDB=DB,A;try{DB=replayHistory(generateRecord(DEMO_SPEC,11),DEMO_SPEC);_memoInvalidate();A=cardioFitnessModel();}finally{DB=keepDB;_memoInvalidate();}
+      ok('the aerobic filter calibrates its interval by its own one-step-ahead record, by the same rule (on the demo’s sessions)',A.status==='ok'&&A.states.some(function(s){return s.calibration.applied;})&&A.states.every(function(s){var c=intervalCalibration(s.scored);return s.calibration.applied===(c.n>=10)&&s.calibration.scale===round(c.n>=10?c.scale:1,2);}),JSON.stringify(A.states&&A.states.map(function(s){return s.calibration;})));
+      DB.responses=keep;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

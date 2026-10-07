@@ -993,6 +993,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "nowISO",
     "addDays",
@@ -1015,6 +1016,9 @@
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
+   ],
+   "61-physiology.js": [
+    "cardioFitnessModel"
    ]
   }
  },
@@ -1209,6 +1213,9 @@
    ],
    "56-knowledge.js": [
     "_decay"
+   ],
+   "58-model-competition.js": [
+    "calibrationScale"
    ],
    "61-physiology.js": [
     "_kgNow"
@@ -1442,6 +1449,9 @@
    ],
    "50-decision.js": [
     "_detrended"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "61-conditioning.js": [
     "cardioSessions",
@@ -4003,7 +4013,8 @@
     "runLearningCycle"
    ],
    "58-model-competition.js": [
-    "evaluateCompetition"
+    "evaluateCompetition",
+    "selfCalibration"
    ],
    "58-response-entity.js": [
     "exposuresOf",
@@ -4813,7 +4824,12 @@
     "runLearningCycle"
    ],
    "58-model-competition.js": [
+    "backtestCompetition",
     "evaluateCompetition",
+    "intervalCalibration",
+    "_competitionScored",
+    "calibrationScale",
+    "selfCalibration",
     "competitionForecast"
    ],
    "58-phase-criteria.js": [
@@ -4916,6 +4932,7 @@
     "_modalityFamily",
     "cardioFitnessObservation",
     "vo2Trend",
+    "cardioFitnessModel",
     "hydrationModel",
     "energyAvailability",
     "_foodGroup",
@@ -5059,6 +5076,7 @@
    "70-demo.js": [
     "_rng",
     "generateRecord",
+    "replayHistory",
     "loadDemo",
     "withFixture"
    ],
@@ -5312,6 +5330,7 @@
     "optimiserCard"
    ],
    "90-responses.js": [
+    "competitionCard",
     "loopCard"
    ],
    "90-sources.js": [

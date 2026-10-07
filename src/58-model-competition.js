@@ -40,11 +40,9 @@ function _backtestCompetition(id,opts){var C=MODEL_COMPETITIONS[id];opts=opts||{
       var preds=E.map(function(e){return e.pred;}),jumps=[];for(var i=1;i<preds.length;i++)jumps.push(Math.abs(preds[i]-preds[i-1]));
       /* CALIBRATION: the factor that would have made the 80% interval hold 80% of the time, learned on the older half of the
          origins and checked on the newer half (no leakage); the full-data factor widens live forecasts */
-      var byAge=E.slice().sort(function(a,b){return a.origin<b.origin?-1:1;}),half=Math.floor(byAge.length/2),q80=function(A){var r=A.map(function(e){return e.ratio;}).sort(function(a,b){return a-b;});return r.length?r[Math.min(r.length-1,Math.floor(0.8*r.length))]/1.2816:1;};
-      /* both ways: intervals too wide are miscalibrated too (only widening let an over-wide model never qualify) */
-      var kOld=Math.max(0.25,q80(byAge.slice(0,half))),kAll=Math.max(0.25,q80(byAge)),newer=byAge.slice(half);
+      var IC=intervalCalibration(E.map(function(e){return {at:e.origin,ratio:e.ratio};}));   /* the one calibration rule (below) */
       m[h]={n:E.length,mae:round(mean(ae),3),bias:round(mean(E.map(function(e){return e.err;})),3),coverage:round(E.filter(function(e){return e.inside;}).length/E.length,2),
-        scale:round(kAll,2),calibratedCoverage:newer.length?round(newer.filter(function(e){return e.ratio<=1.2816*kOld;}).length/newer.length,2):null,calibrationN:newer.length,
+        scale:round(IC.scale,2),calibratedCoverage:IC.calibratedCoverage!=null?round(IC.calibratedCoverage,2):null,calibrationN:IC.calibrationN,
         recentMae:R.length>=3?round(mean(R.map(function(e){return Math.abs(e.err);})),3):null,stability:jumps.length?round(mean(jumps),3):null};});
     return {candidate:c,label:COMPETITION_CANDIDATES[c].label,params:COMPETITION_CANDIDATES[c].params,baseline:!!COMPETITION_CANDIDATES[c].baseline,metrics:m,errors:res[c]};});
   return {status:'ok',competition:id,label:C.label,unit:C.unit,horizons:C.horizons,rows:rows,origins:Math.floor(90/3)+1};}
@@ -87,6 +85,36 @@ function evaluateCompetition(id,opts){opts=opts||{};var B0=backtestCompetition(i
   return Object.assign(B,{lifecycle:MODEL_LIFECYCLE_STATES,primary:L.primary,states:L.states,history:L.history.slice(-10),changes:changes,
     primaryBeatsBaseline:p===base?null:(beatsBase?beatsBase.z<-2:null),warning:beatsBase&&beatsBase.z>=-2&&p!==base?'the primary model does not clearly beat the naive baseline':null,
     rule:'a challenger replaces the primary only when significantly better on paired errors (beyond two standard errors) and calibrated (70\u201390% coverage); newer is not assumed better'});}
+/* ============================================================================
+   SELF-CALIBRATION (Stage H; TRANSITION item 14). The competition's calibration, made the one rule for every model that
+   makes interval predictions. From scored predictions in time order, each as |actual - predicted| / sd: the factor that
+   would have made the 80% interval hold 80% of the time (the 80th percentile of those ratios, over 1.2816), both ways
+   (an interval too wide is miscalibrated too), never below 0.25. It is learned on the older half and checked on the newer
+   half, so the check never sees the data the factor came from; the factor from all of them widens or narrows the live
+   interval. A model is calibrated when its checked coverage is within sampling error of 80% (about 2 sqrt(0.16/n), at
+   least 0.1). Fewer than ten scored predictions: too few to calibrate, and its intervals are used as they are.
+   ============================================================================ */
+var CALIBRATION_MIN_N=10;
+function intervalCalibration(scored){var E=(scored||[]).filter(function(e){return e&&e.ratio!=null&&isFinite(e.ratio);}).slice().sort(function(a,b){return a.at<b.at?-1:(a.at>b.at?1:0);});
+  var q80=function(A){var r=A.map(function(e){return e.ratio;}).sort(function(a,b){return a-b;});return r.length?r[Math.min(r.length-1,Math.floor(0.8*r.length))]/1.2816:1;};
+  var half=Math.floor(E.length/2),kOld=Math.max(0.25,q80(E.slice(0,half))),kAll=Math.max(0.25,q80(E)),newer=E.slice(half);
+  var cc=newer.length?newer.filter(function(e){return e.ratio<=1.2816*kOld;}).length/newer.length:null;
+  return {n:E.length,coverage:E.length?E.filter(function(e){return e.ratio<=1.2816;}).length/E.length:null,scale:kAll,calibratedCoverage:cc,calibrationN:newer.length,
+    calibrated:cc!=null&&Math.abs(cc-0.8)<=Math.max(0.1,2*Math.sqrt(0.16/Math.max(1,newer.length)))};}
+/* every model that makes interval predictions, with its scored predictions and where its factor is applied */
+function _competitionScored(id){var B=backtestCompetition(id);if(B.status!=='ok')return [];var L=_lc()[id],C=MODEL_COMPETITIONS[id],c=L?L.primary:C.candidates.filter(function(x){return COMPETITION_CANDIDATES[x].incumbent;})[0],
+  row=B.rows.filter(function(r){return r.candidate===c;})[0],h=C.horizons[C.horizons.length-1];return row?(row.errors[h]||[]).map(function(e){return {at:e.origin,ratio:e.ratio};}):[];}
+var INTERVAL_MODELS={
+  weight_forecast:{label:'Weight forecast',scored:function(){return _competitionScored('weight');},applied:'the forecast\u2019s 80% interval (competitionForecast)',against:'the weight measured at each backtest horizon'},
+  strength_forecast:{label:'Strength forecast',scored:function(){return _competitionScored('strength');},applied:'the forecast\u2019s 80% interval (competitionForecast)',against:'the e1RM measured at the horizon'},
+  aerobic_capacity:{label:'Aerobic capacity (VO2max)',scored:function(){var M=cardioFitnessModel();return M.status==='ok'?[].concat.apply([],M.states.map(function(s){return s.scored||[];})):[];},applied:'the 80% interval of each modality family',against:'the next session\u2019s estimate'},
+  personal_response:{label:'Personal response predictions',scored:function(){return (DB.responses||[]).filter(function(r){var e=r.expected;return r.stage==='final'&&r.primary&&e&&e.source==='personal_response'&&e.hi>e.lo;})
+      .map(function(r){var e=r.expected,mid=e.mean!=null?e.mean:(e.lo+e.hi)/2;return {at:r.start,ratio:Math.abs(r.primary.effect-mid)/((e.hi-e.lo)/4)};});},applied:'the expected effect of a change (predictResponse)',against:'the effect each change then had'}};
+function calibrationScale(id){var M=INTERVAL_MODELS[id];if(!M)return 1;var c=intervalCalibration(M.scored());return c.n>=CALIBRATION_MIN_N?c.scale:1;}
+function selfCalibration(){return {status:'ok',cls:'CALIBRATED',rows:Object.keys(INTERVAL_MODELS).map(function(id){var M=INTERVAL_MODELS[id],c=null;try{c=intervalCalibration(M.scored());}catch(e){_q(e,'P2');c=intervalCalibration([]);}
+    return {id:id,label:M.label,n:c.n,coverage:c.coverage!=null?round(c.coverage,2):null,scale:round(c.scale,2),calibratedCoverage:c.calibratedCoverage!=null?round(c.calibratedCoverage,2):null,applied:M.applied,against:M.against,
+      status:c.n<CALIBRATION_MIN_N?'too few scored predictions to calibrate ('+c.n+' of '+CALIBRATION_MIN_N+')':(c.calibrated?'calibrated':'factor applied, but still outside 80% on newer predictions'),inUse:c.n>=CALIBRATION_MIN_N};}),
+  rule:'each model\u2019s 80% interval widened or narrowed by the factor that would have made it hold 80% of the time, learned on its older predictions and checked on its newer ones'};}
 function competitionForecast(id,h){var L=_lc()[id],C=MODEL_COMPETITIONS[id];if(!C)return null;var c=L?L.primary:C.candidates.filter(function(x){return COMPETITION_CANDIDATES[x].incumbent;})[0],S=C.series();if(!S.length)return null;
   var p=COMPETITION_CANDIDATES[c].predict(S,S[S.length-1].date,h),B=backtestCompetition(id),row=B.status==='ok'?B.rows.filter(function(r){return r.candidate===c;})[0]:null,mm=row&&(row.metrics[h]||row.metrics[C.horizons[C.horizons.length-1]]),k=mm&&mm.scale?mm.scale:1;
   return p?{model:c,label:COMPETITION_CANDIDATES[c].label,mean:round(p.mean,2),lo:round(p.mean-1.2816*p.sd*k,2),hi:round(p.mean+1.2816*p.sd*k,2),horizon:h,calibrationScale:k}:null;}
