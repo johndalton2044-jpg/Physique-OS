@@ -455,6 +455,27 @@
    }
   },
   {
+   "id": "knowledge-versioning",
+   "label": "Personal knowledge: versions, conflicts and decay",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each Response carries its version and the method version that derived it, and is derived again (a new version naming the one it replaced) when it matures or the method changes; negative knowledge carries its method version and its place among findings about the same change; findings that disagree (two responses beyond their noise, or 'did not work' beside a clear response) are shown side by side with their age weights; in the personal response model each response counts for half as much every 270 days",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

@@ -2472,6 +2472,8 @@ SHEETS.sync=function(){var st=syncState();var es=eventStats();var cf=syncConflic
 function openKnowledge(){openSheet('edit',{form:'knowledge',title:'What this record knows about you',desc:'Confidence decays with age, because a finding from a different body weight and a different phase is a different finding.',buf:{}});}
 SHEETS.knowledge=function(){var k=personalKnowledge();var g=knowledgeGaps();
   return {body:uiRow('Established',k.count+' items',{sub:k.current+' current \u00b7 '+k.stale+' stale \u00b7 half-life '+k.halfLifeDays+' days'})+
+    ((k.conflicts||[]).length?'<div class="card-title" style="margin-top:8px">Findings that disagree</div>'+k.conflicts.map(function(c){
+      return uiRow(esc(String(c.subject)),esc(c.text),{sub:esc('older counts '+Math.round(c.older.weight*100)+'%, newer '+Math.round(c.newer.weight*100)+'% \u00b7 '+c.settle),tone:'attention'});}).join(''):'')+
     k.items.map(function(i){return uiRow(esc(String(i.subject)),esc(i.statement),{sub:esc(i.kind)+' \u00b7 '+esc(i.evidence)+' \u00b7 context '+esc(i.context)+(i.transfers?(' \u00b7 '+esc(i.transfers)):''),rsub:i.freshness+' / '+i.decayedConfidence,tone:i.freshness==='stale'?'attention':''})+
       '<div class="hint" style="margin:-4px 0 4px 0">Would change if: '+esc(i.wouldChange)+'.</div>'+
       (i.testable?'<div class="btn-row" style="margin:-2px 0 8px 0">'+uiBtn('Test it','exp.design',i.subject,'btn-sm btn-secondary')+'</div>':'')+

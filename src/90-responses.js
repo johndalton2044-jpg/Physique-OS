@@ -13,7 +13,7 @@ function _howYouRespond(){var M=personalResponseModel(),rows=M.rows.filter(funct
     '<div class="prov">'+esc(M.method)+'. '+esc(M.limits)+'</div>';}
 registerAction('responses.open',function(id){openSheet('edit',{form:'response',title:'What happened because of it',desc:'',buf:{id:id}});});
 SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x.id===b.id;})[0];if(!r)return {body:'<div class="hint">That response is no longer in the record.</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
-  var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
+  var P=r.primary,out=uiRow('Change',esc(_respLabel(r)))+uiRow('Stage',esc(r.stage),{sub:'evaluated '+esc(String(r.evaluatedAt).slice(0,10))+' \u00b7 version '+(r.version||1)+(r.previous?(', replacing the '+esc(r.previous.stage)+' one ('+esc(r.previous.modelVersion)+(r.previous.effect!=null?', '+r.previous.effect:'')+')'):'')})+uiRow('Verdict',esc(r.verdict),{sub:r.confidence+' confidence'});
   /* the exposure actually received, beside what was planned and what came before (Stage B) */
   var _E=exposuresOf().filter(function(e){return e.id===r.exposureId;})[0];
   if(_E)out+=uiRow('Received',fmtNum(_E.received,_E.received%1?2:0)+' '+esc(_E.unit),{sub:esc([_E.planned!=null?'planned '+fmtNum(_E.planned,0):null,_E.before!=null?fmtNum(_E.before,_E.before%1?2:0)+' before':null,_E.coverage!=null?'logged on '+Math.round(_E.coverage*100)+'% of days':null].filter(Boolean).join('; '))});

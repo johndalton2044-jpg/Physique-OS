@@ -3598,3 +3598,35 @@ The series fix also corrects its other consumers: the demo's steps change, which
 now reads "larger than the noise, but not decisively", and steps' causal-support grade moves from "weakly supported" to
 "correlated", in line with the Response's own "no clear response yet". A causal-estimation capability joins the ledger.
 All 36 gates pass (reproducible included); release 24/24; 1,692 self-tests.
+
+## Stage E: knowledge versioning, conflict and decay (build 8c7cf50de7)
+
+What the record had learned had no version, aged only as a label, and could contradict itself in silence.
+- **Versioning.** A Response is derived again when it matures (provisional, then final) or when the method that derives
+  it changes (`RESPONSE_MODEL_VERSION`). Each derivation is a new version that names the one it replaced (stage, method,
+  effect, standard error) and leaves the earlier in the event log. A final Response recorded under an older method is
+  re-derived once and then left alone. Negative knowledge carries the method version that judged it and its version
+  among findings about the same change, with the one it follows named. It stays append-only, as its contract says. The
+  Response sheet shows the version and what it replaced.
+- **Conflict.** `knowledgeConflicts()` is a projection, with nothing stored. It sets side by side two responses to the
+  same lever whose effects per unit differ by more than twice the standard error of their difference, and a "did not
+  work" record beside a clear response to the same lever. Each side carries its age weight, and the record says what
+  would settle it. Conflicts appear in the knowledge sheet ("Findings that disagree") and its open questions.
+- **Decay.** In the personal response model each response's precision is multiplied by the weight personal knowledge
+  already used for its labels: half every 270 days after the response's window closed, one half-life rather than a
+  second one. Each row reports its effective number of responses and the age of the oldest.
+
+The known answers:
+- a response one half-life old has a standard error √2 times its own;
+- two responses at three and one times the energy arithmetic, 540 days apart, give the age-weighted average,
+  (0.25 × 0.6 + 0.2) / 1.25 = 0.28 lb a week per 100 kcal, and are a conflict whose newer side counts fully and whose
+  older counts a quarter;
+- two that agree within their noise are not a conflict;
+- a "did not work" 100 days old beside a clear response is one, its side weighted 0.5^(100/270);
+- repeated negatives on the same change number 1, 2;
+- a finding recorded under method 1.1 becomes version 2 naming it, with one more event, and is not derived again.
+
+Removing the decay, the conflicts, the re-derivation or the negatives' versions, or swapping older and newer, each turned
+its intended checks red. On the demo every Response is version 1, there is no negative knowledge and nothing
+conflicts; the steps response is days old and counts fully. A knowledge-versioning capability joins the ledger. 1,702
+self-tests pass; the full release record is in progress.

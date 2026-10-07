@@ -185,12 +185,38 @@ function personalKnowledge(){
         transfers:'maintenance moves with body mass and activity; it is not a constant to carry forward'});
     }catch(e){_q(e);}
     var byKind={};items.forEach(function(i){(byKind[i.kind]=byKind[i.kind]||[]).push(i);});
-    return {items:items,byKind:byKind,count:items.length,
+    var conflicts=[];try{conflicts=knowledgeConflicts();}catch(e){_q(e);}
+    items.forEach(function(i){i.conflicts=conflicts.filter(function(c){return c.subject===i.subject||c.subject.split('\u2192')[0]===i.subject;}).length;});
+    return {items:items,byKind:byKind,count:items.length,conflicts:conflicts,
       current:items.filter(function(i){return i.freshness==='current';}).length,
       stale:items.filter(function(i){return i.freshness==='stale';}).length,
       halfLifeDays:KNOWLEDGE_HALFLIFE_DAYS,cls:'EMPIRICAL',
       note:'What this record has actually established about you, with the context it was learned in. Confidence decays with age because a finding from a different body weight and a different phase is a different finding.'};
   });
+}
+/* KNOWLEDGE CONFLICT (Stage E; TRANSITION item 7). Two findings about the same lever that cannot both be right are shown
+   side by side, never averaged away in silence: two responses to changes of the same lever whose effects per unit differ
+   by more than twice the standard error of their difference, or a record that a change did not work beside a response to
+   the same lever that clearly did. Each side carries its age weight (the half-life above), so the newer is seen to count
+   for more; a repeat of the change on its own settles it. A projection from the records: nothing is stored. */
+function knowledgeConflicts(){
+  var out=[],PR=RESPONSE_PRIORS(),R=(DB.responses||[]).filter(function(r){return r.stage!=='pending'&&r.primary&&r.start<=asOf();}),by={};
+  R.forEach(function(r){var u=_perUnit(r);if(u)(by[_respKey(r)]=by[_respKey(r)]||[]).push({r:r,u:u});});
+  var side=function(r,u,txt){return {id:r.id,date:r.start,statement:txt,weight:round(u?u.weight:_decay(Math.max(0,daysBetween(r.date||r.start,asOf()))),2),context:u?u.context:null};};
+  Object.keys(by).forEach(function(k){var L=by[k].sort(function(a,b){return a.r.start<b.r.start?-1:1;}),sc=PR[k]?PR[k].scale:1,lab=PR[k]?PR[k].label:'per unit',unit=PR[k]?PR[k].unit:'';
+    for(var i=0;i<L.length;i++)for(var j=i+1;j<L.length;j++){var a=L[i],b=L[j],s=Math.sqrt(a.u.seRaw*a.u.seRaw+b.u.seRaw*b.u.seRaw);if(!(Math.abs(b.u.y-a.u.y)>2*s))continue;
+      var f=function(x){return (x.u.y*sc>0?'+':'')+round(x.u.y*sc,2)+' '+unit+' '+lab;};
+      out.push({kind:'two responses',subject:k,older:side(a.r,a.u,f(a)),newer:side(b.r,b.u,f(b)),difference:round((b.u.y-a.u.y)*sc,2),se:round(s*sc,2),
+        text:'a change on '+shortDate(a.r.start)+' gave '+f(a)+', one on '+shortDate(b.r.start)+' gave '+f(b)+(a.u.context!==b.u.context?(' (in a '+a.u.context+' phase, then a '+b.u.context+' phase)'):''),
+        settle:'a repeat of the change on its own, in the phase you are in now, would settle which holds'});}});
+  getNegativeKnowledge().forEach(function(n){R.filter(function(r){return r.variable===n.variable&&r.stage==='final'&&/^a clear response/.test(r.verdict||'')&&r.attribution==='the change';}).forEach(function(r){
+    var u=_perUnit(r),neg={id:n.id,date:n.date,statement:'did not work: '+String(n.observed||n.intervention||'').slice(0,90),weight:round(_decay(Math.max(0,daysBetween(n.date,asOf()))),2),context:null};
+    var resp=side(r,u,'a clear response of '+(r.primary.effect>0?'+':'')+r.primary.effect+(r.primary.unit?' '+r.primary.unit:''));
+    var older=n.date<=r.start?neg:resp,newer=older===neg?resp:neg;
+    out.push({kind:'did not work, then did',subject:n.variable,older:older,newer:newer,
+      text:'recorded as not working on '+shortDate(n.date)+', but the change to '+n.variable+' on '+shortDate(r.start)+' gave a clear response'+(n.experimentId&&r.interventionId==='exp:'+n.experimentId?' (the same experiment, judged two ways)':''),
+      settle:'a repeat of the change on its own would settle it; until then the newer finding counts for more'});});});
+  return out.map(function(c,i){c.id='conflict:'+c.older.id+':'+c.newer.id;return c;});
 }
 function _transferNote(contexts){
   if(!contexts||!contexts.length)return 'context unrecorded, so transfer is unknown';
@@ -219,6 +245,11 @@ function knowledgeGaps(){
         have:'circumference estimate only',uncertainty:'high',
         measurement:'one DXA, BodPod or same-operator caliper reading',experiment:null,expectedValue:0.5});
   }catch(e){_q(e);}
+  (k.conflicts||[]).forEach(function(c){
+    gaps.push({question:'Which holds for '+c.subject+': '+c.older.statement+', or '+c.newer.statement+'?',
+      whyItMatters:'two findings about the same lever disagree; the newer counts for more, but neither is settled',
+      have:'two findings that disagree',uncertainty:'high',measurement:c.settle,experiment:null,expectedValue:0.7});
+  });
   k.items.filter(function(i){return i.freshness==='stale';}).forEach(function(i){
     gaps.push({question:'Does "'+i.statement+'" still hold?',
       whyItMatters:'it was established '+ageLabel(i.lastValidated)+' and knowledge decays with context change',

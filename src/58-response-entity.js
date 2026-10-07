@@ -90,7 +90,11 @@ function _evaluateResponseCore(iv){
 function recordResponses(){
   DB.responses=DB.responses||[];DB.exposures=DB.exposures||[];DB.outcomes=DB.outcomes||[];var n=0;
   responseInterventions().forEach(function(iv){var r=evaluateResponse(iv);if(r.stage==='pending')return;
-    var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&(ex.stage===r.stage||ex.stage==='final'))return;
+    /* KNOWLEDGE VERSIONING (Stage E; TRANSITION item 7): a finding is derived again when it matures (provisional, then
+       final) or when the method that derives it changes (RESPONSE_MODEL_VERSION). Each derivation is a new version that
+       names the one it replaced; the earlier one stays in the event log. */
+    var ex=DB.responses.filter(function(x){return x.id===r.id;})[0];if(ex&&ex.modelVersion===RESPONSE_MODEL_VERSION&&(ex.stage===r.stage||ex.stage==='final'))return;
+    r.version=ex?(ex.version||1)+1:1;if(ex)r.previous={version:ex.version||1,stage:ex.stage,modelVersion:ex.modelVersion||'response-1.0',effect:ex.primary?ex.primary.effect:null,se:ex.primary?ex.primary.se:null,evaluatedAt:ex.evaluatedAt||null};
     /* Stage B (future plan items 12, 13, 15): the exposure received and the outcome measured are their own records,
        and the Response refers to them and to the plan version it judges */
     var E=exposureFor(iv,r),O=outcomeFrom(iv,r);

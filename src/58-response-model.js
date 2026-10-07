@@ -17,7 +17,12 @@ function _respContext(r){var ph=(DB.phases||[]).filter(function(p){return p.star
 function _perUnit(r){var P=r.primary;if(!P||r.dose==null||!r.dose||P.se==null||r.stage==='pending')return null;
   var s=r.adherence&&r.adherence.share!=null?Math.max(0.3,r.adherence.share):1;   /* a change done on 60% of days delivered 60% of the dose */
   var y=P.effect/(r.dose*s),se=Math.abs(P.se/(r.dose*s))*(r.stage==='provisional'?Math.SQRT2:1);   /* provisional counts half (variance doubled) */
-  return {id:r.id,y:y,se:Math.max(se,1e-9),stage:r.stage,context:_respContext(r),start:r.start,adherence:s};}
+  /* KNOWLEDGE DECAY (Stage E; TRANSITION item 7): a response's weight halves every KNOWLEDGE_HALFLIFE_DAYS after its
+     after-window closed, the one half-life personal knowledge already uses; its precision is multiplied by that weight
+     (a discounted likelihood), so an old finding still counts, for less. seRaw is the finding's own precision, which
+     decides whether two findings disagree; age only decides which counts for more. */
+  var end=r.windows&&r.windows.after?r.windows.after[1]:r.start,age=Math.max(0,daysBetween(end||r.start,asOf())),w=_decay(age);
+  return {id:r.id,y:y,se:Math.max(se,1e-9)/Math.sqrt(w),seRaw:Math.max(se,1e-9),weight:w,ageDays:age,stage:r.stage,context:_respContext(r),start:r.start,adherence:s};}
 function _posterior(prior,obs){var pm=prior?prior.perUnit:0,pv=prior?prior.sdAbs*prior.sdAbs:1;
   var prec=1/pv,num=pm/pv;obs.forEach(function(o){prec+=1/(o.se*o.se);num+=o.y/(o.se*o.se);});
   var dataPrec=obs.reduce(function(a,o){return a+1/(o.se*o.se);},0);return {mean:num/prec,sd:Math.sqrt(1/prec),personalWeight:dataPrec/prec};}
@@ -33,7 +38,7 @@ function poolResponseContexts(prior,ctx){
   if(units.length>=2){var k=1/mean(units.map(function(u){return u.sd;})),H=hierarchicalPosterior(units.map(function(u){return {id:u.id,value:u.value*k,sd:u.sd*k};}));
     if(H.status==='ok')return H.rows.map(function(r,i){return {context:r.id,n:units[i].n,mean:r.posterior/k,sd:r.posteriorSd/k,pooled:true};});}
   return keys.map(function(c){var p=_posterior(prior,ctx[c]);return {context:c,n:ctx[c].length,mean:p.mean,sd:p.sd,pooled:false};});}
-function personalResponseModel(opts){opts=opts||{};if(typeof memo==='function')return memo('prm:'+(opts.excludeId||'')+':'+(DB.responses||[]).map(function(r){return r.id+'/'+r.stage+'/'+(r.primary&&r.primary.effect)+'/'+(r.primary&&r.primary.se)+'/'+(r.adherence&&r.adherence.share)+'/'+r.dose;}).join('|'),function(){   /* keyed by content: a count went stale when a response changed */return _personalResponseModel(opts);});return _personalResponseModel(opts);}
+function personalResponseModel(opts){opts=opts||{};if(typeof memo==='function')return memo('prm:'+(opts.excludeId||'')+':'+asOf()+':'+(DB.responses||[]).map(function(r){return r.id+'/'+r.stage+'/'+(r.primary&&r.primary.effect)+'/'+(r.primary&&r.primary.se)+'/'+(r.adherence&&r.adherence.share)+'/'+r.dose;}).join('|'),function(){   /* keyed by content: a count went stale when a response changed */return _personalResponseModel(opts);});return _personalResponseModel(opts);}
 function _personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by={};
   (DB.responses||[]).forEach(function(r){if(opts.excludeId&&(r.id===opts.excludeId||r.interventionId===opts.excludeId))return;var u=_perUnit(r);if(!u)return;(by[_respKey(r)]=by[_respKey(r)]||[]).push(u);});
   var keys=Object.keys(PR).concat(Object.keys(by).filter(function(k){return !PR[k];}));
@@ -47,8 +52,9 @@ function _personalResponseModel(opts){opts=opts||{};var PR=RESPONSE_PRIORS(),by=
       prior:{mean:round(prior.perUnit*sc,3),sd:round(prior.sdAbs*sc,3),basis:prior.basis},
       personal:obs.length?{mean:round(obs.reduce(function(a,o){return a+o.y/(o.se*o.se);},0)/obs.reduce(function(a,o){return a+1/(o.se*o.se);},0)*sc,3)}:null,
       posterior:{mean:round(post.mean*sc,3),sd:round(post.sd*sc,3)},personalWeight:round(post.personalWeight,2),contexts:contexts,contextsDiffer:differs,
+      effectiveN:round(obs.reduce(function(a,o){return a+o.weight;},0),2),oldestDays:obs.length?Math.max.apply(null,obs.map(function(o){return o.ageDays;})):null,
       verdict:!obs.length?'no personal data yet: the population figure':(post.personalWeight>=0.5?'mostly your own data':'still mostly the population figure')};});
-  return {status:'ok',cls:'EMPIRICAL',rows:rows,responses:(DB.responses||[]).length,method:'normal\u2013normal update of a population prior per unit of dose by your Response records; adherence-adjusted; provisional responses count half',
+  return {status:'ok',cls:'EMPIRICAL',rows:rows,responses:(DB.responses||[]).length,method:'normal\u2013normal update of a population prior per unit of dose by your Response records; adherence-adjusted; provisional responses count half; each counts for half as much every '+KNOWLEDGE_HALFLIFE_DAYS+' days after it was measured',
     limits:'Assumes the effect scales with dose and is steady over time; context splits need at least two responses each.'};}
 /* what a change of this size is expected to do for this person */
 function predictResponse(variable,outcome,dose,opts){opts=opts||{};var M=personalResponseModel({excludeId:opts.excludeId}),row=M.rows.filter(function(r){return r.variable===variable&&r.outcome===outcome;})[0];

@@ -1873,6 +1873,9 @@
     "verdict": [
      "string"
     ],
+    "version": [
+     "number"
+    ],
     "windows": [
      "object"
     ]

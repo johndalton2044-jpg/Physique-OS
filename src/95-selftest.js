@@ -4171,6 +4171,40 @@ function runSelfTest(opts){
       ok('a record too short for four matched periods says how much more is needed, and gives no matched estimate',r.causal.matched.status==='insufficient'&&/more stretch/.test((r.causal.matched.need||[]).join())&&r.causal.estimates.length===2,JSON.stringify(r.causal.matched));
       DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();
     });
+    /* ---- Knowledge versioning, conflict and decay (Stage E): constructed findings with known answers ---- */
+    withFixture('normal_loss',function(){var keep=DB.responses,keepN=DB.negatives,per=7/3500,today=todayISO();
+      var mk=function(id,dose,effect,se,endDaysAgo){var end=addDays(today,-endDaysAgo),start=addDays(end,-20);return {id:id,interventionId:id,variable:'calories',outcome:'weight',dose:dose,stage:'final',start:start,
+        windows:{before:[addDays(start,-21),addDays(start,-1)],after:[start,end]},primary:{effect:effect,se:se},verdict:'a clear response',attribution:'the change'};};
+      /* decay: one half-life (270 days) after it was measured, a response has half its precision */
+      var a=_perUnit(mk('a',-500,-500*per,0.05,270)),b=_perUnit(mk('b',-500,-500*per,0.05,0));
+      ok('a response measured 270 days ago counts half: its standard error is √2 times its own; a new one counts fully',Math.abs(a.se/a.seRaw-Math.SQRT2)<1e-6&&Math.abs(a.weight-0.5)<1e-9&&Math.abs(b.se/b.seRaw-1)<1e-9,JSON.stringify([a.weight,b.weight]));
+      /* one response two half-lives old (weight 1/4) at three times the arithmetic, one new at the arithmetic: the personal
+         estimate is their age-weighted average, (0.25 × 0.6 + 1 × 0.2) / 1.25 = 0.28 lb a week per 100 kcal */
+      DB.responses=[mk('o',-500,-500*per*3,0.02,540),mk('n',-500,-500*per,0.02,0)];_memoInvalidate();
+      var row=personalResponseModel().rows.filter(function(r){return r.key==='calories→weight';})[0];
+      ok('older responses count for less in the personal response model: its estimate is the age-weighted average',row.n===2&&Math.abs(row.personal.mean-0.28)<0.002&&Math.abs(row.effectiveN-1.25)<0.01&&row.oldestDays===540,JSON.stringify([row.personal,row.effectiveN,row.oldestDays]));
+      /* those two disagree far beyond their noise */
+      var C=knowledgeConflicts();
+      ok('two responses to the same lever that disagree beyond their noise are shown side by side, the newer counting for more',C.length===1&&C[0].kind==='two responses'&&C[0].older.id==='o'&&C[0].newer.id==='n'&&C[0].older.weight===0.25&&C[0].newer.weight===1&&Math.abs(C[0].difference+0.4)<0.01,JSON.stringify(C));
+      var K=personalKnowledge(),G=knowledgeGaps(),sheet=SHEETS.knowledge();
+      ok('the conflict reaches personal knowledge, its open questions and the knowledge sheet',K.conflicts.length===1&&G.gaps.some(function(g){return /^Which holds for calories/.test(g.question);})&&sheet.body.indexOf('Findings that disagree')>=0);
+      DB.responses=[mk('o',-500,-500*per*1.1,0.2,540),mk('n',-500,-500*per,0.2,0)];_memoInvalidate();
+      ok('two responses that agree within their noise are not a conflict',knowledgeConflicts().length===0&&SHEETS.knowledge().body.indexOf('Findings that disagree')<0);
+      /* recorded as not working 100 days ago; a clear response to the same lever since */
+      var nd=addDays(today,-100);DB.negatives=[{id:'neg-t',date:nd,at:nd+'T08:00:00.000Z',createdAt:nd+'T08:00:00.000Z',variable:'calories',intervention:'calories 2400→2200',observed:'no change in the trend'}];
+      DB.responses=[mk('n',-500,-500*per,0.02,0)];_memoInvalidate();C=knowledgeConflicts();
+      ok('a change recorded as not working, then a clear response to the same lever, is a conflict, each side with its age weight',C.length===1&&C[0].kind==='did not work, then did'&&C[0].older.id==='neg-t'&&C[0].newer.id==='n'&&Math.abs(C[0].older.weight-Math.pow(0.5,100/270))<0.006&&C[0].newer.weight===1,JSON.stringify(C));
+      /* versioning of negative knowledge */
+      DB.negatives=[];var n1=addNegative({intervention:'steps 8000→10000',variable:'steps',silent:true}),n2=addNegative({intervention:'steps 8000→10000',variable:'steps',silent:true}),n3=addNegative({intervention:'calories 2400→2200',variable:'calories',silent:true});
+      ok('negative knowledge carries the method that judged it and its version among findings about the same change',n1.version===1&&n2.version===2&&n2.follows===n1.id&&n3.version===1&&n3.follows===null&&n1.modelVersion==='negative-1.0');
+      DB.responses=keep;DB.negatives=keepN;_memoInvalidate();});
+    withFixture('successful_intervention',function(){
+      recordResponses();var r=responsesOf().filter(function(x){return /^resp:exp:/.test(x.id);})[0];
+      ok('a Response is recorded as version 1 of its finding',!!r&&r.version===1&&!r.previous,r&&JSON.stringify([r.version,r.stage]));
+      if(r){var id=r.id,eff=r.primary&&r.primary.effect,events=function(){return _EVENTS.filter(function(e){return e.type==='response.recorded'&&e.data&&e.data.id===id;}).length;},e0=events();
+        r.modelVersion='response-1.1';var n=recordResponses().recorded,r2=responsesOf().filter(function(x){return x.id===id;})[0];
+        ok('a finding derived by an earlier method is derived again as a new version that names the one it replaced, and the earlier stays in the log',n>=1&&r2.version===2&&r2.previous&&r2.previous.modelVersion==='response-1.1'&&r2.previous.stage==='final'&&r2.previous.effect===eff&&r2.modelVersion===RESPONSE_MODEL_VERSION&&events()===e0+1,JSON.stringify([n,r2.version,r2.previous,events(),e0]));
+        ok('and once current it is not derived again',recordResponses().recorded===0&&responsesOf().filter(function(x){return x.id===id;})[0].version===2);}});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

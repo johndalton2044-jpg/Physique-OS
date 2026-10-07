@@ -418,8 +418,12 @@ function activeExperiments(){var d=asOf();return (DB.experiments||[]).filter(fun
 function addNegative(n){
   var rec={id:uid('neg'),date:todayISO(),at:nowISO(),createdAt:nowISO(),intervention:n.intervention,variable:n.variable||'other',expected:n.expected||'',observed:n.observed||'',reasons:n.reasons||[],confidence:n.confidence||'low',applicability:n.applicability||'',experimentId:n.experimentId||null,phaseId:(activePhase()||{}).id||null,weightZone:(rateBand(weightAverages().avg7||currentWeight().value)||{}).zone||null};
   if(!n.silent)pushUndo('record negative knowledge');
+  /* versioned (Stage E): the method that judged it, and its place among findings about the same change */
+  var same=(DB.negatives||[]).filter(function(x){return x.variable===rec.variable&&x.intervention===rec.intervention;});
+  rec.modelVersion=NEGATIVE_MODEL_VERSION;rec.version=same.length+1;rec.follows=same.length?same[same.length-1].id:null;
   DB.negatives.push(rec);emitEvent('negative.recorded',rec,{at:rec.createdAt||rec.at});if(!n.silent)save('negative');return rec;
 }
+var NEGATIVE_MODEL_VERSION='negative-1.0';
 function getNegativeKnowledge(){return (DB.negatives||[]).filter(function(n){return n.date<=asOf()&&_knownBy(n,asOf());}).sort(function(a,b){return a.date<b.date?1:-1;});}
 
 /* ============================================================================

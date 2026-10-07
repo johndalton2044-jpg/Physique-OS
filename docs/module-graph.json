@@ -835,6 +835,11 @@
    "54-scenarios.js": [
     "designExperiment"
    ],
+   "58-response-model.js": [
+    "RESPONSE_PRIORS",
+    "_respKey",
+    "_perUnit"
+   ],
    "62-food.js": [
     "foodLogsOn"
    ]
@@ -1170,11 +1175,18 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "daysBetween",
     "round",
     "mean"
    ],
    "20-schema-storage.js": [
     "memo"
+   ],
+   "30-observations.js": [
+    "asOf"
+   ],
+   "56-knowledge.js": [
+    "_decay"
    ],
    "61-physiology.js": [
     "_kgNow"
@@ -4719,6 +4731,7 @@
    "56-knowledge.js": [
     "detectEpisodes",
     "personalKnowledge",
+    "knowledgeConflicts",
     "knowledgeGaps",
     "decayConfidence"
    ],
