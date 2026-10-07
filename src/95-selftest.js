@@ -4249,6 +4249,34 @@ function runSelfTest(opts){
       var keepF=DB.settings.folds;DB.settings.folds=Object.assign({},keepF||{},{'plan-options':true});var card=optimiserCard();DB.settings.folds=keepF;ok('the options card shows where each option leaves you in 8 weeks, and the path with no change',card.indexOf('In 8 weeks about')>=0&&card.indexOf('With no change')>=0);
       var n0=plansOf().length,res=applyOptimiserChoice(O.pareto[0]),last=plansOf().slice(-1)[0];
       ok('choosing an option records its simulated outcome in the plan’s expected result',res.status==='ok'&&plansOf().length===n0+1&&/in 8 weeks about/.test(String(last.expected||(last.trigger&&last.trigger.expected)||'')),JSON.stringify(last&&{e:last.expected,t:last.trigger}));});
+    /* ---- Counterfactuals (Stage F): constructed records, the path without the change computed by hand ---- */
+    withFixture('normal_loss',function(){
+      var keep={o:DB.observations,ph:DB.phases,s:DB.sessions,e:DB.experiments,p:DB.plans,r:DB.responses,st:DB.settings.supplementStack};
+      var today=todayISO(),day0=addDays(today,-209),seed=11,rnd=function(){seed=(seed*16807)%2147483647;return seed/2147483647;};
+      var put=function(slopeAt,from,hungerJump){DB.observations=keep.o.filter(function(o){return o.type!=='weight'&&o.type!=='context'&&o.type!=='hunger';});var w=250;seed=11;
+        for(var i=0;i<=209;i++){w+=slopeAt(i)/7;var d=addDays(day0,i);if(i>=(from||0))DB.observations.push(makeObservation({type:'weight',date:d,value:round(w+(rnd()-0.5)*0.6,2),source:'test'}));
+          if(hungerJump!=null&&i>=(from||0))DB.observations.push(makeObservation({type:'hunger',date:d,value:round(4+(i>=189?hungerJump:0)+(rnd()-0.5)*0.6,2),source:'test'}));}_memoInvalidate();};
+      DB.phases=[{id:'ph-t',type:'cut',startDate:day0,status:'active'}];DB.sessions=[];DB.experiments=[];DB.plans=[];DB.settings.supplementStack=[];DB.responses=[];
+      var D=addDays(day0,189),iv={id:'tc',kind:'plan change',date:D,variable:'steps',from:8000,to:10000,reversible:'yes'};
+      /* least-squares line on the before window, days counted from the change, written out here */
+      var line=function(from,to,t){var P=obsOf(t||'weight').filter(function(o){return o.date>=from&&o.date<=to;}).map(function(o){return [daysBetween(D,o.date),o.value];});
+        var n=P.length,sx=0,sy=0,sxx=0,sxy=0;P.forEach(function(q){sx+=q[0];sy+=q[1];sxx+=q[0]*q[0];sxy+=q[0]*q[1];});var b=(n*sxy-sx*sy)/(n*sxx-sx*sx);return {b:b,a:(sy-b*sx)/n,mean:sy/n};};
+      /* a half-pound loss that becomes a pound and a half, on a record too short for matched periods */
+      put(function(i){return i<189?-0.5:-1.5;},150);var r=evaluateResponse(iv),C=responseCounterfactual(r),L=line(addDays(D,-21),addDays(D,-1)),A=line(D,addDays(D,20));
+      var cfEnd=L.a+L.b*20,actEnd=A.a+A.b*20;
+      ok('without matched periods the path without the change is the trend before, continued to the end of the window',C.status==='ok'&&!C.matched&&Math.abs(C.end.counterfactual.mean-cfEnd)<0.02&&Math.abs(C.path[0].mean-L.a)<0.02&&C.path.length===21,JSON.stringify([C.end,cfEnd]));
+      ok('and the difference at the end is what the change did by then: about a pound a week faster for 20 days',Math.abs(C.end.difference.mean-(actEnd-cfEnd))<0.02&&Math.abs(C.end.difference.mean+20/7)<0.3&&C.end.difference.hi<0,JSON.stringify(C.end.difference));
+      /* stalls alternating with losses, the change made as a stall ends: comparable periods lost as fast on their own */
+      put(function(i){return i%42<21?0:-1;},0);r=evaluateResponse(iv);C=responseCounterfactual(r);var M=matchedPeriods(r);
+      ok('with matched periods the path without the change carries on with what they did on their own, so the change is credited with little',C.matched&&C.drift===M.nullMean&&Math.abs(C.end.difference.mean)<0.6&&C.end.difference.lo<0&&C.end.difference.hi>0,JSON.stringify([C.drift,C.end.difference]));
+      ok('its band widens with the days since the change, as the drift’s uncertainty accumulates',(C.path[20].hi-C.path[20].lo)>1.5*(C.path[0].hi-C.path[0].lo),JSON.stringify([C.path[0],C.path[20]]));
+      /* a level outcome: hunger two points higher after the change */
+      put(function(){return -0.5;},150,2);var ivh={id:'th',kind:'plan change',date:D,variable:'protein',from:150,to:120,reversible:'yes'};
+      r=evaluateResponse(ivh);C=responseCounterfactual(r);var H=line(addDays(D,-21),addDays(D,-1),'hunger');
+      ok('for a level, the path without the change is the average before it, and the difference is the change in level',C.status==='ok'&&C.outcome==='hunger'&&Math.abs(C.end.counterfactual.mean-H.mean)<0.02&&Math.abs(C.end.difference.mean-2)<0.3,JSON.stringify([C.end,H.mean]));
+      DB.responses=[r];var sheet=SHEETS.response({id:r.id}).body;
+      ok('the response sheet shows the path without the change, with a chart',sheet.indexOf('Without the change')>=0&&sheet.indexOf('<svg')>=0);
+      DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

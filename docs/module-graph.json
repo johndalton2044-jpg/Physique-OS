@@ -3992,7 +3992,9 @@
    "80-ui.js": [
     "uiRow",
     "uiFold",
-    "uiBtn"
+    "uiBtn",
+    "svgChart",
+    "chartLegend"
    ],
    "85-log-sheet.js": [
     "openSheet"
@@ -4001,7 +4003,8 @@
     "registerAction"
    ],
    "94-causal.js": [
-    "responseCausal"
+    "responseCausal",
+    "responseCounterfactual"
    ]
   }
  },
@@ -4326,7 +4329,9 @@
     "todayISO",
     "addDays",
     "daysBetween",
+    "shortDate",
     "round",
+    "fmtNum",
     "mean",
     "median",
     "sd"
@@ -5321,6 +5326,8 @@
     "adjustmentSet",
     "propensityAnalysis",
     "negativeControlCheck",
+    "matchedPeriods",
+    "responseCounterfactual",
     "deliberateChangeEffect",
     "poolNofOne"
    ],

@@ -3693,3 +3693,36 @@ carry the forecast's noise, and moving the baseline off the competition's foreca
 red. On the demo, with no change: 237.9 lb in 8 weeks (231.9 to 243.9) from the 14-day Theil–Sen trend, the forecast that
 has scored best. The suggested option (300 kcal less a day and two cardio sessions a week, a 36% chance of doing all of
 it) moves that by −3.6 lb (−6.7 to −0.5). All 36 gates pass (reproducible included); release 24/24; 1,717 self-tests.
+
+## Stage F: counterfactuals (build 48be6a5ce1)
+
+Each Response stated its counterfactual as one number, the trend before it. `responseCounterfactual()` turns that into
+a path: what the outcome would have done without the change, day by day through the Response's after-window, beside
+what was measured.
+- **Weight.** The before-window least-squares line's level at the change, then the before slope plus the drift matched
+  periods showed on their own where they exist. Trends move without any change, and a plain continuation would credit
+  the drift to the change.
+- **The interval.** The line's own prediction error; or, with matched periods, the level's error plus their spread
+  (never below the Response's own standard error), growing with the days. Both are widened for day-to-day carry-over.
+- **A level** (sleep, hunger): the before average, plus the drift.
+- **The result.** 80% bands, like the forecasts; the difference at the end of the window is what the change did by then,
+  with both errors.
+- **On screen.** The Response sheet says "Without the change: about … against … measured" and charts the band beside
+  the readings.
+
+The checks build their expectations from their own least-squares fits:
+- on a short record, a half-pound loss that becomes a pound and a half follows the before line to the window's end,
+  and the difference is about 20/7 lb;
+- where three-week stalls alternate with losses and the change comes as a stall ends, matched periods carry the path on
+  as they did, so the change is credited with little, inside an interval spanning zero;
+- the band at day 20 is more than 1.5 times its width at the change;
+- for hunger two points higher, the path is the before average and the difference about 2.
+
+Removing the drift, using the before average for weight, and a band that does not widen each turned their checks red.
+On the demo:
+- the steps experiment: without it about 253.0 lb on 7 Oct (251.7 to 254.3), against 252.2 measured, a difference of
+  −0.8 lb (−2.2 to +0.6);
+- caffeine's sleep: +0.72 h (0.46 to 0.98);
+- creatine's interval is wide, from four readings before it.
+
+1,723 self-tests pass; the full release record is in progress.

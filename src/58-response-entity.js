@@ -133,7 +133,7 @@ function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){retu
   MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
     assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
     failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)','the record is too short for four matched periods (that estimate is then omitted)'],
-    output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate',consumers:['responsesOf'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
+    output:'the effect of an intervention on its outcome, with its standard error, against a counterfactual; beside it the interrupted series (allowing for carry-over) and the matched-periods estimate; and the day-by-day path without the change',consumers:['responsesOf','responseCounterfactual'],freshnessDays:7,uncertainty:{kind:'standard error of the difference in trends'},fn:'evaluateResponse'});})();
 /* ============================================================================
    CANONICAL RESPONSE (audit A-002): every Response record carries the canonical field set explicitly, whatever produced
    the intervention (plan change, experiment, adaptation, supplement, optimiser choice), pending records included.

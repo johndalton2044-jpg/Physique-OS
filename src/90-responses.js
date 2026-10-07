@@ -27,6 +27,15 @@ SHEETS.response=function(b){var r=(DB.responses||[]).filter(function(x){return x
     out+=uiRow('Allowing for carry-over',I&&I.effect!=null?esc((I.effect>0?'+':'')+I.effect+' \u00b1 '+round(2*I.se,2)+u):'\u2014',{sub:esc(I&&I.effect!=null?('interrupted series, '+I.quantity+'; day-to-day carry-over '+I.autocorrelation+' \u00b7 '+I.verdict):'not enough readings either side')});
     out+=uiRow('Against comparable periods',M.status==='ok'?esc((M.estimate>0?'+':'')+M.estimate+' \u00b1 '+round(M.interval95[1]-M.estimate,2)+u):'\u2014',{sub:esc(M.status==='ok'?(M.verdict+'; '+M.periods+' periods without a change moved '+(M.nullMean>0?'+':'')+M.nullMean+' on their own'):(M.need||[]).join('; '))});
     out+=uiRow('Do the estimates agree?',C.agree==null?'\u2014':(C.agree?'yes':'no'),{sub:esc(C.agreement)});}
+  /* what would have happened without it (Stage F), day by day, beside what was measured */
+  var CF=P&&typeof responseCounterfactual==='function'?responseCounterfactual(r):null;
+  if(CF&&CF.status==='ok'){var e=CF.end;
+    out+=uiRow('Without the change',esc(fmtNum(e.counterfactual.mean,1)+(CF.unit?' '+CF.unit:'')),{sub:esc(CF.text+'; the change made '+(e.difference.mean>0?'+':'')+e.difference.mean+(CF.unit?' '+CF.unit:'')+' ('+e.difference.lo+' to '+e.difference.hi+') by '+shortDate(e.date)+' \u00b7 '+CF.basis)});
+    out+=svgChart({height:120,aria:'what would have happened without the change, beside what was measured',series:[
+      {type:'band',uncertaintyType:'forecast',pts:CF.path.map(function(p){return {x:p.x,lo:p.lo,hi:p.hi};})},
+      {type:'line',cls:'pred',epistemic:'PREDICTIVE',pts:CF.path.map(function(p){return {x:p.x,y:p.mean};})},
+      {type:'dots',pts:CF.before.concat(CF.actual).map(function(p){return {x:p.x,y:p.value};})}],
+      xMarkers:[{x:0,label:'change'}]})+chartLegend([['obs','measured'],['pred','without the change (80% band)']]);}
   out+=uiRow('Unintended effects',r.unintended&&r.unintended.length?esc(r.unintended.map(function(u){return u.text+' ('+(u.change>0?'+':'')+u.change+')';}).join(', ')):'none detected');
   if(r.burden)out+=uiRow('Burden',esc(r.burden.note));out+=uiRow('Reversible',esc(r.reversible||'\u2014'));
   if(r.followedBy&&(r.followedBy.planVersions.length||r.followedBy.decisions.length))out+=uiRow('What followed',esc((r.followedBy.planVersions.length?'plan version '+r.followedBy.planVersions.join(', '):'')+(r.followedBy.decisions.length?' \u00b7 '+r.followedBy.decisions.length+' decision(s)':'')));

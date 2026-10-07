@@ -441,7 +441,7 @@
      "gate": "engine"
     }
    ],
-   "note": "each Response's before/after estimate is reported beside an interrupted series (level and rate against the old trend projected to the change, standard errors widened for day-to-day carry-over) and a matched-periods estimate (the same comparison at dates in the person's own record with no change: same weekday and phase, a similar starting trend, Student's t for few periods); a person's deliberate changes, pooled per unit, are an identification strategy of their own. Observational: it rules out drift and regression to the mean, not a cause that arrived with the change",
+   "note": "each Response's before/after estimate is reported beside an interrupted series (level and rate against the old trend projected to the change, standard errors widened for day-to-day carry-over) and a matched-periods estimate (the same comparison at dates in the person's own record with no change: same weekday and phase, a similar starting trend, Student's t for few periods); a person's deliberate changes, pooled per unit, are an identification strategy of their own. Observational: it rules out drift and regression to the mean, not a cause that arrived with the change; and the day-by-day path without the change (responseCounterfactual): the trend before continued, with what matched periods did on their own where they exist, an 80% band, shown with a chart in each Response’s sheet",
    "source": "segmented regression of interrupted time series (Wagner et al. 2002, J Clin Pharm Ther); the AR(1) variance factor for a trend regressor; caliper matching (Austin 2011, Pharm Stat)",
    "axes": {
     "engineering": "surfaced",
