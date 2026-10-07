@@ -82,6 +82,9 @@ Each item is done only when every common acceptance criterion holds:
    - From cardio sessions (modality, minutes, and heart rate where logged), estimate an aerobic-capacity trend with uncertainty.
    - Consumer: the capability vector's endurance entry.
 4. **Mobility response, conditioning response, power and speed:** only once observation types measure them. Each needs a new observation type (CLAUDE.md rule 7) and a logging path first.
+   - Done at build 7dd314744b. The measurements chosen are field tests anyone can repeat without a laboratory: sit-and-reach and
+     knee-to-wall (cm), one-minute heart-rate recovery (bpm), countermovement jump height (cm) and a 20 m sprint (s),
+     logged as Fitness tests in the quick log.
 
 ### Stage E — learning
 
@@ -115,7 +118,7 @@ Each item is done only when every common acceptance criterion holds:
 
 ## 4. Known limits (state them; never hide them)
 
-- **Associations, not causes:** the personal dose, frequency and sleep models compare regions or days with each other, not changes over time.
+- **Associations, not causes:** the personal dose, frequency and sleep models compare regions or days with each other, not changes over time. The mobility, conditioning, power and speed responses relate each field test to the dose of the four weeks before it, so practice at the test itself, and anything else that changed with the dose, moves them too.
 - **Fatigue per exposure:** fatigue per training exposure is not measured, so "response per unit fatigue" is not claimed.
 - **Mock-tested only:** the AI providers, wearable connections and S3 backups are tested against protocol-checking mocks only.
 - **Synthetic demo:** the demo record is synthetic. No capability may claim real-world evidence until item 11.
@@ -154,3 +157,22 @@ Never start an item before what it depends on is in place.
     records report what they need instead of an estimate;
   - the demo's weight comes from one source, so sensor fusion changes nothing in it;
   - the aerobic filter's demo intervals were too wide and are now narrowed by its own record.
+
+## 7. State at 7dd314744b (after item 4 and the carried decisions)
+
+- **Gates and tests:** all 36 gates pass, none skipped, and the release check passes 24/24 at every item's build. There
+  are 1,773 in-app self-tests, 400 interface tests and 10 black-box workflows (V-013: a new record opens at Casual;
+  V-014: logging fitness tests and reading them back).
+- **Done since §6, each released on its own build:**
+  - **Item 4:** four personal responses (mobility, conditioning, power, speed), on five new observation types, a length
+    dimension and seconds in the one unit table, and a Fitness tests entry in the quick log. Each starts from a
+    population prior per unit of weekly dose and reports its personal weight. Consumers: the capability vector and the
+    Learn → Physiology card.
+  - **Casual by default:** a new record starts at Casual. A stored record keeps its level, and one stored before the
+    level existed gets Insightful, which is what it was showing. The audit and the interface tests check the rail
+    contract at Insightful and check Casual for what it drops.
+  - **Undo across a restore merge:** it already worked; self-tests now prove it durable across a restart and on another
+    device.
+- **Waiting:** item 11 needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key.
+- **Open decision:** undoing a sync merge of another device's changes is not durable: the next sync brings them back.
+  Making it durable would revoke that device's events, which removes them on every device.
