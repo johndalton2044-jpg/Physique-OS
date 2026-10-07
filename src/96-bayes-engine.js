@@ -196,13 +196,16 @@ function hierarchicalPosterior(units,opts){
     if(tauHi===null&&cum>=0.975)tauHi=logs[g].tau;
   }
   /* Each unit's posterior, shrunk by the tau-averaged weight rather than a single plug-in tau. */
+  /* and its standard deviation (law of total variance over the grid): given tau, the unit's variance is w2 times its own
+     plus the hyper-mean's (1/prec) carried by its weight (1-w2) squared; the spread of the conditional means adds the rest.
+     Hierarchical personalisation (Stage E) needs it to judge a pooled unit against the others. */
   var rows=units.map(function(u,k){
-    var num=0;
+    var num=0,sq=0;
     logs.forEach(function(x,gi){
-      var w2=(x.tau*x.tau)/(x.tau*x.tau+ses[k]*ses[k]);
-      num+=ws[gi]*(w2*u.value+(1-w2)*x.mhat);
+      var w2=(x.tau*x.tau)/(x.tau*x.tau+ses[k]*ses[k]),m=w2*u.value+(1-w2)*x.mhat,v=w2*ses[k]*ses[k]+(1-w2)*(1-w2)/x.prec;
+      num+=ws[gi]*m;sq+=ws[gi]*(v+m*m);
     });
-    return {id:u.id,raw:round(u.value,3),sd:round(ses[k],3),posterior:round(num,3)};
+    return {id:u.id,raw:round(u.value,3),sd:round(ses[k],3),posterior:round(num,3),posteriorSd:round(Math.sqrt(Math.max(0,sq-num*num)),3)};
   });
   /* Empirical Bayes for comparison, so the cost of the plug-in is visible rather than argued. */
   var eb=empiricalBayesPool(units,opts);

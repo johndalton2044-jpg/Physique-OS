@@ -4113,6 +4113,22 @@ function runSelfTest(opts){
       var Z=vo2Trend(gen(0,12,[1.5,-1.2,0.8,-1.5,1.1,-0.7]));ok('a steady level leaves the trend interval around zero',Z.status==='ok'&&Z.interval[0]<0&&Z.interval[1]>0);
       ok('three sessions, or four within a fortnight, are not a trend',vo2Trend(gen(1.2,3)).status==='insufficient'&&vo2Trend(gen(1.2,4).map(function(o,i){o.date=addDays(d0,3*i);return o;})).status==='insufficient');
       var C=capabilityVector();ok('the capability vector\u2019s endurance entry carries capacity, or says what it needs, beside the minutes',C.endurance.cardioMinutesPerWeek!=null&&!!C.endurance.capacity&&(C.endurance.capacity.vo2max!=null||(C.endurance.capacity.need||[]).length>0));})();
+    /* ---- Stage E: hierarchical personalisation (properties that follow from the model, not its own numbers) ---- */
+    (function(){var same=hierarchicalPosterior([{id:'a',value:2,sd:1},{id:'b',value:2,sd:1},{id:'c',value:2,sd:1}]);
+      ok('identical units each end at the shared value, and borrowing narrows each below its own sd',same.rows.every(function(r){return Math.abs(r.posterior-2)<1e-6&&r.posteriorSd<1&&r.posteriorSd>0;}));
+      var far=hierarchicalPosterior([{id:'a',value:10,sd:0.2},{id:'b',value:-10,sd:0.2},{id:'c',value:0,sd:0.2}]);
+      ok('units far apart and precisely measured keep their own values and roughly their own sd',far.rows.every(function(r){return Math.abs(r.posterior-r.raw)<0.05&&Math.abs(r.posteriorSd-0.2)<0.03;}));
+      /* regions: four at about +2% a month; a precise slow one is lagging, a noisy slow one is pulled toward the others */
+      var U=[{id:'q',value:2.1,sd:0.3},{id:'h',value:1.9,sd:0.3},{id:'b',value:2.0,sd:0.3},{id:'l',value:2.2,sd:0.3}];
+      var precise=poolRegionalTrends(U.concat([{id:'c',value:0.0,sd:0.3}])),noisy=poolRegionalTrends(U.concat([{id:'c',value:-0.5,sd:1.0}]));
+      ok('a precisely measured slow region is still lagging after pooling',precise.byId.c.lagging&&!precise.byId.q.lagging);
+      ok('a slow region measured on few sessions is pulled toward the others and not called lagging',!noisy.byId.c.lagging&&noisy.byId.c.mean>0);
+      ok('the unpooled rule would have called that noisy region lagging (median 2.0, less twice its sd of 1.0)',-0.5<2.0-2*1.0);
+      /* contexts: two phase types whose estimates agree within their noise are pooled toward each other */
+      var prior={perUnit:0.002,sdAbs:0.0006},ctx={cut:[{y:0.003,se:0.0008},{y:0.0034,se:0.0008}],maintenance:[{y:0.0018,se:0.0008},{y:0.0022,se:0.0008}]};
+      var C=poolResponseContexts(prior,ctx),cu=C.filter(function(c){return c.context==='cut';})[0],ma=C.filter(function(c){return c.context==='maintenance';})[0];
+      ok('response contexts are pooled toward the person\u2019s own estimate, not the population figure',cu.pooled&&ma.pooled&&cu.mean<0.0032&&ma.mean>0.002&&cu.mean>ma.mean);
+      ok('with one context there is nothing of the person\u2019s to pool, so the population prior is used',poolResponseContexts(prior,{cut:ctx.cut}).every(function(c){return c.pooled===false;}));})();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

@@ -1164,13 +1164,17 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
-    "round"
+    "round",
+    "mean"
    ],
    "20-schema-storage.js": [
     "memo"
    ],
    "61-physiology.js": [
     "_kgNow"
+   ],
+   "96-bayes-engine.js": [
+    "hierarchicalPosterior"
    ]
   }
  },
@@ -1592,7 +1596,8 @@
     "tissueEnergyDensity"
    ],
    "96-bayes-engine.js": [
-    "bayesUpdate"
+    "bayesUpdate",
+    "hierarchicalPosterior"
    ]
   }
  },
@@ -4748,6 +4753,7 @@
    "58-response-model.js": [
     "RESPONSE_PRIORS",
     "_perUnit",
+    "poolResponseContexts",
     "personalResponseModel",
     "predictResponse"
    ],
@@ -4873,6 +4879,7 @@
    ],
    "64-physique.js": [
     "physiqueModel",
+    "poolRegionalTrends",
     "exerciseRedundancy",
     "physiqueRate",
     "bodyCompositionState",

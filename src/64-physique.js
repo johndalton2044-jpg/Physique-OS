@@ -32,10 +32,15 @@ function physiqueModel(){
   var rows=regions.map(function(m){var x=X[m]||{recentSets:0,recentFrequency:0},st=regionalStrength(m),sz=regionalSize(m);
     return {muscle:m,label:MUSCLE_GROUPS[m]||m,priority:pri.indexOf(m)>=0,sets:x.recentSets,frequency:x.recentFrequency,strength:st,size:sz};});
   var trained=rows.filter(function(r){return r.strength&&r.sets>=PHYSIQUE_RANGE.setsLow;}),med=trained.length>=3?_medianOf(trained.map(function(r){return r.strength.pctPerMonth;})):null;
+  /* HIERARCHICAL PERSONALISATION (Stage E; TRANSITION item 5): each region's strength trend borrows from the person's
+     other regions (hierarchicalPosterior over the trained regions), so a region measured on few sessions is pulled toward
+     the person's own typical rate before it is called lagging; a precisely measured slow region stays slow. */
+  var pool=trained.length>=3?poolRegionalTrends(trained.map(function(r){return {id:r.muscle,value:r.strength.pctPerMonth,sd:r.strength.se};})):null;
+  if(pool)rows.forEach(function(r){var p=pool.byId[r.muscle];if(p&&r.strength)r.strength.pooled=p;});
   rows.forEach(function(r){
     if(r.sets<(r.priority?PHYSIQUE_RANGE.setsLow:6))r.status='under-trained';
     else if(r.sets>PHYSIQUE_RANGE.setsHigh&&!r.priority)r.status='over-served';
-    else if(r.strength&&med!=null&&r.strength.pctPerMonth<med-2*Math.max(r.strength.se,0.25))r.status=r.sets>=PHYSIQUE_RANGE.setsLow?'lagging':'under-trained';
+    else if(r.strength&&med!=null&&(r.strength.pooled?r.strength.pooled.lagging:r.strength.pctPerMonth<med-2*Math.max(r.strength.se,0.25)))r.status=r.sets>=PHYSIQUE_RANGE.setsLow?'lagging':'under-trained';
       /* slower with fewer than 10 sets cannot be told apart from under-training: never "lagging", never "on track" */
     else r.status=r.strength?'on track':'unknown';
     r.why=r.status==='under-trained'?(r.sets>=6&&!r.priority?r.sets+' sets a week: progressing slower than your other regions, but with too few sets to tell a weak point from under-training':r.sets+' sets a week is below what can be judged ('+(r.priority?PHYSIQUE_RANGE.setsLow:6)+')'):
@@ -48,6 +53,14 @@ function physiqueModel(){
   rows.filter(function(r){return r.priority&&r.frequency<PHYSIQUE_RANGE.minFrequency&&r.sets>=PHYSIQUE_RANGE.setsLow;}).forEach(function(r){sugg.push({muscle:r.muscle,text:'split '+r.label+' across at least two sessions a week',why:'trained '+r.frequency+' times a week'});});
   return {status:'ok',cls:'EMPIRICAL',regions:rows.sort(function(a,b){return (b.priority-a.priority)||(b.sets-a.sets);}),suggestions:sugg,redundancy:exerciseRedundancy(28),rate:physiqueRate(),bodyComposition:bodyCompositionByMethod(),
     range:PHYSIQUE_RANGE,limits:'Strength is a proxy for size, and a limb also grows with fat. "Lagging" compares your regions with each other, needs three trained regions, and only applies to a region with enough sets.'};}
+/* The pooled trends: each region's posterior and its sd, the person's typical rate (the hyper-mean), and whether the region
+   is clearly below it (posterior + 2 sd under the hyper-mean). Units are {id, value: % a month, sd}; an sd under 0.25 is
+   taken as 0.25, the floor the unpooled rule uses. */
+function poolRegionalTrends(units){
+  var U=units.map(function(u){return {id:u.id,value:u.value,sd:Math.max(u.sd||0,0.25)};});
+  var H=hierarchicalPosterior(U);if(H.status!=='ok')return null;
+  var byId={};H.rows.forEach(function(r){byId[r.id]={mean:r.posterior,sd:r.posteriorSd,raw:r.raw,typical:H.hyperMean,lagging:r.posterior+2*r.posteriorSd<H.hyperMean};});
+  return {byId:byId,typical:H.hyperMean,spread:H.tau,method:'hierarchical posterior across the person\u2019s trained regions'};}
 /* three or more different exercises with the same pattern for the same main muscle in four weeks */
 function exerciseRedundancy(days){var by={};sessionsOf({from:addDays(todayISO(),-(days||28))}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e||!e.primary.length)return;
   var k=e.primary[0]+'|'+e.pattern;(by[k]=by[k]||{})[e.name]=1;});});

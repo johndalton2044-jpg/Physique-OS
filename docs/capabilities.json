@@ -290,6 +290,7 @@
      "gate": "engine"
     }
    ],
+   "note": "Hierarchical (Stage E): the phase contexts of a response are pooled toward the person’s own estimate through the shared Bayes engine once two contexts have their own data, and the strength trends of trained regions are pooled the same way before one is called lagging. Partial pooling as in Gelman et al., Bayesian Data Analysis (3rd ed., ch. 5).",
    "axes": {
     "engineering": "surfaced",
     "scientific": "population evidence",

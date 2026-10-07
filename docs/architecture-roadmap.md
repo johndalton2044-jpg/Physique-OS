@@ -3524,3 +3524,25 @@ dose, not a capacity; the Learn tab's aerobic row shows the trend. On the demo: 
 (45.6 to 50.1), trend +0.57 a month (−1.97 to +3.12, 28% personal): no clear change. An aerobic-fitness capability joins
 the ledger. All 36 gates pass (reproducible included); release 24/24; 1,671 self-tests. Stage D is complete except the mobility,
 conditioning and power responses, which wait for observation types that measure them (TRANSITION item 4).
+
+## Stage E: hierarchical personalisation (build 88304dc6bc)
+
+Each personal model kept its own prior, so two estimates of the same person could not inform each other. They now pool
+through the shared engine (`hierarchicalPosterior` in 96-bayes-engine), with no new uncertainty system. The engine now
+returns each unit's posterior SD as well as its mean (by the law of total variance over its grid of between-unit spreads).
+The strength trends of the trained regions are pooled by `poolRegionalTrends` (with an SD floor of 0.25% a month). A
+region is lagging only when its pooled interval sits wholly below the shared mean. Before, the rule was below the median
+by twice its own SD, so a region measured on a few noisy sessions could be called lagging from noise alone. The phase
+contexts of a personal response (cut, maintenance) are pooled by `poolResponseContexts` toward the person's own estimate
+once two contexts have data of their own; with one, the population prior stands, and the record says which. The checks
+are properties that follow from the model, not its own numbers:
+- identical units end at the shared value, narrower than their own SD;
+- units far apart and precisely measured keep their values;
+- a precise slow region stays lagging, while a noisy one (−0.5 ± 1.0 against four at +2) is pulled up and not called
+  lagging, where the unpooled rule would have called it;
+- two agreeing contexts move toward each other.
+
+Replacing the pooling with each unit's own value, leaving contexts unpooled, and reporting each unit's own SD each turned
+its intended check red. On the demo, the three pooled regions (glutes, quads, hamstrings) gain about 7.6% a month, with
+pooled SDs of 1.42 to 1.53 against their own 1.93 to 3.34; none lags. The personal-response capability's note records the
+pooling. 1,678 self-tests pass; the full release record is in progress.
