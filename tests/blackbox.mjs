@@ -39,6 +39,8 @@ async function fresh(){CLOCK_OFFSET=0;const errors=[];const vc=new VirtualConsol
     async readDownload(i){const b=downloads[i==null?downloads.length-1:i];return b?await b.text():null;},
     /* a control drawn asynchronously: wait until it is on screen */
     async until(sel,ms){await until(()=>d.querySelector(sel),sel,ms);return d.querySelector(sel);},
+    /* a state reached asynchronously (a value on screen, a record saved): wait until it holds */
+    async waitFor(test,what,ms){return until(test,what,ms);},
     setClock(daysAgo){CLOCK_OFFSET=-daysAgo*86400000;},
     close(){dom.window.close();}};
   ui.press('welcome.skip');await wait(100);return ui;}
@@ -47,7 +49,8 @@ async function logAs(ui,type,value,field){ui.press('log.open');await wait(40);co
   ui.type(field||'f_value',value);ui.press('log.save',null,'#logBackdrop');await wait(100);}
 /* the detail level, chosen as a person does: Tools → Display (a new record starts at Casual, which keeps the analysis tabs
    for Insightful) */
-async function useLevel(ui,level){ui.tab('tools');await ui.until('details[data-fold="tools-display"] summary');ui.expand('tools-display');await ui.until('[data-act="settings.detail"][data-arg="'+level+'"]');ui.press('settings.detail',level);await wait(80);}
+async function useLevel(ui,level){ui.tab('tools');await ui.until('details[data-fold="tools-display"] summary');ui.expand('tools-display');await ui.until('[data-act="settings.detail"][data-arg="'+level+'"]');ui.press('settings.detail',level);
+  await ui.waitFor(()=>ui.d.documentElement.getAttribute('data-detail')===level&&/btn-primary/.test(ui.d.querySelector('[data-act="settings.detail"][data-arg="'+level+'"]').className),'the '+level+' level to apply');}
 const run=async(name,fn)=>{let ui;try{ui=await fresh();await fn(ui);}catch(e){line(false,name,e.message);}finally{if(ui){if(ui.errors.length)line(false,name+': no uncaught errors',ui.errors.slice(0,2).join(' | '));ui.close();}}};
 
 /* V-002 NUTRITION: a food \u2192 a portion \u2192 the day's total */
@@ -143,6 +146,18 @@ await run('V-013 a new record starts at Casual',async ui=>{
   line(ui.d.documentElement.getAttribute('data-detail')==='insightful'&&chosen()==='insightful','V-013 choosing Insightful shows the analysis, and the card says so');
   line(ui.w.DB.settings.detail==='insightful','V-013 second witness: the choice is stored in the record');});
 
+/* V-014 FITNESS TESTS: the quick log takes a sit-and-reach and a jump; the Log page shows them; at Insightful the Learn
+   tab's physiology card shows the latest results and what each response still needs. Expected: the values entered here,
+   and the five tests the response rule asks for (four more after one). */
+await run('V-014 fitness tests',async ui=>{const SR=12.5,JUMP=41;
+  ui.press('log.open');(await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="tests"]')).click();await ui.until('#logBackdrop #f_cmj');
+  ui.type('f_sitreach',SR);ui.type('f_cmj',JUMP);ui.press('log.save',null,'#logBackdrop');
+  ui.tab('log');await ui.waitFor(()=>/Jump height/.test(ui.view('log')),'the tests on the Log page');const v=ui.view('log');line(/Sit-and-reach[^]{0,60}12\.5/.test(v)&&/Jump height[^]{0,60}41/.test(v),'V-014 the Log page lists both tests with their values',v.slice(0,240));
+  line(ui.w.DB.observations.some(o=>o.type==='sitreach'&&o.value===SR)&&ui.w.DB.observations.some(o=>o.type==='cmj'&&o.value===JUMP),'V-014 second witness: both are stored as entered');
+  await useLevel(ui,'insightful');ui.tab('learn');await ui.until('details[data-fold="learn-physiology"] summary');ui.expand('learn-physiology');
+  await ui.waitFor(()=>/sit-and-reach/.test(ui.text('details[data-fold="learn-physiology"]')),'the physiology card');const card=ui.text('details[data-fold="learn-physiology"]');
+  line(/Mobility[^]{0,80}sit-and-reach 12\.5 cm/.test(card)&&/Power and speed[^]{0,80}jump height 41 cm/.test(card),'V-014 the physiology card shows the latest sit-and-reach and jump',card.slice(0,300));
+  line(/needs 4 more sit-and-reach tests/.test(card)&&/needs 4 more jump height tests/.test(card),'V-014 and what each response still needs: four more tests');});
 /* V-001 TODAY: a phase with its targets \u2192 Today shows them */
 await run('V-001 today',async ui=>{
   const KCAL=2150,PROT=180;ui.tab('plan');

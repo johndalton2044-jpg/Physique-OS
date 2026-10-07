@@ -433,6 +433,31 @@
    }
   },
   {
+   "id": "capacity-responses",
+   "label": "Mobility, conditioning, power and speed: field tests and their responses",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    },
+    {
+     "blackbox": "V-014"
+    }
+   ],
+   "note": "five field tests in the quick log (sit-and-reach, knee-to-wall, one-minute heart-rate recovery, countermovement jump, 20 m sprint), each related to its dose (mobility minutes, cardio minutes, lower-body sets) averaged over the four weeks before the test: a population prior per unit of dose updated by the person's own slope through bayesUpdate, with the personal weight; in the capability vector and the physiology card",
+   "source": "stretching and sit-and-reach (Thomas et al. 2018); knee-to-wall reliability (Bennell et al. 1998); heart-rate recovery and training (Daanen et al. 2012) and as a fitness marker (Cole et al. 1999); jump height and plyometric training (Markovic 2007); strength and sprint time (Seitz et al. 2014)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
    "id": "causal-estimation",
    "label": "Causal estimates of each change: interrupted series and matched periods",
    "maturity": "surfaced",

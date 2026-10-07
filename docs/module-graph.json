@@ -1276,6 +1276,7 @@
     "_e1rmTop"
    ],
    "61-physiology.js": [
+    "capacityResponse",
     "cardioFitnessModel"
    ],
    "64-physique.js": [
@@ -1439,6 +1440,7 @@
     "sd"
    ],
    "30-observations.js": [
+    "asOf",
     "obsOf",
     "seriesWindow",
     "sessionsOf"
@@ -1464,11 +1466,17 @@
    "62-supplements.js": [
     "supplementIntakes"
    ],
+   "64-exercise.js": [
+    "resolveExercise"
+   ],
    "66-external.js": [
     "weatherContextAt"
    ],
    "85-latent.js": [
     "cardioFitnessState"
+   ],
+   "96-bayes-engine.js": [
+    "bayesUpdate"
    ]
   }
  },
@@ -4168,6 +4176,7 @@
     "scheduleAudit"
    ],
    "61-physiology.js": [
+    "capacityResponse",
     "cardioFitnessModel",
     "hydrationModel",
     "hydrationBalance",
@@ -4932,6 +4941,9 @@
     "_modalityFamily",
     "cardioFitnessObservation",
     "vo2Trend",
+    "_lowerBodySets",
+    "_doseBefore",
+    "capacityResponse",
     "cardioFitnessModel",
     "hydrationModel",
     "energyAvailability",
@@ -5342,7 +5354,8 @@
     "_repTarget",
     "_usualVariation",
     "buildWorkout",
-    "barcodeSupport"
+    "barcodeSupport",
+    "physiologySummary"
    ],
    "91-inference.js": [
     "multipleTesting",

@@ -4389,6 +4389,36 @@ function runSelfTest(opts){
         ok('a device that already had the restored record loses the backup’s entry when it syncs the undo',!has(x.id,B2)&&has(k2.id,B2));
       }finally{DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();}
     })();
+    /* ---- Mobility, conditioning, power and speed (Stage D, item 4): constructed tests with answers worked out here ---- */
+    (function(){var T=todayISO(),rowsOf=function(doses,values){return doses.map(function(d,i){return {date:addDays(T,-7*(doses.length-i)),value:values[i],dose:d};});};
+      /* six sit-and-reach tests at 0 to 2.5 units of mobility work (30 min a week each), 2 cm better per unit, ±0.2 cm noise */
+      var D=[0,0.5,1,1.5,2,2.5],N=[0.2,-0.2,0.1,-0.1,0.2,-0.2],V=D.map(function(d,i){return 10+2*d+N[i];});
+      var n=D.length,xm=D.reduce(function(a,x){return a+x;},0)/n,ym=V.reduce(function(a,x){return a+x;},0)/n,sxx=0,sxy=0;D.forEach(function(x,i){sxx+=(x-xm)*(x-xm);sxy+=(x-xm)*(V[i]-ym);});
+      var b=sxy/sxx,res=0;D.forEach(function(x,i){res+=Math.pow(V[i]-ym-b*(x-xm),2);});var se=Math.sqrt(res/(n-2)/sxx),pv=1.5*1.5,ov=se*se,post=(1.5/pv+b/ov)/(1/pv+1/ov),w=(1/ov)/(1/pv+1/ov);
+      var R=capacityResponse('mobility',{sitreach:rowsOf(D,V),kneewall:[]}),s=R.tests[0];
+      ok('the mobility response is the population prior (+1.5 cm per 30 min a week) updated by the slope of your tests, worked out by hand',s.status==='ok'&&Math.abs(s.perUnit-post)<0.002&&Math.abs(s.personalWeight-w)<0.006&&s.interval[0]>0&&/better sit-and-reach/.test(s.reading),JSON.stringify([s.perUnit,post,s.personalWeight,w]));
+      /* 3 cm per unit with ±1.5 cm of noise: the slope is less certain and the prior (+1.5) visibly pulls the estimate */
+      var N2=[1.5,-1.5,1,-1,1.5,-1.5],V2=D.map(function(d,i){return 10+3*d+N2[i];}),ym2=V2.reduce(function(a,x){return a+x;},0)/n,sxy2=0;D.forEach(function(x,i){sxy2+=(x-xm)*(V2[i]-ym2);});
+      var b2=sxy2/sxx,res2=0;D.forEach(function(x,i){res2+=Math.pow(V2[i]-ym2-b2*(x-xm),2);});var ov2=res2/(n-2)/sxx,post2=(1.5/pv+b2/ov2)/(1/pv+1/ov2),s2=capacityResponse('mobility',{sitreach:rowsOf(D,V2),kneewall:[]}).tests[0];
+      ok('with noisier tests the prior pulls the estimate toward +1.5, by exactly the precision arithmetic',Math.abs(s2.perUnit-post2)<0.002&&Math.abs(post2-b2)>0.05,JSON.stringify([s2.perUnit,post2,b2]));
+      ok('with four tests it says how many more it needs, and with a dose that barely varied it asks for tests at different amounts',capacityResponse('mobility',{sitreach:rowsOf(D.slice(0,4),V.slice(0,4)),kneewall:[]}).tests[0].need==='1 more sit-and-reach test'&&/different amounts of mobility work/.test(capacityResponse('mobility',{sitreach:rowsOf([1,1.1,1.2,1,1.1],[10,10,10,10,10]),kneewall:[]}).tests[0].need));
+      /* a 20 m sprint 0.05 s faster per 10 lower-body sets a week: lower is better */
+      var Ds=[0,1,2,3,4,5],Vs=Ds.map(function(d,i){return 3.6-0.05*d+[0.005,-0.005,0.004,-0.004,0.005,-0.005][i];}),sp=capacityResponse('speed',{sprint:rowsOf(Ds,Vs)}).tests[0];
+      ok('for the sprint, lower is better: a faster time with more lower-body sets reads as better',sp.status==='ok'&&sp.perUnit<0&&/better 20 m sprint/.test(sp.reading),JSON.stringify(sp));
+      var noisy=capacityResponse('power',{cmj:rowsOf([0,1,2,3,4],[40,60,25,58,30])}).tests[0];
+      ok('tests too noisy to carry much weight only hint, and say so',noisy.status==='ok'&&noisy.personalWeight<0.2&&/only hint/.test(noisy.reading),JSON.stringify([noisy.personalWeight,noisy.reading]));})();
+    withFixture('normal_loss',function(){var keepO=DB.observations,keepS=DB.sessions,T=todayISO();
+      DB.observations=keepO.filter(function(o){return o.type!=='cardio';});for(var d=0;d<=28;d++)DB.observations.push(makeObservation({type:'cardio',date:addDays(T,-d),value:d===0?500:30,source:'manual'}));_memoInvalidate();
+      ok('the dose is the weekly average over the four weeks before the test, not the test’s own day: 30 min a day is 210 a week, 3.5 units of 60',Math.abs(_doseBefore(CAPACITY_RESPONSES.conditioning,T)/60-3.5)<1e-9,String(_doseBefore(CAPACITY_RESPONSES.conditioning,T)));
+      DB.sessions=[{id:'s-lb',date:addDays(T,-3),sets:[{exercise:'Squat',load:200,reps:5},{exercise:'Squat',load:200,reps:5},{exercise:'Squat',load:200,reps:5},{exercise:'Bench press',load:150,reps:5},{exercise:'Bench press',load:150,reps:5}]}];_memoInvalidate();
+      ok('lower-body sets count each set once: three squat sets are three, whatever muscles they work, and bench sets are none',_lowerBodySets(addDays(T,-6),T)===3);
+      DB.observations.push(makeObservation({type:'sitreach',date:T,value:12.5,source:'manual'}),makeObservation({type:'cmj',date:T,value:41,source:'manual'}));_memoInvalidate();
+      var C=capabilityVector(),P=physiologySummary().filter(function(r){return r.label==='Mobility'||r.label==='Power and speed';});
+      ok('the capability vector carries the latest field tests and what each response still needs',C.mobility.tests.sitReach.latest.value===12.5&&C.power.jumpHeight.latest.value===41&&/4 more/.test(C.power.jumpHeight.response.need));
+      ok('the physiology card shows them',P.length===2&&/sit-and-reach 12\.5 cm/.test(P[0].v)&&/jump height 41 cm/.test(P[1].v));
+      var keepSh=_SHEET,form;try{_SHEET={buf:{type:'tests',date:T}};form=SHEETS.log(_SHEET.buf).body;}finally{_SHEET=keepSh;}
+      ok('the quick log has a Fitness tests form for all five',['f_sitreach','f_kneewall','f_hrr','f_cmj','f_sprint'].every(function(id){return form.indexOf(id)>=0;}));
+      DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

@@ -23,7 +23,8 @@ var DIMENSIONS={
   energyRate:{base:'kcal/day',units:{'kcal/day':1,'kcal/week':1/7}},
   massRate:{base:'lb/week',units:{'lb/week':1,'lb/day':7,'kg/week':2.20462}},
   energyDensity:{base:'kcal/lb',units:{'kcal/lb':1,'kcal/kg':0.453592}},
-  time:{base:'day',units:{day:1,week:7,hour:1/24,minute:1/1440}},
+  time:{base:'day',units:{day:1,week:7,hour:1/24,minute:1/1440,second:1/86400}},
+  length:{base:'cm',units:{cm:1,'in':2.54}},   /* field tests (sit-and-reach, knee-to-wall, jump height), Stage D item 4 */
   count:{base:'count',units:{count:1}},
   ratio:{base:'ratio',units:{ratio:1,percent:0.01}},
   index:{base:'index',units:{index:1}},

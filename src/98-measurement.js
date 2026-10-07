@@ -20,6 +20,10 @@
    Every quantity that crosses a model boundary, typed. The audit below is what makes this more than a list:
    it scans the actual outputs of the engines and reports quantities travelling untyped. */
 var TYPES_EXTENDED={
+  /* the field tests of mobility, power and speed (Stage D; TRANSITION item 4); heart-rate recovery is cardioFitness */
+  mobilityRange:{dimension:'length',unit:'cm',temporal:'instant',aggregation:'last',cls:'MEASURED',population:'this person',note:'a range-of-motion field test on the person\u2019s own protocol'},
+  jumpHeight:{dimension:'length',unit:'cm',temporal:'instant',aggregation:'last',cls:'MEASURED',population:'this person',note:'countermovement jump, hands on hips'},
+  sprintTime:{dimension:'time',unit:'second',temporal:'instant',aggregation:'last',cls:'MEASURED',population:'this person',note:'20 m from a standing start'},
   mechanicalDemand:{dimension:'index',unit:'index',temporal:'instant',aggregation:'sum',cls:'HEURISTIC',
     population:'this person only',note:'force-time proxy, comparable within a programme'},
   neuralDemand:{dimension:'index',unit:'index',temporal:'instant',aggregation:'sum',cls:'HEURISTIC',

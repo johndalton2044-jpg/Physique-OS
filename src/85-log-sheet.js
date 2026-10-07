@@ -55,7 +55,7 @@ function scaleRow(name,label,hint){var v=_SHEET.buf[name];var b='';for(var i=1;i
 function setField(name,value){if(!_SHEET)return;_SHEET.buf[name]=value;if(_SHEET.opts.onField)_SHEET.opts.onField(name,value);}
 var SHEETS={};
 /* ---- quick log ---- */
-var LOG_TYPES=[['weight','Weight'],['food','Food'],['water','Water'],['urine','Urine colour'],['sweattest','Sweat test'],['steps','Steps'],['cardio','Cardio'],['sleep','Sleep'],['recovery','Recovery'],['hunger','Appetite'],['waist','Body'],['bodyfat','Body fat'],['supplement','Supplement'],['context','Context'],['note','Note']];   /* adherence is measured from what was done, not self-rated */
+var LOG_TYPES=[['weight','Weight'],['food','Food'],['water','Water'],['urine','Urine colour'],['sweattest','Sweat test'],['steps','Steps'],['cardio','Cardio'],['sleep','Sleep'],['recovery','Recovery'],['hunger','Appetite'],['waist','Body'],['bodyfat','Body fat'],['tests','Fitness tests'],['supplement','Supplement'],['context','Context'],['note','Note']];   /* adherence is measured from what was done, not self-rated */
 function openLog(type){openSheet('log',{title:'Quick log',desc:'Choose what you observed, enter the value, save. Values are stored as observed; corrections supersede, nothing is rewritten.',buf:{type:type||'weight',date:todayISO()}});}
 SHEETS.log=function(b){
   var t=b.type;var chips='<div class="chips" style="margin-bottom:12px">'+LOG_TYPES.map(function(x){return '<button type="button" class="chip'+(x[0]===t?' active':'')+'" data-act="sheet.logType" data-arg="'+x[0]+'" aria-pressed="'+(x[0]===t)+'">'+x[1]+'</button>';}).join('')+'</div>';
@@ -85,6 +85,9 @@ SHEETS.log=function(b){
   else if(t==='recovery')body+=scaleRow('fatigue','Fatigue','1 fresh \u00b7 10 wrecked')+scaleRow('soreness','Soreness')+scaleRow('stress','Stress')+scaleRow('motivation','Motivation');
   else if(t==='hunger')body+=scaleRow('hunger','Hunger','average over the day')+scaleRow('fullness','Fullness after meals')+scaleRow('cravings','Cravings')+scaleRow('difficulty','Difficulty sticking to the plan');
   else if(t==='waist')body+='<div class="hint" style="margin-bottom:8px">Tape at the navel, relaxed exhale, same time weekly. Neck below the larynx. Hip at the widest point.</div><div class="form-trio">'+fld('waist','Waist ('+lengthUnit()+')',{type:'number',hint:'last: '+last('waist')})+fld('neck','Neck',{type:'number',hint:'last: '+last('neck')})+fld('hip','Hip',{type:'number',hint:'last: '+last('hip')})+'</div><div class="form-trio">'+fld('chest','Chest',{type:'number'})+fld('arm','Arm',{type:'number'})+fld('thigh','Thigh',{type:'number'})+'</div>';
+  else if(t==='tests')body+='<div class="hint" style="margin-bottom:8px">Any you did today, the same way each time: warm up, then the best of three. Sit-and-reach: centimetres past the toes (negative if short of them). Knee-to-wall: the furthest the toes can be from the wall with the knee still touching it, on the stiffer side. Heart-rate recovery: the fall in the first minute after a hard effort. Jump: countermovement, hands on hips.</div>'+
+    '<div class="form-trio">'+fld('sitreach','Sit-and-reach (cm)',{type:'number',hint:'last: '+last('sitreach')})+fld('kneewall','Knee-to-wall (cm)',{type:'number',hint:'last: '+last('kneewall')})+fld('hrr','HR recovery (bpm)',{type:'number',hint:'last: '+last('hrr')})+'</div>'+
+    '<div class="form-pair">'+fld('cmj','Jump height (cm)',{type:'number',hint:'last: '+last('cmj')})+fld('sprint','20 m sprint (s)',{type:'number',hint:'last: '+last('sprint')})+'</div>';
   else if(t==='bodyfat')body+='<div class="form-pair">'+fld('value','Body fat (%)',{type:'number'})+fld('method','Method',{type:'select',options:[['dexa','DEXA'],['bia','BIA / smart scale'],['calipers','Calipers'],['bodpod','Bod Pod'],['navy','Circumference'],['other','Other']]})+'</div><div class="hint">Methods are never compared against each other. The record keeps the method with the value.</div>';
   else if(t==='supplement'){var slot=b.timing||supplementSlot(),R=supplementStack(),taken=supplementIntakes(b.date||todayISO(),b.date||todayISO());b.timing=slot;
     if(!b.pick){b.pick={};supplementsDue(b.date||todayISO(),slot).forEach(function(x){b.pick[x.id]=true;});b.doses={};R.forEach(function(x){b.doses[x.id]=x.dose;});}
@@ -120,6 +123,7 @@ function saveQuickLog(force){
   else if(t==='hunger'){add('hunger',b.hunger);add('fullness',b.fullness);add('cravings',b.cravings);add('difficulty',b.difficulty);}
   else if(t==='waist'){['waist','neck','hip','chest','arm','thigh'].forEach(function(k){if(b[k]!=null&&b[k]!=='')add(k,toCanonicalLength(b[k]),{method:'tape'});});}
   else if(t==='bodyfat')add('bodyfat',b.value,{method:b.method||'other'});
+  else if(t==='tests'){['sitreach','kneewall','hrr','cmj','sprint'].forEach(function(k){if(b[k]!=null&&b[k]!=='')add(k,b[k],{method:'field test'});});}
   else if(t==='supplement'){var _sel=Object.keys(b.pick||{}).filter(function(k){return b.pick[k];});
     _sel.forEach(function(id){var x=supplementStack().filter(function(z){return z.id===id;})[0];if(!x)return;if(supplementIntakes(date,date).some(function(z){return z.id===id;}))return;var d=num((b.doses||{})[id]);d=d!=null?d:x.dose;
       add('supplement',SUPPLEMENT_CATALOGUE[id].label+' '+d+' '+x.unit,{meta:{supplementId:id,dose:d,unit:x.unit,timing:b.timing||'any'}});});

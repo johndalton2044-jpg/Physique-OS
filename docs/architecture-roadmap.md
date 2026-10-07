@@ -3879,3 +3879,57 @@ Letting an undo of a restore revoke nothing, as an undo of a sync merge does, tu
 was misnamed earlier. It is about a different merge: undoing a sync merge of another device's changes is still not
 durable, because making it so would delete that device's entries on every device. That remains a decision for the
 person. All 36 gates pass (reproducible included); release 24/24; 1,763 self-tests.
+
+## Stage D: mobility, conditioning, power and speed (build 7dd314744b)
+
+TRANSITION item 4 waited for observation types that measure these capacities. Five field tests are now chosen, each one
+a person can do without a laboratory, and logged in the quick log under "Fitness tests":
+
+| Test | Unit | Measures |
+|---|---|---|
+| Sit-and-reach | cm past the toes, negative if short | mobility |
+| Knee-to-wall | cm, the stiffer side | ankle dorsiflexion |
+| Heart-rate recovery | bpm fall in the first minute after a hard effort | conditioning |
+| Countermovement jump | cm, hands on hips | power |
+| 20 m sprint | s | speed |
+
+Each is an observation type with a semantic type. The one unit table gains a length dimension (cm, in) and seconds, so
+there is still a single unit system.
+
+Each test is related to the dose that should move it, averaged over the four weeks before the test (adaptations take
+weeks, so the test's own day is left out):
+- the mobility tests, per 30 minutes a week of mobility work;
+- heart-rate recovery, per 60 minutes a week of cardio;
+- jump and sprint, per 10 lower-body sets a week, each set counted once.
+
+`capacityResponse(kind)` is a personal model like the others:
+- a cited population prior per unit of dose (+1.5 cm sit-and-reach, +0.5 cm knee-to-wall, +2 bpm, +0.5 cm jump,
+  −0.01 s sprint);
+- updated through `bayesUpdate` by the least-squares slope of the person's results on their dose;
+- five tests at least, at doses varying by half a unit;
+- the personal weight reported, with "only hint" below 0.2, and limits stated: an association across tests, not proof
+  of cause, and the same protocol each time.
+
+The sprint's "better" is downward. Four models join the registry. The capability vector's mobility, endurance and new
+power entries carry the latest tests and responses, and the Learn tab's physiology card shows them.
+
+Checks:
+- a posterior computed by hand from a constructed slope;
+- a noisier case where the prior visibly pulls the estimate, by the precision arithmetic;
+- four tests ask for one more, and a dose that barely varied asks for tests at different amounts;
+- a faster sprint reads as better;
+- noisy tests only hint;
+- the dose window excludes the test's own day (30 min a day is 3.5 units of 60);
+- three squat sets count as three lower-body sets;
+- the consumers and the form;
+- black-box workflow V-014: a sit-and-reach of 12.5 and a jump of 41 through the quick log appear on the Log page, are
+  stored as entered, and show on the physiology card at Insightful with four more tests needed.
+
+Including the test's own day, dropping the prior, counting sets per muscle, ignoring the sprint's direction, lowering
+the minimum, and removing the quick log choice each turned their checks red. The demo has no field tests, so each
+response says what it needs. A capacity-responses capability joins the ledger as workflow-tested. Stage D is complete.
+
+The black-box harness gains `ui.waitFor` (a state reached asynchronously). V-014 waits only on conditions (CLAUDE.md
+rule 12), and choosing a level through the Display card now waits until the level applies instead of a fixed 80 ms
+(V-011, V-012 and V-013 use it). With the Fitness tests save disabled, V-014 times out waiting for the Log page.
+1,773 self-tests pass; the full release record is in progress.
