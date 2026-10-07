@@ -3858,5 +3858,8 @@ Checks:
 
 Starting new records at Insightful again, dropping the backfill's exception, and letting the demo reset the level each
 turned their checks red. The visual baseline was updated for the intended change: at Casual the left rail (analysis
-navigation) is hidden and the right rail is shorter. 1,759 self-tests and the black-box workflows pass; the full
-release record is in progress.
+navigation) is hidden and the right rail is shorter. The audit and the interface tests checked the rail contract at
+whatever level the record opened at, so they now check it at Insightful, where the rails belong, and check Casual for
+what it drops (the position rail and the palette) and keeps (the action rail and the log button); removing the Casual
+rule turns that check red. All 36 gates pass (reproducible included); release 24/24; 1,759 self-tests and the black-box
+workflows.
