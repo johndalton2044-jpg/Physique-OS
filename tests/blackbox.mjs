@@ -136,5 +136,32 @@ await run('V-001 today',async ui=>{
   ui.type('f_calorieTarget',KCAL);ui.type('f_proteinTarget',PROT);ui.press('phase.save');await wait(150);
   ui.tab('today');const t=ui.view('today');line(/2,?150/.test(t),'V-001 Today shows the calorie target that was set ('+KCAL+')',t.slice(0,200));});
 
+/* V-012 USER-APPROVED AUTOMATION: a rule that only adds a record runs on the approval given when it was turned on; a rule
+   that would change the plan holds the change, and the plan changes only when the change is approved. Expected by the
+   approval policy's definition, not computed by the app. */
+await run('V-012 automation approval',async ui=>{
+  const sheet=()=>ui.text('#editBackdrop'),today=new Date().toISOString().slice(0,10);
+  const openAutomation=async()=>{let g=null;for(const t of ['today','tools','plan','learn']){ui.tab(t);await wait(40);g=ui.d.querySelector('[data-act="features.open"]');if(g)break;}
+    if(!g)throw new Error('no control on screen for the feature guide');g.click();await ui.until('#editBackdrop [data-act="features.go"][data-arg="automation.open"]');ui.press('features.go','automation.open','#editBackdrop');await ui.until('#editBackdrop [data-act="rule.toggle"]');};
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();await wait(300);
+  await openAutomation();
+  ui.press('rule.toggle','weighIn|qa.water','#editBackdrop');await wait(80);
+  line(new RegExp('standing approval \u00b7 approved '+today+'\\s*add 0\\.5 L of water').test(sheet()),'V-012 turning on a rule that adds a record shows the standing approval it now runs on',sheet().slice(0,240));
+  ui.press('rule.toggle','weeklyReview|adapt.apply','#editBackdrop');await wait(80);
+  line(/each one waits for your approval\s*propose the plan change the week suggests/.test(sheet()),'V-012 a rule that would change the plan says each change waits for approval');
+  ui.press('edit.close',null,'#editBackdrop');await wait(60);
+  const water=()=>ui.w.DB.observations.filter(o=>o.type==='water'&&o.date===today&&!o.retracted&&Math.abs(o.value-0.5)<1e-9).length,w0=water();
+  await logAs(ui,'weight',251.5);await wait(200);
+  line(water()===w0+1,'V-012 after weighing in, the approved rule logged 0.5 L of water (second witness)');
+  ui.tab('log');line(/0\.5\s*L/.test(ui.view('log')),'V-012 the Log page shows the 0.5 L of water');
+  const plans0=ui.w.DB.plans.length;
+  ui.tab('learn');await ui.until('details[data-fold="learn-loop"] summary');ui.expand('learn-loop');await wait(300);
+  await openAutomation();
+  line(/Waiting for your approval/.test(sheet())&&!!ui.d.querySelector('#editBackdrop [data-act="auto.approve"]'),'V-012 the weekly review held a plan change for approval instead of making it',sheet().slice(0,240));
+  line(ui.w.DB.plans.length===plans0,'V-012 the plan did not change while the change was waiting (second witness)');
+  ui.d.querySelector('#editBackdrop [data-act="auto.approve"]').click();await wait(300);
+  line(ui.w.DB.plans.length===plans0+1,'V-012 approving it changed the plan, through one new plan version (second witness)');
+  const s2=sheet();line(/What automation did/.test(s2)&&/applied[^]{0,120}plan version/.test(s2)&&/approved/.test(s2)&&/held/.test(s2),'V-012 the automation log on screen shows it held, approved and applied',s2.slice(-400));});
+
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

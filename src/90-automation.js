@@ -88,12 +88,15 @@ registerAction('pattern.dismiss',function(id){DB.settings.patternsDismissed=Obje
 
 /* ---- WORKFLOW RULES: when something happens, run one allowed action \u2014 once per rule per day, announced, undoable ---- */
 var AUTOMATION_TRIGGERS={workoutFinished:{label:'After a workout is logged',event:'session.added'},weighIn:{label:'After weighing in',event:'observation.added',test:function(e){return e.data&&e.data.type==='weight';}},
-  firstMeal:{label:'On the first meal of the day',event:'food.logged',test:function(e){return foodLogsOn(e.data&&e.data.date||todayISO()).length===1;}}};
-var AUTOMATION_ACTIONS={'supp.logStack':'log the supplements due','nav.today':'show today\u2019s plan','qa.water':'add 0.5 L of water'};
-var AUTOMATION_PRESETS=[{trigger:'workoutFinished',action:'supp.logStack'},{trigger:'firstMeal',action:'supp.logStack'},{trigger:'weighIn',action:'nav.today'}];
+  firstMeal:{label:'On the first meal of the day',event:'food.logged',test:function(e){return foodLogsOn(e.data&&e.data.date||todayISO()).length===1;}},
+  weeklyReview:{label:'When the weekly review is recorded',event:'cycle.recorded'}};
+var AUTOMATION_ACTIONS={'supp.logStack':'log the supplements due','nav.today':'show today\u2019s plan','qa.water':'add 0.5 L of water','adapt.apply':'propose the plan change the week suggests'};
+var AUTOMATION_PRESETS=[{trigger:'workoutFinished',action:'supp.logStack'},{trigger:'firstMeal',action:'supp.logStack'},{trigger:'weighIn',action:'nav.today'},{trigger:'weighIn',action:'qa.water'},{trigger:'weeklyReview',action:'adapt.apply'}];
 function _ruleId(t,a){return t+'|'+a;}
 function setAutomation(trigger,action,enabled){if(!AUTOMATION_TRIGGERS[trigger]||!AUTOMATION_ACTIONS[action])return {status:'refused'};var id=_ruleId(trigger,action);
-  DB.settings.automations=(DB.settings.automations||[]).filter(function(r){return r.id!==id;}).concat(enabled?[{id:id,trigger:trigger,action:action,enabled:true}]:[]);save('settings');return {status:'ok'};}
+  DB.settings.automations=(DB.settings.automations||[]).filter(function(r){return r.id!==id;}).concat(enabled?[{id:id,trigger:trigger,action:action,enabled:true}]:[]);
+  setAutomationApproval(id,action,!!enabled);   /* the approval policy (58-plan.js): turning a rule on is the standing approval its level allows */
+  save('settings');return {status:'ok'};}
 var _AUTOMATING=false;
 /* Pure matching (testable): the enabled rules this event triggers that have not run today. */
 function automationMatches(e,log){log=log||{};return (DB.settings.automations||[]).filter(function(r){if(!r.enabled)return false;var T=AUTOMATION_TRIGGERS[r.trigger];
@@ -101,9 +104,12 @@ function automationMatches(e,log){log=log||{};return (DB.settings.automations||[
 function runAutomationsFor(e){
   if(_AUTOMATING||!e||(typeof _PERSIST_SUSPENDED!=='undefined'&&_PERSIST_SUSPENDED>0))return [];
   var ran=[],log=DB.settings.automationLog||(DB.settings.automationLog={});
-  automationMatches(e,log).forEach(function(r){var T=AUTOMATION_TRIGGERS[r.trigger],key=r.id+'@'+todayISO();
-    log[key]=nowISO();_AUTOMATING=true;try{dispatchAct(r.action,null);ran.push(r.id);if(typeof auditAppend==='function')auditAppend('automation.ran',{rule:r.id});}finally{_AUTOMATING=false;}
-    toast('Automatic: '+AUTOMATION_ACTIONS[r.action]+' ('+T.label.toLowerCase()+')',{undo:r.action!=='nav.today'});});
+  automationMatches(e,log).forEach(function(r){var T=AUTOMATION_TRIGGERS[r.trigger],key=r.id+'@'+todayISO(),D=automationDecision(r);log[key]=nowISO();
+    /* the approval policy decides: run, hold for approval, or refuse; each decision is audited */
+    if(D.run){_AUTOMATING=true;try{dispatchAct(r.action,null);ran.push(r.id);_autoAudit('ran',{rule:r.id,level:D.level,approval:D.approval});}finally{_AUTOMATING=false;}
+      toast('Automatic: '+AUTOMATION_ACTIONS[r.action]+' ('+T.label.toLowerCase()+')',{undo:r.action!=='nav.today'});}
+    else if(D.hold){var h=holdAutomation(r,automationProposal(r.action));if(h){save('settings');toast('Waiting for your approval: '+h.title,{tone:'attention'});}}
+    else _autoAudit('refused',{rule:r.id,level:D.level,why:D.why});});
   Object.keys(log).forEach(function(k){if(k.split('@')[1]<addDays(todayISO(),-14))delete log[k];});
   return ran;
 }
@@ -111,6 +117,9 @@ function _automationOnEvent(e){if(typeof setTimeout==='function')setTimeout(func
 registerAction('rule.enable',function(arg){var q=String(arg).split('|');setAutomation(q[0],q[1],true);if(_SHEET)renderSheet();renderAll();toast('Automation on: '+AUTOMATION_TRIGGERS[q[0]].label.toLowerCase()+', '+AUTOMATION_ACTIONS[q[1]]);});
 registerAction('rule.toggle',function(arg){var q=String(arg).split('|'),on=(DB.settings.automations||[]).some(function(r){return r.id===_ruleId(q[0],q[1])&&r.enabled;});setAutomation(q[0],q[1],!on);if(_SHEET)renderSheet();});
 registerAction('nav.today',function(){switchTab('today');});
+registerAction('auto.approve',function(id){var r=resolveAutomation(id,true);if(r.status!=='ok'){toast(r.note);return;}var P=r.pending,n0=plansOf().length;
+  dispatchAct(P.action,P.arg);var v=plansOf().length>n0?plansOf().slice(-1)[0]:null;_autoAudit(v?'applied':'not-applied',{pending:P.id,rule:P.rule,planVersion:v?v.version:null});save('settings');if(_SHEET)renderSheet();renderAll();});
+registerAction('auto.decline',function(id){var r=resolveAutomation(id,false);if(r.status==='ok'){save('settings');toast('Declined: '+r.pending.title+'. Kept in the automation log.');}if(_SHEET)renderSheet();renderAll();});
 
 /* ---- SHORTCUTS: home-screen shortcuts (?do=...) and Alt+1\u20134 for the top quick actions; an allow-list only ---- */
 var SHORTCUT_ACTIONS={'weigh-in':1,'supplements':1,'water':1,'workout':1,'repeat-meal':1,'sleep':1};
@@ -132,8 +141,14 @@ SHEETS.automation=function(){
     Object.keys(QUICK_ACTIONS).map(function(id){var q=QUICK_ACTIONS[id];return uiRow(uiIcon(q.icon,{size:16})+' '+esc(q.label),q.oneTap?'one tap':'opens a form',{sub:SHORTCUT_ACTIONS[id]?'home-screen shortcut: ?do='+id:''})+'<div class="btn-row">'+uiBtn(hid[id]?'Show on Today':'Hide from Today','qa.hide',id,'btn-sm btn-ghost')+'</div>';}).join('');
   out+='<div class="card-title" style="margin-top:10px">Templates</div>'+(T.length?T.map(function(t){return uiRow(esc(t.name),t.kind==='meal'?(t.items.length+' foods'):(t.steps.length+' steps'))+'<div class="btn-row">'+uiBtn('Run','tpl.run',t.id,'btn-sm btn-secondary')+uiBtn('Delete','tpl.delete',t.id,'btn-sm btn-ghost')+'</div>';}).join(''):'<div class="hint">None yet.</div>')+
     '<div class="btn-row">'+['breakfast','lunch','dinner'].filter(function(m){return foodLogsOn(addDays(todayISO(),-1)).some(function(l){return l.meal===m;});}).map(function(m){return uiBtn('Save yesterday\u2019s '+m,'tpl.saveMeal',addDays(todayISO(),-1)+'|'+m,'btn-sm btn-ghost');}).join('')+'</div>';
-  out+='<div class="card-title" style="margin-top:10px">Automations</div><div class="hint">Each runs at most once a day, says what it did, and can be undone.</div>'+
-    AUTOMATION_PRESETS.map(function(p){var on=R.some(function(r){return r.id===_ruleId(p.trigger,p.action)&&r.enabled;});return uiRow(esc(AUTOMATION_TRIGGERS[p.trigger].label),esc(AUTOMATION_ACTIONS[p.action]),{})+'<div class="btn-row">'+uiBtn(on?'On \u2014 turn off':'Turn on','rule.toggle',p.trigger+'|'+p.action,'btn-sm '+(on?'btn-primary':'btn-ghost'))+'</div>';}).join('');
+  /* the approval policy on screen (Stage H): what each rule may do, the approval it rests on, what waits for you, what ran */
+  var W=automationPending(),AP=DB.settings.automationApprovals||{};
+  if(W.length)out+='<div class="card-title" style="margin-top:10px">Waiting for your approval</div>'+W.map(function(p){return '<div class="feat"><div class="feat-body"><b>'+esc(p.title)+'</b><div class="hint">'+esc((p.why?p.why+' ':'')+(p.expected?'Expected: '+p.expected:''))+'</div><div class="hint">Held '+esc(String(p.heldAt).slice(0,10))+' by: '+esc(AUTOMATION_TRIGGERS[p.rule.split('|')[0]]?AUTOMATION_TRIGGERS[p.rule.split('|')[0]].label.toLowerCase():p.rule)+'</div>'+
+    '<div class="btn-row">'+uiBtn('Approve','auto.approve',p.id,'btn-sm btn-primary')+uiBtn('Decline','auto.decline',p.id,'btn-sm btn-ghost')+'</div></div></div>';}).join('');
+  out+='<div class="card-title" style="margin-top:10px">Automations</div><div class="hint">Each runs at most once a day and says what it did. One that would change your plan never runs on its own: it waits here for your approval.</div>'+
+    AUTOMATION_PRESETS.map(function(p){var id=_ruleId(p.trigger,p.action),on=R.some(function(r){return r.id===id&&r.enabled;}),lv=automationLevel(p.action),ap=AP[id];
+      return uiRow(esc(AUTOMATION_TRIGGERS[p.trigger].label),esc(AUTOMATION_ACTIONS[p.action]),{sub:esc(AUTOMATION_LEVEL_TEXT[lv]+(on&&ap?' \u00b7 approved '+String(ap.grantedAt).slice(0,10):''))})+'<div class="btn-row">'+uiBtn(on?'On \u2014 turn off':'Turn on','rule.toggle',p.trigger+'|'+p.action,'btn-sm '+(on?'btn-primary':'btn-ghost'))+'</div>';}).join('');
+  var Hs=automationHistory(8);if(Hs.length)out+='<div class="card-title" style="margin-top:10px">What automation did</div>'+Hs.map(function(e){var d=e.detail||{};return uiRow(esc(e.kind.replace('automation.','').replace(/-/g,' ')),esc(String(e.at).replace('T',' ').slice(0,16)),{sub:esc((d.rule||'')+(d.level?' \u00b7 '+d.level:'')+(d.approval?' \u00b7 on your approval of '+String(d.approval).slice(0,10):'')+(d.planVersion?' \u00b7 plan version '+d.planVersion:'')+(d.why?' \u00b7 '+d.why:''))});}).join('');
   out+='<div class="card-title" style="margin-top:10px">Smart defaults</div><div class="hint">Forms start from your own recent entries (last weight, usual sleep, usual cardio), labelled as suggestions to edit. Food intake is never guessed.</div>';
   return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
 };

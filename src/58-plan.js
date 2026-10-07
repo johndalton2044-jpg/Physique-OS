@@ -487,6 +487,43 @@ function adaptationOutcome(planId){
     note:before.doneShare!=null&&after.doneShare!=null?('Done as planned: '+Math.round(before.doneShare*100)+'% the week before the change, '+Math.round(after.doneShare*100)+'% the last week.'):'Not enough recorded on one side to compare.'};
 }
 function adaptationsOf(){return plansOf().filter(function(p){return !!p.adaptation;});}
+/* ============================================================================
+   USER-APPROVED AUTOMATION (Stage H; TRANSITION item 13). Section 213 rules out "automation that changes important state
+   without policy and audit". Every automated action has an approval level, and none runs without both the approval its
+   level needs and an entry in the audit log:
+   - view: changes nothing (opens a screen). It runs.
+   - routine: adds a small record that can be undone (supplements taken, a glass of water). It runs under the standing
+     approval recorded when the rule was turned on; turning the rule off withdraws it.
+   - important: changes the plan, a target, the programme or the profile, or deletes. It never runs on a trigger. The
+     trigger holds a proposal, applied only when it is approved, through the plan's own authority (changePlan); a decline
+     is kept as well.
+   An action with no declared level is important. Every decision (ran, held, approved, applied, declined, refused, an
+   approval granted or withdrawn) goes to the audit log with the rule, the level and the approval it rests on.
+   ============================================================================ */
+var AUTOMATION_POLICY={'nav.today':'view','supp.logStack':'routine','qa.water':'routine','adapt.apply':'important'};
+var AUTOMATION_LEVEL_TEXT={view:'changes nothing',routine:'adds a record you can undo; runs under your standing approval',important:'changes your plan; each one waits for your approval'};
+function automationLevel(action){return AUTOMATION_POLICY[action]||'important';}
+function _autoAudit(kind,detail){if(typeof auditAppend==='function')auditAppend('automation.'+kind,detail);}
+function setAutomationApproval(ruleId,action,on){var A=DB.settings.automationApprovals=Object.assign({},DB.settings.automationApprovals||{}),lv=automationLevel(action);
+  if(on&&lv!=='important'){A[ruleId]={level:lv,grantedAt:nowISO(),scope:'each time the rule fires, at most once a day'};_autoAudit('approval-granted',{rule:ruleId,level:lv});}
+  else if(!on&&A[ruleId]){delete A[ruleId];_autoAudit('approval-withdrawn',{rule:ruleId,level:lv});}
+  return A[ruleId]||null;}
+/* what a rule may do when it fires: a pure decision, testable without running anything */
+function automationDecision(rule){var lv=automationLevel(rule.action),ap=(DB.settings.automationApprovals||{})[rule.id]||null;
+  if(lv==='view')return {run:true,level:lv,approval:null,why:'it changes nothing'};
+  if(lv==='routine')return ap&&ap.level==='routine'?{run:true,level:lv,approval:ap.grantedAt,why:'your standing approval of '+String(ap.grantedAt).slice(0,10)}:{run:false,level:lv,approval:null,why:'no standing approval for this rule'};
+  return {run:false,hold:true,level:lv,approval:null,why:'a change to the plan waits for your approval each time'};}
+/* the proposal an important action would make now */
+function automationProposal(action){if(action==='adapt.apply'){var A=(adaptationProposals().proposals||[])[0];return A?{arg:A.id,title:A.title,why:A.why,expected:A.expected}:null;}return null;}
+function automationPending(){return (DB.settings.automationPending||[]).filter(function(p){return p.status==='waiting';});}
+function holdAutomation(rule,proposal){if(!proposal)return null;var L=DB.settings.automationPending=(DB.settings.automationPending||[]).slice();
+  if(L.some(function(p){return p.status==='waiting'&&p.rule===rule.id&&p.arg===proposal.arg;}))return null;
+  var rec={id:uid('auto'),rule:rule.id,action:rule.action,arg:proposal.arg,title:proposal.title,why:proposal.why||'',expected:proposal.expected||'',heldAt:nowISO(),status:'waiting'};
+  L.push(rec);_autoAudit('held',{rule:rule.id,action:rule.action,arg:proposal.arg,level:'important',pending:rec.id});return rec;}
+/* the person's answer to a held change; the interface applies an approved one through the action's own path */
+function resolveAutomation(id,approve){var P=(DB.settings.automationPending||[]).filter(function(p){return p.id===id;})[0];if(!P||P.status!=='waiting')return {status:'refused',note:'nothing is waiting with that id'};
+  P.status=approve?'approved':'declined';P.resolvedAt=nowISO();_autoAudit(approve?'approved':'declined',{rule:P.rule,action:P.action,arg:P.arg,level:'important',pending:P.id});return {status:'ok',pending:P};}
+function automationHistory(n){return (typeof auditLog==='function'?auditLog(200):[]).filter(function(e){return /^automation\./.test(e.kind);}).slice(0,n||8);}
 /* Recovery shapes today's session when the evidence is there: a below-baseline reading suggests the reduced version. */
 function recoverySuggestion(){
   var r=null;try{r=recoveryLatentState();}catch(e){}

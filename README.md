@@ -37,6 +37,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Personal knowledge: versions, conflicts and decay | surfaced | heuristic | real data path | early personal | surfaced | local | internal | — | gate engine |
 | Experiment portfolio: the next test by expected information gain | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
 | Sensor fusion: one value from several sources | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
+| User-approved automation: approval policy and audit | surfaced | — | real data path | — | workflow-tested | local | independent | — | gate engine, workflow V-012 |
 | State model (the 'digital twin') | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | — | real data path | — | surfaced | local | independent | — | gate integration |
 | Live connections to Fitbit, Withings and Oura | implemented | — | simulated | — | surfaced | server | internal | — | gate connect |

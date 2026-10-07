@@ -3762,3 +3762,38 @@ The known answers: a scale exactly on the line, and hand entries 1 lb heavier wi
 Not fusing, not correcting lone readings, calibrating on later readings, ignoring the preference, contradicting nothing
 and ignoring quality each turned their checks red. The demo's weight has one source, so nothing in it changes. A
 sensor-fusion capability joins the ledger. All 36 gates pass (reproducible included); release 24/24; 1,731 self-tests.
+
+## Stage H: user-approved automation (build 9a390e35e2)
+
+Automation rules ran an action when something happened: log the supplements due, add water, show today's plan. Turning
+a rule on was its only consent, and a run was audited without saying what it rested on. Nothing stopped a rule from
+being given an action that changes the plan. Section 213 rules out automation that changes important state without
+policy and audit, so every automated action now has an approval level (`AUTOMATION_POLICY`, 58-plan.js):
+- **View** (changes nothing): runs.
+- **Routine** (a small record that can be undone): runs under the standing approval recorded, with its date and scope,
+  when the rule is turned on. Turning the rule off withdraws it.
+- **Important** (the plan, a target, the programme, the profile, or any deletion): never runs on a trigger. The trigger
+  holds a proposal, which is applied only when the person approves it, through the action's own path into `changePlan`.
+  A decline is kept too.
+- **Undeclared:** an action with no declared level is important.
+
+Every decision goes to the audit log with the rule, the level and the approval it rests on: ran, held, approved,
+applied, declined, refused, approval granted or withdrawn. The first important rule is "When the weekly review is
+recorded → propose the plan change the week suggests". The automation sheet shows what waits (Approve, Decline), what
+each rule may do and on whose approval, and what automation did.
+
+Checks:
+- self-tests from the policy's definition: fail closed, standing approval granted and withdrawn with audit entries,
+  holding without changing anything, no duplicates, declining and approving audited, and the sheet;
+- black-box workflow V-012, on the demo:
+  - turning on "After weighing in → add 0.5 L of water" shows its approval;
+  - a weigh-in logs the water;
+  - turning on the weekly-review rule and opening Learn (which records the week) holds "Train 3 days a week instead of
+    4" instead of applying it, so the plan is unchanged;
+  - Approve adds exactly one plan version;
+  - the sheet shows held, approved and applied.
+
+Letting the important action run without approval turned V-012 red. Treating undeclared actions as routine, granting
+approval without an audit entry, holding the same change twice and not auditing answers turned the self-tests red. An
+automation-approval capability joins the ledger as workflow-tested. 1,743 self-tests and 8 workflow checks pass; the
+full release record is in progress.

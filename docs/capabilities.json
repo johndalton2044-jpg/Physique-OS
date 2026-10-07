@@ -520,6 +520,30 @@
    }
   },
   {
+   "id": "automation-approval",
+   "label": "User-approved automation: approval policy and audit",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    },
+    {
+     "blackbox": "V-012"
+    }
+   ],
+   "note": "every automated action has a level: view (changes nothing) runs; routine (an undoable record) runs under the standing approval recorded when its rule is turned on; important (the plan, targets, programme, profile, any deletion) never runs on a trigger, only holds a proposal that applies when approved, through changePlan; an undeclared action is important; every decision is in the audit log",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

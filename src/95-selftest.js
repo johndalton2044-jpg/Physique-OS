@@ -4300,6 +4300,31 @@ function runSelfTest(opts){
       var part=function(key){var s=sourcesOverview().sources.filter(function(x){return x.key===key;})[0];return s&&s.fusion.filter(function(x){return x.type==='weight';})[0];},fu=part('manual'),fs=part('import:withings');
       ok('the sources sheet shows each source’s part: the hand entries corrected by 1 lb and noisier, the steady scale the reference carrying almost all the weight',!!fu&&!!fs&&fs.reference&&!fu.reference&&Math.abs(fu.bias-1)<0.01&&fu.overlap===39&&fu.noise>fs.noise&&fs.share>0.9&&fu.share<0.05,JSON.stringify([fu,fs]));
       DB.observations=keepO;DB.settings.sourcePreference=keepP;_memoInvalidate();});
+    /* ---- User-approved automation (Stage H): the approval policy, checked against its definition ---- */
+    withFixture('normal_loss',function(){var keep={a:DB.settings.automations,ap:DB.settings.automationApprovals,p:DB.settings.automationPending};
+      DB.settings.automations=[];DB.settings.automationApprovals={};DB.settings.automationPending=[];
+      var audits=function(kind){return auditLog(400).filter(function(e){return e.kind==='automation.'+kind;}).length;},W={id:'weighIn|qa.water',action:'qa.water'},I={id:'weeklyReview|adapt.apply',action:'adapt.apply'};
+      ok('an action with no declared level is treated as important: it never runs on a trigger',automationLevel('something.new')==='important'&&automationDecision({id:'x|something.new',action:'something.new'}).run===false);
+      ok('opening a screen changes nothing, so it runs without an approval',automationDecision({id:'weighIn|nav.today',action:'nav.today'}).run===true);
+      var g0=audits('approval-granted');
+      ok('a routine action does not run until its rule is turned on',automationDecision(W).run===false);
+      setAutomation('weighIn','qa.water',true);var D=automationDecision(W);
+      ok('turning a routine rule on records a standing approval, in the audit log, and the rule then runs on it',D.run===true&&!!D.approval&&audits('approval-granted')===g0+1);
+      var w0=audits('approval-withdrawn');setAutomation('weighIn','qa.water',false);
+      ok('turning it off withdraws the approval, in the audit log, and it no longer runs',automationDecision(W).run===false&&audits('approval-withdrawn')===w0+1);
+      setAutomation('weeklyReview','adapt.apply',true);var Di=automationDecision(I);
+      ok('turning on a rule that would change the plan grants no standing approval: it can only hold a change for you',Di.run===false&&Di.hold===true&&!DB.settings.automationApprovals[I.id]);
+      var n0=plansOf().length,h0=audits('held'),H=holdAutomation(I,{arg:'a-test-change',title:'A test change',why:'',expected:''});
+      ok('a held change alters nothing until you answer it, and holding it is in the audit log',!!H&&plansOf().length===n0&&automationPending().length===1&&audits('held')===h0+1);
+      ok('the same change is not held twice',holdAutomation(I,{arg:'a-test-change',title:'A test change'})===null&&automationPending().length===1);
+      var sheet=SHEETS.automation().body;
+      ok('the automation sheet shows what waits for your approval, with Approve and Decline, and what each rule may do',sheet.indexOf('Waiting for your approval')>=0&&sheet.indexOf('data-act="auto.approve"')>=0&&sheet.indexOf('data-act="auto.decline"')>=0&&sheet.indexOf('each one waits for your approval')>=0);
+      var d0=audits('declined'),R=resolveAutomation(H.id,false);
+      ok('declining it is kept and audited, and nothing waits any more',R.status==='ok'&&R.pending.status==='declined'&&automationPending().length===0&&audits('declined')===d0+1&&resolveAutomation(H.id,true).status==='refused');
+      var H2=holdAutomation(I,{arg:'another-change',title:'Another test change'}),a0=audits('approved'),R2=resolveAutomation(H2.id,true);
+      ok('approving is recorded and audited; the change itself then goes through the plan’s own authority, from the screen',R2.status==='ok'&&R2.pending.status==='approved'&&audits('approved')===a0+1&&plansOf().length===n0&&automationPending().length===0);
+      ok('the automation sheet lists what automation did',SHEETS.automation().body.indexOf('What automation did')>=0);
+      DB.settings.automations=keep.a;DB.settings.automationApprovals=keep.ap;DB.settings.automationPending=keep.p;});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
