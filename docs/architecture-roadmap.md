@@ -3628,5 +3628,5 @@ The known answers:
 
 Removing the decay, the conflicts, the re-derivation or the negatives' versions, or swapping older and newer, each turned
 its intended checks red. On the demo every Response is version 1, there is no negative knowledge and nothing
-conflicts; the steps response is days old and counts fully. A knowledge-versioning capability joins the ledger. 1,702
-self-tests pass; the full release record is in progress.
+conflicts; the steps response is days old and counts fully. A knowledge-versioning capability joins the ledger. All 36
+gates pass (reproducible included); release 24/24; 1,702 self-tests.
