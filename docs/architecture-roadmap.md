@@ -3726,3 +3726,39 @@ On the demo:
 - creatine's interval is wide, from four readings before it.
 
 All 36 gates pass (reproducible included); release 24/24; 1,723 self-tests.
+
+## Stage G: sensor fusion (build 37276f7eef)
+
+Device totals (steps, sleep) already chose one source per day. Every other measured quantity with two sources was
+averaged: a scale and a hand entry 1 lb apart gave a value halfway between, which jumped by half a pound whenever one
+was missing. A fusion path existed beside that and nothing used it. `fuseObservations` bias-corrected and weighted one
+day by `measurementModel`'s measured noise, but it lumped every import as "import" and calibrated on today's data even
+for past days.
+
+It is now the one path, and `dailySeries` uses it, so every model reads the fused value.
+- **`_sourceParams`.** The measurement model's per-source parameters, computed once and shared:
+  - sources are told apart by provenance (provider or device);
+  - the reference is the person's preferred source for the type, else the one with the most readings;
+  - each other source's bias is the mean same-day difference from it;
+  - each source's noise is its own scatter, never below its resolution;
+  - only readings known by the date asked about count.
+- **Fusion.** A reading from a source with a measured bias is put on the reference scale even on days it alone
+  measured. Readings are weighted by quality (`measurementQuality`) over noise squared. With three sources, a reading
+  more than four combined standard deviations from the others' fused value is set aside.
+- **Exclusion.** Body fat is not fused: its methods differ by design, and `bodyCompositionState` reconciles them.
+- **On screen.** The sources sheet shows each source's correction, noise and share of the weight, and lets the person
+  choose the reference.
+
+The known answers: a scale exactly on the line, and hand entries 1 lb heavier with ±0.5 noise from day 21.
+- The scale is the reference, and the entries are 1 lb heavier on the 39 shared days.
+- On shared days the fused weight stays within 0.02 lb of the scale, where the plain mean was half a pound off.
+- On the three days only the entries exist, they are 1 lb lighter, on the scale's footing.
+- By day 30 only ten shared days are known.
+- Choosing the hand entries as reference moves the series 1 lb up throughout.
+- A third source's reading 20 lb off is set aside.
+- An off-protocol weigh-in counts three-quarters.
+- The sheet shows the scale carrying over 90% of the weight.
+
+Not fusing, not correcting lone readings, calibrating on later readings, ignoring the preference, contradicting nothing
+and ignoring quality each turned their checks red. The demo's weight has one source, so nothing in it changes. A
+sensor-fusion capability joins the ledger. 1,731 self-tests pass; the full release record is in progress.

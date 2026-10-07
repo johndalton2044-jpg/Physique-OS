@@ -4277,6 +4277,29 @@ function runSelfTest(opts){
       DB.responses=[r];var sheet=SHEETS.response({id:r.id}).body;
       ok('the response sheet shows the path without the change, with a chart',sheet.indexOf('Without the change')>=0&&sheet.indexOf('<svg')>=0);
       DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();});
+    /* ---- Sensor fusion (Stage G): two and three sources of one quantity, with known answers ---- */
+    withFixture('normal_loss',function(){var keepO=DB.observations,keepP=DB.settings.sourcePreference,today=todayISO(),day0=addDays(today,-62);
+      var w=function(i){return round(250-i/7,2);},e=function(i){return [-0.5,0,0.5][i%3];},mk=function(i,v,src,meta){var o=makeObservation({type:'weight',date:addDays(day0,i),value:round(v,2),source:src,meta:meta});o.at=o.createdAt=addDays(day0,i)+'T08:00:00.000Z';return o;};
+      var build=function(third){DB.observations=keepO.filter(function(o){return o.type!=='weight';});
+        for(var i=0;i<=59;i++)DB.observations.push(mk(i,w(i),'import',{importSource:'withings'}));          /* a scale, exactly on the line */
+        for(i=21;i<=62;i++)DB.observations.push(mk(i,w(i)+1+e(i),'manual'));                               /* entered by hand: 1 lb heavier, ±0.5 */
+        if(third){for(i=10;i<=59;i++)DB.observations.push(mk(i,w(i)+0.3+(i%2?0.05:-0.05)+(i===45?20:0),'import',{importSource:'fitbit'}));
+          DB.observations.forEach(function(o){if(o.type==='weight'&&o.date===addDays(day0,45)&&sourceKeyOf(o)==='import:withings')o.meta=Object.assign({},o.meta,{protocol:'off'});});}
+        _memoInvalidate();};
+      build(false);var S=seriesWindow('weight',63),at=function(i){return S.filter(function(r){return r.date===addDays(day0,i);})[0];};
+      ok('the scale is the reference, having the most readings, and the hand entries are 1 lb heavier on the 39 days both measured',(function(){var P=_sourceParams('weight');return P.ref==='import:withings'&&P.params.manual.overlap===39&&Math.abs(P.params.manual.bias-1)<1e-9;})(),JSON.stringify(_sourceParams('weight').params.manual));
+      ok('on days both measured, the fused weight stays on the steady scale rather than halfway to the hand entries',[21,30,40,50,59].every(function(i){return Math.abs(at(i).value-w(i))<0.02&&at(i).fusion;}),JSON.stringify([21,30,59].map(function(i){return [at(i).value,w(i)];})));
+      ok('on days only the hand entry exists, it is put on the scale’s footing (1 lb lighter), so the series does not jump',[60,61,62].every(function(i){return Math.abs(at(i).value-(w(i)+e(i)))<1e-6;}),JSON.stringify([60,61,62].map(function(i){return [at(i).value,w(i)+e(i)];})));
+      ok('a past day is fused only with what was known by then: ten shared days by day 30',_sourceParams('weight',addDays(day0,30)).params.manual.overlap===10);
+      DB.settings.sourcePreference=Object.assign({},keepP||{},{weight:'manual'});_memoInvalidate();S=seriesWindow('weight',63);
+      ok('choosing the hand entries as the reference puts the series on their footing: 1 lb heavier throughout',[10,30,59].every(function(i){return Math.abs(at(i).value-(w(i)+1))<0.02;})&&measurementModel('weight').reference==='manual'&&/because you chose it/.test(measurementModel('weight').caveat),JSON.stringify([10,30].map(function(i){return [at(i).value,w(i)+1];})));
+      DB.settings.sourcePreference=keepP;build(true);var f=fuseObservations('weight',addDays(day0,45),{asOf:today});
+      ok('with three sources, a reading the other two contradict by 20 lb is set aside, and the day stays on the line',f.status==='ok'&&f.contradicted.join()==='import:fitbit'&&Math.abs(f.exact-w(45))<0.05,JSON.stringify([f.contradicted,f.exact,w(45)]));
+      var sc=f.sources.filter(function(r){return r.source==='import:withings';})[0];
+      ok('each reading counts by its quality over its source’s noise squared: an off-protocol weigh-in (quality 0.75) counts three-quarters',!!sc&&Math.abs(sc.quality-0.75)<1e-9&&Math.abs(sc.weight-0.75/(sc.noise*sc.noise))<1e-6,JSON.stringify(sc));
+      var part=function(key){var s=sourcesOverview().sources.filter(function(x){return x.key===key;})[0];return s&&s.fusion.filter(function(x){return x.type==='weight';})[0];},fu=part('manual'),fs=part('import:withings');
+      ok('the sources sheet shows each source’s part: the hand entries corrected by 1 lb and noisier, the steady scale the reference carrying almost all the weight',!!fu&&!!fs&&fs.reference&&!fu.reference&&Math.abs(fu.bias-1)<0.01&&fu.overlap===39&&fu.noise>fs.noise&&fs.share>0.9&&fu.share<0.05,JSON.stringify([fu,fs]));
+      DB.observations=keepO;DB.settings.sourcePreference=keepP;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

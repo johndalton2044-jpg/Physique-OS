@@ -36,6 +36,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Personal knowledge: versions, conflicts and decay | surfaced | heuristic | real data path | early personal | surfaced | local | internal | — | gate engine |
 | Experiment portfolio: the next test by expected information gain | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
+| Sensor fusion: one value from several sources | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
 | State model (the 'digital twin') | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Import from Apple Health, Fitbit, Withings and Oura exports and CSV | integrated | — | real data path | — | surfaced | local | independent | — | gate integration |
 | Live connections to Fitbit, Withings and Oura | implemented | — | simulated | — | surfaced | server | internal | — | gate connect |

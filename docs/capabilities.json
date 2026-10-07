@@ -498,6 +498,28 @@
    }
   },
   {
+   "id": "sensor-fusion",
+   "label": "Sensor fusion: one value from several sources",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a measured quantity from two or more sources (told apart by provider or device) is fused on every day: each source put on the reference source’s scale (your preferred one, else the one with the most readings) by its mean same-day difference, each reading weighted by its quality over its source’s measured noise squared, a reading the others contradict set aside when there are three; from readings known by the date asked about only; body fat left to its own reconciliation",
+   "source": "inverse-variance weighting of measurements (e.g. Hartung, Knapp & Sinha 2008, Statistical Meta-Analysis); measurementModel's per-source bias and noise",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

@@ -478,10 +478,10 @@
    ],
    "writers": {
     "addSession": [
-     "30-observations.js:236"
+     "30-observations.js:241"
     ],
     "updateSession": [
-     "30-observations.js:261"
+     "30-observations.js:266"
     ]
    }
   },
@@ -496,7 +496,7 @@
    ],
    "writers": {
     "startPhase": [
-     "30-observations.js:162"
+     "30-observations.js:167"
     ]
    }
   },
@@ -630,7 +630,7 @@
    ],
    "writers": {
     "updatePhase": [
-     "30-observations.js:205"
+     "30-observations.js:210"
     ],
     "createExperiment": [
      "50-decision.js:338"
