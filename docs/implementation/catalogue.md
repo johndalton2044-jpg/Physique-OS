@@ -7,7 +7,7 @@ Produced from the running registries on every governance run. Do not edit by han
 | models | 45 |
 | capabilities | 22 |
 | entity contracts | 27 |
-| commands | 538 |
+| commands | 540 |
 | sheets | 120 |
 | event types | 52 |
 | observation types | 34 |
@@ -74,4 +74,5 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- none
+- added command: auto.approve
+- added command: auto.decline

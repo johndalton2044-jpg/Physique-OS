@@ -3795,5 +3795,4 @@ Checks:
 
 Letting the important action run without approval turned V-012 red. Treating undeclared actions as routine, granting
 approval without an audit entry, holding the same change twice and not auditing answers turned the self-tests red. An
-automation-approval capability joins the ledger as workflow-tested. 1,743 self-tests and 8 workflow checks pass; the
-full release record is in progress.
+automation-approval capability joins the ledger as workflow-tested. All 36 gates pass (reproducible included); release 24/24; 1,743 self-tests, 8 workflow checks.
