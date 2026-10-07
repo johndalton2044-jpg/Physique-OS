@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-07T01:41:15.891Z",
-  "buildId": "e8c0eabd28",
+  "generatedAt": "2026-10-07T01:55:34.067Z",
+  "buildId": "61bea62b51",
   "nodes": 100,
-  "edges": 276,
+  "edges": 278,
   "contractDerived": 88,
   "dependencies": [
     {
@@ -1368,6 +1368,16 @@
     {
       "sourceId": "unified_optimiser",
       "targetId": "optimiserCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "unified_optimiser",
+      "targetId": "simulatePolicies",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "unified_optimiser",
+      "targetId": "applyOptimiserChoice",
       "dependencyType": "model"
     },
     {

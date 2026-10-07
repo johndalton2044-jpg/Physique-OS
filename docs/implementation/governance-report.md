@@ -1,6 +1,6 @@
 # Governance report
 
-Build e8c0eabd28 · generated 2026-10-07T01:31:03.637Z
+Build 61bea62b51 · generated 2026-10-07T01:45:22.601Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **25 passing**
 

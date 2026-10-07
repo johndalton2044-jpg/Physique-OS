@@ -3692,4 +3692,4 @@ Ignoring the probability of doing it, dropping the mixture variance, removing th
 carry the forecast's noise, and moving the baseline off the competition's forecast each turned their intended checks
 red. On the demo, with no change: 237.9 lb in 8 weeks (231.9 to 243.9) from the 14-day Theil–Sen trend, the forecast that
 has scored best. The suggested option (300 kcal less a day and two cardio sessions a week, a 36% chance of doing all of
-it) moves that by −3.6 lb (−6.7 to −0.5). 1,717 self-tests pass; the full release record is in progress.
+it) moves that by −3.6 lb (−6.7 to −0.5). All 36 gates pass (reproducible included); release 24/24; 1,717 self-tests.
