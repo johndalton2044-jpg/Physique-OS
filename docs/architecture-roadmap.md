@@ -3597,4 +3597,4 @@ On the demo:
 The series fix also corrects its other consumers: the demo's steps change, which the old series called "a clear shift",
 now reads "larger than the noise, but not decisively", and steps' causal-support grade moves from "weakly supported" to
 "correlated", in line with the Response's own "no clear response yet". A causal-estimation capability joins the ledger.
-1,692 self-tests pass; the full release record is in progress.
+All 36 gates pass (reproducible included); release 24/24; 1,692 self-tests.
