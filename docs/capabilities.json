@@ -476,6 +476,28 @@
    }
   },
   {
+   "id": "experiment-portfolio",
+   "label": "Experiment portfolio: the next test by expected information gain",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "every lever's ready-made test on one scale: the expected information gain 1/2 ln(1 + s0^2/se^2), with s0 the lever's SD now (widened by half of any disagreement between its findings) and se the outcome's noise over a Response's windows over the dose likely carried out (the person's own response errors where measured over most of both windows); ranked per week of testing; a test that would narrow the estimate by less than 10% is not worth running",
+   "source": "expected information gain for a normal model (Lindley 1956, Ann Math Stat); Bayesian experimental design (Chaloner & Verdinelli 1995, Stat Sci)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "digital-twin",
    "label": "State model (the 'digital twin')",
    "maturity": "surfaced",

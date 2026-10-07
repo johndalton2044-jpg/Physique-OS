@@ -3630,3 +3630,36 @@ Removing the decay, the conflicts, the re-derivation or the negatives' versions,
 its intended checks red. On the demo every Response is version 1, there is no negative knowledge and nothing
 conflicts; the steps response is days old and counts fully. A knowledge-versioning capability joins the ledger. All 36
 gates pass (reproducible included); release 24/24; 1,702 self-tests.
+
+## Stage E: the experiment portfolio (build e8c0eabd28)
+
+`nextTest()` picked the lever with the largest (1 − personal weight) × |population effect|, among weight outcomes only.
+It now takes the top of `experimentPortfolio()`, which puts every lever's ready-made test on one scale: the information
+it is expected to give. A lever's effect per unit is believed normal with SD s0: the personal response model's
+posterior, already discounted for age, widened by half of the largest disagreement between its findings. A test returns
+a result with standard error se per unit. Its expected information gain is ½ ln(1 + s0²/se²) nats (Lindley 1956; for a
+normal model it does not depend on the result), and the estimate's SD would fall to 1/√(1/s0² + 1/se²).
+- **The test's noise.** se is the outcome's noise over a Response's two 21-day windows, divided by the dose likely
+  carried out: the template's change times the adherence model's probability. For weight that noise is the day-to-day
+  swing over two 21-day trends; for a level, its spread over two 21-day averages. Where the person has final responses
+  on that outcome measured over most of both windows (14 readings a side), their median standard error replaces the
+  formula. A response with a few readings on one side measures the gap in the record, not the person: the demo's
+  creatine response, with 4 readings before it, would otherwise have made every weight test look worthless.
+- **Ranking.** Tests are ranked by gain per week of testing, since they run one at a time. One that would narrow its
+  estimate by less than 10% is not worth running.
+- **On screen.** The learning loop shows the portfolio under its next test.
+
+Checks:
+- the gain and the SD afterwards match ½ ln(1 + s0²/se²) computed by hand, from the weight swing, the 770 that the
+  squared day offsets of a 21-day window sum to, and the steps likely walked;
+- a level outcome's noise is its sample SD × √(2/21);
+- ranking is by gain per week, and the next test is the top one worth running;
+- everything below 10% is "not worth it";
+- after twenty precise responses, steps is not worth testing again;
+- two disagreeing calorie findings widen that lever by half their 0.4 lb difference.
+
+Restoring the old choice, dropping the adherence probability from the dose, ignoring conflicts, ignoring the person's
+own noise and removing the threshold each turned its intended checks red. On the demo, protein → hunger leads (45%
+narrower, 0.86 bits in 3 weeks, since nothing is known about it), then training days → weight (20%). Calories and steps
+would narrow by 5%, not worth a test after the steps experiment already run. An experiment-portfolio capability joins
+the ledger. 1,709 self-tests pass; the full release record is in progress.

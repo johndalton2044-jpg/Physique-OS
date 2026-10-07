@@ -584,8 +584,8 @@
    ],
    "writers": {
     "runLearningCycle": [
-     "58-learning-loop.js:51",
-     "58-learning-loop.js:56"
+     "58-learning-loop.js:92",
+     "58-learning-loop.js:97"
     ]
    }
   },

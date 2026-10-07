@@ -4205,6 +4205,33 @@ function runSelfTest(opts){
         r.modelVersion='response-1.1';var n=recordResponses().recorded,r2=responsesOf().filter(function(x){return x.id===id;})[0];
         ok('a finding derived by an earlier method is derived again as a new version that names the one it replaced, and the earlier stays in the log',n>=1&&r2.version===2&&r2.previous&&r2.previous.modelVersion==='response-1.1'&&r2.previous.stage==='final'&&r2.previous.effect===eff&&r2.modelVersion===RESPONSE_MODEL_VERSION&&events()===e0+1,JSON.stringify([n,r2.version,r2.previous,events(),e0]));
         ok('and once current it is not derived again',recordResponses().recorded===0&&responsesOf().filter(function(x){return x.id===id;})[0].version===2);}});
+    /* ---- Experiment portfolio (Stage E): expected information gain across levers, with known answers ---- */
+    withFixture('normal_loss',function(){var keepR=DB.responses,keepX=DB.experiments,today=todayISO();DB.responses=[];DB.experiments=[];_memoInvalidate();
+      var P=experimentPortfolio(),row=function(k){return experimentPortfolio().rows.filter(function(r){return r.key===k;})[0];},s=P.rows.filter(function(r){return r.key==='steps→weight';})[0];
+      var M=personalResponseModel().rows.filter(function(r){return r.key==='steps→weight';})[0];
+      /* by hand: the weight swing over two 21-day trends (the squared day offsets about the middle of 21 days sum to 770),
+         over the thousands of steps likely to be walked */
+      var sw=personalBaselines().streams.weight.baseline,se=sw*7*Math.sqrt(2)/Math.sqrt(770)/(2500*s.pDone/1000),s0=M.posterior.sd,eig=0.5*Math.log(1+s0*s0/(se*se));
+      ok('a test’s expected information gain is ½ ln(1 + s0²/se²): s0 the lever’s SD now, se the weight swing over two 21-day trends over the steps likely walked',
+        Math.abs(s.testSe-se)<0.002&&Math.abs(s.eig-eig)<0.002&&Math.abs(s.sdAfter-1/Math.sqrt(1/(s0*s0)+1/(se*se)))<0.002,JSON.stringify([s.testSe,se,s.eig,eig]));
+      var h=P.rows.filter(function(r){return r.key==='protein→hunger';})[0],hv=seriesWindow('hunger',56).map(function(d){return d.value;});
+      if(h&&hv.length>=7){var hm=hv.reduce(function(a,x){return a+x;},0)/hv.length,hs=Math.sqrt(hv.reduce(function(a,x){return a+(x-hm)*(x-hm);},0)/(hv.length-1)),hse=hs*Math.sqrt(2/21)/(30*h.pDone/20);
+        ok('for an outcome measured as a level, the noise is its day-to-day spread over two 21-day averages',Math.abs(h.testSe-hse)<0.002,JSON.stringify([h.testSe,hse]));}
+      else ok('for an outcome measured as a level, the noise is its day-to-day spread over two 21-day averages',false,'no hunger readings in the fixture');
+      var okRows=P.rows.filter(function(r){return r.status==='ok';});
+      ok('levers are ranked by expected learning per week of testing, and the next test is the top one worth running',okRows.length>0&&okRows.every(function(r,i){return i===0||okRows[i-1].perWeek>=r.perWeek;})&&nextTest().variable===okRows[0].variable&&nextTest().eig===okRows[0].eig);
+      ok('every test not worth running would narrow its estimate by less than 10%',P.rows.filter(function(r){return r.status==='not worth it';}).every(function(r){return r.narrowing<0.1;})&&okRows.every(function(r){return r.narrowing>=0.1-0.005;}));
+      /* twenty responses to steps, each 0.3 lb a week precise: the lever is known; another test teaches little */
+      var mk=function(id,v,dose,eff,se,ago){var end=addDays(today,-ago),start=addDays(end,-20);return {id:id,interventionId:id,variable:v,outcome:'weight',dose:dose,stage:'final',start:start,windows:{before:[addDays(start,-21),addDays(start,-1)],after:[start,end]},primary:{effect:eff,se:se,n:[21,21]},verdict:'a clear response',attribution:'the change'};};
+      DB.responses=[];for(var i=0;i<20;i++)DB.responses.push(mk('s'+i,'steps',2000,-0.25,0.3,i));_memoInvalidate();
+      var s2=row('steps→weight');ok('a lever already measured precisely is not worth testing again',s2.status==='not worth it'&&s2.narrowing<0.1&&s2.noiseBasis.indexOf('20 earlier responses')>=0,JSON.stringify([s2.status,s2.narrowing,s2.noiseBasis]));
+      /* two calorie responses that disagree by 0.4 lb a week per 100 kcal: the lever is less known than its posterior says */
+      var per=7/3500;DB.responses=[mk('o','calories',-500,-500*per*3,0.02,540),mk('n','calories',-500,-500*per,0.02,0)];_memoInvalidate();
+      var c=row('calories→weight'),Mc=personalResponseModel().rows.filter(function(r){return r.key==='calories→weight';})[0];
+      ok('findings that disagree widen the lever’s uncertainty by half their difference before the gain is computed',c.conflicted&&Math.abs(c.sdNow-Math.sqrt(Mc.posterior.sd*Mc.posterior.sd+0.2*0.2))<0.002,JSON.stringify([c.sdNow,Mc.posterior.sd]));
+      DB.responses=[];_memoInvalidate();
+      ok('the learning loop shows the portfolio behind its next test',loopCard().indexOf('narrower')>=0);
+      DB.responses=keepR;DB.experiments=keepX;_memoInvalidate();});
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

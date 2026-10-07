@@ -923,11 +923,14 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "nowISO",
     "daysBetween",
     "round",
-    "mean"
+    "mean",
+    "median",
+    "sd"
    ],
    "20-schema-storage.js": [
     "save"
@@ -936,13 +939,20 @@
     "emitEvent"
    ],
    "30-observations.js": [
+    "seriesWindow",
     "missingness"
    ],
    "40-models.js": [
     "adherenceState"
    ],
+   "45-baselines.js": [
+    "personalBaselines"
+   ],
    "50-decision.js": [
     "decide"
+   ],
+   "56-knowledge.js": [
+    "knowledgeConflicts"
    ],
    "58-model-competition.js": [
     "evaluateCompetition"
@@ -955,10 +965,12 @@
     "responsesOf"
    ],
    "58-response-model.js": [
+    "RESPONSE_PRIORS",
     "personalResponseModel"
    ],
    "59-friction.js": [
-    "frictionModel"
+    "frictionModel",
+    "interventionAdherence"
    ],
    "64-physique.js": [
     "physiqueModel"
@@ -3952,6 +3964,8 @@
     "attrEsc"
    ],
    "58-learning-loop.js": [
+    "_safe",
+    "experimentPortfolio",
     "runLearningCycle"
    ],
    "58-model-competition.js": [
@@ -4751,6 +4765,7 @@
    ],
    "58-learning-loop.js": [
     "_loopDeltas",
+    "experimentPortfolio",
     "nextTest",
     "runLearningCycle"
    ],
@@ -5241,6 +5256,9 @@
     "automationMatches",
     "runAutomationsFor",
     "runShortcut"
+   ],
+   "90-responses.js": [
+    "loopCard"
    ],
    "90-sources.js": [
     "setSourcePreference",
