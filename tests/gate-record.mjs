@@ -28,6 +28,8 @@ async function record(gate){
     at:new Date().toISOString()};
   fs.writeFileSync(file,JSON.stringify(rec,null,1));
   console.log(gate.padEnd(12),ok?'pass':'FAIL',' ',rec.gates[gate].summary.slice(0,120));
+  /* a failure is diagnosable from the log alone (CI keeps only the log): its own lines, without the passes */
+  if(!ok)out.split('\n').filter(l=>l.trim()&&!/^\s*(pass|ok)\b/.test(l)).slice(-40).forEach(l=>console.log('    | '+l.slice(0,300)));
   return ok;
 }
 if(arg==='--all'){
