@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build 7dd314744b. Every status is derived from evidence the build can check; none is assigned by hand.
+Build 4fecf793ba. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -79,6 +79,7 @@ Build 7dd314744b. Every status is derived from evidence the build can check; non
 | body_composition_state | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | unified_optimiser | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| tissue_energy_density | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | personal_neat_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 
 Production-ready capabilities: 0. Experimentally validated engines: 0.

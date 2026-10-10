@@ -1,6 +1,6 @@
 # Governance report
 
-Build 4fecf793ba · generated 2026-10-10T19:05:49.338Z
+Build 4fecf793ba · generated 2026-10-10T19:13:47.536Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **26 passing**
 
@@ -19,7 +19,7 @@ Build 4fecf793ba · generated 2026-10-10T19:05:49.338Z
 - **sheet-defined-twice** — no sheet is silently redefined
 - **registry-without-consumer** — every registry is read somewhere or classified with a reason (1 classified)
 - **audit-never-run** — 48 audit functions, every one invoked
-- **catalogue** — catalogue generated from the running registries — 1 change(s) since the previous run
+- **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 27 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned
 - **model-without-provenance** — every model result carries provenance

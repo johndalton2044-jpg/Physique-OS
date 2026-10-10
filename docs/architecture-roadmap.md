@@ -3977,7 +3977,10 @@ Checks, each seen to fail:
 - the maturity gate failed 25 checks while it still searched `release.mjs` for the list, and passes now that it reads
   `tests/gates.mjs`.
 
-The application's source is unchanged, so the build ID stays 7dd314744b. The full release record is in progress.
+The application's source is unchanged, so the build ID stays 7dd314744b. Its first release failed one gate, `external`, on
+a fixture that aged on a date (the next entry). With that fixed, all 36 gates pass on build 4fecf793ba (reproducible
+included) and the release check passes 24/24; in CI, 35 of the 36 pass and the browser gate's one finding there is
+followed up below.
 
 ## Recorded weather replayed at its recorded time (build 7dd314744b)
 
@@ -4031,4 +4034,4 @@ Checks, each seen to fail:
 - restoring the three old consumers fails six of them;
 - the governance detector names `58-response-entity.js:36`, `58-response-model.js:10` and the rest, by file and line.
 
-1,784 self-tests pass; the full release record is in progress.
+All 36 gates pass (reproducible included); release 24/24; 1,784 self-tests.

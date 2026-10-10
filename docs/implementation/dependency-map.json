@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-07T04:54:32.798Z",
-  "buildId": "7dd314744b",
-  "nodes": 110,
-  "edges": 296,
-  "contractDerived": 98,
+  "generatedAt": "2026-10-10T19:23:17.327Z",
+  "buildId": "4fecf793ba",
+  "nodes": 111,
+  "edges": 305,
+  "contractDerived": 99,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -216,6 +216,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "adherence",
+      "targetId": "tissue_energy_density",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "weight",
       "targetId": "weight_avg",
       "dependencyType": "data"
@@ -378,6 +383,11 @@
     {
       "sourceId": "weight_trend",
       "targetId": "body_composition_state",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "tissue_energy_density",
       "dependencyType": "model"
     },
     {
@@ -1191,6 +1201,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "session.sets",
+      "targetId": "tissue_energy_density",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "session.rir",
       "targetId": "exercise_response",
       "dependencyType": "model"
@@ -1416,6 +1431,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "bodyfat",
+      "targetId": "tissue_energy_density",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "energy_availability",
       "targetId": "physiologySummary",
       "dependencyType": "model"
@@ -1468,6 +1488,31 @@
     {
       "sourceId": "unified_optimiser",
       "targetId": "applyOptimiserChoice",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "tdee_personal",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "energy_balance",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "_expectedWeightChange",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "RESPONSE_PRIORS",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "_leverEffect",
       "dependencyType": "model"
     },
     {
