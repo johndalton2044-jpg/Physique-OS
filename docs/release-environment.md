@@ -38,7 +38,7 @@ gate checks the parts of it that can be checked from the repository (see "What i
 | Variable | Used by | Effect |
 |---|---|---|
 | `FOOD_DATA_URL` | `scripts/food-fetch.mjs`, CI | where the food archive comes from |
-| `PHYSIQUE_FOOD_ARCHIVE` | the `reproducible` gate | the archive the clean room fetches (falls back to `FOOD_DATA_URL`) |
+| `PHYSIQUE_FOOD_ARCHIVE` | the `reproducible` gate | the archive the clean room fetches (falls back to `FOOD_DATA_URL`, then to the corpus the commit carries in `data/food`) |
 | `SOURCE_DATE_EPOCH` | `build.mjs` | fixes the time written into the build, so two builds of one commit are byte-identical |
 | `PHYSIQUE_DEV_BUILD` | `build.mjs` | `1` builds without the food corpus, marked as a development build |
 | `PHYSIQUE_SKIP_BROWSER` | the browser gates | `1` skips them, and the gate recorder then records each as failed: a skipped gate is a failed gate |
@@ -50,13 +50,16 @@ The sync server's variables (`ADMIN_TOKEN`, `METRICS_TOKEN`, provider credential
 ## External-test mode
 
 Every gate that touches an outside service (AI providers, wearable connections, weather, S3 backups) runs against a
-protocol-checking local mock. No release gate reaches a real provider, so a release says nothing about real accounts:
+protocol-checking local mock, or replays a recorded provider response. A recording carries the time it was recorded
+(`__retrievedAt`), the server reports that time, and the gate runs the browser at it: a recording replayed as if
+retrieved today ages, and the weather checks failed on 2026-10-10, the day after the recording's last forecast day. No release gate reaches a real provider, so a release says nothing about real accounts:
 that is TRANSITION item 11, and it waits for credentials.
 
 ## The clean-room release
 
 `scripts/clean-room.mjs` (the `reproducible` gate) exports the exact commit with `git archive HEAD` into an empty folder,
-installs from the lock, fetches the corpus from its archive, builds it and this tree with the same `SOURCE_DATE_EPOCH`,
+installs from the lock, fetches the corpus from its archive (or, given none, uses the corpus the commit itself carries in
+`data/food`; the build checks every file against the lock either way), builds it and this tree with the same `SOURCE_DATE_EPOCH`,
 and compares every distributed file byte for byte. It records the commit and the runtime it ran on. A difference caused
 by uncommitted changes is named as such, because a release is of a commit. `--worktree` checks uncommitted work instead,
 and is not release evidence.

@@ -3,12 +3,14 @@
    installs dependencies from the lock (npm ci); fetches the food corpus from its locked archive; builds with a fixed
    SOURCE_DATE_EPOCH; builds this tree the same way; and compares every distributed file byte for byte. It records the
    commit and the runtime it ran on. A difference caused by uncommitted changes is named as such: a release is of a commit.
-     node scripts/clean-room.mjs --food <archive path or URL> [--epoch <unix seconds>] [--worktree]
+     node scripts/clean-room.mjs [--food <archive path or URL>] [--epoch <unix seconds>] [--worktree]
+   Without --food (or FOOD_DATA_URL), the corpus is the one the commit itself carries in data/food; the build checks every
+   file of it against data/food.lock.json either way.
    --worktree copies the working tree instead of the commit (for checking uncommitted work; it is not release evidence). */
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';import {execSync} from 'node:child_process';
 const arg=k=>{const i=process.argv.indexOf(k);return i>=0?process.argv[i+1]:null;};
-const food=arg('--food')||process.env.FOOD_DATA_URL;if(!food){console.error('clean-room: give --food <archive> or FOOD_DATA_URL');process.exit(2);}
-const foodSource=/^https?:/.test(food)?food:path.resolve(food);
+const food=arg('--food')||process.env.FOOD_DATA_URL||null;
+const foodSource=food?(/^https?:/.test(food)?food:path.resolve(food)):null;
 const epoch=arg('--epoch')||process.env.SOURCE_DATE_EPOCH||'1790000000';
 const room=fs.mkdtempSync(path.join(os.tmpdir(),'physique-clean-'));const here=process.cwd();
 const run=(cmd,cwd,env)=>execSync(cmd,{cwd,stdio:['ignore','pipe','pipe'],env:Object.assign({},process.env,env||{}),encoding:'utf8',timeout:600000,maxBuffer:256*1024*1024});
@@ -25,7 +27,9 @@ if(commit){
 const npmV=(()=>{try{return run('npm -v',here).trim();}catch(e){return '?';}})();
 console.log('clean room: '+room+' — '+(commit?'commit '+commit.slice(0,12):'working tree (not release evidence)')+'; node '+process.version+', npm '+npmV+', '+process.platform+'-'+process.arch);
 run('npm ci --no-audit --no-fund',room);console.log('  dependencies installed from package-lock.json (npm ci)');
-run('node scripts/food-fetch.mjs --url '+JSON.stringify(foodSource),room);console.log('  food corpus fetched from its locked archive and verified');
+if(foodSource){run('node scripts/food-fetch.mjs --url '+JSON.stringify(foodSource),room);console.log('  food corpus fetched from its locked archive and verified');}
+else if(commit&&fs.existsSync(path.join(room,'data/food/manifest.json')))console.log('  food corpus: the one this commit carries in data/food (the build checks each file against the lock)');
+else{console.error('clean-room: no food corpus — give --food <archive> or FOOD_DATA_URL'+(commit?'':' (--worktree does not copy data/food)'));process.exit(2);}
 run('node build.mjs',room,{SOURCE_DATE_EPOCH:epoch});run('node build.mjs',here,{SOURCE_DATE_EPOCH:epoch});console.log('  both trees built with SOURCE_DATE_EPOCH='+epoch);
 const hashes=root=>{const out={};const walk=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())walk(p);else out[path.relative(root,p)]=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');}};walk(root);return out;};
 const A=hashes(path.join(room,'dist')),B=hashes(path.join(here,'dist'));

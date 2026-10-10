@@ -326,7 +326,12 @@ async function extCall(provider,fixtureName,urlStr,headers,ttlMs){
   let payload,retrievedAt=new Date().toISOString();
   if(EXT_FIX){const f=path.join(EXT_FIX,fixtureName+'.json');
     if(!fs.existsSync(f))return extErr(404,'unsupported_record','no fixture '+fixtureName);
-    payload=JSON.parse(fs.readFileSync(f,'utf8'));if(payload&&payload.__status){const st=payload.__status;return extErr(st,st===429?'rate_limited':(st===401||st===403?'authorization_denied':'provider_unavailable'),'fixture status '+st);}}
+    payload=JSON.parse(fs.readFileSync(f,'utf8'));if(payload&&payload.__status){const st=payload.__status;return extErr(st,st===429?'rate_limited':(st===401||st===403?'authorization_denied':'provider_unavailable'),'fixture status '+st);}
+    /* A recorded response is reported with the time it was recorded (__retrievedAt), not the time it is replayed:
+       stamping a three-week-old forecast as retrieved now labelled every one of its days by today's date. The
+       fixture's own keys (__…) are not part of the provider payload. */
+    if(payload&&typeof payload==='object'&&!Array.isArray(payload)){if(payload.__retrievedAt)retrievedAt=String(payload.__retrievedAt);
+      payload=Object.fromEntries(Object.entries(payload).filter(([k])=>!k.startsWith('__')));}}
   else{let r;try{const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),10000);
       r=await fetch(urlStr,{headers:Object.assign({'accept':'application/json','user-agent':EXT_UA},headers||{}),signal:ctl.signal});clearTimeout(t);}
     catch(e){return extErr(502,'network_unavailable','the provider could not be reached');}
