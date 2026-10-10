@@ -51,6 +51,7 @@
     "food:fetch": "node scripts/food-fetch.mjs",
     "prebuild": "node scripts/food-fetch.mjs --if-missing",
     "inputs": "node tests/inputs.mjs",
+    "independent": "node tests/independent.mjs",
     "reproducible": "node scripts/clean-room.mjs --food \"${PHYSIQUE_FOOD_ARCHIVE:-$FOOD_DATA_URL}\"",
     "authority": "node tests/authority.mjs",
     "layers": "node tests/layers.mjs",
@@ -64,6 +65,6 @@
     "playwright-core": "^1.63.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   }
 }

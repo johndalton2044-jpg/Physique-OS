@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "ed2073643a",
+ "build": "d0e36650b6",
  "models": [
   {
    "id": "adherence",
@@ -123,6 +123,11 @@
    "fn": "personalBaselines"
   },
   {
+   "id": "personal_conditioning_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalConditioningResponse"
+  },
+  {
    "id": "personal_dose_response",
    "cls": "EMPIRICAL",
    "fn": "personalDoseResponse"
@@ -133,9 +138,19 @@
    "fn": "personalFrequencyResponse"
   },
   {
+   "id": "personal_mobility_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalMobilityResponse"
+  },
+  {
    "id": "personal_neat_response",
    "cls": "EMPIRICAL",
    "fn": "personalNeatResponse"
+  },
+  {
+   "id": "personal_power_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalPowerResponse"
   },
   {
    "id": "personal_response",
@@ -146,6 +161,11 @@
    "id": "personal_sleep_response",
    "cls": "EMPIRICAL",
    "fn": "personalSleepResponse"
+  },
+  {
+   "id": "personal_speed_response",
+   "cls": "EMPIRICAL",
+   "fn": "personalSpeedResponse"
   },
   {
    "id": "physique_regions",
@@ -196,6 +216,11 @@
    "id": "tdee_prior",
    "cls": "PRIOR",
    "fn": "tdeePrior"
+  },
+  {
+   "id": "tissue_energy_density",
+   "cls": "PRIOR",
+   "fn": "tissueEnergyDensity"
   },
   {
    "id": "uncertainty_chain",
@@ -2915,6 +2940,7 @@
   "carbs",
   "cardio",
   "chest",
+  "cmj",
   "context",
   "cravings",
   "difficulty",
@@ -2923,16 +2949,20 @@
   "fiber",
   "fullness",
   "hip",
+  "hrr",
   "hunger",
+  "kneewall",
   "mobility",
   "motivation",
   "neck",
   "note",
   "protein",
   "rhr",
+  "sitreach",
   "sleep",
   "sleepq",
   "soreness",
+  "sprint",
   "steps",
   "stress",
   "supplement",

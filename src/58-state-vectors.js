@@ -48,5 +48,12 @@ function capabilityVector(){var weeks=4,cap={asOf:asOf(),weeks:weeks};
       {status:'insufficient',need:CF.need||['steady sessions with heart rate and pace or power']};}catch(e){cap.endurance.capacity={status:'insufficient',need:['the aerobic model could not run']};}
   var mob=_weekly(function(f,t){return obsOf('mobility').filter(function(o){return o.date>=f&&o.date<=t;}).length;},weeks);
   cap.mobility={sessionsPerWeek:round(mean(mob),1),weeks:mob};
-  cap.note='strength by region from the physique model; work capacity, endurance and mobility from the last '+weeks+' weeks, newest first';
+  /* the field tests and their responses (Stage D, item 4): the latest result and what the dose does for it */
+  var resp=function(k){try{return capacityResponse(k);}catch(e){return {status:'insufficient',tests:[]};}},brief=function(t){return t?{latest:t.latest,n:t.n,unit:t.unit,
+    response:t.status==='ok'?{perUnit:t.perUnit,interval:t.interval,personalWeight:t.personalWeight,per:t.per,reading:t.reading}:{status:'insufficient',need:t.need}}:null;};
+  var Mo=resp('mobility'),Co=resp('conditioning'),Po=resp('power'),Sp=resp('speed');
+  cap.mobility.tests={sitReach:brief(Mo.tests[0]),kneeToWall:brief(Mo.tests[1])};
+  cap.endurance.conditioning={heartRateRecovery:brief(Co.tests[0])};
+  cap.power={jumpHeight:brief(Po.tests[0]),sprint20m:brief(Sp.tests[0])};
+  cap.note='strength by region from the physique model; work capacity, endurance and mobility from the last '+weeks+' weeks, newest first; mobility, conditioning, power and speed from field tests';
   return cap;}

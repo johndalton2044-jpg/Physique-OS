@@ -30,8 +30,8 @@ function _leverEffect(k,dose,kg){if(!dose)return {mean:0,sd:0,basis:'no change'}
     if(k==='steps'){var pull=null;try{var eb=energyBalance();pull=eb.status==='ok'&&eb.neat?eb.neat:null;}catch(e){}
       if(pull&&pull.steps<0)out.basis+='; your current deficit is expected to pull everyday steps down by about '+Math.abs(pull.steps).toLocaleString()+' a day, which a step target holds against';}
     return out;}}
-  if(k==='cardio'){var kcal=6*(kg||85)*0.5*dose,m=-kcal/3500,pp=typeof predictResponse==='function'?predictResponse('cardio','weight',dose):null;return pp&&pp.n?{mean:pp.mean,sd:Math.abs(pp.hi-pp.lo)/4,basis:pp.basis}:{mean:m,sd:Math.abs(m)*0.4,basis:'about 6 METs for 30 minutes per session'};}
-  if(k==='training'){var e=-(4*(kg||85)*1*dose)/3500;return {mean:e,sd:Math.abs(e)*0.6,basis:'about 4 METs for an hour per session; mainly for strength, not weight'};}
+  if(k==='cardio'){var kcal=6*(kg||85)*0.5*dose,m=-kcal/tissueKcalPerLb(),pp=typeof predictResponse==='function'?predictResponse('cardio','weight',dose):null;return pp&&pp.n?{mean:pp.mean,sd:Math.abs(pp.hi-pp.lo)/4,basis:pp.basis}:{mean:m,sd:Math.abs(m)*0.4,basis:'about 6 METs for 30 minutes per session'};}
+  if(k==='training'){var e=-(4*(kg||85)*1*dose)/tissueKcalPerLb();return {mean:e,sd:Math.abs(e)*0.6,basis:'about 4 METs for an hour per session; mainly for strength, not weight'};}
   return {mean:0,sd:0,basis:k==='sleep'?'sleep helps hunger, recovery and muscle retention more than the scale':'protein protects muscle and fullness; little direct effect on weight'};}
 function unifiedOptimiser(opts){opts=opts||{};if(typeof memo==='function'&&!opts.minutesBudget)return memo('uopt:'+(DB.settings.optimiserPreference||'balanced')+':'+todayISO(),function(){return _unifiedOptimiser(opts);});return _unifiedOptimiser(opts);}
 function _unifiedOptimiser(opts){opts=opts||{};
@@ -110,7 +110,7 @@ function applyOptimiserChoice(row){var ph=activePhase();if(!ph||!row)return {sta
   if(Object.keys(patch).length)changePlan({kind:'optimiser choice',source:'optimiser',reason:'You chose: '+row.label,expected:(row.effective>0?'+':'')+row.effective+' lb a week (\u00b1'+round(2*row.sd,2)+'), allowing for a '+Math.round(row.pAll*100)+'% chance of carrying it all out'+
     (sim?'; in 8 weeks about '+fmtNum(sim.end.mean,1)+' lb ('+fmtNum(sim.end.lo,1)+' to '+fmtNum(sim.end.hi,1)+'), '+(sim.vsNothing.mean>0?'+':'')+sim.vsNothing.mean+' lb against changing nothing':''),
     apply:function(){return updatePhase(ph.id,patch,{label:'optimiser choice: '+row.label});}});_memoInvalidate();return {status:'ok',patch:patch};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='unified_optimiser';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','unified_optimiser'))return;
   MODELS.push({id:'unified_optimiser',name:'Unified intervention optimiser',cls:'PREDICTIVE',version:'1.0',inputs:['weight','steps','calories','fatigue'],minN:7,
     assumes:['effects of separate changes add','carrying them out is independent'],failsWhen:['changes that interact','a regime change in the coming weeks'],
     output:'the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference; each simulated forward with an interval',consumers:['optimiserCard','simulatePolicies','applyOptimiserChoice'],freshnessDays:7,uncertainty:{kind:'combined standard deviation and robustness'},fn:'unifiedOptimiser'});})();

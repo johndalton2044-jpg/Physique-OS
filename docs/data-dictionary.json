@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "42c3137480d6",
+ "ontologyVersion": "51bc2537ced1",
  "observationTypes": [
   {
    "id": "adherence",
@@ -95,7 +95,8 @@
    "consumers": [
     "cardio load",
     "recovery interference",
-    "activity adherence"
+    "activity adherence",
+    "personal_conditioning_response"
    ],
    "semantic": "sleep",
    "meaning": null,
@@ -113,6 +114,21 @@
     "measurement trend"
    ],
    "semantic": "weight",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "cmj",
+   "label": "Jump height",
+   "unit": "cm",
+   "group": "activity",
+   "min": 5,
+   "max": 100,
+   "consumers": [
+    "personal_power_response"
+   ],
+   "semantic": "jumpHeight",
    "meaning": null,
    "notes": null,
    "text": false
@@ -242,6 +258,21 @@
    "text": false
   },
   {
+   "id": "hrr",
+   "label": "Heart-rate recovery",
+   "unit": "bpm",
+   "group": "body",
+   "min": 0,
+   "max": 90,
+   "consumers": [
+    "personal_conditioning_response"
+   ],
+   "semantic": "cardioFitness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
    "id": "hunger",
    "label": "Hunger",
    "unit": "/10",
@@ -259,6 +290,21 @@
    "text": false
   },
   {
+   "id": "kneewall",
+   "label": "Knee-to-wall",
+   "unit": "cm",
+   "group": "body",
+   "min": 0,
+   "max": 25,
+   "consumers": [
+    "personal_mobility_response"
+   ],
+   "semantic": "mobilityRange",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
    "id": "mobility",
    "label": "Mobility",
    "unit": "min",
@@ -266,7 +312,8 @@
    "min": 1,
    "max": 180,
    "consumers": [
-    "movement history"
+    "movement history",
+    "personal_mobility_response"
    ],
    "semantic": "sleep",
    "meaning": null,
@@ -352,6 +399,21 @@
    "text": false
   },
   {
+   "id": "sitreach",
+   "label": "Sit-and-reach",
+   "unit": "cm",
+   "group": "body",
+   "min": -40,
+   "max": 60,
+   "consumers": [
+    "personal_mobility_response"
+   ],
+   "semantic": "mobilityRange",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
    "id": "sleep",
    "label": "Sleep",
    "unit": "h",
@@ -395,6 +457,21 @@
     "water-noise context"
    ],
    "semantic": "readiness",
+   "meaning": null,
+   "notes": null,
+   "text": false
+  },
+  {
+   "id": "sprint",
+   "label": "20 m sprint",
+   "unit": "s",
+   "group": "activity",
+   "min": 2,
+   "max": 15,
+   "consumers": [
+    "personal_speed_response"
+   ],
+   "semantic": "sprintTime",
    "meaning": null,
    "notes": null,
    "text": false
@@ -1780,6 +1857,12 @@
      "null",
      "number"
     ],
+    "epistemicBasis": [
+     "string"
+    ],
+    "epistemicClass": [
+     "string"
+    ],
     "evaluatedAt": [
      "string"
     ],
@@ -2272,6 +2355,16 @@
    ]
   },
   {
+   "id": "personal_conditioning_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in heart-rate recovery per 60 minutes a week of cardio, with an interval and how much rests on your own tests",
+   "uncertainty": "posterior standard deviation",
+   "inputs": [
+    "hrr",
+    "cardio|cardio minutes a week"
+   ]
+  },
+  {
    "id": "personal_dose_response",
    "cls": "EMPIRICAL",
    "output": "the scale of the person’s sets curve, with its interval and how much is their own data",
@@ -2290,6 +2383,17 @@
    ]
   },
   {
+   "id": "personal_mobility_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in sit-and-reach and knee-to-wall per 30 minutes a week of mobility work, with an interval and how much rests on your own tests",
+   "uncertainty": "posterior standard deviation",
+   "inputs": [
+    "sitreach",
+    "kneewall",
+    "mobility|mobility minutes a week"
+   ]
+  },
+  {
    "id": "personal_neat_response",
    "cls": "EMPIRICAL",
    "output": "the change in everyday steps a day for each 10% of expenditure in deficit, with its interval and how much is the person’s own data",
@@ -2298,6 +2402,16 @@
     "steps",
     "calories",
     "weight_trend"
+   ]
+  },
+  {
+   "id": "personal_power_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in jump height per 10 lower-body sets a week, with an interval and how much rests on your own tests",
+   "uncertainty": "posterior standard deviation",
+   "inputs": [
+    "cmj",
+    "session.sets|lower-body sets a week"
    ]
   },
   {
@@ -2322,6 +2436,16 @@
     "fatigue",
     "hunger",
     "steps"
+   ]
+  },
+  {
+   "id": "personal_speed_response",
+   "cls": "EMPIRICAL",
+   "output": "the change in 20 m sprint per 10 lower-body sets a week, with an interval and how much rests on your own tests",
+   "uncertainty": "posterior standard deviation",
+   "inputs": [
+    "sprint",
+    "session.sets|lower-body sets a week"
    ]
   },
   {
@@ -2433,6 +2557,18 @@
     "profile.heightIn|height",
     "weight",
     "profile.activityBaseline|activity baseline"
+   ]
+  },
+  {
+   "id": "tissue_energy_density",
+   "cls": "PRIOR",
+   "output": "kcal per lb of scale weight, with a range and the reasons for the fat share",
+   "uncertainty": "plausible-partitioning range",
+   "inputs": [
+    "bodyfat",
+    "weight_trend|the rate of loss",
+    "adherence|protein adherence",
+    "session.sets|resistance training"
    ]
   },
   {
@@ -2572,6 +2708,7 @@
    "carbs",
    "cardio",
    "chest",
+   "cmj",
    "context",
    "cravings",
    "difficulty",
@@ -2580,16 +2717,20 @@
    "fiber",
    "fullness",
    "hip",
+   "hrr",
    "hunger",
+   "kneewall",
    "mobility",
    "motivation",
    "neck",
    "note",
    "protein",
    "rhr",
+   "sitreach",
    "sleep",
    "sleepq",
    "soreness",
+   "sprint",
    "steps",
    "stress",
    "supplement",
@@ -2702,11 +2843,15 @@
    "model_competition",
    "muscle_risk",
    "personal_baseline",
+   "personal_conditioning_response",
    "personal_dose_response",
    "personal_frequency_response",
+   "personal_mobility_response",
    "personal_neat_response",
+   "personal_power_response",
    "personal_response",
    "personal_sleep_response",
+   "personal_speed_response",
    "physique_regions",
    "rate_band",
    "recovery",
@@ -2717,6 +2862,7 @@
    "supplement_efficacy",
    "tdee_personal",
    "tdee_prior",
+   "tissue_energy_density",
    "uncertainty_chain",
    "unified_optimiser",
    "water_noise",

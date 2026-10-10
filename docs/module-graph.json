@@ -261,6 +261,9 @@
    "52-response.js": [
     "exerciseResponse"
    ],
+   "59-graph.js": [
+    "causalSupport"
+   ],
    "79-rigour.js": [
     "tissueEnergyDensity"
    ],
@@ -895,6 +898,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "round",
     "mean"
@@ -929,6 +933,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "nowISO",
@@ -993,6 +998,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "nowISO",
@@ -1137,6 +1143,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "nowISO",
@@ -1159,6 +1166,7 @@
     "seriesWindow"
    ],
    "40-models.js": [
+    "responseEpistemicClass",
     "adherenceState"
    ],
    "50-decision.js": [
@@ -1192,6 +1200,9 @@
    "64-physique.js": [
     "physiqueRate"
    ],
+   "79-rigour.js": [
+    "energyDensityRef"
+   ],
    "94-causal.js": [
     "responseCausal"
    ]
@@ -1201,6 +1212,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "daysBetween",
     "round",
     "mean"
@@ -1219,6 +1231,9 @@
    ],
    "61-physiology.js": [
     "_kgNow"
+   ],
+   "79-rigour.js": [
+    "energyDensityRef"
    ],
    "96-bayes-engine.js": [
     "hierarchicalPosterior"
@@ -1276,6 +1291,7 @@
     "_e1rmTop"
    ],
    "61-physiology.js": [
+    "capacityResponse",
     "cardioFitnessModel"
    ],
    "64-physique.js": [
@@ -1324,6 +1340,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "round"
@@ -1430,6 +1447,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -1439,6 +1457,7 @@
     "sd"
    ],
    "30-observations.js": [
+    "asOf",
     "obsOf",
     "seriesWindow",
     "sessionsOf"
@@ -1464,11 +1483,17 @@
    "62-supplements.js": [
     "supplementIntakes"
    ],
+   "64-exercise.js": [
+    "resolveExercise"
+   ],
    "66-external.js": [
     "weatherContextAt"
    ],
    "85-latent.js": [
     "cardioFitnessState"
+   ],
+   "96-bayes-engine.js": [
+    "bayesUpdate"
    ]
   }
  },
@@ -1614,6 +1639,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -1964,6 +1990,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "addDays",
@@ -2164,6 +2191,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "addDays",
     "clamp",
     "round",
@@ -2635,6 +2663,7 @@
     "renderWidget"
    ],
    "90-actions.js": [
+    "backupPhotoStatement",
     "applyToolsOrder"
    ],
    "90-ai-ui.js": [
@@ -2712,6 +2741,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -2998,6 +3028,7 @@
     "modelRegistryAudit"
    ],
    "96-bayes-engine.js": [
+    "_hash",
     "runIdentity"
    ],
    "98-measurement.js": [
@@ -3033,6 +3064,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_registryConflict",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -3600,7 +3632,8 @@
     "resolvePrompt"
    ],
    "87-governance.js": [
-    "capabilityStatus"
+    "capabilityStatus",
+    "runVerification"
    ],
    "89-presentation-governance.js": [
     "responsiveSpec",
@@ -4168,6 +4201,7 @@
     "scheduleAudit"
    ],
    "61-physiology.js": [
+    "capacityResponse",
     "cardioFitnessModel",
     "hydrationModel",
     "hydrationBalance",
@@ -4546,6 +4580,7 @@
   "layer": "test",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "getSwallowedErrors",
     "uid",
     "todayISO",
@@ -4637,10 +4672,14 @@
     "applyProfileFields"
    ],
    "40-models.js": [
+    "responseEpistemicClass",
+    "epistemicClassOf",
+    "acceptClaim",
     "modelById",
     "resolveContractRef",
     "contractLabel",
     "modelGraph",
+    "failureConditionCoverage",
     "profileAsOf",
     "prof",
     "profileHistory",
@@ -4658,6 +4697,7 @@
     "rateBand",
     "canonicalGoal",
     "goalTrajectory",
+    "weightForecast",
     "e1rm",
     "normExercise",
     "strengthTrend",
@@ -4840,6 +4880,7 @@
     "plansOf",
     "createPlanVersion",
     "ensurePlan",
+    "_decisionEvidence",
     "notePlanChange",
     "markExecution",
     "intendedFor",
@@ -4866,6 +4907,7 @@
     "changePlan"
    ],
    "58-response-entity.js": [
+    "_expectedWeightChange",
     "evaluateResponse",
     "recordResponses",
     "exposuresOf",
@@ -4932,6 +4974,9 @@
     "_modalityFamily",
     "cardioFitnessObservation",
     "vo2Trend",
+    "_lowerBodySets",
+    "_doseBefore",
+    "capacityResponse",
     "cardioFitnessModel",
     "hydrationModel",
     "energyAvailability",
@@ -5149,6 +5194,8 @@
    ],
    "79-rigour.js": [
     "tissueEnergyDensity",
+    "lbToKcal",
+    "kcalToLb",
     "shrunkResponseMatrix",
     "effectiveN",
     "changePointsRigorous"
@@ -5159,6 +5206,12 @@
    "80-ui.js": [
     "uiMetric",
     "dismissWelcome"
+   ],
+   "81-conformance.js": [
+    "inventoryConfidence"
+   ],
+   "82-views-a.js": [
+    "_promotionPhrase"
    ],
    "83-propagation.js": [
     "mechanicalDemand",
@@ -5257,6 +5310,9 @@
     "referentialCheck",
     "fuseObservations",
     "capabilityStatus",
+    "assertUniqueRegistryIds",
+    "registryIdAudit",
+    "runVerification",
     "capabilityMatrix",
     "capabilityDerivedGrade"
    ],
@@ -5272,6 +5328,7 @@
    ],
    "89-presentation-governance.js": [
     "renderWidget",
+    "registerView",
     "validateDashboardSpec",
     "applyDashboardOperation",
     "composeDashboardSpec",
@@ -5342,7 +5399,8 @@
     "_repTarget",
     "_usualVariation",
     "buildWorkout",
-    "barcodeSupport"
+    "barcodeSupport",
+    "physiologySummary"
    ],
    "91-inference.js": [
     "multipleTesting",
@@ -5419,6 +5477,7 @@
     "tdeeBayesUniversal",
     "propensityScoreModel",
     "doseResponse",
+    "engineMaturity",
     "maturityReport",
     "sha256",
     "canonicalJSON",
@@ -5475,6 +5534,9 @@
    "30-observations.js": [
     "asOf",
     "seriesWindow"
+   ],
+   "91-inference.js": [
+    "modelMaturity"
    ],
    "93-bayes.js": [
     "tdeeBayes",
@@ -5645,6 +5707,8 @@
     "seriesWindow"
    ],
    "40-models.js": [
+    "variableEpistemicClass",
+    "acceptClaim",
     "prof",
     "currentWeight",
     "weightTrend",
@@ -5718,6 +5782,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryConflict",
     "addDays",
     "daysBetween",
     "round",

@@ -10,21 +10,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {spawnSync} from 'node:child_process';
 import {JSDOM,VirtualConsole} from 'jsdom';
+import {GATES,runGate,gateSummary} from './gates.mjs';
 
 const ITEMS=[];   // {n,label,status:'PASS'|'FAIL'|'NOT VERIFIED',evidence}
 const item=(n,label,ok,evidence)=>ITEMS.push({n,label,status:ok===null?'NOT VERIFIED':(ok?'PASS':'FAIL'),evidence:evidence||''});
-const run=(cmd)=>{const r=spawnSync(process.platform==='win32'?'npm.cmd':'npm',['run','-s',cmd],{encoding:'utf8',maxBuffer:64*1024*1024});
-  const out=(r.stdout||'')+(r.stderr||'');
-  const summary=out.split('\n').filter(l=>/passed,|finding\(s\)|all passed|dist verified|failing|within budget|viewports|verified|failed$/.test(l)).slice(-2).join(' \u00b7 ').trim();
-  return {ok:r.status===0,summary:summary||out.trim().split('\n').slice(-1)[0]||''};};
 
 console.log('running the gates \u2014 this takes several minutes');
 /* ---------------- gates, in order ---------------- */
 const G={};
 function manifestBuildId(){try{return JSON.parse(fs.readFileSync('dist/version.json','utf8')).build;}catch(e){return null;}}
-const GATES=['build','authority','layers','maturity','dictionary','engine','test','adversarial','audit','conformance','governance','shipped','browser','visual','persistence','spine','parity','adapt','integration','intelligence','external','deploy','voice','direction','server','timezones','connect','inputs','blackbox','ai','reproducible','perf','cloud:e2e','yields:gate','baseline','verify'];
+/* the gates and their order are in tests/gates.mjs, which CI and the gate recorder also read */
 /* --from-results: use gates recorded by tests/gate-record.mjs, ONLY if every one passed against the identical build now in
    dist/. Anything else — a missing gate, a failure, a different build — and the gates are run here as before. */
 let reused=false;
@@ -38,7 +34,8 @@ if(process.argv.includes('--from-results')){
   }catch(e){console.log('  no recorded results \u2014 running the gates');}
 }
 if(!reused)for(const g of GATES){
-  process.stdout.write('  '+g.padEnd(12));G[g]=run(g);console.log(G[g].ok?'pass':'FAIL','  '+G[g].summary.slice(0,110));
+  process.stdout.write('  '+g.padEnd(12));const r=await runGate(g);
+  G[g]={ok:r.ok,summary:r.timedOut?'TIMED OUT after '+r.seconds+' s (ceiling '+r.ceiling+' s)':gateSummary(r.out)};console.log(G[g].ok?'pass':'FAIL','  '+G[g].summary.slice(0,110));
 }
 
 /* ---------------- explicit verifications, in the running app ---------------- */
@@ -162,6 +159,7 @@ item(21,'Production build',G.build.ok&&G.verify.ok,G.verify.summary);
 const manifest=fs.existsSync('dist/BUILD-MANIFEST.json')?JSON.parse(fs.readFileSync('dist/BUILD-MANIFEST.json','utf8')):null;
 item(22,'Release manifest',!!manifest,manifest?('build '+manifest.build+', release '+manifest.release+', '+(manifest.inputs||[]).length+' hashed inputs'):'no manifest');
 item(23,'Architecture/conformance report',G.governance.ok&&G.conformance.ok,'docs/implementation/governance-report.md');
+w.runVerification();   /* the matrix reads the latest verification run; the release records one */
 const cm=w.capabilityMatrix();const mr=w.maturityReport();
 item(24,'Capability maturity report',!!(cm&&mr),'docs/release/capability-maturity.md');
 

@@ -73,7 +73,7 @@ function rankLevers(options){return options.map(function(o){var eff=typeof predi
   var effective=eff?eff.mean*ad.p:null,adN=(DB.responses||[]).filter(function(r){return r.variable===o.variable&&r.adherence&&r.adherence.share!=null;}).length;
   return Object.assign({},o,{expectedEffect:eff?eff.mean:null,effectBasis:eff?eff.basis:null,personalWeight:eff?eff.personalWeight:0,adherenceEvidence:adN,pExecution:ad.p,adherenceBasis:ad.basis,effectiveEffect:effective!=null?round(effective,3):null});})
   .sort(function(a,b){return (a.effectiveEffect==null?0:Math.abs(b.effectiveEffect||0))-(b.effectiveEffect==null?0:Math.abs(a.effectiveEffect||0));});}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='friction';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','friction'))return;
   MODELS.push({id:'friction',name:'Friction and adherence',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue','motivation','weight'],minN:14,
     assumes:['recorded burdens stand for the real ones','days are independent'],failsWhen:['fewer than 14 recorded days per item','a factor that never varies'],
     output:'why plan items are missed (odds ratios per burden) and the probability a change is carried out',consumers:['decide','rankLevers'],freshnessDays:7,uncertainty:{kind:'standard error of each log odds'},fn:'frictionModel'});})();

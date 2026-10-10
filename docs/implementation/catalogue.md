@@ -4,13 +4,13 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 45 |
+| models | 50 |
 | capabilities | 22 |
 | entity contracts | 27 |
 | commands | 540 |
 | sheets | 120 |
 | event types | 52 |
-| observation types | 34 |
+| observation types | 39 |
 | exercises | 159 |
 | movement patterns | 28 |
 | progression families | 18 |

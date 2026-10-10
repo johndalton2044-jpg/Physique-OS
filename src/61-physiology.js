@@ -85,6 +85,68 @@ function vo2Trend(obs){
   return {status:'ok',perMonth:round(mp,2),sd:round(sdp,2),interval:[round(lo,2),round(hi,2)],personalWeight:round(pw,2),n:obs.length,
     reading:pw<0.2?'not enough sessions yet to see a direction; fitness is assumed steady':(lo>0?'rising, about '+round(mp,1)+' ml/kg/min a month':(hi<0?'falling, about '+round(-mp,1)+' ml/kg/min a month':'no clear change'))};
 }
+/* ============================================================================
+   MOBILITY, CONDITIONING, POWER AND SPEED (Stage D; TRANSITION item 4). Each is measured by a field test entered in the
+   quick log (Fitness tests), on the person's own protocol, and related to the dose that should move it:
+   - mobility: sit-and-reach (cm beyond the toes) and knee-to-wall (cm, ankle dorsiflexion), per 30 minutes a week of
+     mobility work;
+   - conditioning: heart-rate recovery, the fall in the first minute after a hard effort (bpm), per 60 minutes a week of
+     cardio; a fall of 12 bpm or less marks low fitness (Cole et al. 1999);
+   - power: countermovement jump height (cm), per 10 lower-body sets a week;
+   - speed: 20 m sprint time (s), per 10 lower-body sets a week (lower is faster).
+   The dose is the weekly average over the four weeks before each test: adaptations take weeks, so the dose of the test's
+   own week is not what moved it. A personal model like the others: a population prior per unit of dose, updated through
+   bayesUpdate by the least-squares slope of this person's results on their dose (five tests at least, with the dose
+   varying by half a unit or more), with the personal weight; below 0.2 the data only hint. Injected rows ({type: [{date,
+   value, dose}]}, dose already in units) make it testable without a record.
+   ============================================================================ */
+function _lowerBodySets(from,to){var L={quads:1,hamstrings:1,glutes:1,calves:1},n=0;
+  sessionsOf({from:from}).filter(function(s){return !s.retracted&&s.date<=to;}).forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(e&&(e.primary||[]).some(function(m){return L[m];}))n++;});});return n;}
+function _minutesOf(type){return function(f,t){return obsOf(type).filter(function(o){return !o.retracted&&o.date>=f&&o.date<=t;}).reduce(function(a,o){return a+(o.value||0);},0);};}
+var CAPACITY_RESPONSES={
+  mobility:{label:'Mobility',dose:{label:'30 minutes a week of mobility work',noun:'mobility work',scale:30,weekly:_minutesOf('mobility')},
+    tests:[{type:'sitreach',label:'sit-and-reach',unit:'cm',better:1,prior:{mean:1.5,sd:1.5}},{type:'kneewall',label:'knee-to-wall',unit:'cm',better:1,prior:{mean:0.5,sd:0.75}}],
+    source:'stretching programmes raise sit-and-reach by a few centimetres over 4\u20138 weeks, more with more weekly time (Thomas et al. 2018); knee-to-wall repeats to about a centimetre (Bennell et al. 1998)'},
+  conditioning:{label:'Conditioning',dose:{label:'60 minutes a week of cardio',noun:'cardio',scale:60,weekly:_minutesOf('cardio')},
+    tests:[{type:'hrr',label:'heart-rate recovery',unit:'bpm',better:1,prior:{mean:2,sd:2}}],
+    source:'aerobic training raises one-minute heart-rate recovery by several bpm over 8\u201312 weeks (Daanen et al. 2012); 12 bpm or less marks low fitness (Cole et al. 1999)'},
+  power:{label:'Power',dose:{label:'10 lower-body sets a week',noun:'lower-body sets',scale:10,weekly:_lowerBodySets},
+    tests:[{type:'cmj',label:'jump height',unit:'cm',better:1,prior:{mean:0.5,sd:1}}],
+    source:'jump and strength training raise countermovement jump height by a few centimetres over 8\u201310 weeks (Markovic 2007)'},
+  speed:{label:'Speed',dose:{label:'10 lower-body sets a week',noun:'lower-body sets',scale:10,weekly:_lowerBodySets},
+    tests:[{type:'sprint',label:'20 m sprint',unit:'s',better:-1,prior:{mean:-0.01,sd:0.03}}],
+    source:'gains in lower-body strength carry over modestly to sprint time (Seitz et al. 2014)'}};
+/* the average weekly dose over the four weeks before a date */
+function _doseBefore(C,date){var w=[];for(var k=0;k<4;k++){var to=addDays(date,-1-7*k),from=addDays(to,-6);w.push(C.dose.weekly(from,to));}return mean(w);}
+function capacityResponse(kind,rows){var C=CAPACITY_RESPONSES[kind];if(!C)return {status:'unknown',kind:kind};
+  var tests=C.tests.map(function(T){
+    var obs=rows&&rows[T.type]?rows[T.type].slice():obsOf(T.type).filter(function(o){return !o.retracted&&o.date<=asOf();}).map(function(o){return {date:o.date,value:o.value,dose:_doseBefore(C,o.date)/C.dose.scale};});
+    obs.sort(function(a,b){return a.date<b.date?-1:1;});var last=obs.length?obs[obs.length-1]:null;
+    var base={type:T.type,label:T.label,unit:T.unit,better:T.better,n:obs.length,latest:last?{value:last.value,date:last.date}:null,prior:T.prior,per:C.dose.label};
+    var xs=obs.map(function(o){return o.dose;}),ys=obs.map(function(o){return o.value;}),spread=xs.length?Math.max.apply(null,xs)-Math.min.apply(null,xs):0;
+    if(obs.length<5)return Object.assign(base,{status:'insufficient',need:(5-obs.length)+' more '+T.label+' test'+(5-obs.length===1?'':'s')});
+    if(spread<0.5)return Object.assign(base,{status:'insufficient',need:T.label+' tests at different amounts of '+C.dose.noun});
+    var xm=mean(xs),ym=mean(ys),sxx=0,sxy=0;xs.forEach(function(x,i){sxx+=(x-xm)*(x-xm);sxy+=(x-xm)*(ys[i]-ym);});var b=sxy/sxx,res=0;xs.forEach(function(x,i){res+=Math.pow(ys[i]-ym-b*(x-xm),2);});
+    var se=Math.sqrt(res/Math.max(1,obs.length-2)/sxx)||1e-6,B=bayesUpdate({prior:T.prior,observations:[{value:b,sd:se}]}),pw=B.weightOnData,lo=B.mean-2*B.sd,hi=B.mean+2*B.sd;
+    var reading=pw<0.2?'your tests only hint so far; the population figure stands':(lo*T.better>0?'more '+C.dose.noun+' goes with a better '+T.label:(hi*T.better<0?'more '+C.dose.noun+' goes with a worse '+T.label:'no clear relation yet'));
+    return Object.assign(base,{status:'ok',slope:round(b,3),se:round(se,3),perUnit:round(B.mean,3),sd:round(B.sd,3),interval:[round(lo,3),round(hi,3)],personalWeight:round(pw,2),reading:reading});});
+  var ok=tests.filter(function(t){return t.status==='ok';});
+  return {status:ok.length?'ok':'insufficient',cls:'EMPIRICAL',kind:kind,label:C.label,dose:C.dose.label,tests:tests,need:ok.length?null:tests.map(function(t){return t.need;}).filter(Boolean),source:C.source,
+    method:'a population prior per '+C.dose.label+', updated by the least-squares slope of your results on the average dose of the four weeks before each test',
+    limits:'An association across your own tests, not proof of cause: a test also improves with practice, and whatever changed with the dose changes it too. Use the same protocol each time (warm-up, time of day, surface).'};}
+function personalMobilityResponse(){return capacityResponse('mobility');}
+function personalConditioningResponse(){return capacityResponse('conditioning');}
+function personalPowerResponse(){return capacityResponse('power');}
+function personalSpeedResponse(){return capacityResponse('speed');}
+(function(){if(typeof MODELS==='undefined')return;[['mobility','personal_mobility_response','Mobility response','personalMobilityResponse',['sitreach','kneewall','mobility|mobility minutes a week']],
+  ['conditioning','personal_conditioning_response','Conditioning response','personalConditioningResponse',['hrr','cardio|cardio minutes a week']],
+  ['power','personal_power_response','Power response','personalPowerResponse',['cmj','session.sets|lower-body sets a week']],['speed','personal_speed_response','Speed response','personalSpeedResponse',['sprint','session.sets|lower-body sets a week']]].forEach(function(r){
+  if(_registryTaken(MODELS,'MODELS',r[1]))return;var C=CAPACITY_RESPONSES[r[0]];
+  MODELS.push({id:r[1],name:r[2],cls:'EMPIRICAL',version:'1.0',inputs:r[4],minN:5,
+    assumes:['a field test on the same protocol each time','the effect of the dose shows within four weeks','the relation is linear over the doses recorded'],
+    failsWhen:['fewer than five tests','a dose that barely varied','a change of protocol (surface, warm-up, device)'],
+    output:'the change in '+C.tests.map(function(t){return t.label;}).join(' and ')+' per '+C.dose.label+', with an interval and how much rests on your own tests',
+    consumers:['capabilityVector','physiologySummary'],freshnessDays:28,uncertainty:{kind:'posterior standard deviation'},fn:r[3]});});})();
 function cardioFitnessModel(){
   var cs=cardioSessions(84);var rows=cs&&cs.rows?cs.rows:[];var classes={known:0,proxy:0,unknown:0},excluded=[],obs={};
   rows.forEach(function(r){classes[cardioIntensityClass(r).cls]++;var o=cardioFitnessObservation(r);if(!o.use){excluded.push({date:r.date,modality:r.modality,why:o.why});return;}(obs[o.family]=obs[o.family]||[]).push(o);});
@@ -300,7 +362,7 @@ function personalSleepResponse(series){
     return {key:O.key,label:O.label,status:'ok',perHour:round(mp,2),interval:[round(lo,2),round(hi,2)],unit:O.unit,personalWeight:round(pw,2),n:pairs.length,source:O.source,
       reading:pw<0.2?'not enough of your own data yet for '+O.label+'; the population evidence is used ('+O.source+')':(dir?'each extra hour above your usual goes with '+Math.abs(round(mp,O.key==='steps'?0:1))+' '+(O.key==='steps'?'steps':(O.key==='performance'?'percentage points':'points'))+' '+dir+' '+O.label:'no clear link between your sleep and '+O.label+' so far')};});
   return {status:'ok',cls:'EMPIRICAL',medianSleep:med,nights:days.length,outcomes:outcomes,limits:'an association within one person, not proof of cause: a late night can come from the same busy day that raises fatigue'};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_sleep_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_sleep_response'))return;
   MODELS.push({id:'personal_sleep_response',name:'Personal sleep response',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue','hunger','steps'],minN:14,
     assumes:['a night\u2019s sleep acts on the same day\u2019s fatigue, hunger, steps and training','the relationship is roughly linear around the person\u2019s usual sleep'],
     failsWhen:['sleep that hardly varies','a common cause driving both sleep and the outcome'],

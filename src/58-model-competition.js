@@ -118,7 +118,7 @@ function selfCalibration(){return {status:'ok',cls:'CALIBRATED',rows:Object.keys
 function competitionForecast(id,h){var L=_lc()[id],C=MODEL_COMPETITIONS[id];if(!C)return null;var c=L?L.primary:C.candidates.filter(function(x){return COMPETITION_CANDIDATES[x].incumbent;})[0],S=C.series();if(!S.length)return null;
   var p=COMPETITION_CANDIDATES[c].predict(S,S[S.length-1].date,h),B=backtestCompetition(id),row=B.status==='ok'?B.rows.filter(function(r){return r.candidate===c;})[0]:null,mm=row&&(row.metrics[h]||row.metrics[C.horizons[C.horizons.length-1]]),k=mm&&mm.scale?mm.scale:1;
   return p?{model:c,label:COMPETITION_CANDIDATES[c].label,mean:round(p.mean,2),lo:round(p.mean-1.2816*p.sd*k,2),hi:round(p.mean+1.2816*p.sd*k,2),horizon:h,calibrationScale:k}:null;}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='model_competition';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','model_competition'))return;
   MODELS.push({id:'model_competition',name:'Model competition',cls:'EMPIRICAL',version:'1.0',inputs:['weight'],minN:20,
     assumes:['the backtest period resembles the coming one'],failsWhen:['fewer than 20 readings','a regime change inside the backtest window'],
     output:'which forecast to trust for each important prediction, with its error, bias and calibration',consumers:['competitionForecast'],freshnessDays:7,uncertainty:{kind:'paired error test and interval coverage'},fn:'evaluateCompetition'});})();

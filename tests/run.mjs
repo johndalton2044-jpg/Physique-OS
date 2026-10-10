@@ -717,12 +717,19 @@ w.DB.settings.contrast='normal';w.DB.settings.motion='auto';w.DB.settings.densit
      assertions that only checked the element was in the DOM passed the whole time. Check the computed style. */
   const shown=id=>{const el=w.document.getElementById(id);
     return !!el&&!el.hidden&&w.getComputedStyle(el).display!=='none';};
+  /* the rails belong to Insightful and Developer; Casual drops the position rail and the palette by design, and a new
+     record starts at Casual, so the rail contract is checked at Insightful and Casual for exactly what it drops */
+  const lvl0=w.DB.settings.detail;w.DB.settings.detail='insightful';w.applySettings();
   w.updateRail();await sleep(20);
   ok('the rails themselves are laid out, not display:none',
      w.getComputedStyle(left).display==='flex'&&w.getComputedStyle(right).display==='flex');
   ok('the always-available controls are actually visible, not merely present',
      shown('homeFab')&&shown('cmdkFab'),
      ['homeFab','cmdkFab'].map(i=>i+'='+w.getComputedStyle(w.document.getElementById(i)).display).join(' '));
+  w.DB.settings.detail='casual';w.applySettings();await sleep(20);
+  ok('Casual drops the position rail and the palette, and keeps the action rail',
+     w.getComputedStyle(left).display==='none'&&!shown('cmdkFab')&&w.getComputedStyle(right).display==='flex');
+  w.DB.settings.detail=lvl0;w.applySettings();w.updateRail();await sleep(20);
   ok('a control hidden by state is hidden by the same attribute assistive technology reads',
      (()=>{const t=w.document.getElementById('upFab');
        return t.hidden===true&&w.getComputedStyle(t).display==='none';})());

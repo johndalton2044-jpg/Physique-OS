@@ -13,12 +13,49 @@ var CLASSES={
   CALIBRATED:'corrected by comparing past predictions with what actually happened',
   PREDICTIVE:'a forecast of something that has not happened yet'
 };
+/* EPISTEMIC CLASSES (catalogue W-010). CLASSES says how a result was computed; an epistemic class says what kind of
+   claim it can support, and the two are kept apart so that a computation's sophistication never lends a claim more
+   authority. A response estimated from a change over time is RESPONSIVE. It is CAUSALLY_SUPPORTED only through an explicit
+   pathway: causalSupport() grades its variable supported or weakly supported (repeated, clear, unconfounded changes), and
+   its own causal estimates agree on a clear change that was not already under way. Never by the existence of the causal
+   machinery, and never by its name. Consumers declare the classes they accept (CLAIM_CONSUMERS); acceptClaim() refuses
+   the rest. The ladder maps onto causalSupport's grades, so there is one causal grading, not two. */
+var EPISTEMIC_CLASSES={
+  OBSERVED:{rank:1,means:'measured, or computed directly from what was measured'},
+  ASSOCIATED:{rank:2,means:'goes with something else in the record, or a population association applied to you'},
+  RESPONSIVE:{rank:3,means:'changed after a change, against its own earlier trend'},
+  CAUSALLY_SUPPORTED:{rank:4,means:'a change clearly and repeatedly produced it, unconfounded: the most a personal record supports, never "proven"'},
+  PREDICTIVE:{rank:0,means:'a statement about what has not happened yet, scored when it is due'}};
+var CLAIM_CONSUMERS={
+  'causal statement':['CAUSALLY_SUPPORTED'],
+  'knowledge causes edge':['CAUSALLY_SUPPORTED'],
+  'recommendation':['OBSERVED','ASSOCIATED','RESPONSIVE','CAUSALLY_SUPPORTED','PREDICTIVE']};
+var _CLS_EPISTEMIC={MEASURED:'OBSERVED',DERIVED:'OBSERVED',EMPIRICAL:'ASSOCIATED',CALIBRATED:'ASSOCIATED',BLENDED:'ASSOCIATED',PRIOR:'ASSOCIATED',HEURISTIC:'ASSOCIATED',PREDICTIVE:'PREDICTIVE',POLICY:null};
+var _CAUSAL_GRADE_EPISTEMIC={supported:'CAUSALLY_SUPPORTED','weakly supported':'CAUSALLY_SUPPORTED',correlated:'ASSOCIATED',confounded:'ASSOCIATED',contradicted:'ASSOCIATED',unknown:'OBSERVED'};
+function variableEpistemicClass(v){var k='epv:'+v+':'+asOf();var f=function(){var c=null;try{c=causalSupport(v);}catch(e){c=null;}
+    return {cls:c?(_CAUSAL_GRADE_EPISTEMIC[c.grade]||'ASSOCIATED'):'OBSERVED',grade:c?c.grade:'unknown'};};
+  return typeof memo==='function'?memo(k,f):f();}
+function responseEpistemicClass(R){
+  if(!R||!R.primary)return {cls:'OBSERVED',basis:'no judged outcome yet'};
+  var v=variableEpistemicClass(R.variable),c=R.causal||null,P=R.primary,clear=P.se>0&&Math.abs(P.effect)>2*P.se,under=!!(R.placebo&&R.placebo.alreadyUnderWay);
+  if(v.cls==='CAUSALLY_SUPPORTED'&&c&&c.agree===true&&clear&&!under)
+    return {cls:'CAUSALLY_SUPPORTED',basis:'its variable\u2019s causal grade is '+v.grade+', and its '+(c.estimates||[]).length+' estimates agree on a clear change that was not already under way'};
+  return {cls:'RESPONSIVE',basis:'a change against its own trend after the change; not causally supported because '+
+    (v.cls!=='CAUSALLY_SUPPORTED'?'its variable\u2019s causal grade is '+v.grade:(!c||c.agree!==true?'its causal estimates do not agree':(!clear?'the change is not clear':'the change was already under way')))};}
+function epistemicClassOf(x){if(!x)return null;if(x.epistemicClass)return x.epistemicClass;
+  if(x.primary&&x.variable&&x.stage)return responseEpistemicClass(x).cls;
+  return x.cls?(_CLS_EPISTEMIC.hasOwnProperty(x.cls)?_CLS_EPISTEMIC[x.cls]:null):null;}
+function acceptClaim(consumer,cls){var allowed=CLAIM_CONSUMERS[consumer];
+  if(!allowed)return {accepted:false,cls:cls,why:'no consumer called '+consumer};
+  if(cls!=null&&!EPISTEMIC_CLASSES[cls])return {accepted:false,cls:cls,why:cls+' is not an epistemic class'};
+  if(allowed.indexOf(cls)>=0)return {accepted:true,cls:cls};
+  return {accepted:false,cls:cls,why:consumer+' accepts '+allowed.join(' or ')+'; this claim is '+(cls||'unclassed')};}
 var MODELS=[
   {id:'weight_avg',name:'Rolling weight average',cls:'DERIVED',version:'1.0',inputs:['weight'],minN:4,assumes:['weigh-ins under similar conditions'],failsWhen:['fewer than 4 of the last 7 days logged','scale changed inside the window'],output:'7- and 14-day mean of daily weight'},
   {id:'weight_trend',name:'Weight trend',cls:'DERIVED',version:'1.1',inputs:['weight'],minN:7,assumes:['Theil\u2013Sen slope is robust to a few odd weigh-ins','a 14-day window separates noise from tissue change'],failsWhen:['fewer than 7 weigh-ins spanning 10+ days','scale change in window','extreme water disturbance (illness, travel, high sodium)'],output:'slope in lb/week with residual noise and confidence'},
   {id:'water_noise',name:'Water-noise probability',cls:'HEURISTIC',version:'1.0',inputs:['water_noise|weight volatility','context|context tags','record.phases|phase age','carbs|carbohydrate swings'],minN:5,assumes:['glycogen, sodium, bowel contents and training inflammation move scale weight without changing fat mass'],failsWhen:['no context logged and volatility is ambiguous'],output:'low / medium / high'},
   {id:'tdee_prior',name:'TDEE prior (Mifflin-St Jeor \u00d7 activity)',cls:'PRIOR',version:'1.0',inputs:['profile.age|age','profile.sex|sex','profile.heightIn|height','weight','profile.activityBaseline|activity baseline'],minN:0,assumes:['population RMR equation; activity multiplier is a rough band'],failsWhen:['profile incomplete'],output:'starting estimate with \u00b1 ~15% uncertainty; replaced as personal evidence accumulates'},
-  {id:'tdee_personal',name:'Personal energy model',cls:'EMPIRICAL',version:'1.2',inputs:['calories','weight_trend|weight trend','adherence|logging coverage','adherence'],minN:14,assumes:['tissue lost/gained averages about 3,200 kcal/lb (\u00b1500) at higher body fat','intake logging error of about \u00b110% unless adherence data says otherwise','no large change in activity inside the window'],failsWhen:['under 14 usable days','intake coverage under 70%','weight trend insufficient','rapid phase transition or extreme water disturbance'],output:'estimated TDEE with interval, evidence count and calibration status'},
+  {id:'tdee_personal',name:'Personal energy model',cls:'EMPIRICAL',version:'1.2',inputs:['calories','weight_trend|weight trend','adherence|logging coverage','adherence'],minN:14,assumes:['tissue lost or gained is converted at the energy density tissue_energy_density states for this person (adipose about 3,500 kcal/lb, lean about 700, mixed by what is probably being lost)','intake logging error of about \u00b110% unless adherence data says otherwise','no large change in activity inside the window'],failsWhen:['under 14 usable days','intake coverage under 70%','weight trend insufficient','rapid phase transition or extreme water disturbance'],output:'estimated TDEE with interval, evidence count and calibration status'},
   {id:'energy_balance',name:'Energy balance',cls:'DERIVED',version:'1.0',inputs:['calories|mean intake','tdee_personal|estimated TDEE'],minN:7,assumes:['inherits TDEE uncertainty'],failsWhen:['TDEE insufficient'],output:'observed deficit/surplus estimate'},
   {id:'bodycomp_circ',name:'Body-fat estimate (circumference model)',cls:'HEURISTIC',version:'1.0',inputs:['waist','neck','profile.heightIn|height','hip|hip (female)'],minN:1,assumes:['U.S. Navy circumference equation; population fit, \u00b13\u20134% typical error'],failsWhen:['waist or neck missing','measurements older than 30 days','method inconsistency'],output:'body-fat range and fat/lean mass ranges'},
   {id:'fat_vs_other',name:'Fat vs other mass change',cls:'HEURISTIC',version:'1.0',inputs:['weight_trend|weight trend','waist|waist trend','record.phases|phase age','water_noise|water noise'],minN:14,assumes:['a falling waist alongside a falling trend indicates fat loss is the dominant component'],failsWhen:['fewer than 2 waist measurements 10+ days apart','first 14 days of a cut (glycogen/water)'],output:'plausible split, never a precise fat number'},
@@ -171,6 +208,23 @@ function modelContractIssues(){ // reverse validation: every declared input and 
   });
   return issues;
 }
+/* outside the model's declared applicability (catalogue W-036): a named failure condition holds, so there is no number */
+/* HOW EACH FAILURE CONDITION IS HANDLED (catalogue W-036), for the models whose results reach a decision, a target or the
+   plan. "refuses": when it holds there is no number (insufficient or inapplicable); "degrades": the number is kept with
+   low confidence and the condition named in failing. Every condition such a model declares is classified here, and the
+   self-tests hold each one to it; a condition the record cannot show would be listed as such, not left unread. */
+var FAILURE_CONDITION_HANDLING={
+  tdee_personal:{'under 14 usable days':'refuses','intake coverage under 70%':'refuses','weight trend insufficient':'refuses','rapid phase transition or extreme water disturbance':'degrades'},
+  energy_balance:{'TDEE insufficient':'refuses'},
+  weight_trend:{'fewer than 7 weigh-ins spanning 10+ days':'refuses','scale change in window':'degrades','extreme water disturbance (illness, travel, high sodium)':'degrades'},
+  weight_forecast:{'trend insufficient':'refuses','phase change inside horizon':'refuses'},
+  goal_traj:{'trend insufficient':'degrades','trend not converging on goal':'degrades'},
+  fat_vs_other:{'fewer than 2 waist measurements 10+ days apart':'refuses','first 14 days of a cut (glycogen/water)':'refuses'}};
+function failureConditionCoverage(){return MODELS.map(function(m){var h=FAILURE_CONDITION_HANDLING[m.id]||null,fw=m.failsWhen||[];
+  return {model:m.id,declared:fw.length,classified:h?fw.filter(function(f){return !!h[f];}).length:0,unclassified:h?fw.filter(function(f){return !h[f];}):fw.slice(),
+    unknownKeys:h?Object.keys(h).filter(function(k){return fw.indexOf(k)<0;}):[],consequential:!!h};});}
+function inapplicable(model,failing,need,extra){var o={status:'inapplicable',confidence:'insufficient',model:model,failing:failing||[],need:need||[],note:'outside its declared applicability: '+(failing||[]).join('; ')};
+  if(extra)Object.keys(extra).forEach(function(k){o[k]=extra[k];});return o;}
 function insufficient(model,need,extra){var o={status:'insufficient',confidence:'insufficient',model:model,need:need||[],note:'insufficient observations'};if(extra)Object.keys(extra).forEach(function(k){o[k]=extra[k];});return o;}
 /* The profile is a MODEL INPUT — height and sex feed BMR, which feeds maintenance, which feeds the calorie
    target and the decision. Reading the current profile during a replay leaks today's values into a past day's
@@ -274,8 +328,12 @@ function weightTrend(windowDays,asOfDate){
   var perWeek=ts.slope*7;
   var noise=ol.residSd;var slopeSe=ol.se!=null?ol.se*7:null;
   var deviceChange=hasContext(/new scale|scale changed/i,windowDays);
+  /* failure condition, executable (W-036): an extreme water disturbance in the window (illness, travel, high sodium or
+     carbohydrate, alcohol, starting creatine) moves the scale without moving tissue, so the slope keeps low confidence */
+  var waterEvent=hasContext(/travel|illness|high sodium|high carb|alcohol|creatine started/i,windowDays);
   var conf='low';
-  if(s.length>=12&&span>=13&&noise!=null&&noise<1.5&&!deviceChange)conf='high';else if(s.length>=9&&!deviceChange)conf='medium';
+  if(s.length>=12&&span>=13&&noise!=null&&noise<1.5&&!deviceChange&&!waterEvent)conf='high';else if(s.length>=9&&!deviceChange&&!waterEvent)conf='medium';
+  res.failing=[].concat(deviceChange?['scale change in window']:[],waterEvent?['extreme water disturbance (illness, travel, high sodium)']:[]);
   if(slopeSe!=null&&Math.abs(perWeek)<slopeSe*1.2&&conf==='high')conf='medium'; // slope indistinguishable from flat at high noise
   res.status='ok';res.excludedOffProtocol=offProtocol;res.slopePerWeek=perWeek;res.slopeSe=slopeSe;res.residSd=noise;res.r2=ol.r2;res.lo=slopeSe!=null?perWeek-1.96*slopeSe:null;res.hi=slopeSe!=null?perWeek+1.96*slopeSe:null;res.confidence=conf;res.deviceChange=deviceChange;res.intercept=ts.intercept;res.first=s[0].date;res.last=s[s.length-1].date;
   res.direction=Math.abs(perWeek)<0.25?'flat':(perWeek<0?'falling':'rising');
@@ -335,7 +393,16 @@ function tissueKcalSd(){
   }catch(e){}
   return 500;
 }
-function tdeePersonal(windowDays,asOfDate){
+/* failure condition, executable (W-036): the first two weeks of a phase, or a high water disturbance, move the scale by
+   water and glycogen, so a maintenance estimate from the trend keeps low confidence and says which condition holds */
+function tdeePersonal(windowDays,asOfDate){var r=_tdeePersonalCore(windowDays,asOfDate);if(!r||r.status!=='ok')return r;
+  var date=asOfDate||asOf(),failing=[];
+  var ph=(DB.phases||[]).filter(function(x){return x.startDate<=date&&(!x.endDate||x.endDate>=date);}).slice(-1)[0];
+  var wet=false;if(date===asOf()){try{wet=waterNoise().level==='high';}catch(e){wet=false;}}
+  if((ph&&daysBetween(ph.startDate,date)<14)||wet)failing.push('rapid phase transition or extreme water disturbance');
+  if(failing.length)return Object.assign({},r,{confidence:'low',failing:failing});
+  return r;}
+function _tdeePersonalCore(windowDays,asOfDate){
   windowDays=windowDays||28;var date=asOfDate||asOf();
   var cal=dailySeries('calories',date,windowDays);
   var need=[];
@@ -528,6 +595,10 @@ function goalTrajectory(){
 function weightForecast(horizonDays){
   var tr=weightTrend(14);var wa=weightAverages();var base=wa.avg7;
   if(tr.status!=='ok'||base==null)return insufficient('weight_forecast',tr.need||['weight_avg|7-day average'],{horizonDays:horizonDays});
+  /* failure condition, executable (W-036): the forecast continues the current rate, so a planned phase change before
+     its due date is outside it: no number for that horizon */
+  var phF=activePhase();if(phF&&phF.targetDate&&phF.targetDate<addDays(asOf(),horizonDays))
+    return inapplicable('weight_forecast',['phase change inside horizon'],['a horizon inside the current phase, which is planned to end '+phF.targetDate],{horizonDays:horizonDays,cls:'PREDICTIVE'});
   var weeks=horizonDays/7;var point=base+tr.slopePerWeek*weeks;
   var slopeUnc=tr.slopeSe!=null?tr.slopeSe*weeks:Math.abs(tr.slopePerWeek)*0.5*weeks;
   var noise=tr.residSd!=null?tr.residSd:1.0;
@@ -1088,14 +1159,14 @@ function forecastPromotion(){
   FORECAST_HORIZONS.forEach(function(h){
     var ho=H.byHorizon[h]||{};
     var fam=bt.rows.filter(function(r){return r.horizon===h&&r.origin>=H.cut&&r.candidate===ho.method;});
-    if(!ho.method||fam.length<3){out[h]={promoted:false,reason:'too few hold-out forecasts at '+h+' days to compare'};return;}
+    if(!ho.method||fam.length<3){out[h]={promoted:false,outcome:'too few',reason:'too few hold-out forecasts at '+h+' days to compare'};return;}
     var fe=[],pe=[];
     fam.forEach(function(r){
       var pf=null;try{pf=withAsOf(r.origin,function(){return weightForecast(h);});}catch(e){}
       if(!pf||pf.status!=='ok')return;
       var act=actualNear(addDays(r.origin,h));if(act==null)return;
       fe.push(r.error);pe.push(act-pf.point);});
-    if(fe.length<3){out[h]={promoted:false,reason:'too few paired hold-out forecasts at '+h+' days'};return;}
+    if(fe.length<3){out[h]={promoted:false,outcome:'too few',reason:'too few paired hold-out forecasts at '+h+' days'};return;}
     var rm=function(e){return Math.sqrt(mean(e.map(function(v){return v*v;})));};
     var fR=rm(fe),pR=rm(pe),fB=mean(fe),pB=mean(pe);
     /* A win must be real: at least 10% lower error, the same margin the family's own selection demands, and no larger
@@ -1104,7 +1175,8 @@ function forecastPromotion(){
     var win=fR<pR*0.9&&Math.abs(fB)<=Math.abs(pB);
     var tie=!win&&fR<=pR*1.1&&fR>=pR*0.9;
     var fit=bt.rows.filter(function(r){return r.horizon===h&&r.origin<H.cut&&r.candidate===ho.method;}).map(function(r){return r.error;});
-    out[h]={promoted:win,n:fe.length,method:ho.method,sizeSd:fit.length?rm(fit):null,
+    /* outcome: what was decided, as a value (promoted, tie, not better, too few); reason says it in words */
+    out[h]={promoted:win,outcome:win?'promoted':(tie?'tie':'not better'),n:fe.length,method:ho.method,sizeSd:fit.length?rm(fit):null,
       improved:{rmse:round(fR,2),bias:round(fB,2)},current:{rmse:round(pR,2),bias:round(pB,2)},
       reason:'on '+fe.length+' hold-out forecasts \u2014 current: error '+round(pR,2)+' lb, bias '+round(pB,2)+' lb; improved ('+ho.method+'): error '+round(fR,2)+' lb, bias '+round(fB,2)+' lb \u2014 '+
         (win?'the improved forecast is clearly better, so it is shown':(tie?'too close to call, so the current forecast stays':'the improved forecast is not better here, so the current one stays'))};

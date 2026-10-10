@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-07T02:54:06.844Z",
-  "buildId": "ed2073643a",
-  "nodes": 100,
-  "edges": 279,
-  "contractDerived": 88,
+  "generatedAt": "2026-10-10T21:26:16.778Z",
+  "buildId": "d0e36650b6",
+  "nodes": 111,
+  "edges": 305,
+  "contractDerived": 99,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -216,6 +216,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "adherence",
+      "targetId": "tissue_energy_density",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "weight",
       "targetId": "weight_avg",
       "dependencyType": "data"
@@ -378,6 +383,11 @@
     {
       "sourceId": "weight_trend",
       "targetId": "body_composition_state",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "weight_trend",
+      "targetId": "tissue_energy_density",
       "dependencyType": "model"
     },
     {
@@ -1082,6 +1092,11 @@
     },
     {
       "sourceId": "cardio",
+      "targetId": "personal_conditioning_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "cardio",
       "targetId": "cardio_fitness_latent",
       "dependencyType": "data"
     },
@@ -1173,6 +1188,21 @@
     {
       "sourceId": "session.sets",
       "targetId": "exercise_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.sets",
+      "targetId": "personal_power_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.sets",
+      "targetId": "personal_speed_response",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.sets",
+      "targetId": "tissue_energy_density",
       "dependencyType": "model"
     },
     {
@@ -1271,6 +1301,76 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "sitreach",
+      "targetId": "personal_mobility_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "kneewall",
+      "targetId": "personal_mobility_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "mobility",
+      "targetId": "personal_mobility_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "personal_mobility_response",
+      "targetId": "capabilityVector",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_mobility_response",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "hrr",
+      "targetId": "personal_conditioning_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "personal_conditioning_response",
+      "targetId": "capabilityVector",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_conditioning_response",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "cmj",
+      "targetId": "personal_power_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "personal_power_response",
+      "targetId": "capabilityVector",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_power_response",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sprint",
+      "targetId": "personal_speed_response",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "personal_speed_response",
+      "targetId": "capabilityVector",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_speed_response",
+      "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "rhr",
       "targetId": "cardio_fitness_latent",
       "dependencyType": "data"
@@ -1331,6 +1431,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "bodyfat",
+      "targetId": "tissue_energy_density",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "energy_availability",
       "targetId": "physiologySummary",
       "dependencyType": "model"
@@ -1383,6 +1488,31 @@
     {
       "sourceId": "unified_optimiser",
       "targetId": "applyOptimiserChoice",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "tdee_personal",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "energy_balance",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "_expectedWeightChange",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "RESPONSE_PRIORS",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "tissue_energy_density",
+      "targetId": "_leverEffect",
       "dependencyType": "model"
     },
     {

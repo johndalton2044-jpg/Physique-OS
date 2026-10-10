@@ -3835,3 +3835,489 @@ A self-calibration capability joins the ledger with measured calibration. Aerobi
 too, and the maturity gate lists both as scored. All 36 gates pass (reproducible included); release 24/24; 1,753 self-tests. Stage H
 is complete, and with it every backlog item that does not need credentials: item 4 waits for observation types, and
 item 11 for real accounts.
+
+## New records start at the Casual detail level (build 3011e209bd)
+
+A decision carried from earlier work, now taken: a new record starts at Casual, the answer and what to do. The
+analysis tabs, method notes and badges are one setting away (Tools → Display). Nobody's existing view changes:
+- a stored record keeps the level it chose;
+- one stored before the level existed was showing Insightful, so the schema backfill gives it Insightful rather than
+  the new default;
+- a startup merge does not replace a person's level with the default its projection carries, while a level chosen on
+  another device, which arrives as an event, still wins;
+- loading the demo replaces the record but keeps the person's level (it used to reset it to the default).
+
+Checks:
+- self-tests from the setting's definition, covering a new record, an old record, a chosen level, both sides of the
+  merge, and the demo;
+- black-box workflow V-013: a new record opens at Casual, the Display card shows Casual in use, and choosing
+  Insightful shows the analysis and is stored;
+- V-011 and V-012 now choose Insightful through the Display card before opening Archive and Learn, as a person at
+  Casual would; jsdom ignores the CSS that hides those tabs, so the workflows had been pressing buttons a Casual
+  person could not see.
+
+Starting new records at Insightful again, dropping the backfill's exception, and letting the demo reset the level each
+turned their checks red. The visual baseline was updated for the intended change: at Casual the left rail (analysis
+navigation) is hidden and the right rail is shorter. The audit and the interface tests checked the rail contract at
+whatever level the record opened at, so they now check it at Insightful, where the rails belong, and check Casual for
+what it drops (the position rail and the palette) and keeps (the action rail and the log button); removing the Casual
+rule turns that check red. All 36 gates pass (reproducible included); release 24/24; 1,759 self-tests and the black-box
+workflows.
+
+## Undo reaches back across a restore merge (build 61bd73d843)
+
+A decision carried from earlier work, checked rather than built: undo should reach back across a restore merge. It
+already does, and the record now proves it. A restore merge restarts the event log from the merged record, so an undo
+of it, or of anything recorded before it, restarts the log again from the record the undo put back. Self-tests apply a
+restore merge exactly as Data → Restore → Merge does and then check:
+- undoing it leaves the backup's entry gone and the earlier entry in place, after the record is rebuilt from its log;
+- undoing it and the entry made before it removes both, and they stay removed;
+- another device that syncs afterwards converges on the same record;
+- a device that had already synced the restored record loses the backup's entry when it syncs the undo.
+
+Letting an undo of a restore revoke nothing, as an undo of a sync merge does, turned the checks red. The open question
+was misnamed earlier. It is about a different merge: undoing a sync merge of another device's changes is still not
+durable, because making it so would delete that device's entries on every device. That remains a decision for the
+person. All 36 gates pass (reproducible included); release 24/24; 1,763 self-tests.
+
+## Stage D: mobility, conditioning, power and speed (build 7dd314744b)
+
+TRANSITION item 4 waited for observation types that measure these capacities. Five field tests are now chosen, each one
+a person can do without a laboratory, and logged in the quick log under "Fitness tests":
+
+| Test | Unit | Measures |
+|---|---|---|
+| Sit-and-reach | cm past the toes, negative if short | mobility |
+| Knee-to-wall | cm, the stiffer side | ankle dorsiflexion |
+| Heart-rate recovery | bpm fall in the first minute after a hard effort | conditioning |
+| Countermovement jump | cm, hands on hips | power |
+| 20 m sprint | s | speed |
+
+Each is an observation type with a semantic type. The one unit table gains a length dimension (cm, in) and seconds, so
+there is still a single unit system.
+
+Each test is related to the dose that should move it, averaged over the four weeks before the test (adaptations take
+weeks, so the test's own day is left out):
+- the mobility tests, per 30 minutes a week of mobility work;
+- heart-rate recovery, per 60 minutes a week of cardio;
+- jump and sprint, per 10 lower-body sets a week, each set counted once.
+
+`capacityResponse(kind)` is a personal model like the others:
+- a cited population prior per unit of dose (+1.5 cm sit-and-reach, +0.5 cm knee-to-wall, +2 bpm, +0.5 cm jump,
+  −0.01 s sprint);
+- updated through `bayesUpdate` by the least-squares slope of the person's results on their dose;
+- five tests at least, at doses varying by half a unit;
+- the personal weight reported, with "only hint" below 0.2, and limits stated: an association across tests, not proof
+  of cause, and the same protocol each time.
+
+The sprint's "better" is downward. Four models join the registry. The capability vector's mobility, endurance and new
+power entries carry the latest tests and responses, and the Learn tab's physiology card shows them.
+
+Checks:
+- a posterior computed by hand from a constructed slope;
+- a noisier case where the prior visibly pulls the estimate, by the precision arithmetic;
+- four tests ask for one more, and a dose that barely varied asks for tests at different amounts;
+- a faster sprint reads as better;
+- noisy tests only hint;
+- the dose window excludes the test's own day (30 min a day is 3.5 units of 60);
+- three squat sets count as three lower-body sets;
+- the consumers and the form;
+- black-box workflow V-014: a sit-and-reach of 12.5 and a jump of 41 through the quick log appear on the Log page, are
+  stored as entered, and show on the physiology card at Insightful with four more tests needed.
+
+Including the test's own day, dropping the prior, counting sets per muscle, ignoring the sprint's direction, lowering
+the minimum, and removing the quick log choice each turned their checks red. The demo has no field tests, so each
+response says what it needs. A capacity-responses capability joins the ledger as workflow-tested. Stage D is complete.
+
+The black-box harness gains `ui.waitFor` (a state reached asynchronously). V-014 waits only on conditions (CLAUDE.md
+rule 12), and choosing a level through the Display card now waits until the level applies instead of a fixed 80 ms
+(V-011, V-012 and V-013 use it). With the Fitness tests save disabled, V-014 times out waiting for the Log page.
+All 36 gates pass (reproducible included); release 24/24; 1,773 self-tests.
+
+## Release integrity: root CI, one gate list, the runtime contract, the clean room from the commit (build 7dd314744b)
+
+The work-and-direction catalogues (two documents, written against build ed2073643a) put release integrity first: the
+release suite must run from a clean environment before anything else is trusted. Checked against this build, four of
+their findings held:
+- the CI workflow sat in `data/.github/workflows/`, where GitHub never runs it (W-001);
+- `package.json` promised Node 20 or later, while the locked dependencies need `^22.22.2 || ^24.15.0 || >=26.0.0`
+  (jsdom) and `>=22.19.0` (undici) (W-002);
+- the gate list was written out four times (the release check, CI, TRANSITION and the maturity gate's text search),
+  and a gate had no time limit, so a hung gate hung the release (doc 2, P0.4);
+- the clean room copied the working tree, so it proved that the files on disk rebuild, not that the commit does (W-032),
+  and it turned a food archive URL into a file path.
+
+What changed:
+- **One list.** `tests/gates.mjs` holds the 36 gates in order, each with a runtime ceiling (about two and a half times its
+  measured time, never under 60 s). The release check, the maturity gate, the gate recorder and CI read it.
+  `node tests/gate-record.mjs --all` runs every gate and records each one, with how long it took, even after a failure.
+- **Ceilings.** Each gate runs in its own process group. Past its ceiling it is stopped, with everything it started, and
+  recorded as failed. A 3-second ceiling stopped the engine gate and left nothing running.
+- **Root CI.** `.github/workflows/ci.yml` is at the root. It installs the Node in `.nvmrc` and the locked dependencies,
+  runs every gate and the release check, and keeps `docs/release/` as an artifact. The misplaced copy is gone.
+- **The runtime contract.** `engines.node` is now the range every locked dependency accepts, and `.nvmrc` pins Node
+  22.23.3. The deploy gate computes the contract from `package-lock.json`, with a small range evaluator of its own:
+  - every promised Node must be one each locked dependency accepts;
+  - `.nvmrc` must be one exact version inside the promise;
+  - the gate must itself run on a promised Node;
+  - the CI workflow must be at the root, run every gate and the release check, and keep the evidence.
+  Releases now run on Node 22.23.3: the container's 22.22.0 is below jsdom's floor, and the gate says so.
+- **The clean room from the commit.** `scripts/clean-room.mjs` exports `git archive HEAD`, so a build that needs an
+  untracked file fails. It records the commit, Node, npm and platform, and names uncommitted changes when they are why
+  the trees differ. A URL for the food archive now stays a URL.
+- **The environment, written down.** `docs/release-environment.md` covers both builds (development from the repository
+  alone, production with the pinned corpus), the runtime, browser, operating system, food-corpus identity and sizes,
+  environment variables, the mock-only external-test mode, and what fails when a part is missing. The README's "Node 20
+  or later" and `npm install` are corrected.
+
+Checks, each seen to fail:
+- the old `>=20` promise fails the deploy gate and names every dependency that needs more;
+- Node 22.22.0 fails the runtime check;
+- moving the workflow out of the root fails four CI checks;
+- the maturity gate failed 25 checks while it still searched `release.mjs` for the list, and passes now that it reads
+  `tests/gates.mjs`.
+
+The application's source is unchanged, so the build ID stays 7dd314744b. Its first release failed one gate, `external`, on
+a fixture that aged on a date (the next entry). With that fixed, all 36 gates pass on build 4fecf793ba (reproducible
+included) and the release check passes 24/24; in CI, 35 of the 36 pass and the browser gate's one finding there is
+followed up below.
+
+## Recorded weather replayed at its recorded time (build 7dd314744b)
+
+The first release on the pinned Node failed one gate, `external`, and on both Node versions, so the runtime was not the
+cause. Its recorded Open-Meteo forecast covers 2026-09-19 to 2026-10-09. The server's fixture mode stamped it as
+retrieved now, and the app labels each day against the retrieval time, so on 2026-10-10 every day read as past and Today
+had no days ahead. A test that was bound to fail on a date, not a regression.
+
+- A recording now carries the time it was recorded (`__retrievedAt`). The server reports that time in fixture mode and
+  drops the fixture's own keys from the payload.
+- The gate runs the browser at the recorded time (`page.clock.setSystemTime`), as the person would have seen it.
+- The stale-refresh check had compared the refreshed stamp with the test machine's clock. It now checks that the aged
+  stamp was replaced by the recording's own time, which only a refresh can do.
+- With the server ignoring `__retrievedAt`, two checks fail again.
+
+The clean room also uses the corpus the commit carries in `data/food` when it is given no archive. The corpus is tracked
+in git, and the build checks every file against the lock either way. So the `reproducible` gate can run in CI without the
+`FOOD_DATA_URL` secret, which the earlier CI runs passed through empty.
+
+## One energy-density service for every conversion (build 4fecf793ba)
+
+Catalogue W-003, and a defect this project has now fixed three times. `tissueEnergyDensity()` turns a pound of scale
+weight into energy by what is probably being lost (adipose about 3,500 kcal, lean about 700). Three consumers still
+divided by a bare 3,500:
+- a Response's expected weight change;
+- the response model's population priors;
+- the optimiser's cardio and training levers.
+
+So one intervention was read as different amounts of weight depending on which part of the app did the arithmetic. An
+earlier fix had removed 3,200 after a check that searched only for 3,500; this time the check is structural.
+
+- **The consumers** convert through `tissueKcalPerLb()` / `energyDensityRef()`. Each converted result carries `density`:
+  the model id (`tissue_energy_density`), its version (1.0) and the figure used. A Response is stored with its expected
+  outcome, so one recorded under an earlier density keeps it and says which it was.
+- **A registered model.** `tissue_energy_density` joins `MODELS`, class PRIOR, with inputs that resolve, assumptions,
+  failure conditions, its range as the uncertainty and five consumers. It runs through the inference gateway with a run
+  identity, provenance and applicability. `tdee_personal`'s stated assumption ("3,200 kcal/lb (±500)") now names it.
+- **Unit checks.** `kcalToLb` and `lbToKcal` take a number, or `{value, unit}` in their own unit. Pounds handed to the
+  kcal side, or a missing value, return `status: 'invalid'` rather than a plausible number.
+- **The structural check.** A governance detector removes comments and strings, keeping line numbers, and fails on
+  arithmetic with a kcal-per-lb or kcal-per-kg literal (3000–3999 except 3600, 7000–7999) anywhere but the service and the
+  self-tests.
+
+Checks, each seen to fail:
+- self-tests replace the service with a known density, 3,000 kcal per lb (range 2,600 to 3,300), then 3,500. Every
+  expectation is that figure and arithmetic: −500 kcal a day is −500×7/3,000 lb a week ±30%; the prior per kcal a day is
+  7/3,000; two cardio sessions at 80 kg are −480/3,000; one training session is −320/3,000. The tests also check that the
+  entity and the prior agree, that changing the assumption changes every consumer, and that a recorded Response keeps its
+  density;
+- the unit checks and the gateway run;
+- restoring the three old consumers fails six of them;
+- the governance detector names `58-response-entity.js:36`, `58-response-model.js:10` and the rest, by file and line.
+
+All 36 gates pass (reproducible included); release 24/24; 1,784 self-tests.
+
+## One browser build everywhere, and a check that waits for the page (build 4fecf793ba)
+
+CI's browser gate failed on `nav.top` only. The button appeared, but 700 ms after the press the runner's Chrome had not
+finished the smooth scroll to the top. The check now waits for the page to arrive, up to 4 s, and reports where it
+stopped if it does not.
+
+The failure showed something wider: three environments measured the page in three browsers.
+- CI used the runner's preinstalled Google Chrome.
+- CI's `npx playwright install` ran the latest `playwright` CLI, which installed its own build (1248), not the one the
+  locked playwright-core drives (1243).
+- This container used an older headless shell (1194) that sorted first in the cache.
+
+Now the gates use the build the locked playwright-core drives, right after an explicit `CHROME_PATH`, and fall back
+only where it is not installed. CI installs that build with the locked CLI (`npx playwright-core install`), and the deploy
+gate checks the CI step. This container offers only build 1194, so local releases still run on it, and say so. The
+recorder also prints the P1 and P2 findings a passing gate tolerates: the audit reported one in CI that is never seen
+locally.
+
+## Unique registry ids, enforced (build 106152bbde)
+
+Catalogue W-008: no registry may silently overwrite or drop an entry. Found:
+- fourteen model registrations skipped an id already taken without a word;
+- `registerView` replaced an earlier view of the same id;
+- the quantity registry dropped an extended type whose key a base type had.
+
+(`registerDomain` and `registerExternalSource` already refused duplicates loudly, and `registerVisualization` refuses
+unless told to replace.)
+
+- **One record of conflicts.** `_registryTaken()` and `_registryConflict()` (10-core) keep the first definition, record
+  the attempt and report it as a P1. The fourteen guards, `registerView` (now refusing unless `replace` is given) and the
+  quantity fold all go through them.
+- **One audit.** `assertUniqueRegistryIds(registry, name)` reports the registry, the id, where each entry sits and whether
+  the definitions conflict. It covers array registries and keyed entries whose own id disagrees with their key.
+  `registryIdAudit()` runs it over the 21 registries the catalogue names (`REGISTRY_ID_SOURCES`) and adds the recorded
+  conflicts. This build has none.
+- **The source half.** A keyed registry's duplicate keys never reach run time, because the later replaces the earlier.
+  So the governance gate reads every literal of the 14 keyed registries, their `Object.assign` extensions and their
+  assignments, with a small key reader (`tests/_registry-keys.mjs`: strings, templates, comments and regular
+  expressions skipped). It takes the registry list from the running app, not from a copy. The gate also runs
+  `registryIdAudit()` in the app.
+
+Checks, each seen to fail:
+- self-tests inject a duplicate into every array registry, expecting it reported at index 0 and at the end, and a
+  differing copy as a conflict;
+- an entry filed under another id is injected into every keyed registry;
+- a taken model id is refused and recorded, a second view is refused, and the first stands;
+- three overrides (a registration that records nothing, the old `registerView`, an audit blind to arrays) each fail
+  their test;
+- in governance, a reassigned `OBS_TYPES.weight` is named with both source lines, and a second energy-density
+  registration fails the run-time check.
+
+The probes' own P1 reports are cleared afterwards: the engine gate fails a run that contains errors, and caught the
+first version of these tests doing exactly that.
+
+## No prose as data (build 106152bbde)
+
+Catalogue doc 2, P1.4: no subsystem may recover a value by reading a sentence written for people. Three did:
+- **A plan version's evidence.** It was rebuilt by joining the decision's why list into one sentence and cutting it at
+  commas, so "2,100 kcal" became "2" and "100 kcal". It is now the decision's own evidence list (`_decisionEvidence`).
+- **The forecast view.** It read "too close" and "too few" out of a promotion's reason. The promotion now carries an
+  `outcome` (promoted, tie, not better, too few), and `_promotionPhrase` speaks from it.
+- **Inventory confidence.** It counted "entries over" in each row's basis. Each row now carries `rateSource` (measured,
+  stated, unit mismatch).
+
+A governance detector removes comments and strings, then fails on splitting, matching or regex-testing a why, lede,
+note, basis, caveat, reason, summary, verb, tradeoff, reverseIf or rationale. Against the old files it names exactly the
+three sites.
+
+Self-tests make the sentence disagree with the field, so code that read the sentence would answer differently:
+- a why sentence holding "2,100" with the evidence list beside it;
+- a reason saying "too few" with an outcome of tie;
+- a stated rate whose basis does not say "entries over".
+
+Each old implementation fails its test. All 36 gates pass (reproducible included); release 24/24; 1,792 self-tests.
+
+## Capability status reads recorded verification evidence (build 6f28264507)
+
+Catalogue doc 2, P0.1 and P0.2. Reading the capability matrix ran the live checks: `infer()` over every model, twice
+(the inference-gateway check 4.3 s, the provenance check 2.5 s), and each capability's own function, about five seconds
+on the demo record every time anything asked for a status. So asking about the system changed what the system was doing,
+and the matrix could not be read often.
+
+- **A verification run.** `runVerification()` runs the checks once and records one immutable entry per capability and
+  suite: live verification, result contract, and the forecast's hold-out grade. Each entry records the build, schema,
+  model versions, reference data and record revision it ran against, whether it passed, what failed, how long it took
+  and when it expires (7 days). Its id is derived from those.
+- **Statuses read it.** `capabilityStatus()` and `capabilityMatrix()` read the latest entry for this build and never
+  execute a model or a check. An entry from another build, or an expired one, is ignored, and the status says "not run".
+  The matrix now takes about 1 ms.
+- **The readers run it first.** The internals sheet runs its five checks when opened, as a recorded run, and shows how
+  long they took. The governance gate, the release check and the baseline each run one before reading statuses.
+
+Checks, each seen to fail:
+- while the matrix is read, 26 functions a status could run are counted, and must be called zero times. A status that ran
+  its check, as the old one did, made 1,229 calls;
+- the matrix must take under 1 s;
+- after a run, a status traces to its entry: this build, the record revision, an expiry seven days on, and frozen;
+- an entry from another build or past its expiry reads as not run. An evidence reader that ignored the build fails this.
+
+The existing "a live infrastructure check can fail" test now breaks the check and runs verification. The quantity-registry
+lookup a status needs (is the output type registered?) is a lookup, not a computation, and is the one call allowed.
+
+## Independent verification gate (build 6f28264507)
+
+Catalogue doc 2, P0.5: the application must be able to be wrong about itself. `tests/independent.mjs` is the 37th gate.
+It never calls the self-test, the capability matrix, the verification run, the governance or maturity reports, or any
+function of the app that reads the store or replays the log. It acts only through the screen (Tools, the demo section,
+Load, confirm) and recomputes every expectation in the test:
+- every file `dist/SHA256SUMS` lists hashes to its checksum, and no shipped file is left out;
+- the build identity in `version.json` and in the page is the hash of `src/`, recomputed;
+- the store, read with the browser's IndexedDB API alone, holds the observations as JSON month shards, and the app's
+  record is exactly what it persisted (1,067 observations on the demo);
+- the event log in the store, replayed by a reducer written in the test (snapshots, additions, corrections, retractions,
+  revocations), gives the same live observations as the persisted record;
+- the weight trend the app reports is the Theil–Sen slope of the persisted weigh-ins' daily means, recomputed (−1.741
+  lb a week over 13 days on the demo);
+- the trend's provenance node is the content hash of exactly the persisted weigh-ins, recomputed with Node's SHA-256.
+
+Seen to fail: a shipped file changed by one byte fails the checksum check, and a trend computed with 7.01 days to the week
+(−1.7437 against −1.7412) fails the recomputation. The provenance check first assumed node ids named single observations;
+they name the input set by its content, so the check now recomputes that hash. Docs that stated a gate count now say
+"every gate in `tests/gates.mjs`", so adding one cannot make them wrong.
+
+The W-003 self-tests wrote their known densities as literals (3,000, 3,300). The audit's own energy scan, which reads the
+self-tests too, reported that as a tolerated P1, in CI and here. The densities are now derived from `ENERGY_PER_LB` in the
+test, so the audit has no findings. Its first release failed the timezone gate on a defect in the verification entries (fixed below); it is released with
+the entries that follow.
+
+## Verification runs are numbered (build fe11609746)
+
+The first release of the verification evidence failed the `timezones` gate, which runs the whole self-test under a fixed
+browser clock at three awkward local times. Under a fixed clock every verification run in one self-test had the same
+timestamp, so its entries had the same ids. A status then traced to an earlier, failing entry of the same id, and the
+"a status traces to its entry" test failed. Each run is now numbered, and the number is part of every entry's id. A
+self-test runs two verifications under one pinned instant (`_NOW_OVERRIDE`) and requires every id to be unique; resetting
+the counter makes it fail. The timezone gate passes.
+
+## Maturity is derived, never assigned (build 78c311cc38)
+
+Catalogue W-029: removing a hand-typed maturity label must not change the truth of the maturity report. `ENGINE_MATURITY`
+was such a table: twenty engines with typed grades, presented as "how far each engine has actually been validated".
+- Forecasting read statistically validated whatever its scored forecasts showed.
+- `modelMaturity()` let any entry override the grade the model's own evidence gave.
+- Only three of the twenty names were models; most were not even functions.
+
+It is replaced by `ENGINE_EVIDENCE`, which says what each grade is derived from:
+- a registered model (five engines), graded by `modelMaturity()` from its class and, where it is scored, its track record
+  (statistically validated needs 20 scored forecasts with no significant bias);
+- a function plus the release gate that tests it (fifteen), which earns infrastructure grade and never more, because
+  nothing scores it against outcomes.
+
+Evidence missing from the build leaves an engine ungraded. Every row of the maturity report says what its grade came
+from, model provenance names the derived grade, and the override is gone. Forecasting now reads operational, as its record
+shows. The maturity gate checks that every gate the evidence cites is a release gate and every function it cites is
+declared in `src/`.
+
+Seen to fail:
+- an assigned table winning again fails two tests;
+- ignoring bias fails the track-record test;
+- a missing function or gate fails the maturity gate.
+
+The absence test reads the global object rather than using a `typeof` guard. The governance gate rejects guards for names
+nothing declares, and caught the first version.
+
+## Epistemic classes, enforced at the consumers (build 78c311cc38)
+
+Catalogue W-010: separate observed, associated, responsive, causally supported and predictive, so that a response
+estimated from a change over time cannot inherit causal authority from the causal machinery.
+
+- **One ladder.** `EPISTEMIC_CLASSES` sits beside `CLASSES`: how a result was computed and what claim it supports are kept
+  apart. It maps onto `causalSupport()`'s existing grades, so there is one causal grading: supported and weakly supported
+  give causally supported, and correlated, confounded and contradicted give associated.
+- **Responses.** Every Response now carries `epistemicClass` and `epistemicBasis`. It is responsive unless the explicit
+  pathway holds: its variable is graded supported or weakly supported, and its own causal estimates agree on a clear change
+  that was not already under way. On the demo every response is responsive.
+- **Consumers.** `CLAIM_CONSUMERS` declares what each consumer accepts: a causal statement and a knowledge `causes` edge
+  need causally supported, and a recommendation accepts any class. `acceptClaim()` refuses the rest, and refuses a class
+  that is not on the ladder.
+- **The assistant.** The context packet carries each changeable variable's class (`claims`) and the ladder's meanings.
+  `validateAssistantReply()` refuses a sentence that states a cause ("caused", "led to", "because of", "due to" and the
+  like) about a variable whose class is below causally supported. This is a check against the record, not a word list.
+  "Your weight fell after you cut calories" passes.
+
+Checks, each seen to fail:
+- with `causalSupport()` set to known grades, a supported variable with agreeing estimates is causally supported;
+- a correlated variable, disagreeing estimates, a change already under way, or an unclear effect each stays responsive;
+- a responsive claim is refused by the causal-statement consumer and accepted by a recommendation;
+- class follows kind: measured is observed, fitted is associated, a forecast is predictive, a rule is no claim;
+- three causal phrasings are refused below causally supported, and accepted at it;
+- making causal support follow from the machinery's presence, or accepting every class, fails its test.
+
+All 37 gates pass (reproducible included); release 24/24; 1,805 self-tests.
+
+## Failure conditions, executable (build f1ecf89ed2)
+
+Catalogue W-036: a model must not produce a high-authority result outside its declared applicability. Two findings:
+- The inference gateway's comment said a model outside its evidence requirements "declines rather than returning a
+  number". The code only recorded a diagnostic and returned the value, marked degraded.
+- The decision engine calls models such as `tdeePersonal()` directly, so a check in the gateway alone would not protect
+  it.
+
+So conditions are enforced in the models themselves. For the six models whose results reach a decision, a target or the
+plan (`tdee_personal`, `energy_balance`, `weight_trend`, `weight_forecast`, `goal_traj`, `fat_vs_other`),
+`FAILURE_CONDITION_HANDLING` classifies every declared condition:
+- **refuses:** when it holds there is no number (insufficient, or the new `inapplicable`);
+- **degrades:** the number is kept at low confidence, with the condition named in `failing`.
+
+`failureConditionCoverage()` reports this for every model. Three declared conditions had never been checked:
+- `weight_forecast`: "phase change inside horizon" now refuses. A horizon past the phase's planned end has no number.
+- `tdee_personal`: "rapid phase transition or extreme water disturbance" now degrades, in the first 14 days of a phase or
+  at high water noise.
+- `weight_trend`: "extreme water disturbance" now degrades, on a travel, illness, high-sodium, high-carbohydrate, alcohol
+  or creatine tag in the window.
+
+Self-tests build a record with a pinned today (28 days of weigh-ins falling 0.1 lb a day, 2,000 kcal logged daily) and
+add exactly one condition:
+- travel three days ago lowers the trend's confidence;
+- a phase on day 5 lowers the maintenance estimate's confidence, and day 40 does not;
+- a phase ending in 10 days leaves the 28-day forecast without a number and the 7-day one with one.
+
+Each new check, and the coverage of all six models, was seen to fail. The demo's results are unchanged.
+
+## Sync retries are set-like by id (build f1ecf89ed2)
+
+Catalogue W-005. Already tested by the server gate:
+- an id repeated within a batch;
+- a re-sent id with fresh ciphertext;
+- an id written to the ledger by another process;
+- a crash between append and index;
+- a torn last line;
+- a vault dropped from the id index.
+
+Now also tested, on the same ledger:
+- the same id sent by a second device of the vault;
+- an old batch replayed after newer events (nothing added, the sequence not moved back);
+- a retry of a partly stored request (only the missing event stored);
+- after all of them, a ledger that is set-like by id, in strictly increasing sequence, with its count matching.
+
+Keying duplicates by device as well as id fails all four.
+
+## One persistence authority, enforced (build f1ecf89ed2)
+
+Catalogue W-006. Every persisted collection was already walked through snapshot, compaction, startup adoption,
+restore-merge, the log restart after a restore, validation and migration. What was not enforced: that the record's own
+shape matches the declaration. A collection added to `emptyDB()` but not to `PERSIST_COLLECTIONS` would never be
+stored, and nothing would say so. A self-test now requires:
+- the record's collections to be exactly `PERSIST_COLLECTIONS`, each declared once;
+- its other fields to be exactly `PERSIST_SCALARS`;
+- every collection a save label, the sharding or the unevented list names to be a declared one.
+
+An undeclared collection fails it by name.
+
+## What a backup holds of the visual history (build f1ecf89ed2)
+
+Catalogue W-004 asks for a decision first: photos local-only (A) or durable and encrypted (B). The build already chose
+A, deliberately: progress photos live in the browser database, and the record holds only each photo's date and pose, so
+a backup is small and never shares a photo. What was missing is the definition of done: the application must say
+accurately whether a backup holds the complete visual history.
+- `backupPhotoStatement()` gives the count, `imagesIncluded: false` and `completeVisualHistory`, and the backup carries
+  it in its header.
+- The Data card says it before a backup is made, at every detail level: "This backup holds the dates and poses of N
+  progress photos, not the images: the images stay on this device only."
+
+Self-tests with two photos, one removed, expect one photo, images not included and an incomplete history; with none,
+complete. Option B (an encrypted attachment store with content hashes and an off-device copy) remains a decision for the
+person.
+
+All 37 gates pass (reproducible included); release 24/24; 1,813 self-tests.
+
+## Self-test suites, and where both catalogues stand (build d0e36650b6)
+
+Catalogue doc 2, P0.3: decompose the one 4,800-line self-test. Every check is now filed under one of 19 suites: storage,
+schema, events, models, training, nutrition, recovery, body composition, forecasting, Bayesian, causal, decisions,
+adaptive plan, presentation, governance, AI, external, exports and general. A `_stSuite` marker before each of the 189
+blocks names its suite, chosen from the block's own heading. `runSelfTest()` returns each suite's checks, failures, first
+failure and time. The engine gate prints them, requires every check to belong to a suite (the suites account for all
+1,813), and holds each suite to doc 2's 45 s ceiling. The slowest, adaptive plan, takes about 7 s; a 1 s ceiling fails
+six suites. Running a suite on its own is not done: the blocks share one sequence of fixtures, so each suite would first
+need its own. New blocks open with their suite's marker (CLAUDE.md).
+
+`docs/handoff/CATALOGUE.md` now records every item of both catalogues: what was done in this round and in which build,
+what was already in place, what is partly done, what is blocked on accounts or decisions, and what the catalogues
+themselves defer. TRANSITION §8 summarises the state.
+
+All 37 gates pass (reproducible included); release 24/24; 1,813 self-tests.

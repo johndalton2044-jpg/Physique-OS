@@ -353,6 +353,54 @@
    "freeText": false
   },
   {
+   "sheet": "log:tests",
+   "field": "date",
+   "act": "sheet.field",
+   "type": "date",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:tests",
+   "field": "sitreach",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:tests",
+   "field": "kneewall",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:tests",
+   "field": "hrr",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:tests",
+   "field": "cmj",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "log:tests",
+   "field": "sprint",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
    "sheet": "log:supplement",
    "field": "date",
    "act": "sheet.field",

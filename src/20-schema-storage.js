@@ -12,6 +12,12 @@ var OBS_TYPES={
   thigh:{label:'Thigh',unit:'in',group:'body',consumers:['measurement trend','lean-mass indicator'],min:10,max:45,step:0.1},
   bodyfat:{label:'Body fat',unit:'%',group:'body',consumers:['composition estimate cross-check','body_composition_state'],min:2,max:70,step:0.1,methods:['DEXA','BIA scale','calipers','Bod Pod','hydrostatic','visual estimate','other']},
   rhr:{label:'Resting heart rate',unit:'bpm',group:'body',consumers:['fitness indicator','recovery signal'],min:30,max:140,step:1},
+  /* FIELD TESTS (Stage D; TRANSITION item 4): mobility, conditioning, power and speed, each on the person's own protocol */
+  sitreach:{label:'Sit-and-reach',unit:'cm',group:'body',consumers:['personal_mobility_response'],min:-40,max:60,step:0.5},
+  kneewall:{label:'Knee-to-wall',unit:'cm',group:'body',consumers:['personal_mobility_response'],min:0,max:25,step:0.5},
+  hrr:{label:'Heart-rate recovery',unit:'bpm',group:'body',consumers:['personal_conditioning_response'],min:0,max:90,step:1},
+  cmj:{label:'Jump height',unit:'cm',group:'activity',consumers:['personal_power_response'],min:5,max:100,step:0.5},
+  sprint:{label:'20 m sprint',unit:'s',group:'activity',consumers:['personal_speed_response'],min:2,max:15,step:0.01},
   calories:{label:'Calories',unit:'kcal',group:'nutrition',consumers:['TDEE','energy balance','calorie adherence','deficit estimate','personal_neat_response'],min:0,max:15000,step:1},
   protein:{label:'Protein',unit:'g',group:'nutrition',consumers:['protein adherence','muscle-retention risk'],min:0,max:600,step:1},
   carbs:{label:'Carbohydrate',unit:'g',group:'nutrition',consumers:['macro summary','water-noise context'],min:0,max:1500,step:1},
@@ -26,9 +32,9 @@ var OBS_TYPES={
   cravings:{label:'Cravings',unit:'/10',group:'appetite',consumers:['overeating risk'],min:0,max:10,step:1},
   difficulty:{label:'Diet difficulty',unit:'/10',group:'appetite',consumers:['diet sustainability'],min:0,max:10,step:1},
   steps:{label:'Steps',unit:'steps',group:'activity',consumers:['step baseline','NEAT trend','activity target','TDEE context','personal_neat_response'],min:0,max:80000,step:1},
-  cardio:{label:'Cardio',unit:'min',group:'activity',consumers:['cardio load','recovery interference','activity adherence'],min:0,max:600,step:1,modalities:['incline walk','walk','cycle','elliptical','swim','row','jog','stairs','other']},
+  cardio:{label:'Cardio',unit:'min',group:'activity',consumers:['cardio load','recovery interference','activity adherence','personal_conditioning_response'],min:0,max:600,step:1,modalities:['incline walk','walk','cycle','elliptical','swim','row','jog','stairs','other']},
   /* Completed mobility routines, in minutes, with the routine's name in the note — so they appear in the history. */
-  mobility:{label:'Mobility',unit:'min',group:'activity',consumers:['movement history'],min:1,max:180,step:1},
+  mobility:{label:'Mobility',unit:'min',group:'activity',consumers:['movement history','personal_mobility_response'],min:1,max:180,step:1},
   sleep:{label:'Sleep',unit:'h',group:'recovery',consumers:['recovery state','appetite context','over-aggressive check'],min:0,max:16,step:0.1},
   sleepq:{label:'Sleep quality',unit:'/10',group:'recovery',consumers:['recovery state'],min:0,max:10,step:1},
   fatigue:{label:'Fatigue',unit:'/10',group:'recovery',consumers:['recovery state','deload candidate','over-aggressive check'],min:0,max:10,step:1},
@@ -49,6 +55,9 @@ var PHASE_TYPES={
   recovery:{label:'Recovery / deload',objective:'Reduce training load to restore performance and recovery.'},
   goal_complete:{label:'Goal complete',objective:'Goal reached; review and choose the next objective.'}
 };
+/* A new record starts at the Casual detail level: the answer and what to do, with the analysis one setting away (Tools →
+   Display). An existing record keeps the level it shows: see the backfill in the migration below. */
+var NEW_RECORD_DETAIL='casual';
 function emptyDB(){
   return {
     schemaVersion:SCHEMA_VERSION,appVersion:APP_VERSION,createdAt:nowISO(),revision:0,instance:uid('inst'),
@@ -56,7 +65,7 @@ function emptyDB(){
     phases:[],observations:[],sessions:[],foodLogs:[],foods:[],recipes:[],
     decisions:[],interventions:[],predictions:[],experiments:[],negatives:[],snapshots:[],archive:[],notes:[],plans:[],executions:[],responses:[],cycles:[],exposures:[],outcomes:[],environment:[],
     models:{calibration:{},versions:{}},
-    settings:{units:'imperial',detail:'insightful',textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
+    settings:{units:'imperial',detail:NEW_RECORD_DETAIL,textScale:'M',density:'cozy',contrast:'normal',motion:'auto',theme:'dark',showModels:true,lineSpacing:'normal',letterSpacing:'normal',textWeight:'regular',folds:{},lastBackupAt:null,onboarded:false,program:'fullbody3',programHistory:[],foodDatabaseVersion:null,favorites:[],deviceTests:{},jobs:{}},
     ledger:{migrations:[],saves:0,lastSaveAt:null,corruptions:[]},
     demo:{active:false,generatedAt:null,scenario:null}
   };
@@ -99,6 +108,9 @@ function migrate(db){
   /* every persisted collection (PERSIST_COLLECTIONS, 22-persistence.js): a hand list here missed plans, executions and environment */
   PERSIST_COLLECTIONS.forEach(function(k){if(!Array.isArray(db[k]))db[k]=[];});
   if(!db.settings||typeof db.settings!=='object')db.settings=fresh.settings;
+  /* a stored record with no detail level was showing Insightful (the level every record had before new ones started at
+     Casual), so it keeps that rather than taking a new record's default */
+  if(db.settings.detail===undefined)db.settings.detail='insightful';
   Object.keys(fresh.settings).forEach(function(k){if(db.settings[k]===undefined)db.settings[k]=fresh.settings[k];});
   if(!db.profile||typeof db.profile!=='object')db.profile=fresh.profile;
   if(!db.ledger||typeof db.ledger!=='object')db.ledger=fresh.ledger;

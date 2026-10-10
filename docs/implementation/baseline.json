@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-07T02:54:06.844Z",
-  "sourceBuildId": "ed2073643a",
-  "releaseId": "1b148676318d",
+  "generatedAt": "2026-10-10T21:26:16.778Z",
+  "sourceBuildId": "d0e36650b6",
+  "releaseId": "c7513c3f859b",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -84,9 +84,9 @@
     "browser": "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
   },
   "registries": {
-    "quantities": 38,
+    "quantities": 41,
     "quantitySingleSource": true,
-    "models": 45,
+    "models": 50,
     "actions": 500,
     "capabilities": 22
   },

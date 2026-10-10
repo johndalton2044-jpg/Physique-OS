@@ -4,7 +4,7 @@
    Locally (a gate):            node tests/deployment-smoke.mjs --local
      builds three production-shaped stacks \u2014 a static site with no server (the reported failure), a static site with the
      rewrite to a running server, and a rewrite to a dead server \u2014 and drives the app through each. */
-import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {spawn} from 'node:child_process';
+import {releaseContract} from './_release-contract.mjs';import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {spawn} from 'node:child_process';
 const args=process.argv.slice(2),arg=k=>{const i=args.indexOf(k);return i>=0?args[i+1]:null;};
 let failed=0;const line=(ok,msg,d)=>{if(!ok)failed++;console.log('  '+(ok?'pass':'FAIL')+'  '+msg+(d&&!ok?'  \u2014 '+d:''));};
 setTimeout(()=>{console.log('  FAIL  the smoke test did not finish within 170 s');process.exit(1);},170000).unref();
@@ -42,6 +42,8 @@ async function certify(app,o){o=o||{};const R=[],rec=(layer,ok,detail)=>{R.push(
   if(o.out){fs.writeFileSync(o.out,JSON.stringify(cert,null,2));console.log('certificate written to '+o.out);}
   return cert;}
 async function local(){
+  /* the release contract: runtime, lock and CI (catalogue W-001, W-002) */
+  releaseContract(line);
   /* The host builds the app and serves dist, never the repository root: without these Vercel looked for a "public"
      folder after the build and refused to deploy ("No Output Directory named public"). */
   {const vj=JSON.parse(fs.readFileSync('vercel.json','utf8'));

@@ -520,8 +520,10 @@ for(const vp of VIEWPORTS){
     /* nav.top — the jump-to-top button that appears after scrolling */
     await page.evaluate(()=>window.scrollTo(0,2400));await page.waitForTimeout(400);
     const upShown=await page.evaluate(()=>{const b=document.getElementById('upFab');return !!b&&!b.hidden&&b.getClientRects().length>0;});
-    if(upShown){await page.click('#upFab');await page.waitForTimeout(700);}
-    ok('nav.top',upShown&&await page.evaluate(()=>window.scrollY<10),upShown?'':'the button never appeared');
+    /* the scroll to the top is smooth, and its length depends on the browser and the machine: wait for the page to arrive
+       (up to 4 s), not a fixed 700 ms, which a slower CI runner's Chrome had not finished */
+    let topY=null;if(upShown){await page.click('#upFab');await page.waitForFunction(()=>window.scrollY<10,null,{timeout:4000}).catch(()=>{});topY=await page.evaluate(()=>window.scrollY);}
+    ok('nav.top',upShown&&topY!=null&&topY<10,upShown?'still '+topY+' px down 4 s after the press':'the button never appeared');
     /* nav.exercise — a row in the exercise library */
     await page.evaluate(()=>{window._LIB.q='';window.dispatchAct('nav.exlibrary');});await page.waitForTimeout(150);
     const exName=await page.evaluate(()=>{const r=document.querySelector('#editBackdrop .lib-row[data-act="nav.exercise"] .lib-name');return r&&r.textContent;});

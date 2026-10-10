@@ -231,7 +231,7 @@ function costConfidence(){
 function inventoryConfidence(){
   var il=null;try{il=inventoryLifecycle();}catch(e){}
   if(!il||il.status!=='ok')return null;
-  var measured=il.rows.filter(function(r){return /entries over/.test(r.basis||'');}).length;
+  var measured=il.rows.filter(function(r){return r.rateSource==='measured';}).length;
   return {items:il.rows.length,measuredRates:measured,
     confidence:measured===il.rows.length&&measured>0?'low':'very low',
     note:'A depletion forecast from a stated dose is arithmetic; one from measured consumption is an estimate. '+

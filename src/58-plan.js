@@ -95,13 +95,17 @@ function ensurePlan(){
 /* Off while a record is being generated or rebuilt: the demo's own interventions fired this mid-generation, so version 1
    captured a half-built state and the next version attributed the rest of the difference to the person's edit. */
 var _PLAN_HOOKS_OFF=0;
+/* a decision's evidence list, as the decision engine built it (catalogue doc 2, P1.4). A plan version's evidence was rebuilt
+   by joining the why list into one sentence and cutting it at commas, which cut "2,100 kcal" into "2" and "100 kcal". */
+function _decisionEvidence(d){if(!d)return [];
+  return Array.isArray(d.evidence)?d.evidence.slice():(Array.isArray(d.why)?d.why.slice():(d.why?[String(d.why)]:[]));}
 function notePlanChange(kind,extra){
   if(_PLAN_HOOKS_OFF>0)return null;
   if(typeof _PERSIST_SUSPENDED!=='undefined'&&_PERSIST_SUSPENDED>0&&!(extra&&extra.inFixture))return null;
   if(!activePhase()&&!plansOf().length)return null;
   var t={kind:kind};Object.keys(extra||{}).forEach(function(k){t[k]=extra[k];});
   if(kind==='decision'&&!t.evidence){try{var d=decide();t.decisionCode=d.code;t.reason=t.reason||d.lede||d.verb;
-    t.evidence=(d.why?String(d.why).split(/,(?![^(]*\))/):[]).map(function(x){return x.trim();}).filter(Boolean);
+    t.evidence=_decisionEvidence(d);
     t.alternatives=(d.alternatives||[]).map(function(a){return typeof a==='string'?a:(a.label||a.verb||a.code||JSON.stringify(a));});
     t.expected=d.action||null;}catch(e){}}
   if(_PLAN_TXN){_PLAN_TXN.notes.push(t);return null;}   /* inside changePlan: gathered into its one version */

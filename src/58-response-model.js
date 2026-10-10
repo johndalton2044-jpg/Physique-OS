@@ -6,9 +6,9 @@
    much of it rests on your own data. The bridge from adaptive rules to personalised adaptation.
    ============================================================================ */
 /* priors per unit of dose (per day, sustained), with a relative SD; null mean = no population figure (centred on zero, wide) */
-function RESPONSE_PRIORS(){var kg=typeof _kgNow==='function'?(_kgNow()||90):90;return {
-  'calories\u2192weight':{perUnit:7/3500,sdAbs:0.3*7/3500,scale:100,label:'per 100 kcal a day',unit:'lb/week',basis:'energy arithmetic: about 3,500 kcal per lb'},
-  'steps\u2192weight':{perUnit:-0.0005*kg*7/3500,sdAbs:0.5*0.0005*kg*7/3500,scale:1000,label:'per 1,000 steps a day',unit:'lb/week',basis:'about 0.5 kcal per step per kg of body weight'},
+function RESPONSE_PRIORS(){var kg=typeof _kgNow==='function'?(_kgNow()||90):90,D=energyDensityRef(),kl=D.kcalPerLb;return {
+  'calories\u2192weight':{perUnit:7/kl,sdAbs:0.3*7/kl,scale:100,label:'per 100 kcal a day',unit:'lb/week',basis:'energy arithmetic: about '+kl.toLocaleString()+' kcal per lb of scale weight',density:D},
+  'steps\u2192weight':{perUnit:-0.0005*kg*7/kl,sdAbs:0.5*0.0005*kg*7/kl,scale:1000,label:'per 1,000 steps a day',unit:'lb/week',basis:'about 0.5 kcal per step per kg of body weight, at '+kl.toLocaleString()+' kcal per lb',density:D},
   'training days\u2192weight':{perUnit:0,sdAbs:0.3,scale:1,label:'per training day a week',unit:'lb/week',basis:'no reliable population figure: centred on no effect'},
   'protein\u2192hunger':{perUnit:0,sdAbs:0.03,scale:20,label:'per 20 g of protein a day',unit:'hunger points',basis:'no reliable population figure: centred on no effect'}};}
 function _respKey(r){return r.variable+'\u2192'+(r.outcome||'?');}
@@ -62,7 +62,7 @@ function predictResponse(variable,outcome,dose,opts){opts=opts||{};var M=persona
   /* self-calibration (Stage H): the interval widened or narrowed by the factor its own record of predictions supports */
   var k=typeof calibrationScale==='function'?calibrationScale('personal_response'):1,m=src.mean*per,s=Math.abs(src.sd*per)*k;return {mean:round(m,3),lo:round(m-2*s,3),hi:round(m+2*s,3),unit:row.unit,n:row.n,personalWeight:row.personalWeight,
     basis:row.n?('your '+row.n+' earlier response'+(row.n===1?'':'s')+' with the population figure ('+Math.round(row.personalWeight*100)+'% yours)'+(c?', in '+c:'')):row.prior.basis};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_response'))return;
   MODELS.push({id:'personal_response',name:'Personal response model',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','steps','calories'],minN:1,
     assumes:['the effect scales with dose','the effect is steady over time','responses are independent'],failsWhen:['fewer than one response per change','a change that interacts with another at the same time'],
     output:'the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data',consumers:['predictResponse','evaluateResponse'],freshnessDays:7,

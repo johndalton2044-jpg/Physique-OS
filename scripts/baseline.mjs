@@ -59,6 +59,7 @@ const baseline={
 };
 fs.writeFileSync(path.join(OUT,'baseline.json'),JSON.stringify(baseline,null,2)+'\n');
 
+w.runVerification();   /* the matrix reads the latest verification run */
 const cm=w.capabilityMatrix();
 fs.writeFileSync(path.join(OUT,'capability-matrix.json'),JSON.stringify({
   generatedAt:baseline.generatedAt,buildId:version.build,

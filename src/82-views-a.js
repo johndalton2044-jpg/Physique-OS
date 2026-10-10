@@ -210,6 +210,10 @@ function renderActionsChecklist(dec,S){
       (r.status!=='done'&&r.status!=='skipped'?uiBtn('Log',act[1],act[2]||null,'btn-sm btn-ghost'):'')+'</div></div>';}).join('');
   return uiCard({title:'Today\u2019s actions',sub:done+' of '+E.rows.length+' done \u00b7 plan v'+E.planVersion,body:head+'<div class="check-list">'+rows+'</div>'});
 }
+/* what a forecast promotion decided, said from its outcome value (catalogue doc 2, P1.4): this read the reason sentence for
+   "too close" and "too few", so rewording a reason would have changed what the view said */
+function _promotionPhrase(pr){if(!pr||!pr.outcome)return '';
+  return ' \u2014 '+({promoted:'clearly better on hold-out forecasts',tie:'too close to call','too few':'not enough evidence to compare','not better':'improved one not better here'}[pr.outcome]||'improved one not better here');}
 function renderForecastCard(S){
   var f=[S.forecast7,S.forecast14,S.forecast28];var ok=f.filter(function(x){return x.status==='ok';});
   if(!ok.length)return uiCard({title:'Forecast',sub:'predictive \u00b7 not yet available',body:'<div class="muted">'+esc((S.forecast14.need||['a weight trend']).join(', '))+' before any forecast is stamped.</div>'});
@@ -221,7 +225,7 @@ function renderForecastCard(S){
   /* Which forecast is shown at each horizon, and why — the current straight line, or the improved method where it won a
      head-to-head on hold-out forecasts. A forecast should say what produced it. */
   var srcTxt=ok.map(function(x){var pr=x.promotion;return x.horizonDays+' d: '+(x.source==='weight_forecast_family'?('improved ('+x.method+')'):'current straight line')+
-    (pr&&pr.reason?(' \u2014 '+(pr.promoted?'clearly better on hold-out forecasts':(/too close/.test(pr.reason)?'too close to call':(/too few/.test(pr.reason)?'not enough evidence to compare':'improved one not better here')))):'');}).join(' \u00b7 ');
+    _promotionPhrase(pr);}).join(' \u00b7 ');
   return uiCard({title:'Forecast '+clsMark('PREDICTIVE'),sub:'stamped to the ledger before outcomes; scored when due',body:rows+goalTxt+
     /* Model health (H4): a forecast is trusted according to its record. The caution is visible at every level; the
        detail is for the Insightful level. */

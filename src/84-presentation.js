@@ -601,6 +601,7 @@ var TYPE_ALIASES={
   soreness:'readiness',fatigue:'readiness',stress:'readiness',motivation:'readiness',
   hunger:'readiness',fullness:'readiness',cravings:'readiness',difficulty:'readiness',
   sleepq:'sleep',water:'intake',cardio:'sleep',mobility:'sleep',supplement:'adherence',
+  sitreach:'mobilityRange',kneewall:'mobilityRange',hrr:'cardioFitness',cmj:'jumpHeight',sprint:'sprintTime',   /* field tests (Stage D item 4) */
   urine:'readiness',sweatrate:'intake'   /* a 1-8 scored scale; a volume of fluid (per hour) */
 };
 function typeForQuantity(q){

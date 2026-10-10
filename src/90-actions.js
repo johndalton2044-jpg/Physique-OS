@@ -488,9 +488,12 @@ SHEETS.recoveryLatent=function(){var r=recoveryLatentState();
   if(legacy&&legacy.status==='ok')body+='<div class="prov">The older readiness summary, an average of the same ratings, reads '+esc(String(legacy.score!=null?legacy.score:legacy.label||''))+' \u2014 kept as a summary of the readings, not as the state.</div>';
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 SHEETS.internals=function(){
-  var rows=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'].map(function(id){
+  var ids=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'];
+  /* opening this sheet asks for the checks: they run once, as a recorded verification run, and the rows read its entries */
+  var vr=runVerification({only:ids});
+  var rows=ids.map(function(id){
     var st=capabilityStatus(id),e=st.evidence||{};
-    return uiRow(esc(id),e.verification==='passes'?uiPill('verified','good'):uiPill('check fails','negative'),{sub:'live check of its behaviour, run now'});}).join('');
+    return uiRow(esc(id),e.verification==='passes'?uiPill('verified','good'):uiPill(e.verification==='not run'?'not run':'check fails',e.verification==='not run'?'neutral':'negative'),{sub:'live check of its behaviour, run when this opened ('+vr.durationMs+' ms)'});}).join('');
   var ra=modelRegistryAudit();
   rows+=uiRow('Registered models',ra.executable+' of '+MODELS.length+' executable',{sub:'every model resolves through the gateway with version, provenance and uncertainty'});
   var t=infer({modelId:'weight_trend'});
@@ -609,7 +612,14 @@ registerAction('demo.load',function(){return confirmDialog({title:'Load the demo
 registerAction('demo.reset',function(){var demo=DB.demo&&DB.demo.active;return confirmDialog({title:demo?'Clear the demo record?':'Erase everything?',msg:demo?'The record becomes empty. Undo restores it.':'All observations, sessions, food logs, phases, experiments and predictions are removed from this device. A backup is written to IndexedDB first. Export a JSON backup before doing this if you want to keep anything.',okLabel:demo?'Clear':'Erase',danger:!demo}).then(function(ok){if(!ok)return;pushUndo('reset');writeAutoBackup();DB=emptyDB();DB.settings.onboarded=true;save('reset');_memoInvalidate();applySettings();switchTab('today');toast('Record cleared',{undo:true});});});
 /* ---- data: backup, restore, exports ---- */
 function downloadText(name,text,mime){try{var blob=new Blob([text],{type:mime||'application/octet-stream'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);return true;}catch(e){_q(e);return false;}}
-function backupJSON(){var counts={observations:DB.observations.length,sessions:DB.sessions.length,foodLogs:DB.foodLogs.length,phases:DB.phases.length,predictions:DB.predictions.length,experiments:DB.experiments.length};var obj=Object.assign({},DB,{backup:{exportedAt:nowISO(),app:APP_NAME,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,build:BUILD_ID,counts:counts}});return JSON.stringify(obj,null,1);}
+/* WHAT A BACKUP HOLDS OF THE VISUAL HISTORY (catalogue W-004). Progress photos are kept on this device only, by design:
+   the record holds each photo's date and pose, and the images stay in the browser database, so an exported backup never
+   carries a photo. The backup says so in its own header, and the Data card says so before one is made, so nobody takes
+   a backup for a complete visual history. */
+function backupPhotoStatement(){var n=((DB.settings&&DB.settings.photos)||[]).filter(function(p){return p&&!p.removedAt;}).length;
+  return {count:n,imagesIncluded:false,completeVisualHistory:n===0,
+    statement:n?('This backup holds the dates and poses of '+n+' progress photo'+(n===1?'':'s')+', not the images: the images stay on this device only.'):'There are no progress photos, so nothing visual is left out.'};}
+function backupJSON(){var counts={observations:DB.observations.length,sessions:DB.sessions.length,foodLogs:DB.foodLogs.length,phases:DB.phases.length,predictions:DB.predictions.length,experiments:DB.experiments.length};var obj=Object.assign({},DB,{backup:{exportedAt:nowISO(),app:APP_NAME,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,build:BUILD_ID,counts:counts,photos:backupPhotoStatement()}});return JSON.stringify(obj,null,1);}
 registerAction('data.backup',function(){var s=backupJSON();if(downloadText('physique-os-backup-'+todayISO()+'.json',s,'application/json')){DB.settings.lastBackupAt=nowISO();save('backup');renderAll();toast('Backup exported \u00b7 '+fmtNum(s.length/1024,0)+' KB');}});
 registerAction('data.restore',function(){var f=document.getElementById('restoreFile');if(f){f.value='';f.click();}else toast('Open Tools \u2192 Data to restore');});
 /* What a file IS is decided by reading it, not by which button opened the picker. Marking the input with a

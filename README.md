@@ -33,6 +33,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | real data path | population | surfaced | local | internal | — | gate engine |
 | Body composition: fat and lean trajectories | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | measured | gate engine |
+| Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | gate engine, workflow V-014 |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Personal knowledge: versions, conflicts and decay | surfaced | heuristic | real data path | early personal | surfaced | local | internal | — | gate engine |
 | Experiment portfolio: the next test by expected information gain | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |
@@ -85,13 +86,19 @@ Foundation Foods (354 foods with analytical nutrients and portions) are embedded
 
 ## Building and verifying
 
-**Requirements.** Node 20 or later. The build itself needs nothing else. The gates need two dev dependencies
-and, for the real-browser gate, a Chromium-family browser:
+**Requirements.** Node 22.23.3, the version in `.nvmrc` (any Node in `^22.22.2 || ^24.15.0 || >=26.0.0`, the range every
+locked dependency accepts, also works). A development build needs only the repository
+(`PHYSIQUE_DEV_BUILD=1 node build.mjs`); a production build also needs the pinned food corpus, and refuses to run without
+it. The gates need two dev dependencies and, for the real-browser gate, a Chromium-family browser:
 
 ```
-npm install                    # jsdom and playwright-core (dev dependencies only)
-npx playwright install chromium   # only if Chrome, Chromium or Edge is not already installed
+npm ci                         # jsdom and playwright-core, exactly as locked (dev dependencies only)
+npx playwright-core install chromium   # the Chromium build the locked playwright-core drives; the gates use it first
+node scripts/food-fetch.mjs --url <archive>   # the food corpus, checked against data/food.lock.json
 ```
+
+The whole release environment (runtime, browser, corpus identity and size, environment variables, what fails when a
+part is missing) is in `docs/release-environment.md`.
 
 The browser gate finds a browser on its own — `CHROME_PATH` if set, then the standard Chrome, Chromium and Edge
 locations on Linux, macOS and Windows, then Playwright's browser cache. If it finds none it fails with these

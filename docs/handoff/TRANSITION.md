@@ -13,10 +13,11 @@ Everything below is to be executed in order. The rules for every change are in `
    - `dist/` is ignored by `.gitignore`; Vercel builds it.
 2. The archive contains `.gitattributes`, which forces LF line endings. Run `git add --renormalize .` once.
    - Build identities hash source bytes, so a CRLF checkout builds a different ID and fails the `reproducible` gate.
-3. Install and build:
+3. Install and build, on the Node in `.nvmrc` (22.23.3; the deploy gate fails on a Node outside the range in
+   `package.json`):
    ```
    npm ci
-   npx playwright install --with-deps chromium
+   npx playwright-core install --with-deps chromium   # the browser build the lock pins (not the latest playwright's)
    node scripts/food-fetch.mjs --url /path/to/physique-os-food-data.tar.gz   # if data/food is not already present
    node build.mjs
    ```
@@ -27,15 +28,18 @@ Everything below is to be executed in order. The rules for every change are in `
 
 ## 1. Release procedure (after every change)
 
+Commit first: the `reproducible` gate builds the committed commit, not the working tree.
+
 ```
 node build.mjs
 rm -f docs/release/gate-results.json
-for g in build authority layers maturity dictionary engine adversarial audit conformance governance shipped test browser visual persistence spine parity adapt integration intelligence external voice direction inputs blackbox ai deploy server connect timezones; do node tests/gate-record.mjs $g || break; done
-PHYSIQUE_FOOD_ARCHIVE=/path/to/physique-os-food-data.tar.gz node tests/gate-record.mjs reproducible
-for g in perf cloud:e2e yields:gate baseline verify; do node tests/gate-record.mjs $g; done
+PHYSIQUE_FOOD_ARCHIVE=/path/to/physique-os-food-data.tar.gz node tests/gate-record.mjs --all
 npm run -s audit
 node tests/release.mjs --from-results     # must end: 24/24 verification items pass
 ```
+
+- **The gates:** `--all` runs every gate in `tests/gates.mjs` in order, the same list CI and the release check read, and
+  records each one even after a failure. A gate that runs past its ceiling there is stopped and recorded as failed.
 
 - **Slow gates:** `test`, `browser`, `shipped`, `timezones` and `reproducible` take about 2–5 minutes each.
 - **On failure:** fix the cause; never loosen the gate.
@@ -63,7 +67,7 @@ Each item is done only when every common acceptance criterion holds:
 - it has at least one real consumer;
 - it has self-tests with independently computed expectations, including one that was seen to fail;
 - it has a black-box workflow when it changes what a person does on screen;
-- all 36 gates pass;
+- every gate in `tests/gates.mjs` passes;
 - the roadmap entry and the plan table are updated.
 
 ### Stage D — physiology (remaining)
@@ -82,6 +86,9 @@ Each item is done only when every common acceptance criterion holds:
    - From cardio sessions (modality, minutes, and heart rate where logged), estimate an aerobic-capacity trend with uncertainty.
    - Consumer: the capability vector's endurance entry.
 4. **Mobility response, conditioning response, power and speed:** only once observation types measure them. Each needs a new observation type (CLAUDE.md rule 7) and a logging path first.
+   - Done at build 7dd314744b. The measurements chosen are field tests anyone can repeat without a laboratory: sit-and-reach and
+     knee-to-wall (cm), one-minute heart-rate recovery (bpm), countermovement jump height (cm) and a 20 m sprint (s),
+     logged as Fitness tests in the quick log.
 
 ### Stage E — learning
 
@@ -115,7 +122,7 @@ Each item is done only when every common acceptance criterion holds:
 
 ## 4. Known limits (state them; never hide them)
 
-- **Associations, not causes:** the personal dose, frequency and sleep models compare regions or days with each other, not changes over time.
+- **Associations, not causes:** the personal dose, frequency and sleep models compare regions or days with each other, not changes over time. The mobility, conditioning, power and speed responses relate each field test to the dose of the four weeks before it, so practice at the test itself, and anything else that changed with the dose, moves them too.
 - **Fatigue per exposure:** fatigue per training exposure is not measured, so "response per unit fatigue" is not claimed.
 - **Mock-tested only:** the AI providers, wearable connections and S3 backups are tested against protocol-checking mocks only.
 - **Synthetic demo:** the demo record is synthetic. No capability may claim real-world evidence until item 11.
@@ -154,3 +161,51 @@ Never start an item before what it depends on is in place.
     records report what they need instead of an estimate;
   - the demo's weight comes from one source, so sensor fusion changes nothing in it;
   - the aerobic filter's demo intervals were too wide and are now narrowed by its own record.
+
+## 7. State at 7dd314744b (after item 4 and the carried decisions)
+
+- **Gates and tests:** all 36 gates pass, none skipped, and the release check passes 24/24 at every item's build. There
+  are 1,773 in-app self-tests, 400 interface tests and 10 black-box workflows (V-013: a new record opens at Casual;
+  V-014: logging fitness tests and reading them back).
+- **Done since §6, each released on its own build:**
+  - **Item 4:** four personal responses (mobility, conditioning, power, speed), on five new observation types, a length
+    dimension and seconds in the one unit table, and a Fitness tests entry in the quick log. Each starts from a
+    population prior per unit of weekly dose and reports its personal weight. Consumers: the capability vector and the
+    Learn → Physiology card.
+  - **Casual by default:** a new record starts at Casual. A stored record keeps its level, and one stored before the
+    level existed gets Insightful, which is what it was showing. The audit and the interface tests check the rail
+    contract at Insightful and check Casual for what it drops.
+  - **Undo across a restore merge:** it already worked; self-tests now prove it durable across a restart and on another
+    device.
+- **Waiting:** item 11 needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key.
+- **Open decision:** undoing a sync merge of another device's changes is not durable: the next sync brings them back.
+  Making it durable would revoke that device's events, which removes them on every device.
+
+## 8. State at d0e36650b6 (after the work-and-direction catalogues)
+
+- **Gates and tests:** 37 gates (the 37th, `independent`, checks the app without asking it about itself), each under a
+  runtime ceiling in `tests/gates.mjs`; all pass, none skipped, and the release check passes 24/24. CI at the repository
+  root runs the same gates on GitHub, and is green. There are 1,813 in-app self-tests in 19 suites, 400 interface
+  tests and 10 black-box workflows.
+- **What the round did:** every item of both catalogues is in `docs/handoff/CATALOGUE.md`, with its status and the build
+  that carries it. In short:
+  - release integrity: root CI, the runtime contract, one gate list with ceilings, the clean room from the commit, one
+    browser build, the release environment written down;
+  - verification integrity: capability statuses read recorded verification runs and execute nothing; an independent
+    verification gate; self-test suites;
+  - analytical correctness: one energy-density service, unique registry ids, no prose as data, derived maturity,
+    epistemic classes, executable failure conditions;
+  - durability: sync retry cases, one persistence authority, backups that say they hold no photo images.
+- **Waiting on the person:**
+  - item 11 still needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key;
+  - making a red CI run block a merge needs a branch-protection rule in the repository's settings;
+  - photos stay local-only (option A) unless an encrypted attachment store (option B) is wanted;
+  - undoing a sync merge of another device's changes is still not durable (§7).
+- **Not done, and why:**
+  - structured explanations (catalogue P1.1 to P1.3) restructure the decision and explanation layers, a change of its own;
+  - running one self-test suite alone needs each suite to build its own fixture;
+  - prospective validation and calibration need months of real use.
+- **New limits to state:**
+  - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243;
+  - capability statuses that need a live check read "not run" until a verification run has happened for this build (the
+    internals sheet runs one when opened).

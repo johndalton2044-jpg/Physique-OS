@@ -117,7 +117,11 @@ const script=/<script>([\s\S]*?)<\/script>/.exec(html)[1];
   if(orphan.length)add('P2','dead-toggle','a rule is keyed on a class nothing adds \u2014 the shape of the rail bug',orphan.join(', '));
 }
 
-/* ---------------- 4. rail contract: visibility driven by the attribute AT reads ---------------- */
+/* ---------------- 4. rail contract: visibility driven by the attribute AT reads ----------------
+   The rails belong to the Insightful and Developer levels; Casual drops the position rail and the command palette by
+   design (00-head.html), so the contract is checked at Insightful, and Casual is checked for exactly that. A new record
+   starts at Casual, so the level the audit loads in is not the one the rails are for. */
+const _lvl0=w.DB.settings.detail;w.DB.settings.detail='insightful';w.applySettings();
 {
   const rails=['railLeft','railRight'].map(id=>w.document.getElementById(id));
   if(rails.some(r=>!r))add('P0','rail','a rail container is missing');
@@ -152,6 +156,14 @@ const script=/<script>([\s\S]*?)<\/script>/.exec(html)[1];
   if(alwaysOn.length)add('P0','rail','a control that should always be available is invisible',alwaysOn.join(', '));
   else good('rail','the always-available controls render',minis.length+' rail buttons checked');
 }
+{ /* Casual: the position rail and the palette are gone by design; the right rail (undo, voice) and the quick log stay */
+  w.DB.settings.detail='casual';w.applySettings();
+  const gone=['railLeft','cmdkFab'].filter(id=>visible(w.document.getElementById(id)));
+  const kept=[['railRight',w.document.getElementById('railRight')],['quick log',w.document.querySelector('.fab[data-act="log.open"]')]].filter(x=>!x[1]||!visible(x[1])).map(x=>x[0]);
+  if(gone.length)add('P1','rail','Casual should drop the position rail and the command palette, but shows',gone.join(', '));
+  else if(kept.length)add('P0','rail','Casual hides a control someone logging needs',kept.join(', '));
+  else good('rail','Casual drops the position rail and the palette, and keeps the right rail and the quick log');
+  w.DB.settings.detail=_lvl0;w.applySettings();}
 
 /* ---------------- 5. population: the data-backed surfaces have data ---------------- */
 {

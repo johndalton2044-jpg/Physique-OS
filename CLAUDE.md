@@ -1,30 +1,34 @@
 # Physique OS — working rules for Claude Code
 
 Read `docs/handoff/TRANSITION.md` before starting work: it holds the current state, the backlog and the order of work.
+`docs/handoff/CATALOGUE.md` says where each item of the two work-and-direction catalogues stands.
 This file holds the rules that apply to every change.
 
 ## What this is
 
 An offline-first personal training and nutrition system: one HTML page built from `src/*.js` (concatenated in file-name
 order into one script; every top-level function is a global), an optional sync server (`server/server.mjs`), and a
-release discipline of 36 gates. Node 22 (`>=20`). No framework, no bundler.
+release discipline of 37 gates (the list is `tests/gates.mjs`). Node 22.23.3 (`.nvmrc`; `package.json` promises only the range every locked dependency
+accepts). No framework, no bundler.
 
 ## Commands
 
 ```
 npm ci                                          # dependencies from the lock
-npx playwright install --with-deps chromium     # browsers for the browser gates
+npx playwright-core install --with-deps chromium   # the browser build the locked playwright-core drives
 node scripts/food-fetch.mjs --if-missing        # food corpus (needs data/food or FOOD_DATA_URL)
 node build.mjs                                  # build dist/ (fails without the food corpus)
 PHYSIQUE_DEV_BUILD=1 node build.mjs             # development build without the corpus (marked in version.json)
 node tests/<gate>.mjs                           # one gate directly
 node tests/gate-record.mjs <gate>               # one gate, recorded against the current build
+node tests/gate-record.mjs --all                # every release gate in order (needs PHYSIQUE_FOOD_ARCHIVE; commit first)
 node tests/release.mjs --from-results           # the release check (refuses a missing, failed or skipped gate)
 ```
 
 Fast loop after a change: `node build.mjs`, then `node tests/authority.mjs`, `node tests/layers.mjs`,
 `node tests/maturity.mjs`, `node tests/dictionary.mjs`, `node tests/engine-check.mjs`, then the gates the change touches.
-Before a release: every gate, recorded (the list and order are in `docs/handoff/TRANSITION.md`).
+Before a release: every gate, recorded (the list, order and runtime ceilings are in `tests/gates.mjs`; the procedure is in
+`docs/handoff/TRANSITION.md`).
 
 ## Rules (each is enforced by a gate; the gate names are in brackets)
 
@@ -62,7 +66,8 @@ Before a release: every gate, recorded (the list and order are in `docs/handoff/
 ## Editing conventions
 
 - Self-tests live in `src/95-selftest.js`; add new blocks immediately before the line containing
-  `ok('Response is a first-class entity with its own event',`.
+  `ok('Response is a first-class entity with its own event',`, each opening with `_stSuite('<suite>');` so its checks
+  are filed and timed under their suite (the engine gate prints the suites and holds each to its ceiling).
 - When editing by script, assert that each anchor exists before replacing it; an edit that silently does not apply has
   happened in this project.
 - Write real characters in Markdown, never `\u2014`-style escapes.

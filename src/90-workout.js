@@ -293,7 +293,11 @@ registerAction('diag.server',function(){var target=_SHEET&&_SHEET.buf?_SHEET.buf
   testExternalServer({probeProvider:true}).then(function(d){DB.settings.lastServerCheck={code:d.code,verdict:d.verdict,at:d.at,steps:d.steps};save('settings');
     if(target&&_SHEET&&_SHEET.buf===target){target.diag=d;renderSheet();}renderAll();toast(d.code==='OK'?'The server works':'Server check: '+d.verdict.slice(0,90),d.code==='OK'?null:{tone:'attention',ms:8000});});});
 /* ---- physiology models on screen ---- */
+function _testRow(R,i){var t=R.tests[i];return t?t:{n:0,latest:null,status:'insufficient',need:'a test'};}
+function _testLine(t){return t.latest?(t.label+' '+t.latest.value+' '+t.unit):null;}
+function _testSub(t){return t.status==='ok'?((t.perUnit>0?'+':'')+t.perUnit+' '+t.unit+' per '+t.per+' ('+t.interval[0]+' to '+t.interval[1]+') \u00b7 '+Math.round(t.personalWeight*100)+'% your own tests \u00b7 '+t.reading):(t.latest?t.n+' test'+(t.n===1?'':'s')+' \u00b7 needs '+t.need:'log one in the quick log: Fitness tests');}
 function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=energyAvailability(),D=dietDigestibility(),L=null,sp=supplementEfficacy(),N=personalNeatResponse();
+  var Mo=capacityResponse('mobility'),Co=capacityResponse('conditioning'),Po=capacityResponse('power'),Sp=capacityResponse('speed');
   var lift=((DB.sessions||[]).filter(function(s){return (s.sets||[]).length;}).slice(-1)[0]||{sets:[]}).sets[0];if(lift)L=exerciseLearningCurve(lift.exercise);
   return [
     {icon:'heart',label:'Aerobic fitness',r:F,v:F.status==='ok'?F.headline.estimate+' ml/kg/min':null,sub:F.status==='ok'?('80% range '+F.headline.ci80.join('\u2013')+' \u00b7 '+F.headline.family+' \u00b7 '+F.headline.n+' sessions \u00b7 '+(F.headline.trend&&F.headline.trend.status==='ok'?'trend '+F.headline.trend.reading+' \u00b7 ':'')+F.headline.backtest.verdict):(F.need||[]).join('; ')},
@@ -303,6 +307,10 @@ function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=e
     {icon:'brain',label:'Learning'+(L&&L.exercise?' ('+L.exercise+')':''),r:L||{status:'insufficient'},v:L&&L.status==='ok'?L.stage:null,sub:L&&L.status==='ok'?('recent gain '+L.recentGain+'% \u00b7 '+L.sessions+' sessions'):(L&&L.need||['lifting sessions']).join('; ')},
     {icon:'walk',label:'Everyday movement in a deficit',r:N,v:N.status==='ok'?((N.perTenPct>0?'+':'')+N.perTenPct.toLocaleString()+' steps a day per 10% deficit'):null,
       sub:N.status==='ok'?(N.interval[0].toLocaleString()+' to '+N.interval[1].toLocaleString()+' \u00b7 '+Math.round(N.personalWeight*100)+'% your own data \u00b7 '+N.reading):N.need},
+    /* field tests (Stage D, item 4) */
+    {icon:'spark',label:'Mobility',r:Mo,v:[_testLine(_testRow(Mo,0)),_testLine(_testRow(Mo,1))].filter(Boolean).join(' \u00b7 ')||null,sub:[_testSub(_testRow(Mo,0)),_testSub(_testRow(Mo,1))].join(' \u00b7 ')},
+    {icon:'lungs',label:'Conditioning',r:Co,v:_testLine(_testRow(Co,0)),sub:_testSub(_testRow(Co,0))+(_testRow(Co,0).latest&&_testRow(Co,0).latest.value<=12?' \u00b7 a recovery of 12 bpm or less in a minute marks low fitness':'')},
+    {icon:'run',label:'Power and speed',r:Po,v:[_testLine(_testRow(Po,0)),_testLine(_testRow(Sp,0))].filter(Boolean).join(' \u00b7 ')||null,sub:[_testSub(_testRow(Po,0)),_testSub(_testRow(Sp,0))].join(' \u00b7 ')},
     {icon:'pill',label:'Supplements',r:sp,v:sp.status==='ok'?sp.supplements.filter(function(x){return x.status==='ok';}).length+' tested':null,sub:sp.status==='ok'?sp.supplements.map(function(x){return x.name+': '+(x.verdict||x.status);}).join(' \u00b7 '):(sp.need||[]).join('; ')}];}
 function physiologyRows(){return physiologySummary().map(function(x){return '<div class="feat">'+uiIcon(x.icon,{size:22})+'<div class="feat-body"><b>'+esc(x.label)+'</b> '+(x.v?'<span class="num">'+esc(x.v)+'</span> '+uiPill(x.r.cls||'HEURISTIC'):uiPill('needs data','neutral'))+'<div class="hint">'+esc(x.sub||'')+'</div></div></div>';}).join('');}
 registerAction('physio.open',function(){openSheet('edit',{form:'physio',title:'Physiology models',desc:'',buf:{}});});

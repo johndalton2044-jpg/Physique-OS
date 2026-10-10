@@ -1,0 +1,31 @@
+# Clean-room CI (catalogue W-001, W-002, W-031): the exact runtime in .nvmrc, dependencies from the lock, the food corpus
+# from its locked archive, a reproducible build, every release gate (the list and the runtime ceilings are in
+# tests/gates.mjs; a skipped, failed or timed-out gate fails), the release check, and the release evidence kept.
+name: ci
+on: [push, pull_request]
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - name: The browser the locked playwright-core drives (its own CLI, not the latest playwright's)
+        run: npx playwright-core install --with-deps chromium
+      - name: Food corpus from its locked archive
+        env: { FOOD_DATA_URL: '${{ secrets.FOOD_DATA_URL }}' }
+        run: node scripts/food-fetch.mjs --if-missing
+      - name: Reproducible build
+        run: SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) node build.mjs
+      - name: Every release gate, recorded against this build
+        env: { PHYSIQUE_FOOD_ARCHIVE: '${{ secrets.FOOD_DATA_URL }}' }
+        run: node tests/gate-record.mjs --all
+      - name: Release check (refuses a missing, failed, skipped or timed-out gate)
+        run: node tests/release.mjs --from-results
+      - name: Release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: release-evidence, path: docs/release/ }

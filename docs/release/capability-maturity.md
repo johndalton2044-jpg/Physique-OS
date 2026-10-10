@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build ed2073643a. Every status is derived from evidence the build can check; none is assigned by hand.
+Build d0e36650b6. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -32,7 +32,7 @@ Build ed2073643a. Every status is derived from evidence the build can check; non
 | Model | Version | Maturity | Evidence |
 |---|---|---|---|
 | weight_avg | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
-| weight_trend | 1.1 | OPERATIONAL_ANALYTICAL | assigned |
+| weight_trend | 1.1 | OPERATIONAL_ANALYTICAL | graded by rule |
 | water_noise | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | tdee_prior | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | tdee_personal | 1.2 | OPERATIONAL_ANALYTICAL | graded by rule |
@@ -53,7 +53,7 @@ Build ed2073643a. Every status is derived from evidence the build can check; non
 | personal_baseline | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | measurement_quality | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | change_point | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
-| response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | assigned |
+| response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | exercise_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | uncertainty_chain | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | personal_dose_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
@@ -63,18 +63,23 @@ Build ed2073643a. Every status is derived from evidence the build can check; non
 | intervention_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | personal_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | friction | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_mobility_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_conditioning_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_power_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_speed_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | cardio_fitness_latent | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | hydration_balance | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | supplement_efficacy | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | energy_availability | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | diet_digestibility | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
-| recovery_allocation | 1.0 | INFRASTRUCTURE_GRADE | assigned |
+| recovery_allocation | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | personal_sleep_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | body_composition_state | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | unified_optimiser | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| tissue_energy_density | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | personal_neat_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 
 Production-ready capabilities: 0. Experimentally validated engines: 0.

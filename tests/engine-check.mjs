@@ -243,8 +243,15 @@ run(`Object.keys(FIXTURES).forEach(function(name){withFixture(name,function(){
   (DB.experiments||[]).forEach(function(x){if(x.outcome==null){try{evaluateExperiment(x.id);}catch(e){}}});
   try{scorePredictions();save('prediction:score');}catch(e){}
 });});`);
-const st=run('(function(){var r=runSelfTest();return {passed:r.passed,failed:r.failed,failures:r.results.filter(function(x){return !x.ok;}).map(function(x){return x.name+": "+x.detail;}).slice(0,6)};})()');
+const st=run('(function(){var r=runSelfTest();return {passed:r.passed,failed:r.failed,failures:r.results.filter(function(x){return !x.ok;}).map(function(x){return x.name+": "+x.detail;}).slice(0,6),'+
+  'n:r.results.length,untagged:r.results.filter(function(x){return !x.suite;}).length,suites:r.suites,ceiling:r.suiteCeilingMs};})()');
 ok('the in-app self-test passes without a DOM ('+st.passed+' checks)',st.failed===0,st.failures.join(' | '));
+/* the self-test by suite (catalogue doc 2, P0.3): each check filed under a suite, each suite timed against its ceiling */
+ok('every self-test check belongs to a suite, and the '+st.suites.length+' suites account for all '+st.n,
+   st.untagged===0&&st.suites.reduce((a,x)=>a+x.n,0)===st.n,st.untagged+' untagged');
+const slow=st.suites.filter(x=>x.ms>st.ceiling);
+ok('no self-test suite runs past its '+(st.ceiling/1000)+' s ceiling (slowest: '+st.suites[0].id+', '+st.suites[0].ms+' ms)',!slow.length,slow.map(x=>x.id+' '+x.ms+' ms').join(', '));
+st.suites.forEach(x=>console.log('  suite  '+x.id.padEnd(17)+String(x.n).padStart(5)+' checks '+String(x.ms).padStart(7)+' ms'+(x.failed?'  '+x.failed+' failed, first: '+x.firstFailure:'')));
 const drift=run('(function(){save=__save;return {saves:__DRIFT_SAVES,drift:Object.keys(__DRIFT)};})()');
 ok('every save leaves a record its own event log reproduces ('+drift.saves+' saves, every field of every evented record)',
    drift.saves>100&&drift.drift.length===0,drift.drift.slice(0,8).join(' | '));

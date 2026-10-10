@@ -29,6 +29,11 @@ await new Promise(r=>web.listen(WEB,'127.0.0.1',r));
 const browser=await chromium.launch({executablePath:findBrowser(),args:['--no-sandbox','--disable-dev-shm-usage']});
 const p=await (await browser.newContext({viewport:{width:393,height:852},timezoneId:'America/New_York'})).newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
 const S=(fn,a)=>p.evaluate(fn,a);
+/* A recorded response is replayed at the time it was recorded. The app labels each day against the retrieval time and
+   counts Today's days from its own clock, so replaying a fixed recording on a later date failed this gate on the day its
+   last forecast day passed (2026-10-10). The clock is a system boundary: it is set here from the fixture itself. */
+const RECORDED=JSON.parse(fs.readFileSync('tests/fixtures/ext/open-meteo-forecast.json','utf8')).__retrievedAt;
+await p.clock.setSystemTime(new Date(RECORDED));
 await p.goto('http://127.0.0.1:'+WEB+'/index.html');await p.waitForTimeout(1400);
 await S(o=>{window.dispatchAct('welcome.skip');window.DB.settings.cloud=Object.assign({},window.DB.settings.cloud||{},{url:o});},'http://127.0.0.1:'+WEB);
 line(await S(()=>{window.switchTab('today');return !document.querySelector('#view-today .wx-now');}),'with no place set, Today shows no weather');
@@ -62,12 +67,14 @@ await S(()=>{window.__urls=[];});await nudge();await p.waitForTimeout(800);line(
 await S(()=>{window.DB.settings.weatherAuto=false;window.__urls=[];});await age(40);await nudge();await p.waitForTimeout(800);
 line(await S(()=>window.__urls.length===0),'with automatic updates off, nothing refreshes by itself');await S(()=>{window.DB.settings.weatherAuto=true;window.save&&window.save('settings');});
 /* a new launch with a stale saved forecast: it shows at once and refreshes in the background */
-await age(45);await S(()=>window.save&&window.save('environment'));await p.waitForTimeout(300);const t0=Date.now();await p.reload();
+await age(45);const aged=await S(()=>window.DB.environment.find(b=>b.dataset==='forecast').retrievedAt);
+await S(()=>window.save&&window.save('environment'));await p.waitForTimeout(300);const t0=Date.now();await p.reload();
 let shownAt=null;for(let i=0;i<60&&shownAt==null;i++){if(await S(()=>!!document.querySelector('#view-today .wx-now')))shownAt=Date.now()-t0;else await p.waitForTimeout(50);}
 const L0={shown:shownAt!=null,ms:shownAt};
 await p.waitForTimeout(2200);const L1=await S(()=>window.DB.environment.find(b=>b.dataset==='forecast').retrievedAt);
 line(L0.shown&&L0.ms<2500,'on launch the saved forecast shows at once (within '+L0.ms+' ms of reloading, before any network answer)',JSON.stringify(L0));
-line(Date.now()-Date.parse(L1)<60000,'and a stale one is refreshed in the background right after launch',L1);
+/* a replayed recording reports the time it was recorded, so a refresh shows as the aged stamp replaced by that time */
+line(aged!==RECORDED&&L1===RECORDED,'and a stale one is refreshed in the background right after launch',JSON.stringify({aged,after:L1,recorded:RECORDED}));
 /* units follow the person's setting */
 const U=await S(()=>{const a=window.fmtEnv('temperature',20),b=window.fmtEnv('windSpeed',10);window.DB.profile.units='metric';window.DB.settings.units='metric';const c=window.fmtEnv('temperature',20),d=window.fmtEnv('windSpeed',10);return [a,b,c,d];});
 line(U.some(x=>/\u00b0F|mph/.test(x))&&U.some(x=>/\u00b0C|km\/h/.test(x)),'units follow the setting (\u00b0F and mph, or \u00b0C and km/h)',JSON.stringify(U));

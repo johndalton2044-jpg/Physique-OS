@@ -33,8 +33,10 @@ function responseInterventions(){
 }
 /* expectation from population energy arithmetic, when nothing more specific was stated */
 function _expectedWeightChange(iv){var kg=typeof _kgNow==='function'?_kgNow():null;
-  if(iv.variable==='calories'&&typeof iv.to==='number')return {lo:(iv.to-iv.from)*7/3500*1.3,hi:(iv.to-iv.from)*7/3500*0.7,unit:'lb/week',basis:'energy arithmetic (3,500 kcal per lb), \u00b130%'};
-  if(iv.variable==='steps'&&kg&&typeof iv.to==='number'){var k=-(iv.to-iv.from)*0.0005*kg*7/3500;return {lo:k*1.5,hi:k*0.5,unit:'lb/week',basis:'about 0.5 kcal per step per kg, \u00b150%'};}
+  /* converted through the one energy-density service; the result names the model and version it was converted under */
+  var D=(iv.variable==='calories'||iv.variable==='steps')?energyDensityRef():null,kl=D?D.kcalPerLb:null;
+  if(iv.variable==='calories'&&typeof iv.to==='number')return {lo:(iv.to-iv.from)*7/kl*1.3,hi:(iv.to-iv.from)*7/kl*0.7,unit:'lb/week',basis:'energy arithmetic ('+kl.toLocaleString()+' kcal per lb of scale weight), \u00b130%',density:D};
+  if(iv.variable==='steps'&&kg&&typeof iv.to==='number'){var k=-(iv.to-iv.from)*0.0005*kg*7/kl;return {lo:k*1.5,hi:k*0.5,unit:'lb/week',basis:'about 0.5 kcal per step per kg, at '+kl.toLocaleString()+' kcal per lb, \u00b150%',density:D};}
   return null;}
 
 /* ---- evaluation: before, during, after, and the counterfactual ---- */
@@ -129,7 +131,7 @@ function planVersionAt(date){var P=plansOf().filter(function(p){return p.effecti
 function exposuresOf(){return (DB.exposures||[]).slice();}
 function outcomesOf(){return (DB.outcomes||[]).slice();}
 function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){return a.start<b.start?1:-1;});}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='intervention_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','intervention_response'))return;
   MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
     assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
     failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)','the record is too short for four matched periods (that estimate is then omitted)'],
@@ -141,6 +143,8 @@ function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){retu
 /* 1.2: each record carries its causal estimates beside the before/after one (Stage E) */
 var RESPONSE_MODEL_VERSION='response-1.2';
 function canonicalResponse(r,iv){if(!r)return r;var A=r.windows&&r.windows.after,P=r.primary||null,today=todayISO();
+  /* what kind of claim this response supports (catalogue W-010): responsive, unless the explicit causal pathway holds */
+  try{var ec=responseEpistemicClass(r);r.epistemicClass=ec.cls;r.epistemicBasis=ec.basis;}catch(e){_q(e,'P2');}
   r.exposureWindow=A?{from:A[0],to:A[1],days:Math.max(0,daysBetween(A[0],A[1]<today?A[1]:today)+1)}:null;
   r.executionIds=A?(DB.executions||[]).filter(function(x){return x.date>=A[0]&&x.date<=A[1]&&(!r.variable||!x.item||x.item===r.variable||x.item==='nutrition'&&r.variable==='calories'||x.item==='steps'&&r.variable==='steps');}).map(function(x){return x.id;}):[];
   r.expectedOutcome=r.expected?{mean:r.expected.mean,lo:r.expected.lo,hi:r.expected.hi,basis:r.expected.basis||null,unit:P&&P.unit||null}:null;

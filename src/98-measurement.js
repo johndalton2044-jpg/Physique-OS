@@ -20,6 +20,10 @@
    Every quantity that crosses a model boundary, typed. The audit below is what makes this more than a list:
    it scans the actual outputs of the engines and reports quantities travelling untyped. */
 var TYPES_EXTENDED={
+  /* the field tests of mobility, power and speed (Stage D; TRANSITION item 4); heart-rate recovery is cardioFitness */
+  mobilityRange:{dimension:'length',unit:'cm',temporal:'instant',aggregation:'last',cls:'MEASURED',population:'this person',note:'a range-of-motion field test on the person\u2019s own protocol'},
+  jumpHeight:{dimension:'length',unit:'cm',temporal:'instant',aggregation:'last',cls:'MEASURED',population:'this person',note:'countermovement jump, hands on hips'},
+  sprintTime:{dimension:'time',unit:'second',temporal:'instant',aggregation:'last',cls:'MEASURED',population:'this person',note:'20 m from a standing start'},
   mechanicalDemand:{dimension:'index',unit:'index',temporal:'instant',aggregation:'sum',cls:'HEURISTIC',
     population:'this person only',note:'force-time proxy, comparable within a programme'},
   neuralDemand:{dimension:'index',unit:'index',temporal:'instant',aggregation:'sum',cls:'HEURISTIC',
@@ -68,7 +72,8 @@ var TYPES_EXTENDED={
     population:'this person',note:'a residual, not separable into its parts'}
 };
 (function registerExtendedTypes(){
-  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];});}catch(e){}
+  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];
+    else if(TYPES[k]!==TYPES_EXTENDED[k])_registryConflict('QUANTITY_REGISTRY',k,'an extended type has the key of a base type; the base stands');});}catch(e){}
 })();
 /* The audit that makes the type system honest: find cross-model quantities travelling untyped. */
 function untypedQuantities(){
@@ -455,7 +460,8 @@ function measurementModel(type,opts){
    ============================================================================ */
 var QUANTITY_REGISTRY=(function(){
   /* Fold the extension set in first, so there is exactly one pass that owns every definition. */
-  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];});}catch(e){}
+  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];
+    else if(TYPES[k]!==TYPES_EXTENDED[k])_registryConflict('QUANTITY_REGISTRY',k,'an extended type has the key of a base type; the base stands');});}catch(e){}
   var PRECISION={mass:1,energy:0,energyRate:0,massRate:2,energyDensity:0,time:1,count:0,ratio:0,index:2,zScore:2};
   var UNCERTAINTY={MEASURED:'measurement',DERIVED:'model',EMPIRICAL:'sampling',CALIBRATED:'model',
     BLENDED:'parameter',PRIOR:'referenceData',HEURISTIC:'structural',PREDICTIVE:'forecast',POLICY:'none'};

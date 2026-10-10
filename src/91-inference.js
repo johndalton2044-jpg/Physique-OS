@@ -273,7 +273,7 @@ function buildProvenance(o){
   var vv=o.identity?o.identity.versionVector:{};
   var modelNode='model:'+o.model+'@'+(vv.modelVersion||'1');
   nodes.push(_provNode('model',modelNode,{source:o.model,version:vv.modelVersion||'1',
-    metadata:{maturity:(typeof ENGINE_MATURITY!=='undefined'&&ENGINE_MATURITY[o.model])||'ungraded'}}));
+    metadata:{maturity:(function(){var mm=MODELS.filter(function(x){return x.id===o.model;})[0];return mm?modelMaturity(mm):'ungraded';})()}}));
   var runNode='run:'+o.runId;
   nodes.push(_provNode('model-run',runNode,{source:o.model,runId:o.runId,
     version:vv.modelVersion||'1',parentIds:inputIds.concat([modelNode]),
@@ -327,7 +327,7 @@ function _depType(ref){
 /* 23 of the 25 core models had no maturity grade: ENGINE_MATURITY was built around the newer engines and
    keyed by their function names, so it never met the original model registry. Two registries describing
    overlapping things with disjoint keys. Rather than hand-assign 23 grades, a grade is DERIVED from what the
-   record can actually show about each model, and an explicit assignment still wins where one exists.
+   record can actually show about each model. No assignment wins over it any more: the table is gone (W-029).
 
    The rule is deliberately conservative. A heuristic, a prior or a policy is infrastructure — it runs, and
    that says nothing about whether it is right. Only a model whose output is scored against later outcomes
@@ -360,10 +360,6 @@ function forecastTrackRecord(modelId){
         coverage:round(g.filter(function(p){return p.covered===true;}).length/g.length,3)};})};
 }
 function modelMaturity(m){
-  if(typeof ENGINE_MATURITY!=='undefined'){
-    var explicit=ENGINE_MATURITY[m.fn]||ENGINE_MATURITY[m.id];
-    if(explicit)return explicit;
-  }
   if(SCORED_AGAINST_OUTCOMES[m.id]){
     var tr=forecastTrackRecord(m.id);
     if(tr.n>=20&&!tr.biasSignificant)return 'STATISTICALLY_VALIDATED';
@@ -392,7 +388,7 @@ function modelContract(id){
       return tr.n?Object.assign({},tr,{verdict:tr.n<20?'too few scored forecasts to validate':
         (tr.biasSignificant?('scored against '+tr.n+' outcomes, but biased: mean error '+tr.bias+' (t = '+tr.biasT+')'):
           ('scored against '+tr.n+' outcomes with no significant bias'))}):{n:0,verdict:'nothing scored yet'};})():null,
-    maturitySource:(typeof ENGINE_MATURITY!=='undefined'&&(ENGINE_MATURITY[m.fn]||ENGINE_MATURITY[m.id]))?'assigned':'derived',
+    maturitySource:'derived',   /* never assigned: there is no table of hand-typed grades (catalogue W-029) */
     inputs:m.inputs||[],
     outputs:[{description:m.output,cls:m.cls}],
     dependencies:deps,
