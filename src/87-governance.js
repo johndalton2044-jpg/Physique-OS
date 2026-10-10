@@ -461,6 +461,9 @@ function registryIdAudit(){
    rebuilt by any reader that needs verified statuses: the internals sheet, the governance gate, the release check. */
 var VERIFICATION_EXPIRY_DAYS=7;
 var _VERIFICATION_EVIDENCE=[];
+/* each run is numbered, and the number is part of every entry's id: two runs in the same instant (a fixed clock, as the
+   timezone gate uses) gave identical ids, and a status then traced to the wrong one */
+var _VERIFICATION_RUNS=0;
 function _verificationContext(){
   return {buildId:BUILD_ID,schemaVersion:SCHEMA_VERSION,
     modelVersions:_hash(MODELS.map(function(m){return m.id+'@'+(m.version||'?');}).sort().join(',')),
@@ -473,12 +476,12 @@ function _verificationSuites(id){var c=CAPABILITIES[id],out=[];
     return {passed:h.status==='ok',grade:h.status==='ok'?h.grade:null,why:h.status==='ok'?null:'hold-out validation '+h.status};}});
   return out;}
 function runVerification(opts){
-  opts=opts||{};var ctx=_verificationContext(),at=nowISO(),made=[],t00=Date.now();
+  opts=opts||{};var ctx=_verificationContext(),at=nowISO(),made=[],t00=Date.now(),run=++_VERIFICATION_RUNS;
   Object.keys(CAPABILITIES).forEach(function(id){if(opts.only&&opts.only.indexOf(id)<0)return;
     _verificationSuites(id).forEach(function(S){var t0=Date.now(),r={passed:false},failures=[];
       try{r=S.run()||{passed:false};}catch(e){failures.push(String(e&&e.message||e).slice(0,160));}
       if(!r.passed&&!failures.length)failures.push(r.why||'the check did not hold');
-      var e={id:'ver-'+_hash(id+'|'+S.suite+'|'+ctx.buildId+'|'+ctx.dataRegime+'|'+at),capabilityId:id,suiteId:S.suite,buildId:ctx.buildId,
+      var e={id:'ver-'+_hash(id+'|'+S.suite+'|'+ctx.buildId+'|'+ctx.dataRegime+'|'+at+'|'+run),run:run,capabilityId:id,suiteId:S.suite,buildId:ctx.buildId,
         schemaVersion:ctx.schemaVersion,modelVersions:ctx.modelVersions,referenceVersions:Object.freeze(Object.assign({},ctx.referenceVersions)),
         dataRegime:ctx.dataRegime,passed:!!r.passed,grade:r.grade||null,durationMs:Date.now()-t0,checks:Object.freeze([S.suite]),
         failures:Object.freeze(failures),generatedAt:at,expiresAt:addDays(at.slice(0,10),VERIFICATION_EXPIRY_DAYS)};

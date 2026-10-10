@@ -4524,6 +4524,11 @@ function runSelfTest(opts){
         expired=capabilityStatus('provenance').evidence.verification;}
       finally{_VERIFICATION_EVIDENCE=keepE;}
       ok('an entry from another build, or past its expiry, is not evidence: the check reads as not run',other==='not run'&&expired==='not run',other+' / '+expired);
+      /* two runs in the same instant, as under the timezone gate's fixed clock, must still be two runs */
+      var keepNow=_NOW_OVERRIDE,v1=null,v2=null;try{_NOW_OVERRIDE='2026-09-28T01:30:00Z';v1=runVerification({only:['runIdentity']});v2=runVerification({only:['runIdentity']});}finally{_NOW_OVERRIDE=keepNow;}
+      var ids=_VERIFICATION_EVIDENCE.map(function(e){return e.id;});
+      ok('two verification runs in the same instant record distinct entries, and every entry id is unique',
+        v1.generatedAt===v2.generatedAt&&ids.length===ids.filter(function(x,i){return ids.indexOf(x)===i;}).length,v1.generatedAt+' / '+v2.generatedAt);
     })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
