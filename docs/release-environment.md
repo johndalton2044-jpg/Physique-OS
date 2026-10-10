@@ -16,7 +16,7 @@ gate checks the parts of it that can be checked from the repository (see "What i
 |---|---|---|
 | Runtime | Node 22.23.3 (the promise is `^22.22.2 \|\| ^24.15.0 \|\| >=26.0.0`, the range every locked dependency accepts) | `.nvmrc`, `package.json` engines |
 | Package manager | npm 10, installing with `npm ci` (never `npm install`) | `package-lock.json` |
-| Browser | Chromium from Playwright (`npx playwright install --with-deps chromium`), driven by playwright-core 1.63.0; jsdom 30.1.0 for the DOM gates | `package-lock.json` |
+| Browser | Chromium build 1243, the one playwright-core 1.63.0 drives (`npx playwright-core install --with-deps chromium`; the latest `playwright` CLI installs a different build). The gates use it first, after an explicit `CHROME_PATH`; where it is not installed they fall back to a system Chrome, Chromium or Edge, then Playwright's cache, and print which they used; jsdom 30.1.0 for the DOM gates | `package-lock.json` |
 | Operating system | Linux x64 (CI: `ubuntu-latest`). The gates also find Chrome, Chromium or Edge on macOS and Windows, but releases are made on Linux | `.github/workflows/ci.yml` |
 | Food corpus | USDA FoodData Central `fdc-2026-04-30`: 1,107 files, 97.8 MB unpacked; archive `physique-os-food-data.tar.gz`, 26.1 MB | `data/food.lock.json` |
 | Reproducible time | `SOURCE_DATE_EPOCH` (CI: the commit's time; the clean room: 1790000000) | `.github/workflows/ci.yml`, `scripts/clean-room.mjs` |

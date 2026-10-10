@@ -1,13 +1,20 @@
 /* Finds a Chromium-family browser on Linux, macOS or Windows for the real-browser gate.
  *
  * The gate used to hard-code /opt/google/chrome/chrome, which exists in one environment only. Anywhere else it
- * would crash with an unhelpful error. Order of search: an explicit CHROME_PATH, then the standard install
- * locations for Chrome, Chromium and Edge on each platform, then Playwright's own browser cache. Returns null
- * if nothing is found, and callers treat that as a failure with instructions, never as a pass.
+ * would crash with an unhelpful error. Order of search: an explicit CHROME_PATH; then the browser the locked
+ * playwright-core expects (`npx playwright-core install chromium` installs exactly that build), so every environment
+ * measures the page in the one browser version package-lock.json pins (catalogue W-031): CI had used the runner's
+ * preinstalled Google Chrome, and this container an older headless shell that sorted first in the cache; then the
+ * standard install locations for Chrome, Chromium and Edge on each platform, then Playwright's own browser cache.
+ * Returns null if nothing is found, and callers treat that as a failure with instructions, never as a pass.
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
+/* the browser build the locked playwright-core drives, if it is installed */
+let LOCKED=null;try{const pc=await import('playwright-core');LOCKED=pc.chromium.executablePath();}catch(e){LOCKED=null;}
+export const lockedBrowser=()=>LOCKED;
 
 function playwrightCache(){
   const home=os.homedir();
@@ -42,7 +49,7 @@ export function candidateBrowsers(){
       lad?path.join(lad,'Google','Chrome','Application','chrome.exe'):null,
       path.join(pf86,'Microsoft','Edge','Application','msedge.exe'),path.join(pf,'Microsoft','Edge','Application','msedge.exe')]
   };
-  return [process.env.CHROME_PATH].concat(byPlatform[process.platform]||byPlatform.linux,playwrightCache()).filter(Boolean);
+  return [process.env.CHROME_PATH,LOCKED].concat(byPlatform[process.platform]||byPlatform.linux,playwrightCache()).filter(Boolean);
 }
 
 export function findBrowser(){
@@ -55,7 +62,7 @@ export function findBrowser(){
 export const BROWSER_HELP=[
   'No Chromium-family browser was found for the real-browser gate.',
   'Either install Google Chrome, Chromium or Microsoft Edge, or run:',
-  '    npx playwright install chromium',
+  '    npx playwright-core install chromium',
   'or point the gate at a browser explicitly:',
   '    CHROME_PATH=/path/to/chrome npm run check',
   'To skip this gate knowingly (the run will be reported as NOT verified in a browser):',

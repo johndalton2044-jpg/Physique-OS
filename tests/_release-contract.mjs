@@ -54,6 +54,9 @@ export function releaseContract(line){
   line(/node-version-file:\s*\.nvmrc/.test(y)&&/\bnpm ci\b/.test(y),'CI installs the Node in .nvmrc and the dependencies from the lock');
   line(/node tests\/gate-record\.mjs --all/.test(y)&&/node tests\/release\.mjs --from-results/.test(y),'CI runs every release gate and then the release check');
   line(/upload-artifact[\s\S]*docs\/release/.test(y),'CI keeps the release evidence');
+  /* `npx playwright install` runs the latest playwright CLI, which installs its own browser build, not the one the locked
+     playwright-core drives: CI measured the page in a different browser from the one the lock pins */
+  line(/npx playwright-core install/.test(y)&&!/npx playwright install/.test(y),'CI installs the browser build the locked playwright-core drives');
   const rel=fs.readFileSync('tests/release.mjs','utf8');
   line(/from '\.\/gates\.mjs'/.test(rel)&&!/const GATES=\[/.test(rel),'the release check reads the gate list CI and the recorder read (tests/gates.mjs)');
   const missing=GATES.filter(g=>!(pkg.scripts&&pkg.scripts[g]));

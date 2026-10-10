@@ -17,7 +17,7 @@ Everything below is to be executed in order. The rules for every change are in `
    `package.json`):
    ```
    npm ci
-   npx playwright install --with-deps chromium
+   npx playwright-core install --with-deps chromium   # the browser build the lock pins (not the latest playwright's)
    node scripts/food-fetch.mjs --url /path/to/physique-os-food-data.tar.gz   # if data/food is not already present
    node build.mjs
    ```

@@ -30,6 +30,9 @@ async function record(gate){
   console.log(gate.padEnd(12),ok?'pass':'FAIL',' ',rec.gates[gate].summary.slice(0,120));
   /* a failure is diagnosable from the log alone (CI keeps only the log): its own lines, without the passes */
   if(!ok)out.split('\n').filter(l=>l.trim()&&!/^\s*(pass|ok)\b/.test(l)).slice(-40).forEach(l=>console.log('    | '+l.slice(0,300)));
+  /* a finding a passing gate tolerates (a P1 or P2) is printed too: one seen only in CI is otherwise invisible */
+  else{const L=out.split('\n');L.forEach((l,i)=>{if(!/^\s*P[0-2]\s+\[/.test(l))return;console.log('    | '+l.trim().slice(0,300));
+    const nx=L[i+1];if(nx&&/^\s{6,}\S/.test(nx)&&!/^\s*P[0-2]\s+\[/.test(nx))console.log('    |   '+nx.trim().slice(0,300));});}
   return ok;
 }
 if(arg==='--all'){

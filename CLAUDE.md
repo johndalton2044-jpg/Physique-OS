@@ -14,7 +14,7 @@ accepts). No framework, no bundler.
 
 ```
 npm ci                                          # dependencies from the lock
-npx playwright install --with-deps chromium     # browsers for the browser gates
+npx playwright-core install --with-deps chromium   # the browser build the locked playwright-core drives
 node scripts/food-fetch.mjs --if-missing        # food corpus (needs data/food or FOOD_DATA_URL)
 node build.mjs                                  # build dist/ (fails without the food corpus)
 PHYSIQUE_DEV_BUILD=1 node build.mjs             # development build without the corpus (marked in version.json)

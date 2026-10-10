@@ -13,8 +13,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: npm }
       - run: npm ci
-      - name: Browsers for the browser gates
-        run: npx playwright install --with-deps chromium
+      - name: The browser the locked playwright-core drives (its own CLI, not the latest playwright's)
+        run: npx playwright-core install --with-deps chromium
       - name: Food corpus from its locked archive
         env: { FOOD_DATA_URL: '${{ secrets.FOOD_DATA_URL }}' }
         run: node scripts/food-fetch.mjs --if-missing

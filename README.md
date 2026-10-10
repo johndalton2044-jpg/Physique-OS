@@ -93,7 +93,7 @@ it. The gates need two dev dependencies and, for the real-browser gate, a Chromi
 
 ```
 npm ci                         # jsdom and playwright-core, exactly as locked (dev dependencies only)
-npx playwright install chromium   # only if Chrome, Chromium or Edge is not already installed
+npx playwright-core install chromium   # the Chromium build the locked playwright-core drives; the gates use it first
 node scripts/food-fetch.mjs --url <archive>   # the food corpus, checked against data/food.lock.json
 ```
 
