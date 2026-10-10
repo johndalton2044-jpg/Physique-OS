@@ -15,6 +15,15 @@ var BUILD_TIME='__BUILD_TIME__';
 
 /* ---- error quarantine: non-critical failures are recorded, never fatal ---- */
 var _SWALLOWED={count:0,byMessage:{},recent:[],bySeverity:{},critical:[]};
+/* REGISTRY IDS ARE UNIQUE (catalogue W-008). A registration that finds its id already taken is not dropped in silence:
+   the first definition stands, the attempt is recorded here and reported as a P1, and registryIdAudit() (the self-tests)
+   fails on it. Before this, fourteen model registrations skipped a taken id without a word, a view registration
+   replaced an earlier view, and an extended quantity type whose key a base type had was dropped unseen. */
+var _REGISTRY_CONFLICTS=[];
+function _registryConflict(name,id,why){_REGISTRY_CONFLICTS.push({registry:name,id:id,why:why});
+  if(typeof _q==='function')_q(new Error(name+': '+id+' \u2014 '+why),'P1');}
+function _registryTaken(list,name,id){var taken=(list||[]).some(function(x){return x&&x.id===id;});
+  if(taken)_registryConflict(name,id,'registered a second time; the first definition stands');return taken;}
 /* Contained errors are classified, because a failed write and a failed chart are not the same event.
    P0 (data loss or corruption risk) is escalated to the user rather than merely counted — containment
    should keep the app usable, not hide the one class of failure that costs the record. */

@@ -493,6 +493,7 @@ function registerView(spec){
   spec=spec||{};var req=['viewId','route','title','domain'];
   var missing=req.filter(function(k){return spec[k]==null;});
   if(missing.length)return {status:'invalid',missing:missing};
+  if(VIEW_REGISTRY[spec.viewId]&&!spec.replace){_registryConflict('VIEW_REGISTRY',spec.viewId,'registered a second time; the first view stands (pass replace to replace it)');return {status:'exists',viewId:spec.viewId};}
   VIEW_REGISTRY[spec.viewId]=Object.assign({
     permissions:[],dataDependencies:[],modelDependencies:[],widgets:[],
     layout:null,responsiveRules:{},keyboardShortcuts:[],accessibility:{},analytics:null

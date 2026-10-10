@@ -115,7 +115,7 @@ function personalDoseResponse(rows){
       /* below a fifth of the estimate, the person's data only hint: say so rather than state it */
       if(pw<0.2)return 'not enough of your own data yet'+(r?'; so far it hints at '+r:'')+'. The population curve is used.';return r?'Your data show '+r+'.':'Close to the population curve.';})(),
     limits:'compares regions with each other, not changes over time: a muscle that grows easily can look like a dose effect'};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_dose_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_dose_response'))return;
   MODELS.push({id:'personal_dose_response',name:'Personal training dose-response',cls:'EMPIRICAL',version:'1.0',inputs:['physique_regions'],minN:4,
     assumes:['the population curve\u2019s shape (1 \u2212 e^(\u2212sets/7)) holds; only its scale is personal','regions differ in dose, not in how readily they grow'],
     failsWhen:['regions that grow at very different rates for reasons other than volume','fewer than four regions with strength trends'],
@@ -143,7 +143,7 @@ function personalFrequencyResponse(rows){
     reading:pw<0.2?'Not enough of your own data yet. At equal weekly sets, frequency adds little on average (Schoenfeld 2019; Grgic 2018).':
       (lo>0?'At the same weekly sets, your regions trained more often have gained more: about '+round(mp,1)+'% a month more per extra weekly exposure.':(hi<0?'At the same weekly sets, your regions trained more often have gained less: about '+round(-mp,1)+'% a month less per extra weekly exposure.':'At the same weekly sets, how often you train a region makes no clear difference for you so far.')),
     limits:'regions compared with each other, not changes over time; fatigue per exposure is not measured, so response per unit fatigue is not claimed'};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_frequency_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_frequency_response'))return;
   MODELS.push({id:'personal_frequency_response',name:'Personal frequency response',cls:'EMPIRICAL',version:'1.0',inputs:['physique_regions'],minN:4,
     assumes:['volume\u2019s effect is captured by the dose-response curve','regions differ in frequency, not in how readily they grow'],
     failsWhen:['frequency and volume rising together in every region','fewer than four regions with strength trends'],

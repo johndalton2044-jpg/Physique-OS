@@ -280,7 +280,7 @@ function neatOffset(deficitKcal){
     basis:own&&R.personalWeight>=0.2?('your NEAT response, '+R.perTenPct.toLocaleString()+' steps a day per 10% deficit, '+Math.round(R.personalWeight*100)+'% your own data'+
       (R.interval[0]<0&&R.interval[1]>0?'; its interval includes no change':'')):('the population prior: '+NEAT_PRIOR.source)};
 }
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_neat_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_neat_response'))return;
   MODELS.push({id:'personal_neat_response',name:'Personal NEAT response',cls:'EMPIRICAL',version:'1.0',inputs:['steps','calories','weight_trend'],minN:6,
     assumes:['the deficit the weight trend implies is the deficit eaten into','a week\u2019s steps respond to that week\u2019s deficit','the relationship is roughly linear across the deficits seen'],
     failsWhen:['a deficit that hardly changes between weeks','deliberate changes in walking that track the diet','water shifts large enough to distort a week\u2019s trend'],

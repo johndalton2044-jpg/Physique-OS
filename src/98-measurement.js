@@ -72,7 +72,8 @@ var TYPES_EXTENDED={
     population:'this person',note:'a residual, not separable into its parts'}
 };
 (function registerExtendedTypes(){
-  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];});}catch(e){}
+  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];
+    else if(TYPES[k]!==TYPES_EXTENDED[k])_registryConflict('QUANTITY_REGISTRY',k,'an extended type has the key of a base type; the base stands');});}catch(e){}
 })();
 /* The audit that makes the type system honest: find cross-model quantities travelling untyped. */
 function untypedQuantities(){
@@ -459,7 +460,8 @@ function measurementModel(type,opts){
    ============================================================================ */
 var QUANTITY_REGISTRY=(function(){
   /* Fold the extension set in first, so there is exactly one pass that owns every definition. */
-  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];});}catch(e){}
+  try{Object.keys(TYPES_EXTENDED).forEach(function(k){if(!TYPES[k])TYPES[k]=TYPES_EXTENDED[k];
+    else if(TYPES[k]!==TYPES_EXTENDED[k])_registryConflict('QUANTITY_REGISTRY',k,'an extended type has the key of a base type; the base stands');});}catch(e){}
   var PRECISION={mass:1,energy:0,energyRate:0,massRate:2,energyDensity:0,time:1,count:0,ratio:0,index:2,zScore:2};
   var UNCERTAINTY={MEASURED:'measurement',DERIVED:'model',EMPIRICAL:'sampling',CALIBRATED:'model',
     BLENDED:'parameter',PRIOR:'referenceData',HEURISTIC:'structural',PREDICTIVE:'forecast',POLICY:'none'};

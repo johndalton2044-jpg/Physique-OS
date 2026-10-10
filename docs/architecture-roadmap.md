@@ -4035,3 +4035,78 @@ Checks, each seen to fail:
 - the governance detector names `58-response-entity.js:36`, `58-response-model.js:10` and the rest, by file and line.
 
 All 36 gates pass (reproducible included); release 24/24; 1,784 self-tests.
+
+## One browser build everywhere, and a check that waits for the page (build 4fecf793ba)
+
+CI's browser gate failed on `nav.top` only. The button appeared, but 700 ms after the press the runner's Chrome had not
+finished the smooth scroll to the top. The check now waits for the page to arrive, up to 4 s, and reports where it
+stopped if it does not.
+
+The failure showed something wider: three environments measured the page in three browsers.
+- CI used the runner's preinstalled Google Chrome.
+- CI's `npx playwright install` ran the latest `playwright` CLI, which installed its own build (1248), not the one the
+  locked playwright-core drives (1243).
+- This container used an older headless shell (1194) that sorted first in the cache.
+
+Now the gates use the build the locked playwright-core drives, right after an explicit `CHROME_PATH`, and fall back
+only where it is not installed. CI installs that build with the locked CLI (`npx playwright-core install`), and the deploy
+gate checks the CI step. This container offers only build 1194, so local releases still run on it, and say so. The
+recorder also prints the P1 and P2 findings a passing gate tolerates: the audit reported one in CI that is never seen
+locally.
+
+## Unique registry ids, enforced (build 106152bbde)
+
+Catalogue W-008: no registry may silently overwrite or drop an entry. Found:
+- fourteen model registrations skipped an id already taken without a word;
+- `registerView` replaced an earlier view of the same id;
+- the quantity registry dropped an extended type whose key a base type had.
+
+(`registerDomain` and `registerExternalSource` already refused duplicates loudly, and `registerVisualization` refuses
+unless told to replace.)
+
+- **One record of conflicts.** `_registryTaken()` and `_registryConflict()` (10-core) keep the first definition, record
+  the attempt and report it as a P1. The fourteen guards, `registerView` (now refusing unless `replace` is given) and the
+  quantity fold all go through them.
+- **One audit.** `assertUniqueRegistryIds(registry, name)` reports the registry, the id, where each entry sits and whether
+  the definitions conflict. It covers array registries and keyed entries whose own id disagrees with their key.
+  `registryIdAudit()` runs it over the 21 registries the catalogue names (`REGISTRY_ID_SOURCES`) and adds the recorded
+  conflicts. This build has none.
+- **The source half.** A keyed registry's duplicate keys never reach run time, because the later replaces the earlier.
+  So the governance gate reads every literal of the 14 keyed registries, their `Object.assign` extensions and their
+  assignments, with a small key reader (`tests/_registry-keys.mjs`: strings, templates, comments and regular
+  expressions skipped). It takes the registry list from the running app, not from a copy. The gate also runs
+  `registryIdAudit()` in the app.
+
+Checks, each seen to fail:
+- self-tests inject a duplicate into every array registry, expecting it reported at index 0 and at the end, and a
+  differing copy as a conflict;
+- an entry filed under another id is injected into every keyed registry;
+- a taken model id is refused and recorded, a second view is refused, and the first stands;
+- three overrides (a registration that records nothing, the old `registerView`, an audit blind to arrays) each fail
+  their test;
+- in governance, a reassigned `OBS_TYPES.weight` is named with both source lines, and a second energy-density
+  registration fails the run-time check.
+
+The probes' own P1 reports are cleared afterwards: the engine gate fails a run that contains errors, and caught the
+first version of these tests doing exactly that.
+
+## No prose as data (build 106152bbde)
+
+Catalogue doc 2, P1.4: no subsystem may recover a value by reading a sentence written for people. Three did:
+- **A plan version's evidence.** It was rebuilt by joining the decision's why list into one sentence and cutting it at
+  commas, so "2,100 kcal" became "2" and "100 kcal". It is now the decision's own evidence list (`_decisionEvidence`).
+- **The forecast view.** It read "too close" and "too few" out of a promotion's reason. The promotion now carries an
+  `outcome` (promoted, tie, not better, too few), and `_promotionPhrase` speaks from it.
+- **Inventory confidence.** It counted "entries over" in each row's basis. Each row now carries `rateSource` (measured,
+  stated, unit mismatch).
+
+A governance detector removes comments and strings, then fails on splitting, matching or regex-testing a why, lede,
+note, basis, caveat, reason, summary, verb, tradeoff, reverseIf or rationale. Against the old files it names exactly the
+three sites.
+
+Self-tests make the sentence disagree with the field, so code that read the sentence would answer differently:
+- a why sentence holding "2,100" with the evidence list beside it;
+- a reason saying "too few" with an outcome of tie;
+- a stated rate whose basis does not say "entries over".
+
+Each old implementation fails its test. 1,792 self-tests pass; the full release record is in progress.

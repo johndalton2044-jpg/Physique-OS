@@ -4453,6 +4453,48 @@ function runSelfTest(opts){
       ok('the density is a registered model: it runs through the inference gateway with its version, a run identity and its assumptions',
         r.status==='ok'&&r.modelVersion==='1.0'&&!!r.runId&&!!r.assumptions,JSON.stringify({status:r.status,v:r.modelVersion,run:r.runId}));
     })();
+    /* UNIQUE REGISTRY IDS (catalogue W-008). A duplicate is injected into every registry the audit names, and removed
+       afterwards; each must be reported with its registry, id and places. Expected from the injection itself: seven array
+       registries and fourteen keyed ones, the first entry's id at index 0 and at the end. */
+    (function(){var G=(typeof window!=='undefined')?window:{};
+      var base=registryIdAudit();
+      ok('no registry in this build holds an id twice, and no registration found its id taken (21 registries)',base.ok&&base.checked===7+14,JSON.stringify(base.issues.slice(0,3)));
+      var badA=[];REGISTRY_ID_SOURCES.arrays.forEach(function(n){var R=G[n],first=R[0],len=R.length;
+        R.push(first);var same=assertUniqueRegistryIds(R,n).filter(function(i){return i.id===String(first.id);})[0];
+        R[len]=Object.assign({},first,{w008probe:1});var diff=assertUniqueRegistryIds(R,n).filter(function(i){return i.id===String(first.id);})[0];
+        R.length=len;
+        if(!(same&&same.locations.join()===[0,len].join()&&same.conflict===false&&diff&&diff.conflict===true))badA.push(n);});
+      ok('a duplicate injected into each array registry is reported at both places, and a differing copy as a conflict',badA.length===0,badA.join(', '));
+      var badK=[];REGISTRY_ID_SOURCES.keyed.forEach(function(n){var R=G[n];R.w008probe={id:'w008-another-id'};
+        var hit=assertUniqueRegistryIds(R,n).some(function(i){return i.id==='w008probe'&&i.conflict&&i.locations.join()==='w008probe,w008-another-id';});
+        delete R.w008probe;if(!hit)badK.push(n);});
+      ok('an entry filed under one key but naming another id is reported, in each keyed registry',badK.length===0,badK.join(', '));
+      var swKeep=JSON.stringify(_SWALLOWED);   /* the probes below report a P1 each, on purpose: not errors of this run */
+      var n0=_REGISTRY_CONFLICTS.length,took=_registryTaken(MODELS,'MODELS',MODELS[0].id),c=_REGISTRY_CONFLICTS[n0],after=registryIdAudit();
+      _REGISTRY_CONFLICTS.length=n0;
+      ok('a model registration that finds its id taken is refused and recorded, and the audit then fails',
+        took===true&&!!c&&c.registry==='MODELS'&&c.id===MODELS[0].id&&!after.ok&&!_registryTaken(MODELS,'MODELS','w008-unused-id')&&_REGISTRY_CONFLICTS.length===n0);
+      var vid=Object.keys(VIEW_REGISTRY)[0],keepV=VIEW_REGISTRY[vid],n1=_REGISTRY_CONFLICTS.length;
+      var rv=registerView({viewId:vid,route:'#w008',title:'probe',domain:'probe'});
+      ok('a second view of one id is refused: the first view stands and the attempt is recorded',rv.status==='exists'&&VIEW_REGISTRY[vid]===keepV&&_REGISTRY_CONFLICTS.length===n1+1);
+      _REGISTRY_CONFLICTS.length=n1;_SWALLOWED=JSON.parse(swKeep);
+    })();
+    /* NO PROSE AS DATA (catalogue doc 2, P1.4). Each value travels as a field, and here the sentence beside it is made to
+       disagree with it, so code that read the sentence would answer differently. Expected from the literal fields. */
+    (function(){
+      var ev=['intake 2,100 kcal a day','trend −0.4 lb a week (14 days, 12 weigh-ins)'];
+      ok('a plan version keeps the decision’s evidence as its list: “2,100 kcal” stays one item, not “2” and “100 kcal”',
+        JSON.stringify(_decisionEvidence({why:ev.join(', '),evidence:ev}))===JSON.stringify(ev)&&JSON.stringify(_decisionEvidence({why:ev}))===JSON.stringify(ev)
+          &&JSON.stringify(_decisionEvidence({why:'one sentence, with a comma'}))===JSON.stringify(['one sentence, with a comma'])&&_decisionEvidence(null).length===0);
+      ok('a forecast promotion is said from its outcome, not from the words of its reason',
+        _promotionPhrase({outcome:'tie',reason:'too few to say'})===' — too close to call'&&_promotionPhrase({outcome:'too few',reason:'too close to call'})===' — not enough evidence to compare'
+          &&_promotionPhrase({outcome:'promoted',reason:'too close'})===' — clearly better on hold-out forecasts'&&_promotionPhrase({outcome:'not better',reason:'too few'})===' — improved one not better here'&&_promotionPhrase({reason:'too close'})==='');
+      var keep=inventoryLifecycle;
+      try{inventoryLifecycle=function(){return {status:'ok',rows:[{rateSource:'measured',basis:'from your log'},{rateSource:'stated',basis:'the dose you stated'},{rateSource:'unit mismatch',basis:'logged 4 times, but not in g'}]};};
+        var ic=inventoryConfidence();
+        ok('inventory confidence counts the rates measured from the log by their source, not by a phrase in the basis',!!ic&&ic.measuredRates===1&&ic.items===3,JSON.stringify(ic));
+      }finally{inventoryLifecycle=keep;}
+    })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

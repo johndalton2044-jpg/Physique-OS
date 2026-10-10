@@ -131,7 +131,7 @@ function planVersionAt(date){var P=plansOf().filter(function(p){return p.effecti
 function exposuresOf(){return (DB.exposures||[]).slice();}
 function outcomesOf(){return (DB.outcomes||[]).slice();}
 function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){return a.start<b.start?1:-1;});}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='intervention_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','intervention_response'))return;
   MODELS.push({id:'intervention_response',name:'Intervention response',cls:'EMPIRICAL',version:'1.0',inputs:['weight','hunger','fatigue','sleep','steps','calories'],minN:4,
     assumes:['the trend before the change would have continued without it','nothing else changed at the same time'],
     failsWhen:['another change started at the same time','fewer than four readings on either side','the change was already under way (placebo check)','the record is too short for four matched periods (that estimate is then omitted)'],

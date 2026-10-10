@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {JSDOM,VirtualConsole} from 'jsdom';
+import {keyedRegistryDuplicates} from './_registry-keys.mjs';
 
 const HARD=[],SOFT=[],PASS=[];
 const hard=(cat,msg,items)=>HARD.push({cat,msg,items:items||[]});
@@ -127,21 +128,33 @@ for(const f of files){if(/95-selftest|20-schema-storage|24-events/.test(f))conti
   const src=stripFns(code[f]).replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g,"''");
   const m=src.match(/\.\s*(goalWeightLb|goalType)\b/g);if(m)goalReads.push(f+' ('+m.length+')');}
 goalReads.length?hard('goal-ownership','the goal is read directly outside canonicalGoal() and its editors',goalReads):pass('goal-ownership','every goal read goes through canonicalGoal()');
+/* code without its comments and string contents, line numbers kept (prose quoting a number or a phrase is not code) */
+const codeOnly=t=>{let out='',i=0;const n=t.length;while(i<n){const c=t[i],d=t[i+1];
+    if(c==='/'&&d==='*'){const k=t.indexOf('*/',i+2),e=k<0?n:k+2;out+=t.slice(i,e).replace(/[^\n]/g,' ');i=e;continue;}
+    if(c==='/'&&d==='/'){const k=t.indexOf('\n',i);i=k<0?n:k;continue;}
+    if(c==="'"||c==='"'||c==='`'){let k=i+1;while(k<n&&t[k]!==c){if(t[k]==='\\')k++;k++;}out+=c+t.slice(i+1,k).replace(/[^\n]/g,' ')+c;i=k+1;continue;}
+    out+=c;i++;}return out;};
 /* ONE ENERGY DENSITY (catalogue W-003). Arithmetic with a kcal-per-lb or kcal-per-kg literal anywhere but the one service
    (tissueEnergyDensity, 79-rigour.js) is a second, silent energy-density assumption. It happened twice: 3,200 survived a
    fix that was verified by searching for 3,500, and 3,500 then survived in three consumers. Comments and strings are
    removed first, keeping line numbers (prose quoting 3,500 is not arithmetic); decimals, and 3600 (seconds in an hour),
    are not densities. The self-tests are exempt: they set known densities on purpose. */
-{const codeOnly=t=>{let out='',i=0;const n=t.length;while(i<n){const c=t[i],d=t[i+1];
-    if(c==='/'&&d==='*'){const k=t.indexOf('*/',i+2),e=k<0?n:k+2;out+=t.slice(i,e).replace(/[^\n]/g,' ');i=e;continue;}
-    if(c==='/'&&d==='/'){const k=t.indexOf('\n',i);i=k<0?n:k;continue;}
-    if(c==="'"||c==='"'||c==='`'){let k=i+1;while(k<n&&t[k]!==c){if(t[k]==='\\')k++;k++;}out+=c+t.slice(i+1,k).replace(/[^\n]/g,' ')+c;i=k+1;continue;}
-    out+=c;i++;}return out;};
+{
   const lits=[];for(const f of files){if(f==='79-rigour.js'||f==='95-selftest.js')continue;
     codeOnly(fs.readFileSync(path.join(SRC,f),'utf8')).split('\n').forEach((l,i)=>{const re=/(?:[\/*]\s*(\d{4})(?![\d.]))|(?:(?<![\d.\w])(\d{4})\s*[\/*])/g;let m;
       while((m=re.exec(l))){const v=+(m[1]||m[2]);if((v>=3000&&v<=3999&&v!==3600)||(v>=7000&&v<=7999))lits.push(f+':'+(i+1)+' '+v);}});}
   lits.length?hard('energy-density-literal','arithmetic with an energy-density literal outside the one service (tissueEnergyDensity, 79-rigour.js): use tissueKcalPerLb(), kcalToLb() or energyDensityRef()',lits)
     :pass('energy-density-literal','every kcal-per-lb conversion goes through the one energy-density service');}
+/* NO PROSE AS DATA (catalogue doc 2, P1.4). Logic that recovers a value by reading a sentence written for people — cutting
+   a why at commas, testing a reason or a basis for a phrase — breaks the day the sentence is reworded, and nothing says
+   so. A plan version's evidence was cut out of the decision's sentence, the forecast view read "too close" out of a
+   reason, and inventory confidence counted "entries over" in a basis. The value travels as a field instead. */
+{const PROSE='why|lede|note|basis|caveat|reason|summary|verb|tradeoff|reverseIf|rationale';
+  const re=new RegExp('\\.('+PROSE+')\\)?\\.(?:split|match|indexOf|includes|search|startsWith|endsWith)\\(|String\\([^)]*\\.('+PROSE+')\\)\\.(?:split|match|indexOf|includes|search)|\\/[^\\/\\n]{2,}\\/[gimsuy]*\\.test\\(\\(?[A-Za-z_$.]*\\.('+PROSE+')\\b');
+  const hits=[];for(const f of files){if(f==='95-selftest.js')continue;
+    codeOnly(fs.readFileSync(path.join(SRC,f),'utf8')).split('\n').forEach((l,i)=>{if(re.test(l))hits.push(f+':'+(i+1)+'  '+l.trim().slice(0,90));});}
+  hits.length?hard('prose-as-data','logic reads a value out of a sentence written for people; carry it as a field',hits)
+    :pass('prose-as-data','no logic reads a value out of a why, reason, basis or other sentence written for people');}
 /* S2b \u2014 a sheet defined twice. Two SHEETS.recoveryState and two SHEETS.mobility definitions each silently replaced
    one with the other; neither was noticed until the second screen failed to open. A later definition is allowed only as
    a WRAPPER \u2014 it must first capture the one it expands (var base=SHEETS.x). */
@@ -178,6 +191,17 @@ const dom=new JSDOM(fs.readFileSync('dist/index.html','utf8'),{url:'https://phys
     w.fetch=undefined;w.HTMLElement.prototype.scrollIntoView=function(){};}});
 await new Promise(r=>setTimeout(r,1000));
 const w=dom.window;w.loadDemo();
+/* S2i — REGISTRY IDS ARE UNIQUE (catalogue W-008). In the running app: no array registry holds an id twice, no keyed entry
+   names another id, and no registration found its id taken. In the source: no keyed registry is given one key twice (in
+   its literal, an Object.assign extension or an assignment), which run time cannot see because the later replaces the
+   earlier. The registries are the app's own list (REGISTRY_ID_SOURCES), not a copy kept here. */
+{const ra=w.registryIdAudit();
+  ra.ok?pass('registry-id-unique','every registry id is unique in the running app ('+ra.checked+' registries)')
+    :hard('registry-id-unique','registry ids held twice, or registrations that found their id taken',ra.issues.map(i=>i.registry+': '+i.id+' — '+i.why+(i.locations.length?' (at '+i.locations.join(', ')+')':'')));
+  const plain={};files.filter(f=>f!=='95-selftest.js').forEach(f=>plain[f]=fs.readFileSync(path.join(SRC,f),'utf8'));
+  const dk=keyedRegistryDuplicates(plain,w.REGISTRY_ID_SOURCES.keyed);
+  dk.length?hard('registry-key-twice','keyed registries given one key more than once in the source — the later silently replaces the earlier',dk.map(d=>d.registry+'.'+d.key+' ('+d.locations.join(', ')+')'))
+    :pass('registry-key-twice','no keyed registry is given a key twice in the source ('+w.REGISTRY_ID_SOURCES.keyed.length+' registries)');}
 /* S2e \u2014 THE CATALOGUE, GENERATED (H0, MK W32). Hand-written catalogues drifted: a module header called four implemented
    domains absent for several builds. This catalogue is produced from the running registries on every run, so it cannot
    disagree with the code, and the drift against the previous run is written beside it for review. */

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-10T19:13:47.536Z",
-  "build": "4fecf793ba",
+  "generatedAt": "2026-10-10T19:33:56.927Z",
+  "build": "8ac4a68462",
   "counts": {
     "hard": {},
     "soft": {}
@@ -49,6 +49,10 @@
       "msg": "every kcal-per-lb conversion goes through the one energy-density service"
     },
     {
+      "cat": "prose-as-data",
+      "msg": "no logic reads a value out of a why, reason, basis or other sentence written for people"
+    },
+    {
       "cat": "sheet-defined-twice",
       "msg": "no sheet is silently redefined"
     },
@@ -58,7 +62,15 @@
     },
     {
       "cat": "audit-never-run",
-      "msg": "48 audit functions, every one invoked"
+      "msg": "49 audit functions, every one invoked"
+    },
+    {
+      "cat": "registry-id-unique",
+      "msg": "every registry id is unique in the running app (21 registries)"
+    },
+    {
+      "cat": "registry-key-twice",
+      "msg": "no keyed registry is given a key twice in the source (14 registries)"
     },
     {
       "cat": "catalogue",

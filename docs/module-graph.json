@@ -895,6 +895,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "round",
     "mean"
@@ -929,6 +930,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "nowISO",
@@ -993,6 +995,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "nowISO",
@@ -1137,6 +1140,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "nowISO",
@@ -1204,6 +1208,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "daysBetween",
     "round",
     "mean"
@@ -1331,6 +1336,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "round"
@@ -1437,6 +1443,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -1628,6 +1635,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -1978,6 +1986,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "todayISO",
     "addDays",
@@ -2178,6 +2187,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "addDays",
     "clamp",
     "round",
@@ -2726,6 +2736,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -3047,6 +3058,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_registryConflict",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -4561,6 +4573,7 @@
   "layer": "test",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "getSwallowedErrors",
     "uid",
     "todayISO",
@@ -4855,6 +4868,7 @@
     "plansOf",
     "createPlanVersion",
     "ensurePlan",
+    "_decisionEvidence",
     "notePlanChange",
     "markExecution",
     "intendedFor",
@@ -5181,6 +5195,12 @@
     "uiMetric",
     "dismissWelcome"
    ],
+   "81-conformance.js": [
+    "inventoryConfidence"
+   ],
+   "82-views-a.js": [
+    "_promotionPhrase"
+   ],
    "83-propagation.js": [
     "mechanicalDemand",
     "exposureOf",
@@ -5278,6 +5298,8 @@
     "referentialCheck",
     "fuseObservations",
     "capabilityStatus",
+    "assertUniqueRegistryIds",
+    "registryIdAudit",
     "capabilityMatrix",
     "capabilityDerivedGrade"
    ],
@@ -5293,6 +5315,7 @@
    ],
    "89-presentation-governance.js": [
     "renderWidget",
+    "registerView",
     "validateDashboardSpec",
     "applyDashboardOperation",
     "composeDashboardSpec",
@@ -5740,6 +5763,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryConflict",
     "addDays",
     "daysBetween",
     "round",

@@ -133,7 +133,7 @@ function bodyCompositionState(inp){
     ('no body-fat measurements in the last 12 weeks: the split of the weight trend is the population assumption ('+D.share.basis+')'));
   return out;
 }
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='body_composition_state';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','body_composition_state'))return;
   MODELS.push({id:'body_composition_state',name:'Body-composition latent state',cls:'EMPIRICAL',version:'1.0',inputs:['weight_trend','bodyfat','waist','muscle_risk'],minN:1,
     assumes:['a method\u2019s error is the same at every reading','a method\u2019s offset from the truth is constant, so its change is meaningful','the fat share of a loss follows the partition prior unless measurements say otherwise'],
     failsWhen:['large water shifts within the window','a method used under different conditions each time (BIA after a meal or a workout)','a new device or technician part-way through'],
@@ -152,7 +152,7 @@ function bodyCompositionByMethod(){var by={};obsOf('bodyfat').forEach(function(o
   var offsets=[];for(var i=0;i<methods.length;i++)for(var j=i+1;j<methods.length;j++){var a=by[methods[i].method],b=by[methods[j].method],d=[];
     a.forEach(function(x){b.forEach(function(y){if(Math.abs(daysBetween(x.date,y.date))<=7)d.push(x.value-y.value);});});if(d.length)offsets.push({between:[methods[i].method,methods[j].method],offset:round(mean(d),1),pairs:d.length});}
   return {methods:methods,offsets:offsets,rule:'each method is trended only against itself; methods differ by a steady offset, which is shown, not corrected away',unspecified:!!by.unspecified};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='physique_regions';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','physique_regions'))return;
   MODELS.push({id:'physique_regions',name:'Physique by region',cls:'EMPIRICAL',version:'1.0',inputs:['waist','bodyfat','weight'],minN:4,
     assumes:['strength progress stands in for growth','regions are comparable with each other'],failsWhen:['fewer than three trained regions','too few sessions per exercise','circumference changes that are fat, not muscle'],
     output:'per region: exposure, strength and size trends, status, and where to add or take sets',consumers:['physiqueCard'],freshnessDays:7,uncertainty:{kind:'standard error of each trend'},fn:'physiqueModel'});})();

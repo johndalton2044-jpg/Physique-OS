@@ -95,7 +95,7 @@ function runLearningCycle(opts){opts=opts||{};DB.cycles=DB.cycles||[];var wk=_is
     starved:stages.filter(function(s){return s.status==='starved';}).map(function(s){return s.id;})};
   if(opts.dryRun)return rec;
   DB.cycles=DB.cycles.filter(function(c){return c.id!==rec.id;});DB.cycles.push(rec);emitEvent('cycle.recorded',rec,{at:rec.at});save('cycles');return rec;}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='learning_loop';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','learning_loop'))return;
   MODELS.push({id:'learning_loop',name:'Learning loop',cls:'DERIVED',version:'1.0',inputs:['weight','calories'],minN:1,assumes:['a week is long enough to see a change in beliefs'],failsWhen:['stages starved of data'],
     output:'a weekly cycle: each stage\u2019s status, what changed in what the app knows about you, loop health and the next test, chosen by expected information gain across levers',consumers:['loopCard'],freshnessDays:7,uncertainty:{kind:'carried from each stage'},fn:'learningCycleView'});})();
 /* the model's own output: the cycle computed from the record, without its timestamp or a write, so it reproduces */

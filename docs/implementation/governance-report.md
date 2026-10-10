@@ -1,8 +1,8 @@
 # Governance report
 
-Build 4fecf793ba · generated 2026-10-10T19:13:47.536Z
+Build 8ac4a68462 · generated 2026-10-10T19:33:56.927Z
 
-**0 hard** (fail the build) · **0 soft** (tracked) · **26 passing**
+**0 hard** (fail the build) · **0 soft** (tracked) · **29 passing**
 
 ## Passing
 
@@ -16,9 +16,12 @@ Build 4fecf793ba · generated 2026-10-10T19:13:47.536Z
 - **action-before-registry** — no file uses a registry before the file that defines it
 - **goal-ownership** — every goal read goes through canonicalGoal()
 - **energy-density-literal** — every kcal-per-lb conversion goes through the one energy-density service
+- **prose-as-data** — no logic reads a value out of a why, reason, basis or other sentence written for people
 - **sheet-defined-twice** — no sheet is silently redefined
 - **registry-without-consumer** — every registry is read somewhere or classified with a reason (1 classified)
-- **audit-never-run** — 48 audit functions, every one invoked
+- **audit-never-run** — 49 audit functions, every one invoked
+- **registry-id-unique** — every registry id is unique in the running app (21 registries)
+- **registry-key-twice** — no keyed registry is given a key twice in the source (14 registries)
 - **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 27 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned

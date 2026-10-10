@@ -426,6 +426,28 @@ function capabilityStatus(id){
     evidence:evidence,maturity:grade||null,
     sourceFunction:c.fn,surface:c.action,quantity:c.quantity};
 }
+/* UNIQUE REGISTRY IDS (catalogue W-008). An array registry with two entries of one id serves whichever a lookup finds
+   first; a keyed entry that names a different id than its key is read under two names. Each issue names the registry,
+   the id, where each entry sits and whether the definitions conflict. Duplicate keys in a keyed registry's source never
+   reach run time (the later replaces the earlier), so the governance gate checks those in the source. */
+var REGISTRY_ID_SOURCES={arrays:['MODELS','COMMANDS','NAV_COMMANDS','JOBS','MOVEMENT_LIBRARY','MOBILITY_LIBRARY','EXERCISES'],
+  keyed:['ENTITY_CONTRACTS','EVENT_TYPES','VIEW_REGISTRY','WIDGET_REGISTRY','VISUALIZATION_REGISTRY','QUANTITY_REGISTRY','IMPORT_SOURCES','EXTERNAL_SOURCES','PROGRESSIONS','ACTIONS','OBS_TYPES','CAPABILITIES','DOMAINS','SUPPLEMENT_CATALOGUE']};
+function _registryDefinition(e){try{return JSON.stringify(e,function(k,v){return typeof v==='function'?String(v):v;});}catch(x){return String(e);}}
+function assertUniqueRegistryIds(registry,name){
+  var issues=[];
+  if(Array.isArray(registry)){var at={};
+    registry.forEach(function(e,i){var id=e&&e.id;if(id==null){issues.push({registry:name,id:null,locations:[i],conflict:false,why:'an entry without an id'});return;}(at[id]=at[id]||[]).push(i);});
+    Object.keys(at).forEach(function(id){var ix=at[id];if(ix.length<2)return;var defs=ix.map(function(i){return _registryDefinition(registry[i]);});
+      issues.push({registry:name,id:id,locations:ix,conflict:defs.some(function(d){return d!==defs[0];}),why:'the same id '+ix.length+' times'});});}
+  else if(registry&&typeof registry==='object')Object.keys(registry).forEach(function(k){var e=registry[k];
+    if(e&&typeof e==='object'&&e.id!=null&&String(e.id)!==k)issues.push({registry:name,id:k,locations:[k,String(e.id)],conflict:true,why:'the entry under '+k+' says its id is '+e.id});});
+  else issues.push({registry:name,id:null,locations:[],conflict:false,why:'not a registry in this build'});
+  return issues;}
+function registryIdAudit(){
+  var g=(typeof window!=='undefined')?window:{};
+  var issues=[];REGISTRY_ID_SOURCES.arrays.concat(REGISTRY_ID_SOURCES.keyed).forEach(function(n){issues=issues.concat(assertUniqueRegistryIds(g[n],n));});
+  _REGISTRY_CONFLICTS.forEach(function(c){issues.push({registry:c.registry,id:c.id,locations:[],conflict:true,why:c.why});});
+  return {ok:!issues.length,checked:REGISTRY_ID_SOURCES.arrays.length+REGISTRY_ID_SOURCES.keyed.length,issues:issues};}
 function capabilityMatrix(){
   var rows=Object.keys(CAPABILITIES).map(capabilityStatus);
   var byStatus={};

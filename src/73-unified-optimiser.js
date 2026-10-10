@@ -110,7 +110,7 @@ function applyOptimiserChoice(row){var ph=activePhase();if(!ph||!row)return {sta
   if(Object.keys(patch).length)changePlan({kind:'optimiser choice',source:'optimiser',reason:'You chose: '+row.label,expected:(row.effective>0?'+':'')+row.effective+' lb a week (\u00b1'+round(2*row.sd,2)+'), allowing for a '+Math.round(row.pAll*100)+'% chance of carrying it all out'+
     (sim?'; in 8 weeks about '+fmtNum(sim.end.mean,1)+' lb ('+fmtNum(sim.end.lo,1)+' to '+fmtNum(sim.end.hi,1)+'), '+(sim.vsNothing.mean>0?'+':'')+sim.vsNothing.mean+' lb against changing nothing':''),
     apply:function(){return updatePhase(ph.id,patch,{label:'optimiser choice: '+row.label});}});_memoInvalidate();return {status:'ok',patch:patch};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='unified_optimiser';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','unified_optimiser'))return;
   MODELS.push({id:'unified_optimiser',name:'Unified intervention optimiser',cls:'PREDICTIVE',version:'1.0',inputs:['weight','steps','calories','fatigue'],minN:7,
     assumes:['effects of separate changes add','carrying them out is independent'],failsWhen:['changes that interact','a regime change in the coming weeks'],
     output:'the Pareto set of changes across nutrition, activity, training, recovery and schedule, ranked by preference; each simulated forward with an interval',consumers:['optimiserCard','simulatePolicies','applyOptimiserChoice'],freshnessDays:7,uncertainty:{kind:'combined standard deviation and robustness'},fn:'unifiedOptimiser'});})();

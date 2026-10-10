@@ -387,7 +387,7 @@ function inventoryState(){
     headline:'nothing tracked',why:'Depletion is forecast from the rate you actually log, so an item needs to exist first.'};
   var rows=inv.map(function(i){
     /* Consumption rate from the log where the item is a food, otherwise from the stated daily dose. */
-    var perDay=null,basis='';
+    var perDay=null,basis='',rateSource=null;
     if(i.foodId){
       var used=_liveFoodLogs().filter(function(l){return l.food&&l.food.id===i.foodId&&l.date>=addDays(asOf(),-28);});
       /* Aggregate in the item's OWN basis. Summing `grams` assumed every food is gram-based, so an mL or
@@ -402,12 +402,13 @@ function inventoryState(){
       },0);
       var counted=used.filter(function(l){
         return (itemBasis==='g'&&l.grams!=null)||(l.basis===itemBasis&&l.quantity!=null);}).length;
-      if(counted>=3){perDay=total/28;basis=counted+' entries over 28 days, in '+itemBasis;}
-      else if(used.length>=3)basis='logged '+used.length+' times, but not in '+itemBasis+' \u2014 no rate can be derived';
+      if(counted>=3){perDay=total/28;rateSource='measured';basis=counted+' entries over 28 days, in '+itemBasis;}
+      else if(used.length>=3){rateSource='unit mismatch';basis='logged '+used.length+' times, but not in '+itemBasis+' \u2014 no rate can be derived';}
     }
-    if(perDay==null&&i.perDay){perDay=num(i.perDay);basis='the dose you stated';}
+    if(perDay==null&&i.perDay){perDay=num(i.perDay);rateSource='stated';basis='the dose you stated';}
     var daysLeft=(perDay&&perDay>0&&i.remaining!=null)?Math.floor(i.remaining/perDay):null;
-    return {item:i,perDay:perDay!=null?round(perDay,1):null,basis:basis,
+    /* rateSource: where the rate came from, as a value (measured, stated, unit mismatch, or none); basis says it in words */
+    return {item:i,perDay:perDay!=null?round(perDay,1):null,rateSource:rateSource,basis:basis,
       daysLeft:daysLeft,runsOut:daysLeft!=null?addDays(todayISO(),daysLeft):null};
   });
   var soon=rows.filter(function(r){return r.daysLeft!=null&&r.daysLeft<=10;});

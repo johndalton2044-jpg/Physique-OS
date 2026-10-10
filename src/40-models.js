@@ -1088,14 +1088,14 @@ function forecastPromotion(){
   FORECAST_HORIZONS.forEach(function(h){
     var ho=H.byHorizon[h]||{};
     var fam=bt.rows.filter(function(r){return r.horizon===h&&r.origin>=H.cut&&r.candidate===ho.method;});
-    if(!ho.method||fam.length<3){out[h]={promoted:false,reason:'too few hold-out forecasts at '+h+' days to compare'};return;}
+    if(!ho.method||fam.length<3){out[h]={promoted:false,outcome:'too few',reason:'too few hold-out forecasts at '+h+' days to compare'};return;}
     var fe=[],pe=[];
     fam.forEach(function(r){
       var pf=null;try{pf=withAsOf(r.origin,function(){return weightForecast(h);});}catch(e){}
       if(!pf||pf.status!=='ok')return;
       var act=actualNear(addDays(r.origin,h));if(act==null)return;
       fe.push(r.error);pe.push(act-pf.point);});
-    if(fe.length<3){out[h]={promoted:false,reason:'too few paired hold-out forecasts at '+h+' days'};return;}
+    if(fe.length<3){out[h]={promoted:false,outcome:'too few',reason:'too few paired hold-out forecasts at '+h+' days'};return;}
     var rm=function(e){return Math.sqrt(mean(e.map(function(v){return v*v;})));};
     var fR=rm(fe),pR=rm(pe),fB=mean(fe),pB=mean(pe);
     /* A win must be real: at least 10% lower error, the same margin the family's own selection demands, and no larger
@@ -1104,7 +1104,8 @@ function forecastPromotion(){
     var win=fR<pR*0.9&&Math.abs(fB)<=Math.abs(pB);
     var tie=!win&&fR<=pR*1.1&&fR>=pR*0.9;
     var fit=bt.rows.filter(function(r){return r.horizon===h&&r.origin<H.cut&&r.candidate===ho.method;}).map(function(r){return r.error;});
-    out[h]={promoted:win,n:fe.length,method:ho.method,sizeSd:fit.length?rm(fit):null,
+    /* outcome: what was decided, as a value (promoted, tie, not better, too few); reason says it in words */
+    out[h]={promoted:win,outcome:win?'promoted':(tie?'tie':'not better'),n:fe.length,method:ho.method,sizeSd:fit.length?rm(fit):null,
       improved:{rmse:round(fR,2),bias:round(fB,2)},current:{rmse:round(pR,2),bias:round(pB,2)},
       reason:'on '+fe.length+' hold-out forecasts \u2014 current: error '+round(pR,2)+' lb, bias '+round(pB,2)+' lb; improved ('+ho.method+'): error '+round(fR,2)+' lb, bias '+round(fB,2)+' lb \u2014 '+
         (win?'the improved forecast is clearly better, so it is shown':(tie?'too close to call, so the current forecast stays':'the improved forecast is not better here, so the current one stays'))};

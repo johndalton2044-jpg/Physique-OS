@@ -141,7 +141,7 @@ function personalSpeedResponse(){return capacityResponse('speed');}
 (function(){if(typeof MODELS==='undefined')return;[['mobility','personal_mobility_response','Mobility response','personalMobilityResponse',['sitreach','kneewall','mobility|mobility minutes a week']],
   ['conditioning','personal_conditioning_response','Conditioning response','personalConditioningResponse',['hrr','cardio|cardio minutes a week']],
   ['power','personal_power_response','Power response','personalPowerResponse',['cmj','session.sets|lower-body sets a week']],['speed','personal_speed_response','Speed response','personalSpeedResponse',['sprint','session.sets|lower-body sets a week']]].forEach(function(r){
-  if(MODELS.some(function(m){return m.id===r[1];}))return;var C=CAPACITY_RESPONSES[r[0]];
+  if(_registryTaken(MODELS,'MODELS',r[1]))return;var C=CAPACITY_RESPONSES[r[0]];
   MODELS.push({id:r[1],name:r[2],cls:'EMPIRICAL',version:'1.0',inputs:r[4],minN:5,
     assumes:['a field test on the same protocol each time','the effect of the dose shows within four weeks','the relation is linear over the doses recorded'],
     failsWhen:['fewer than five tests','a dose that barely varied','a change of protocol (surface, warm-up, device)'],
@@ -362,7 +362,7 @@ function personalSleepResponse(series){
     return {key:O.key,label:O.label,status:'ok',perHour:round(mp,2),interval:[round(lo,2),round(hi,2)],unit:O.unit,personalWeight:round(pw,2),n:pairs.length,source:O.source,
       reading:pw<0.2?'not enough of your own data yet for '+O.label+'; the population evidence is used ('+O.source+')':(dir?'each extra hour above your usual goes with '+Math.abs(round(mp,O.key==='steps'?0:1))+' '+(O.key==='steps'?'steps':(O.key==='performance'?'percentage points':'points'))+' '+dir+' '+O.label:'no clear link between your sleep and '+O.label+' so far')};});
   return {status:'ok',cls:'EMPIRICAL',medianSleep:med,nights:days.length,outcomes:outcomes,limits:'an association within one person, not proof of cause: a late night can come from the same busy day that raises fatigue'};}
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id==='personal_sleep_response';}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_sleep_response'))return;
   MODELS.push({id:'personal_sleep_response',name:'Personal sleep response',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue','hunger','steps'],minN:14,
     assumes:['a night\u2019s sleep acts on the same day\u2019s fatigue, hunger, steps and training','the relationship is roughly linear around the person\u2019s usual sleep'],
     failsWhen:['sleep that hardly varies','a common cause driving both sleep and the outcome'],

@@ -98,7 +98,7 @@ function kcalToLb(kcal,opts){
   return {status:'ok',lb:round(v/d.kcalPerLb,3),lo:round(v/d.hi,3),hi:round(v/d.lo,3),model:d.model,version:d.version,density:d};
 }
 /* registered with the other models, so it runs through the inference gateway with a run identity and provenance */
-(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id===ENERGY_DENSITY_MODEL.id;}))return;
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS',ENERGY_DENSITY_MODEL.id))return;
   MODELS.push({id:ENERGY_DENSITY_MODEL.id,name:'Tissue energy density',cls:'PRIOR',version:ENERGY_DENSITY_MODEL.version,
     inputs:['bodyfat','weight_trend|the rate of loss','adherence|protein adherence','session.sets|resistance training'],minN:0,
     assumes:['adipose tissue holds about 3,500 kcal per lb and lean tissue about 700','the share of a change that is fat moves with body fat, the rate of loss, protein and training','partitioning cannot be measured from the record, so the range is a plausible-partitioning band, not a sampling interval'],
