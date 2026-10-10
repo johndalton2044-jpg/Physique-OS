@@ -4109,4 +4109,4 @@ Self-tests make the sentence disagree with the field, so code that read the sent
 - a reason saying "too few" with an outcome of tie;
 - a stated rate whose basis does not say "entries over".
 
-Each old implementation fails its test. 1,792 self-tests pass; the full release record is in progress.
+Each old implementation fails its test. All 36 gates pass (reproducible included); release 24/24; 1,792 self-tests.
