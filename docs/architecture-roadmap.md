@@ -4228,3 +4228,79 @@ Checks, each seen to fail:
 - making causal support follow from the machinery's presence, or accepting every class, fails its test.
 
 All 37 gates pass (reproducible included); release 24/24; 1,805 self-tests.
+
+## Failure conditions, executable (build f1ecf89ed2)
+
+Catalogue W-036: a model must not produce a high-authority result outside its declared applicability. Two findings:
+- The inference gateway's comment said a model outside its evidence requirements "declines rather than returning a
+  number". The code only recorded a diagnostic and returned the value, marked degraded.
+- The decision engine calls models such as `tdeePersonal()` directly, so a check in the gateway alone would not protect
+  it.
+
+So conditions are enforced in the models themselves. For the six models whose results reach a decision, a target or the
+plan (`tdee_personal`, `energy_balance`, `weight_trend`, `weight_forecast`, `goal_traj`, `fat_vs_other`),
+`FAILURE_CONDITION_HANDLING` classifies every declared condition:
+- **refuses:** when it holds there is no number (insufficient, or the new `inapplicable`);
+- **degrades:** the number is kept at low confidence, with the condition named in `failing`.
+
+`failureConditionCoverage()` reports this for every model. Three declared conditions had never been checked:
+- `weight_forecast`: "phase change inside horizon" now refuses. A horizon past the phase's planned end has no number.
+- `tdee_personal`: "rapid phase transition or extreme water disturbance" now degrades, in the first 14 days of a phase or
+  at high water noise.
+- `weight_trend`: "extreme water disturbance" now degrades, on a travel, illness, high-sodium, high-carbohydrate, alcohol
+  or creatine tag in the window.
+
+Self-tests build a record with a pinned today (28 days of weigh-ins falling 0.1 lb a day, 2,000 kcal logged daily) and
+add exactly one condition:
+- travel three days ago lowers the trend's confidence;
+- a phase on day 5 lowers the maintenance estimate's confidence, and day 40 does not;
+- a phase ending in 10 days leaves the 28-day forecast without a number and the 7-day one with one.
+
+Each new check, and the coverage of all six models, was seen to fail. The demo's results are unchanged.
+
+## Sync retries are set-like by id (build f1ecf89ed2)
+
+Catalogue W-005. Already tested by the server gate:
+- an id repeated within a batch;
+- a re-sent id with fresh ciphertext;
+- an id written to the ledger by another process;
+- a crash between append and index;
+- a torn last line;
+- a vault dropped from the id index.
+
+Now also tested, on the same ledger:
+- the same id sent by a second device of the vault;
+- an old batch replayed after newer events (nothing added, the sequence not moved back);
+- a retry of a partly stored request (only the missing event stored);
+- after all of them, a ledger that is set-like by id, in strictly increasing sequence, with its count matching.
+
+Keying duplicates by device as well as id fails all four.
+
+## One persistence authority, enforced (build f1ecf89ed2)
+
+Catalogue W-006. Every persisted collection was already walked through snapshot, compaction, startup adoption,
+restore-merge, the log restart after a restore, validation and migration. What was not enforced: that the record's own
+shape matches the declaration. A collection added to `emptyDB()` but not to `PERSIST_COLLECTIONS` would never be
+stored, and nothing would say so. A self-test now requires:
+- the record's collections to be exactly `PERSIST_COLLECTIONS`, each declared once;
+- its other fields to be exactly `PERSIST_SCALARS`;
+- every collection a save label, the sharding or the unevented list names to be a declared one.
+
+An undeclared collection fails it by name.
+
+## What a backup holds of the visual history (build f1ecf89ed2)
+
+Catalogue W-004 asks for a decision first: photos local-only (A) or durable and encrypted (B). The build already chose
+A, deliberately: progress photos live in the browser database, and the record holds only each photo's date and pose, so
+a backup is small and never shares a photo. What was missing is the definition of done: the application must say
+accurately whether a backup holds the complete visual history.
+- `backupPhotoStatement()` gives the count, `imagesIncluded: false` and `completeVisualHistory`, and the backup carries
+  it in its header.
+- The Data card says it before a backup is made, at every detail level: "This backup holds the dates and poses of N
+  progress photos, not the images: the images stay on this device only."
+
+Self-tests with two photos, one removed, expect one photo, images not included and an incomplete history; with none,
+complete. Option B (an encrypted attachment store with content hashes and an off-device copy) remains a decision for the
+person.
+
+1,813 self-tests pass; the full release record is in progress.

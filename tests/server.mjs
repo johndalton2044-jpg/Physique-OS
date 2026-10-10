@@ -82,6 +82,19 @@ let n=0;for(let i=0;i<30;i++)if(S.rateOk('sock:test',25))n++;line(n===25,'the so
   line(held.vaults===1&&held.ids===3,'the id index drops the least recently used vault once it holds more ids than its budget',JSON.stringify(held));
   const again=await post([ev('x1'),ev('x9'),ev('x6')]);
   line(again.accepted===0&&again.duplicates===3,'a vault dropped from the index still recognises its ids',JSON.stringify(again));
+  /* the rest of the retry and recovery cases (catalogue W-005), on the same ledger: x1..x4, x9 and x6 at server
+     sequence 1..6 */
+  const tokB='t-'+crypto.randomBytes(8).toString('hex');S.tokens.set(tokB,{vaultId:vid,deviceId:'d9',exp:Date.now()+60000});
+  const postB=evs=>fetch(base+'/v1/events',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tokB},body:JSON.stringify({events:evs})}).then(r=>r.json());
+  const fromB=await postB([Object.assign(ev('x1'),{device:'d9'})]);
+  line(fromB.accepted===0&&fromB.duplicates===1&&fromB.serverSeq===6,'the same id sent by a second device of the vault is the same event: acknowledged, not stored',JSON.stringify(fromB));
+  const old=await post([ev('x2'),ev('x3'),ev('x4')]);
+  line(old.accepted===0&&old.duplicates===3&&old.serverSeq===6,'an old batch replayed after newer events adds nothing and moves nothing back',JSON.stringify(old));
+  const part=await post([ev('x4'),ev('x7')]);
+  line(part.accepted===1&&part.duplicates===1&&part.serverSeq===7,'a retry of a request that was partly stored stores only what is missing',JSON.stringify(part));
+  const LL=ledger(),seqs=LL.map(r=>r.serverSeq),ids=LL.map(r=>r.id);
+  line(JSON.stringify(seqs)==='[1,2,3,4,5,6,7]'&&new Set(ids).size===ids.length&&S.readVault(vid).eventCount===7,
+    'after every retry the ledger is set-like by id, in strictly increasing sequence, with its count matching',JSON.stringify({seqs,ids,count:S.readVault(vid).eventCount}));
   srv.close();}
 fs.rmSync(tmp,{recursive:true,force:true});
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

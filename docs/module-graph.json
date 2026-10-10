@@ -2663,6 +2663,7 @@
     "renderWidget"
    ],
    "90-actions.js": [
+    "backupPhotoStatement",
     "applyToolsOrder"
    ],
    "90-ai-ui.js": [
@@ -4678,6 +4679,7 @@
     "resolveContractRef",
     "contractLabel",
     "modelGraph",
+    "failureConditionCoverage",
     "profileAsOf",
     "prof",
     "profileHistory",
@@ -4695,6 +4697,7 @@
     "rateBand",
     "canonicalGoal",
     "goalTrajectory",
+    "weightForecast",
     "e1rm",
     "normExercise",
     "strengthTrend",

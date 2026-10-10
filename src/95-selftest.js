@@ -4570,6 +4570,60 @@ function runSelfTest(opts){
         validateAssistantReply({text:'Cutting calories caused the drop.'},pk('CAUSALLY_SUPPORTED','supported')).ok
           &&validateAssistantReply({text:'Your weight fell after you cut calories.'},pk('ASSOCIATED','correlated')).ok);
     })();
+    /* EXECUTABLE FAILURE CONDITIONS (catalogue W-036). Every condition a consequential model declares is classified, and
+       each newly executable one is held to its class on a record built here: 28 days of weigh-ins falling 0.1 lb a day with
+       small noise, 2,000 kcal logged daily, on a fixed today; then exactly the condition under test is added. */
+    (function(){
+      var cov=failureConditionCoverage().filter(function(x){return x.consequential;});
+      ok('every failure condition of the six consequential models is classified as refusing or degrading, and none is invented',
+        cov.length===6&&cov.every(function(x){return x.unclassified.length===0&&x.unknownKeys.length===0&&x.classified===x.declared;}),
+        JSON.stringify(cov.filter(function(x){return x.unclassified.length||x.unknownKeys.length;})));
+      var keepDB=DB,keepNow=_NOW_OVERRIDE,r={};
+      var build=function(extra){DB=emptyDB();_memoInvalidate();var today=todayISO();
+        for(var i=27;i>=0;i--){var d=addDays(today,-i);addObservation({type:'weight',date:d,value:200-0.1*(27-i)+((i%3)-1)*0.2},{noSave:true,silent:true});
+          addObservation({type:'calories',date:d,value:2000,source:'food-log'},{noSave:true,silent:true});}
+        if(extra)extra(today);_memoInvalidate();return today;};
+      var phase=function(start,target){return function(today){DB.phases=[{id:'w036',type:'cut',startDate:addDays(today,start),endDate:null,status:'active',targetDate:target==null?'':addDays(today,target)}];};};
+      try{_NOW_OVERRIDE='2026-06-30T12:00:00Z';
+        build();r.wt0=weightTrend();
+        build(function(t){addObservation({type:'context',date:addDays(t,-3),value:'travel'},{noSave:true,silent:true});});r.wt1=weightTrend();
+        build(phase(-40));r.td0=tdeePersonal();
+        build(phase(-5));r.td1=tdeePersonal();
+        build(phase(-60,10));r.f28=weightForecast(28);r.f7=weightForecast(7);
+      }finally{DB=keepDB;_NOW_OVERRIDE=keepNow;_memoInvalidate();}
+      ok('a water disturbance in the window (travel 3 days ago) keeps the weight trend at low confidence and names the condition',
+        r.wt0.status==='ok'&&r.wt0.confidence!=='low'&&r.wt1.status==='ok'&&r.wt1.confidence==='low'&&(r.wt1.failing||[]).indexOf('extreme water disturbance (illness, travel, high sodium)')>=0,
+        JSON.stringify({before:r.wt0.confidence,after:r.wt1.confidence,failing:r.wt1.failing}));
+      ok('a maintenance estimate in the first two weeks of a phase (day 5) keeps low confidence and names the condition; at day 40 it does not',
+        r.td1.status==='ok'&&r.td1.confidence==='low'&&(r.td1.failing||[]).indexOf('rapid phase transition or extreme water disturbance')>=0&&r.td0.status==='ok'&&!r.td0.failing,
+        JSON.stringify({day40:[r.td0.status,r.td0.confidence,r.td0.failing],day5:[r.td1.status,r.td1.confidence,r.td1.failing]}));
+      ok('a forecast across a planned phase change is not made: the phase ends in 10 days, so 28 days has no number and 7 days does',
+        r.f28.status==='inapplicable'&&r.f28.point===undefined&&(r.f28.failing||[]).indexOf('phase change inside horizon')>=0&&r.f7.status==='ok',
+        JSON.stringify({f28:r.f28.status,f7:r.f7.status}));
+    })();
+    /* ONE PERSISTENCE AUTHORITY (catalogue W-006). PERSIST_COLLECTIONS and PERSIST_SCALARS are the declaration; the record's
+       own shape must match it exactly, so a collection added to the record but not declared (which would never be stored)
+       fails here, and so does a declared one the record lacks. Every other list that names collections is a subset. */
+    (function(){var e=emptyDB(),arr=Object.keys(e).filter(function(k){return Array.isArray(e[k]);}),rest=Object.keys(e).filter(function(k){return !Array.isArray(e[k]);});
+      var labels=[];Object.keys(LABEL_COLLECTIONS).forEach(function(l){labels=labels.concat(LABEL_COLLECTIONS[l]);});
+      var same=function(a,b){return a.slice().sort().join()===b.slice().sort().join();};
+      ok('the record’s collections are exactly the declared persisted ones, each declared once, and its other fields exactly the declared scalars',
+        same(arr,PERSIST_COLLECTIONS)&&PERSIST_COLLECTIONS.length===arr.length&&same(rest,PERSIST_SCALARS)&&PERSIST_SCALARS.length===rest.length,
+        JSON.stringify({undeclared:arr.filter(function(k){return PERSIST_COLLECTIONS.indexOf(k)<0;}),absent:PERSIST_COLLECTIONS.filter(function(k){return arr.indexOf(k)<0;}),scalars:rest.filter(function(k){return PERSIST_SCALARS.indexOf(k)<0;})}));
+      ok('every collection a save label, the sharding or the unevented list names is a declared persisted one',
+        labels.concat(Object.keys(SHARDED_COLLECTIONS),UNEVENTED_COLLECTIONS).every(function(k){return PERSIST_COLLECTIONS.indexOf(k)>=0;}));
+    })();
+    /* WHAT A BACKUP HOLDS OF THE VISUAL HISTORY (catalogue W-004). Two progress photos, one of them removed: the backup must
+       say it holds one photo's date and pose and not its image, and that it is not the complete visual history. */
+    (function(){var keep=DB.settings.photos;
+      try{DB.settings.photos=[{id:'w004a',date:todayISO(),pose:'front'},{id:'w004b',date:todayISO(),pose:'side',removedAt:nowISO()}];
+        var h=JSON.parse(backupJSON()).backup.photos;
+        DB.settings.photos=[];var none=JSON.parse(backupJSON()).backup.photos;}
+      finally{DB.settings.photos=keep;}
+      ok('a backup says whether it holds the complete visual history: one photo kept, its image not included, so not complete',
+        h.count===1&&h.imagesIncluded===false&&h.completeVisualHistory===false&&/1 progress photo,/.test(h.statement)&&/not the images/.test(h.statement),JSON.stringify(h));
+      ok('and with no photos it says nothing visual is left out',none.count===0&&none.completeVisualHistory===true,JSON.stringify(none));
+    })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

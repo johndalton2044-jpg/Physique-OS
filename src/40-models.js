@@ -208,6 +208,23 @@ function modelContractIssues(){ // reverse validation: every declared input and 
   });
   return issues;
 }
+/* outside the model's declared applicability (catalogue W-036): a named failure condition holds, so there is no number */
+/* HOW EACH FAILURE CONDITION IS HANDLED (catalogue W-036), for the models whose results reach a decision, a target or the
+   plan. "refuses": when it holds there is no number (insufficient or inapplicable); "degrades": the number is kept with
+   low confidence and the condition named in failing. Every condition such a model declares is classified here, and the
+   self-tests hold each one to it; a condition the record cannot show would be listed as such, not left unread. */
+var FAILURE_CONDITION_HANDLING={
+  tdee_personal:{'under 14 usable days':'refuses','intake coverage under 70%':'refuses','weight trend insufficient':'refuses','rapid phase transition or extreme water disturbance':'degrades'},
+  energy_balance:{'TDEE insufficient':'refuses'},
+  weight_trend:{'fewer than 7 weigh-ins spanning 10+ days':'refuses','scale change in window':'degrades','extreme water disturbance (illness, travel, high sodium)':'degrades'},
+  weight_forecast:{'trend insufficient':'refuses','phase change inside horizon':'refuses'},
+  goal_traj:{'trend insufficient':'degrades','trend not converging on goal':'degrades'},
+  fat_vs_other:{'fewer than 2 waist measurements 10+ days apart':'refuses','first 14 days of a cut (glycogen/water)':'refuses'}};
+function failureConditionCoverage(){return MODELS.map(function(m){var h=FAILURE_CONDITION_HANDLING[m.id]||null,fw=m.failsWhen||[];
+  return {model:m.id,declared:fw.length,classified:h?fw.filter(function(f){return !!h[f];}).length:0,unclassified:h?fw.filter(function(f){return !h[f];}):fw.slice(),
+    unknownKeys:h?Object.keys(h).filter(function(k){return fw.indexOf(k)<0;}):[],consequential:!!h};});}
+function inapplicable(model,failing,need,extra){var o={status:'inapplicable',confidence:'insufficient',model:model,failing:failing||[],need:need||[],note:'outside its declared applicability: '+(failing||[]).join('; ')};
+  if(extra)Object.keys(extra).forEach(function(k){o[k]=extra[k];});return o;}
 function insufficient(model,need,extra){var o={status:'insufficient',confidence:'insufficient',model:model,need:need||[],note:'insufficient observations'};if(extra)Object.keys(extra).forEach(function(k){o[k]=extra[k];});return o;}
 /* The profile is a MODEL INPUT — height and sex feed BMR, which feeds maintenance, which feeds the calorie
    target and the decision. Reading the current profile during a replay leaks today's values into a past day's
@@ -311,8 +328,12 @@ function weightTrend(windowDays,asOfDate){
   var perWeek=ts.slope*7;
   var noise=ol.residSd;var slopeSe=ol.se!=null?ol.se*7:null;
   var deviceChange=hasContext(/new scale|scale changed/i,windowDays);
+  /* failure condition, executable (W-036): an extreme water disturbance in the window (illness, travel, high sodium or
+     carbohydrate, alcohol, starting creatine) moves the scale without moving tissue, so the slope keeps low confidence */
+  var waterEvent=hasContext(/travel|illness|high sodium|high carb|alcohol|creatine started/i,windowDays);
   var conf='low';
-  if(s.length>=12&&span>=13&&noise!=null&&noise<1.5&&!deviceChange)conf='high';else if(s.length>=9&&!deviceChange)conf='medium';
+  if(s.length>=12&&span>=13&&noise!=null&&noise<1.5&&!deviceChange&&!waterEvent)conf='high';else if(s.length>=9&&!deviceChange&&!waterEvent)conf='medium';
+  res.failing=[].concat(deviceChange?['scale change in window']:[],waterEvent?['extreme water disturbance (illness, travel, high sodium)']:[]);
   if(slopeSe!=null&&Math.abs(perWeek)<slopeSe*1.2&&conf==='high')conf='medium'; // slope indistinguishable from flat at high noise
   res.status='ok';res.excludedOffProtocol=offProtocol;res.slopePerWeek=perWeek;res.slopeSe=slopeSe;res.residSd=noise;res.r2=ol.r2;res.lo=slopeSe!=null?perWeek-1.96*slopeSe:null;res.hi=slopeSe!=null?perWeek+1.96*slopeSe:null;res.confidence=conf;res.deviceChange=deviceChange;res.intercept=ts.intercept;res.first=s[0].date;res.last=s[s.length-1].date;
   res.direction=Math.abs(perWeek)<0.25?'flat':(perWeek<0?'falling':'rising');
@@ -372,7 +393,16 @@ function tissueKcalSd(){
   }catch(e){}
   return 500;
 }
-function tdeePersonal(windowDays,asOfDate){
+/* failure condition, executable (W-036): the first two weeks of a phase, or a high water disturbance, move the scale by
+   water and glycogen, so a maintenance estimate from the trend keeps low confidence and says which condition holds */
+function tdeePersonal(windowDays,asOfDate){var r=_tdeePersonalCore(windowDays,asOfDate);if(!r||r.status!=='ok')return r;
+  var date=asOfDate||asOf(),failing=[];
+  var ph=(DB.phases||[]).filter(function(x){return x.startDate<=date&&(!x.endDate||x.endDate>=date);}).slice(-1)[0];
+  var wet=false;if(date===asOf()){try{wet=waterNoise().level==='high';}catch(e){wet=false;}}
+  if((ph&&daysBetween(ph.startDate,date)<14)||wet)failing.push('rapid phase transition or extreme water disturbance');
+  if(failing.length)return Object.assign({},r,{confidence:'low',failing:failing});
+  return r;}
+function _tdeePersonalCore(windowDays,asOfDate){
   windowDays=windowDays||28;var date=asOfDate||asOf();
   var cal=dailySeries('calories',date,windowDays);
   var need=[];
@@ -565,6 +595,10 @@ function goalTrajectory(){
 function weightForecast(horizonDays){
   var tr=weightTrend(14);var wa=weightAverages();var base=wa.avg7;
   if(tr.status!=='ok'||base==null)return insufficient('weight_forecast',tr.need||['weight_avg|7-day average'],{horizonDays:horizonDays});
+  /* failure condition, executable (W-036): the forecast continues the current rate, so a planned phase change before
+     its due date is outside it: no number for that horizon */
+  var phF=activePhase();if(phF&&phF.targetDate&&phF.targetDate<addDays(asOf(),horizonDays))
+    return inapplicable('weight_forecast',['phase change inside horizon'],['a horizon inside the current phase, which is planned to end '+phF.targetDate],{horizonDays:horizonDays,cls:'PREDICTIVE'});
   var weeks=horizonDays/7;var point=base+tr.slopePerWeek*weeks;
   var slopeUnc=tr.slopeSe!=null?tr.slopeSe*weeks:Math.abs(tr.slopePerWeek)*0.5*weeks;
   var noise=tr.residSd!=null?tr.residSd:1.0;
