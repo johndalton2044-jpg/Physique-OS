@@ -2,8 +2,16 @@
    REGION: SELF-TEST — runs inside the app (Tools) and headlessly (tests/run.mjs). Each check is an
    assertion about behavior the specification requires. A failing check is a build failure.
    ============================================================================ */
+/* doc 2's ceiling for one self-test suite: a suite that takes longer is a failure, reported by the engine gate */
+var SELFTEST_SUITE_CEILING_MS=45000;
 function runSelfTest(opts){
-  opts=opts||{};var t0=Date.now();var results=[];var ok=function(name,cond,detail){results.push({name:name,ok:!!cond,detail:detail||''});};
+  opts=opts||{};var t0=Date.now();var results=[];
+  /* SUITES (catalogue doc 2, P0.3). Every check is filed under the suite its block belongs to (the _stSuite markers before
+     each block), with each suite's time, so a run reports per suite: how many checks, how many failed, the first failure,
+     and how long it took, against a ceiling. The blocks still share one fixture sequence, so a suite is not yet run alone. */
+  var _stCur='general',_stT=Date.now(),_stMs={};
+  var _stSuite=function(id){var now=Date.now();_stMs[_stCur]=(_stMs[_stCur]||0)+now-_stT;_stCur=id;_stT=now;};
+  var ok=function(name,cond,detail){results.push({name:name,ok:!!cond,detail:detail||'',suite:_stCur});};
   var savedDB=DB,savedNow=_NOW_OVERRIDE,savedMemo=_MEMO,_stSettings=JSON.stringify(DB.settings||{});   /* settings restored exactly: the self-test reset appearance on iOS */
   /* The event log is restored too, and nothing is persisted while the tests run (see _PERSIST_SUSPENDED). */
   var _stEvents=(typeof _EVENTS!=='undefined')?_EVENTS.slice():null,_stSeq=(typeof _EVENT_SEQ!=='undefined')?_EVENT_SEQ:0;
@@ -14,9 +22,11 @@ function runSelfTest(opts){
   var quiet=function(fn){var prevSave=save;save=function(){DB.ledger.saves++;};try{return fn();}finally{save=prevSave;}};
   try{
     quiet(function(){
+    _stSuite('schema');
     /* schema + storage */
     var e=emptyDB();ok('empty record validates',validateDB(e).ok,'schema '+SCHEMA_VERSION);
     var bad=validateDB({schemaVersion:1,observations:'nope'});ok('validateDB rejects corrupt input',!bad.ok,(bad.errors||[]).join('; '));
+    _stSuite('schema');
     /* schema migration architecture: known older → sequential migrations; unknown newer/older → rejected, never guessed */
     var v1=JSON.parse(JSON.stringify(emptyDB()));v1.schemaVersion=1;delete v1.settings.programHistory;delete v1.settings.favorites;v1.phases=[{id:'p1',type:'cut',startDate:'2026-01-01',endDate:null,status:'active',calorieTarget:2000}];v1.foodLogs=[{id:'fl1',date:'2026-01-02',meal:'lunch',food:{kind:'seed',id:'x',name:'x',source:'FDC_FOUNDATION',per100g:{kcal:100,protein:10}},grams:150,portionLabel:'150 g',nutrients:{kcal:150,protein:15},createdAt:'2026-01-02T12:00:00.000Z'}];v1.recipes=[{id:'r1',name:'r',servings:2,ingredients:[{food:{kind:'seed',id:'x',name:'x',per100g:{kcal:100}},grams:200}],createdAt:'2026-01-01T00:00:00.000Z'}];v1.decisions=[{id:'d1',date:'2026-01-03',at:'2026-01-03T10:00:00.000Z',code:'HOLD'}];v1.interventions=[{id:'i1',date:'2026-01-04',variable:'steps'}];
     var m=migrate(JSON.parse(JSON.stringify(v1)));ok('schema 1 migrates to '+SCHEMA_VERSION+' through the explicit chain',m.ok&&m.db.schemaVersion===SCHEMA_VERSION&&m.applied.length===SCHEMA_VERSION-1,'applied '+JSON.stringify(m.applied));
@@ -29,6 +39,7 @@ function runSelfTest(opts){
     var junk=migrate({foo:1});ok('a versionless document of unknown shape is rejected',!junk.ok);
     ok('validateDB rejects newer, sub-minimum and fractional schema versions',!validateDB({schemaVersion:SCHEMA_VERSION+1,observations:[]}).ok&&!validateDB({schemaVersion:0,observations:[]}).ok&&!validateDB({schemaVersion:1.5,observations:[]}).ok&&validateDB({schemaVersion:1,observations:[]}).ok);
     var s=JSON.parse(serializeDB());ok('persistence round-trip keeps structure',s.schemaVersion===DB.schemaVersion&&Array.isArray(s.observations));
+    _stSuite('general');
     /* observations */
     DB=emptyDB();_memoInvalidate();
     var o1=addObservation({type:'weight',date:todayISO(),value:250},{noSave:true,silent:true});
@@ -43,12 +54,15 @@ function runSelfTest(opts){
     ok('manual entry overrides food-log for the day (no double count)',dailySeries('calories',d,1)[0].value===2500);
     addObservation({type:'weight',date:d,value:200},{noSave:true,silent:true});addObservation({type:'weight',date:d,value:202},{noSave:true,silent:true});
     ok('daily series averages measurement streams',dailySeries('weight',d,1)[0].value===201);
+    _stSuite('events');
     /* undo */
     DB=emptyDB();_memoInvalidate();_undoStack=[];addObservation({type:'weight',date:d,value:200},{noSave:true});ok('undo restores the previous record',canUndo()&&undo()&&DB.observations.length===0);
+    _stSuite('models');
     /* stats */
     ok('median',median([3,1,2])===2);ok('theil-sen slope on a line',Math.abs(theilSen([{x:0,y:0},{x:1,y:2},{x:2,y:4},{x:3,y:6}]).slope-2)<1e-9);
     ok('ols residual sd on exact line is ~0',ols([{x:0,y:1},{x:1,y:3},{x:2,y:5}]).residSd<1e-9);
     ok('correlation of identical series is 1',Math.abs(correlation([1,2,3,4],[2,4,6,8]).r-1)<1e-9);
+    _stSuite('models');
     /* models */
     var e1=e1rm(200,5);ok('e1RM consensus near Epley for 200x5',e1&&Math.abs(e1.value-233)<8,fmtNum(e1&&e1.value,1));
     ok('e1RM at 1 rep is measured',e1rm(300,1).reliability==='measured');
@@ -56,7 +70,9 @@ function runSelfTest(opts){
     var pr=tdeePrior();ok('Mifflin-St Jeor prior for the demo profile is plausible',pr.status==='ok'&&pr.value>3000&&pr.value<3600,fmtKcal(pr.value));
     ok('rate band by weight zone',rateBand(270,'cut').lo===-2.5&&rateBand(200,'cut').hi===-0.75);
     ok('MET energy is derived and nonzero',Math.abs(metKcal(3.8,30,100)-199.5)<0.01);
+    _stSuite('decisions');
     /* fixtures: decisions */
+    _stSuite('decisions');
     /* rapid_water accepts WAIT: early fast loss now gets the specific answer — hold and extend the window, with the reason —
        instead of the generic HOLD that recorded the trend as on track. Neither changes intake, which is the point. */
     var expect={normal_loss:['HOLD'],rapid_water:['HOLD','WAIT'],stall:['ADD_STEPS','WAIT'],inconsistent:['INSUFFICIENT','ADHERENCE'],reduced_neat:['ADD_STEPS'],excessive:['REDUCE_DEFICIT'],strength_decline:['DELOAD','REDUCE_DEFICIT'],successful_cut:['HOLD'],maintenance:['HOLD'],regain:['TRIM'],insufficient:['INSUFFICIENT'],calibration:['HOLD'],failed_intervention:['REDUCE_CALORIES','WAIT'],successful_intervention:['HOLD']};
@@ -72,6 +88,7 @@ function runSelfTest(opts){
         if(name==='successful_intervention')ok('successful intervention scored as supported',db.experiments.some(function(x){return x.conclusion==='supported';}));
         if(name==='strength_decline')ok('strength decline detected',S.training.strength.status==='ok'&&S.training.strength.overall==='declining');
       });}catch(x){ok('fixture '+name+' runs',false,x.message);}});
+    _stSuite('governance');
     /* epistemic rules */
     withFixture('successful_cut',function(){var S=getCurrentState();ok('weight is MEASURED, trend is DERIVED, TDEE personal is EMPIRICAL/BLENDED, forecast is PREDICTIVE',S.weight.obs.quality==='demo'&&/EMPIRICAL|BLENDED|CALIBRATED/.test(S.tdee.cls)&&S.forecast14.cls==='PREDICTIVE'&&S.bodyComp.estimate.cls==='HEURISTIC',S.tdee.cls);
       var html=uiMetric({label:'x',value:'1',cls:'PREDICTIVE'});ok('predictive values render in the inferred style',/class="metric inferred"/.test(html));
@@ -97,8 +114,10 @@ function runSelfTest(opts){
       var snap=captureSnapshot();ok('snapshot captured with decision and trust',snap.decision&&snap.trust&&snap.date===todayISO());
       var ph=activePhase();var summ=archivePhase(ph);ok('phase archive summary computed with model versions',summ.startWeight!=null&&DB.archive.length>=1&&DB.archive[DB.archive.length-1].record.modelVersions.length===MODELS.length);
     });
+    _stSuite('storage');
     /* negative knowledge persistence + influence */
     withFixture('stall',function(){createExperiment({question:'t',variable:'steps',baselineValue:7000,interventionValue:9000,prediction:'x',predLo:-0.4,predHi:-0.2,durationDays:14,silent:true,noSave:true});_memoInvalidate();var d2=decide();ok('an active experiment holds lower-priority levels (attributability)',d2.code==='EXPERIMENT',d2.code);DB.experiments=[];DB.interventions=[];_memoInvalidate();addNegative({intervention:'+2000 steps',variable:'steps',expected:'-0.3 lb/wk',observed:'no change',reasons:['compensation'],confidence:'medium',silent:true});_memoInvalidate();var dec=decide();ok('negative knowledge for steps redirects the plateau decision',dec.code==='REDUCE_CALORIES',dec.code);});
+    _stSuite('nutrition');
     /* food */
     DB=emptyDB();_memoInvalidate();
     var seed=foodSearchLocal('chicken breast',3);ok('foundation search finds chicken',seed.length>0&&/chicken/i.test(seed[0].name),seed[0]&&seed[0].name);
@@ -107,6 +126,7 @@ function runSelfTest(opts){
       removeFoodLog(fl.id);ok('removing the item retracts its derived observations',obsOf('calories').length===0);}
     var rcp={name:'t',servings:2,ingredients:[{food:seed[0],grams:200}]};var tot=recipeTotals(rcp);ok('recipe per-serving divides totals',Math.abs(tot.perServing.kcal*2-tot.totals.kcal)<0.01&&tot.massKnown);
     ok('portion units resolve to grams',portionGrams({portions:[]},2,'oz')>56&&portionGrams({portions:[{label:'1 cup',g:240}]},1,'portion:1 cup')===240);
+    _stSuite('nutrition');
     /* ---- branded-food certification (P0): USDA branded nutrients are per 100 g, or per 100 mL when the label serving unit is mL ---- */
     var MAN={databaseVersion:'fdc-test',branded:{categories:['Dairy','Beverages','Yogurt'],energySourceCodes:['label','atwater-specific','atwater-general','macro-4/4/9'],recsPerShard:4000}};
     var butter=brandedToFood([1,'BUTTER, SALTED','','TESTCO','012345678905',0,14,0,'1 Tbsp',714,0,0,78.6,0,0,50,643,0,2024,1,0],MAN,0);
@@ -132,13 +152,17 @@ function runSelfTest(opts){
     var rcpMixed={name:'m',servings:2,ingredients:[{food:seed[0],quantity:200,basis:'g'},{food:cola,quantity:100,basis:'ml'}]};var tm=recipeTotals(rcpMixed);var rf=recipeAsFood(rcpMixed);ok('a recipe with a volume ingredient has no mass total and becomes a serving-basis food',!tm.massKnown&&tm.gramsTotal===null&&rf.basis==='serving'&&Math.abs(rf.perServing.kcal-tm.perServing.kcal)<1e-9&&portionResolve(rf,2,'serving').servings===2);
     ok('branded record decoder shape',typeof brandedToFood==='function'&&FOOD_SOURCES.length>=3);
     ok('food shard cache is an LRU with per-class limits',(function(){var prev=_foodCacheOrder.slice();for(var i=0;i<15;i++)_foodCacheStore('branded/recs-'+String(i).padStart(3,'0')+'.json',{});var st=foodCacheStats();var ok1=st.byClass.recs===FOOD_CACHE_LIMITS.recs&&!_foodCache['branded/recs-000.json']&&!!_foodCache['branded/recs-014.json'];_foodCacheOrder.filter(function(k){return /recs-/.test(k);}).forEach(function(k){delete _foodCache[k];});_foodCacheOrder=_foodCacheOrder.filter(function(k){return !/recs-/.test(k);});return ok1;})());
+    _stSuite('training');
     /* exercise ontology */
     ok('exercise resolution and substitution',resolveExercise('Squat or leg press')&&substitutesFor('bench press').length>0);
+    _stSuite('external');
     /* reference data */
     ok('reference knowledge carries source and date',REF_DGA.published&&REF_SUPPLEMENTS.published&&REF_COMPENDIUM_INLINE.activities.length>30&&REF_EVIDENCE.every(function(x){return x.citation;}));
+    _stSuite('general');
     /* demo */
     var prevDB=DB;var gen=generateRecord(DEMO_SPEC,11);ok('demo generator is deterministic',JSON.stringify(generateRecord(DEMO_SPEC,11).db.observations.slice(0,20).map(function(x){return x.value;}))===JSON.stringify(gen.db.observations.slice(0,20).map(function(x){return x.value;})));
     ok('demo data is marked demo everywhere',gen.db.demo.active&&gen.db.observations.every(function(x){return x.source==='demo';}));DB=prevDB;
+    _stSuite('presentation');
     /* UI wiring (DOM only) */
     if(typeof document!=='undefined'&&document.getElementById('decisionZone')){
       var missing=[];Array.prototype.slice.call(document.querySelectorAll('[data-act]')).forEach(function(el){var a=el.getAttribute('data-act');if(!ACTIONS[a]&&missing.indexOf(a)<0)missing.push(a);});ok('every data-act in the document resolves to a registered action',missing.length===0,missing.join(', '));
@@ -151,6 +175,7 @@ function runSelfTest(opts){
       var cmdMissing=COMMANDS.filter(function(c){return typeof c.run!=='function';});ok('every command is runnable',cmdMissing.length===0&&COMMANDS.length>=30,COMMANDS.length+' commands');
       var au=runA11yAudit();ok('a11y audit: no unnamed controls or unlabeled dialogs',!au.issues.some(function(i){return i.kind==='unnamed control'||i.kind==='dialog without label';}),au.issues.map(function(i){return i.kind+':'+i.el;}).slice(0,4).join('; '));
     }
+    _stSuite('models');
     /* ---- individualization layer: baselines, measurement quality, change points, protocol discontinuities ---- */
     withFixture('successful_cut',function(){
       var pb=personalBaselines();
@@ -177,6 +202,7 @@ function runSelfTest(opts){
       var pcs=protocolChanges(365);
       ok('protocol changes name what they break comparability for',pcs.every(function(x){return x.date&&x.text&&Array.isArray(x.affects);}),pcs.length+' recorded');
     });
+    _stSuite('forecasting');
     /* ---- uncertainty, response and counterfactuals ---- */
     withFixture('successful_cut',function(){
       var u=uncertaintyChain();
@@ -204,6 +230,7 @@ function runSelfTest(opts){
       var cal=calibrationByContext();
       ok('calibration falls back to the global pool when too few forecasts match the current context',cal.usable?cal.n>=3:/all|no scored/.test(cal.basis),cal.basis);
     });
+    _stSuite('causal');
     /* ---- graded experiment conclusions ---- */
     withFixture('successful_cut',function(){
       var mk=function(predLo,predHi){return createExperiment({question:'q',variable:'steps',baselineValue:8000,interventionValue:11000,prediction:'p',predLo:predLo,predHi:predHi,durationDays:14,startDate:addDays(asOf(),-20),silent:true,noSave:true});};
@@ -219,6 +246,7 @@ function runSelfTest(opts){
       var negBefore=DB.negatives.length;
       ok('a confounded experiment does not create negative knowledge',DB.negatives.length===negBefore);
     });
+    _stSuite('storage');
     /* ---- scheduler, contracts and backup verification ---- */
     withFixture('successful_cut',function(){
       ok('every data contract holds: observations reach consumers, model inputs resolve, models declare their class, assumptions, failures, uncertainty and consumers',dataContractIssues().length===0,JSON.stringify(dataContractIssues().slice(0,3)));
@@ -232,6 +260,7 @@ function runSelfTest(opts){
       ok('the migration check confirms the live record still re-migrates cleanly',mc.ok===true&&/schema/.test(mc.text),mc.text);
       ok('the device-test checklist covers what a headless gate cannot prove',DEVICE_TESTS.length>=10&&DEVICE_TESTS.every(function(t){return t.why;}));
     });
+    _stSuite('nutrition');
     /* ---- nutritional adequacy and adapter honesty ---- */
     withFixture('successful_cut',function(){
       var ad=nutritionAdequacy(7);
@@ -252,11 +281,13 @@ function runSelfTest(opts){
       ok('an unverified yield item passes the weight through unchanged and says why',
         yld.applied===false&&yld.grams===200&&/not loaded|could not be verified/.test(yld.note),yld.note.slice(0,80));
     });
+    _stSuite('governance');
     /* ---- evidence registry integrity ---- */
     ok('every evidence entry carries a citation, and anything unconfirmed is marked rather than implied',REF_EVIDENCE.every(function(e){return e.citation&&e.citation.length>10&&(!e.verify||/not confirmed|unverified|indicative/.test(e.citation));}),REF_EVIDENCE.filter(function(e){return e.verify;}).length+' unverified');
     ok('the ACSM 2026 resistance-training position stand is present with its prescription levers',(function(){var e=REF_EVIDENCE.filter(function(x){return x.id==='acsm2026rt';})[0];return e&&/Currier/.test(e.citation)&&/10 or more sets/.test(e.summary)&&/repetitions in reserve/.test(e.summary);})());
     ok('adaptive thermogenesis is split into the systematic review and the magnitude estimate, not conflated',(function(){var a=REF_EVIDENCE.filter(function(x){return x.id==='adaptive_thermogenesis_review';})[0],b=REF_EVIDENCE.filter(function(x){return x.id==='adaptive_thermogenesis_magnitude';})[0];return a&&b&&/Nunes/.test(a.citation)&&/ller/.test(b.citation)&&!/120/.test(a.summary);})());
     ok('the DGA protein goal states that it is a general-population guideline and that sports positions differ',/official federal guideline/.test(REF_DGA.items.filter(function(i){return i.key==='protein_g_per_kg';})[0].note)&&/1\.6/.test(REF_DGA.items.filter(function(i){return i.key==='protein_g_per_kg';})[0].note));
+    _stSuite('events');
     /* ---- temporal ledger: a later correction, retraction or edit must never change what a past day knew ---- */
     (function(){
       var savedNow2=_NOW_OVERRIDE;
@@ -297,6 +328,7 @@ function runSelfTest(opts){
         !recentFoods(20).some(function(x){return x.id===fl2.food.id;})||_liveFoodLogs().length===0);
       _NOW_OVERRIDE=savedNow2;DB=emptyDB();_memoInvalidate();
     })();
+    _stSuite('training');
     /* ---- one mutation primitive for phases and programs ---- */
     withFixture('successful_cut',function(){
       var ph=activePhase();var before=ph.calorieTarget;var n0=DB.interventions.length;
@@ -329,6 +361,7 @@ function runSelfTest(opts){
       ok('with no change recorded before a replay day, the program in force is what the first change moved away from',
         withAsOf(addDays(todayISO(),-30),function(){return trainingProgram().key;})==='fullbody3');
     });
+    _stSuite('presentation');
     /* ---- navigation and interaction specification ---- */
     withFixture('successful_cut',function(){
       var im=interactionMatrix();
@@ -425,6 +458,7 @@ function runSelfTest(opts){
       })();
       ok('undo history states what each step would revert',(function(){pushUndo('test change');var h=undoHistory();return h.length>0&&h[0].label==='test change'&&h[0].steps===1;})());
     });
+    _stSuite('storage');
     /* ---- persistence: writes are proportional to the change, not to the record ---- */
     withFixture('successful_cut',function(){
       var before=JSON.parse(JSON.stringify(_PERSIST_STATS));
@@ -443,6 +477,7 @@ function runSelfTest(opts){
       ok('a full-document checkpoint can always be written, so recovery never depends on the shard layout',cp.ok&&cp.bytes>0);
       ok('persistence statistics are reported rather than assumed',typeof storageManager().persistence.ratio==='number'||storageManager().persistence.ratio===null);
     });
+    _stSuite('storage');
     /* ---- integrity monitoring ---- */
     withFixture('successful_cut',function(){
       var ic=integrityCheck('selftest');
@@ -461,14 +496,17 @@ function runSelfTest(opts){
         severityOf(new Error('quota exceeded writing to storage'))==='P0'&&severityOf(new Error('cannot read property of null'))==='P1');
       ok('every severity class is documented',Object.keys(SEVERITIES).length===4&&SEVERITIES.P0&&SEVERITIES.P3);
     });
+    _stSuite('storage');
     /* ---- audit chain ---- */
     ok('the audit chain records what happened to the record, separately from what happened to the body',
       (function(){var n=_auditChain.length;auditAppend('selftest',{x:1});return _auditChain.length===n+1&&_auditChain[_auditChain.length-1].kind==='selftest';})());
     ok('audit entries carry a sequence number and a link to the previous entry',
       (function(){var e=_auditChain[_auditChain.length-1];return typeof e.seq==='number'&&('prev' in e);})());
+    _stSuite('storage');
     /* ---- encrypted backup (shape only; the round trip is exercised in tests/adversarial.mjs) ---- */
     ok('the encrypted backup declares a modern KDF and cipher, and refuses a weak passphrase',
       KDF_ITERATIONS>=310000&&typeof encryptBackup==='function'&&typeof decryptBackup==='function');
+    _stSuite('events');
     /* ---- event sourcing: the log IS the history ---- */
     (function(){
       /* These blocks need a record they fully control, so they swap one in and MUST put the caller's back:
@@ -503,6 +541,7 @@ function runSelfTest(opts){
         projectAt(addDays(todayISO(),-15)).observations.length<DB.observations.length);
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('events');
     /* ---- merge: union of facts, nothing discarded ---- */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ;
@@ -539,6 +578,7 @@ function runSelfTest(opts){
         _EVENTS.filter(function(e){return e.type==='observation.corrected';}).length===2);
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('forecasting');
     /* ---- scenarios, probabilistic forecasting, N-of-1 inference, experiment design ---- */
     withFixture('successful_cut',function(){
       var cmp=compareScenarios([buildScenario('hold',{}),buildScenario('cut',{calories:-300}),buildScenario('walk',{steps:3000})]);
@@ -563,6 +603,7 @@ function runSelfTest(opts){
           its.status!=='ok'||(its.autocorrelation!=null&&its.effectiveN<=its.nominalN&&its.verdict));}
       else ok('interrupted time series needs a change date',true,'no intervention in this fixture');
     });
+    _stSuite('decisions');
     /* ---- episodes and personal knowledge ---- */
     withFixture('successful_cut',function(){
       var ep=detectEpisodes(365);
@@ -582,6 +623,7 @@ function runSelfTest(opts){
       ok('knowledge gaps name the question, why it matters and the measurement that would answer it',
         g.gaps.every(function(x){return x.question&&x.whyItMatters&&x.measurement;}));
     });
+    _stSuite('models');
     /* ---- import: normalise, deduplicate, reconcile, and never launder provenance ---- */
     withFixture('successful_cut',function(){
       var rows=[{type:'weight',date:addDays(todayISO(),-1),value:100,unit:'kg',externalId:'x1'},
@@ -609,6 +651,7 @@ function runSelfTest(opts){
       ok('two sources for one day reconcile to one trust-weighted value, with the disagreement reported',
         !rec||(rec.reconciled!=null&&rec.agreement&&rec.note));
     });
+    _stSuite('models');
     /* ---- honest limits ---- */
     ok('notifications state plainly that without a push server delivery cannot be guaranteed',
       /cannot be coded around|not a substitute/.test(notificationState().note));
@@ -616,6 +659,7 @@ function runSelfTest(opts){
       typeof barcodeSupported==='function'&&(barcodeSupported()||true));
     ok('photos are stored outside the record document so exports stay small',
       typeof addPhoto==='function'&&!('photoBlobs' in DB));
+    _stSuite('adaptive-plan');
     /* ---- voice, labels, wearable adapters ---- */
     withFixture('successful_cut',function(){
       var cases=[['weigh 221.4','weight',221.4],['I weigh 100 kilos','weight',220.46],
@@ -658,11 +702,13 @@ function runSelfTest(opts){
       ok('provider setup states plainly why credentials are not shipped',
         /identify the DEPLOYMENT/.test(wearableSetupInstructions('fitbit').why));
     });
+    _stSuite('storage');
     /* ---- cloud sync configuration (the encrypted exchange is exercised in tests/cloud-e2e.mjs) ---- */
     ok('cloud sync is off until a vault is configured, and says what the server can still see',
       (function(){var st=cloudState();return st.configured===false&&/metadata is unavoidable/.test(st.note);})());
     ok('a recovery phrase shorter than six words is refused, because it is the only secret',
       typeof deriveVault==='function');
+    _stSuite('nutrition');
     /* ---- AH-102 yield table ---- */
     (function(){
       var t=_refTables.yields;
@@ -682,6 +728,7 @@ function runSelfTest(opts){
           return r.applied&&Math.abs(r.grams-200*t.items[k].factor)<0.2&&/AH-102 item/.test(r.note)&&/page/.test(r.note);})());
       ok('the table states that it is partial rather than implying completeness',/PARTIAL/.test(t.caveat));
     })();
+    _stSuite('events');
     /* ---- catalogue P0: history is never destroyed, and every mutation is event-safe ---- */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
@@ -717,6 +764,7 @@ function runSelfTest(opts){
         /nothing was deleted|not been compacted/.test(eventArchiveState().note));
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('storage');
     /* EVERY PERSISTED COLLECTION survives every path a record takes through the log. The checks above counted observations
        only, so snapshots, compaction and restore-merge each lost plans, executions, environment, responses and cycles
        without a single failure. Each check here walks PERSIST_COLLECTIONS, so a collection added later is covered too. */
@@ -770,6 +818,7 @@ function runSelfTest(opts){
       ok('migration repairs every persisted collection to a list',mg.ok&&PERSIST_COLLECTIONS.every(function(k){return Array.isArray(mg.db[k]);}));
       DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('events');
     /* EVENTS ARE IMMUTABLE, AND EVERY EDIT HAS ONE. Events used to share their data with the live record, so an edit with
        no event of its own looked recorded until a restart rebuilt the record from the log and dropped it. Each edit
        below is checked against a projection of the log rather than against the live record. */
@@ -812,6 +861,7 @@ function runSelfTest(opts){
       ok('a phase edit replays with the same history and update time as the record',JSON.stringify(pp.history)===JSON.stringify(ph.history)&&pp.updatedAt===ph.updatedAt);
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('events');
     /* COVERED, NOT EARLIER: a snapshot that reaches another device. The second device already holds the events the
        snapshot contains (they synced before the restore) plus one the restoring device never saw. Ordered by sequence
        number, the contained events were folded again after the snapshot and every record they added appeared twice. */
@@ -836,6 +886,7 @@ function runSelfTest(opts){
       ok('a snapshot without covers (an older build) still keeps a backdated entry made after it',onOld.indexOf(late.data.id)>=0);
       DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('events');
     /* UNDO SURVIVES A RESTART. Undo put an earlier record back but left the undone events in the log, so the next start
        rebuilt the record with the change in it again. Each check below rebuilds the record from its log, as a start does. */
     (function(){
@@ -857,6 +908,7 @@ function runSelfTest(opts){
       ok('an undo across a restart of the log restarts the log from the record it put back',!has(c.id)&&has(keep.id)&&projectionMatchesRecord().ok);
       DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();
     })();
+    _stSuite('events');
     /* §184: replay adversarial — every temporal operation, replayed both ways, must agree. */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
@@ -894,6 +946,7 @@ function runSelfTest(opts){
         withAsOf(addDays(T,-3),function(){return trainingProgram().key;})==='fullbody3');
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('models');
     /* ---- value traces: every number can say where it came from ---- */
     withFixture('successful_cut',function(){
       var ids=traceIds();
@@ -914,6 +967,7 @@ function runSelfTest(opts){
           var tr=weightTrend(14);return t.value===fmtRate(tr.slopePerWeek);})());
       ok('tracing never mutates the record',(function(){var n=DB.observations.length;ids.forEach(traceValue);return DB.observations.length===n;})());
     });
+    _stSuite('nutrition');
     /* ---- review findings: profile and meal changes must not leak backwards ---- */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
@@ -954,6 +1008,7 @@ function runSelfTest(opts){
         EVENT_TYPES['food.mealChanged'].deprecated===true&&!_EVENTS.some(function(e){return e.type==='food.mealChanged';}));
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('events');
     /* ---- training plans are editable, and edits are temporal ---- */
     withFixture('successful_cut',function(){
       var key=trainingProgram().key;
@@ -994,6 +1049,7 @@ function runSelfTest(opts){
       ok('resetting restores the built-in plan exactly',
         !programIsCustom(key)&&templateRows(key,t)[0].exercise===orig);
     });
+    _stSuite('decisions');
     /* ---- the loop is domain-general ---- */
     withFixture('successful_cut',function(){
       ok('every registered domain satisfies the contract',domainContractIssues().length===0,
@@ -1019,6 +1075,7 @@ function runSelfTest(opts){
       ok('domain findings reach the same attention queue as everything else',
         (function(){var q=attentionQueue();return q.items.every(function(i){return i.what&&i.why&&i.cando&&i.act;});})());
     });
+    _stSuite('recovery');
     /* ---- sleep as a model, not an observation ---- */
     withFixture('successful_cut',function(){
       var st=sleepState();
@@ -1039,6 +1096,7 @@ function runSelfTest(opts){
           DB.observations=saved;_memoInvalidate();
           return r.status==='insufficient'&&/variation/.test((r.need||[]).join(' '));})());
     });
+    _stSuite('recovery');
     /* ---- injury: patterns and substitutions, never a diagnosis ---- */
     withFixture('successful_cut',function(){
       ok('with nothing recorded the domain says so rather than inventing a problem',injuryState().status==='clear');
@@ -1069,6 +1127,7 @@ function runSelfTest(opts){
           return domainKnowledge().some(function(k){return k.kind==='injury';});})());
       ok('the projection still reproduces the record after injury events',projectionMatchesRecord().ok);
     });
+    _stSuite('general');
     /* ---- the eight further domains ---- */
     withFixture('successful_cut',function(){
       var ids=domainList().map(function(d){return d.id;});
@@ -1117,6 +1176,7 @@ function runSelfTest(opts){
         (function(){var r={action:0,review:1,system:2};var q=attentionQueue().items;
           for(var i=1;i<q.length;i++)if(r[q[i].severity]<r[q[i-1].severity])return false;return true;})());
     });
+    _stSuite('nutrition');
     /* ---- generation: program, progression, meals, grocery, plan search ---- */
     withFixture('successful_cut',function(){
       /* B1 */
@@ -1173,6 +1233,7 @@ function runSelfTest(opts){
         ps.status!=='ok'||ps.frontier.every(function(f){return f.withinBand!==false;}));
       ok('the search states what it assumes',ps.status!=='ok'||/trend continues/.test(ps.caveat));
     });
+    _stSuite('causal');
     /* ---- knowledge graph, causal grading, experiment library and discovery ---- */
     withFixture('successful_cut',function(){
       var g=knowledgeGraph();
@@ -1222,6 +1283,7 @@ function runSelfTest(opts){
       ok('an absent effect estimate is reported as missing, not as an experiment not worth running',
         d.status!=='ok'?/no estimate of what changing/.test(d.why||''):true);
     });
+    _stSuite('training');
     /* ---- movement engine: one ontology, roles not silos ---- */
     withFixture('successful_cut',function(){
       ok('there is one movement ontology rather than separate engines',
@@ -1273,6 +1335,7 @@ function runSelfTest(opts){
       ok('the engine records what was observed and does not diagnose a deficiency',
         !/deficien|dysfunction|imbalance|tight hip/i.test(JSON.stringify(prepareSession())+JSON.stringify(after)));
     });
+    _stSuite('events');
     /* ---- snapshots must not swallow backdated entries ---- */
     (function(){
       var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedNow=_NOW_OVERRIDE;
@@ -1291,6 +1354,7 @@ function runSelfTest(opts){
         projectAt(addDays(T,-2)).observations.filter(function(o){return o.value===199;}).length===0);
       _NOW_OVERRIDE=savedNow;DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_memoInvalidate();
     })();
+    _stSuite('recovery');
     /* ---- readiness must not state a band it cannot compute ---- */
     withFixture('successful_cut',function(){
       var r=readinessState();
@@ -1299,6 +1363,7 @@ function runSelfTest(opts){
       ok('each signal is compared against its own centre and spread',
         r.status!=='ok'||r.parts.every(function(p){return p.base!=null&&p.z!=null&&isFinite(p.z);}));
     });
+    _stSuite('ai');
     /* ---- questions answered from the record; the assistant boundary enforced ---- */
     withFixture('successful_cut',function(){
       var a1=askQuestion('what is my trend');
@@ -1351,6 +1416,7 @@ function runSelfTest(opts){
       ok('claims about your own record are not demanded citations',
         Array.isArray(uncitedClaims().claims));
     });
+    _stSuite('models');
     /* ---- one figure, one value ----
        The recurring defect in this project: two code paths computing the same quantity and disagreeing.
        It has now appeared three times — an answer against the interface, a trace against the interface, and
@@ -1385,6 +1451,7 @@ function runSelfTest(opts){
           return pick(t.value)===Math.round(S.tdee.value*10)/10||
             Math.abs(pick(t.value)-S.tdee.value)<=Math.max(0.15,S.tdee.value*0.01);})());
     });
+    _stSuite('models');
     /* ---- the model contract is a typed graph, not a vocabulary match ---- */
     (function(){
       var g=modelGraph();
@@ -1409,6 +1476,7 @@ function runSelfTest(opts){
       ok('the human sentence survives alongside the machine reference',
         contractLabel('today|Today vitals')==='Today vitals'&&contractLabel('weight')==='weight');
     })();
+    _stSuite('training');
     /* ---- resistance depth (catalogue §3) ---- */
     withFixture('successful_cut',function(){
       /* §3.2 biomechanics: pattern defaults, exercise overrides, implement override. */
@@ -1478,6 +1546,7 @@ function runSelfTest(opts){
         exerciseBiomechanics('Squat');effectiveSets(30);resistanceFatigue(14);progressionFor('Squat');curveCoverage(30);
         return DB.sessions.length===n&&_EVENTS.length===e;})());
     });
+    _stSuite('training');
     /* ---- mobility, flexibility and practice depth (catalogue §5–§9) ---- */
     withFixture('successful_cut',function(){
       ok('the joint library covers the major joints',Object.keys(JOINTS).length>=11);
@@ -1530,6 +1599,7 @@ function runSelfTest(opts){
           return (DB.settings.movements||[]).length===n+1;})());
       ok('the practice layer keeps the projection faithful',projectionMatchesRecord().ok);
     });
+    _stSuite('training');
     /* ---- skill graph and session composition (catalogue §4, §12, §14) ---- */
     withFixture('successful_cut',function(){
       var fams=skillFamilies();
@@ -1588,6 +1658,7 @@ function runSelfTest(opts){
           var q=qualityTrend('Squat');
           return q.status!=='ok'||/will not guess|not what it means/.test(q.note);})());
     });
+    _stSuite('training');
     /* ---- conditioning, cardio and interference (catalogue §16–§18) ---- */
     withFixture('successful_cut',function(){
       ok('cardio modalities declare their impact and likely overlap',
@@ -1628,6 +1699,7 @@ function runSelfTest(opts){
           cardioSessions(28);conditioningState(28);interferenceAnalysis();cardioTiming(60);
           return DB.observations.length===n&&_EVENTS.length===e;})());
     });
+    _stSuite('nutrition');
     /* ---- nutrition intelligence (catalogue §25.2–§25.4, §59, §60) ---- */
     withFixture('successful_cut',function(){
       var foods=localFoods();
@@ -1678,6 +1750,7 @@ function runSelfTest(opts){
           substituteFood(chicken.id,{grams:100});optimiseRecipe(rec,'protein');foodFrequency(30);
           return DB.foodLogs.length===n&&_EVENTS.length===e;})());
     });
+    _stSuite('general');
     /* ---- cross-domain integration (catalogue §19, §20, §42) ---- */
     withFixture('successful_cut',function(){
       var l=trainingLoad();
@@ -1730,6 +1803,7 @@ function runSelfTest(opts){
           unifiedRecovery();trainingLoad();transferableKnowledge();
           return DB.observations.length===n&&_EVENTS.length===e;})());
     });
+    _stSuite('adaptive-plan');
     /* ---- optimisation, state model, adaptive capture (catalogue §32, §33, §34, §38) ---- */
     withFixture('successful_cut',function(){
       var o=optimisePlans();
@@ -1784,6 +1858,7 @@ function runSelfTest(opts){
           optimisePlans();personalStateModel();captureRequest();
           return DB.observations.length===n&&_EVENTS.length===e;})());
     });
+    _stSuite('body-composition');
     /* ---- gap closure (§17 power, §24 photos, §35 templates, §55, §65, §73, §100) ---- */
     withFixture('successful_cut',function(){
       /* §24: the system judges the COMPARISON, never the body. */
@@ -1840,6 +1915,7 @@ function runSelfTest(opts){
       ok('a behaviour experiment names the confound that makes it hard',
         /first week of any change/.test(JSON.stringify(EXPERIMENT_TEMPLATES)));
     });
+    _stSuite('external');
     /* ---- two mathematical defects found by external audit ---- */
     withFixture('successful_cut',function(){
       /* Adding expenditure must never project a more positive trend. The population fallback had the sign
@@ -1883,6 +1959,7 @@ function runSelfTest(opts){
             return wrongWay.status!=='ok'||(wrongWay.movingAway===true&&/moving the other way/.test(wrongWay.goalNote||''));})());
       }else ok('goal direction needs a current weight',true,'none on this fixture');
     });
+    _stSuite('general');
     /* ---- catalogue completion (§3.1, §3.12, §26, §28, §43, §89, §103) ---- */
     withFixture('successful_cut',function(){
       var eq=addEquipment({label:'Rack',implement:'rack',cost:400,expectedLifeYears:10,
@@ -1933,6 +2010,7 @@ function runSelfTest(opts){
         referenceLicensing().tables.every(function(t){return t.source&&t.terms;}));
       ok('these layers keep the projection faithful',projectionMatchesRecord().ok);
     });
+    _stSuite('general');
     /* ---- estimator rigour (audit §7, §9, §10) ---- */
     withFixture('successful_cut',function(){
       /* §7: the conversion is composition-aware and carries a range. */
@@ -1978,6 +2056,7 @@ function runSelfTest(opts){
           tissueEnergyDensity();shrunkResponseMatrix();changePointsRigorous(60);
           return DB.observations.length===n&&_EVENTS.length===e;})());
     });
+    _stSuite('general');
     /* ---- ontology → physiology propagation (Work.md) ---- */
     withFixture('successful_cut',function(){
       var st=sessionsOf()[0].sets[0];
@@ -2034,6 +2113,7 @@ function runSelfTest(opts){
           mechanicalDemand(st);fatigueCompartments(14);recoveryCostRanking(28);
           return DB.sessions.length===n&&_EVENTS.length===ev;})());
     });
+    _stSuite('governance');
     /* ---- latent states and governance (Work.md) ---- */
     withFixture('successful_cut',function(){
       /* the estimator: noisy observations move a belief less, and silence costs confidence */
@@ -2114,6 +2194,7 @@ function runSelfTest(opts){
           checkInvariants();dataDictionary();arbitrateDecision();referentialCheck();
           return DB.observations.length===n;})());
     });
+    _stSuite('nutrition');
     /* ---- recovery allocation, motor learning, hydration, ergogenics ---- */
     withFixture('successful_cut',function(){
       var ra=recoveryAllocation();
@@ -2148,6 +2229,7 @@ function runSelfTest(opts){
           recoveryAllocation();motorLearning('Squat');hydrationContext();supplementReview();
           return DB.observations.length===n;})());
     });
+    _stSuite('models');
     /* ---- energy unification and inference control (ConWork.md) ---- */
     withFixture('successful_cut',function(){
       /* one canonical conversion — the external finding */
@@ -2205,6 +2287,7 @@ function runSelfTest(opts){
           infer({modelId:'tdee_personal'});infer({modelId:'weight_trend'});
           return DB.observations.length===n;})());
     });
+    _stSuite('bayesian');
     /* ---- semantic types and Bayesian maintenance (ConWork.md) ---- */
     withFixture('successful_cut',function(){
       var ta=typeSystemAudit();
@@ -2257,6 +2340,7 @@ function runSelfTest(opts){
       ok('it names under-reporting as the assumption most likely to be wrong',
         b2.status!=='ok'||/under-reporting/i.test(b2.caveat));
     });
+    _stSuite('causal');
     /* ---- causal inference (ConWork.md) ---- */
     withFixture('successful_cut',function(){
       var v=dagValidate();
@@ -2315,6 +2399,7 @@ function runSelfTest(opts){
           dagValidate();adjustmentSet('steps','weight');propensityAnalysis('calories','weight');
           return DB.observations.length===n;})());
     });
+    _stSuite('bayesian');
     /* ---- universal Bayesian engine, exact t, real propensity (ConBWork.md) ---- */
     withFixture('successful_cut',function(){
       /* The t-distribution against published critical values — the whole point is that it is exact. */
@@ -2380,6 +2465,7 @@ function runSelfTest(opts){
       ok('run identity does not claim to be reproducible output',
         /not reproducible output on its own/.test(runIdentity({model:'m'}).caveat));
     });
+    _stSuite('schema');
     /* ---- causal universe, model competition, invalidation (ConBWork.md) ---- */
     withFixture('successful_cut',function(){
       var v=dagValidate();
@@ -2433,6 +2519,7 @@ function runSelfTest(opts){
       ok('a node nothing depends on is reported as possibly a missing edge',
         /missing an edge/.test(invalidationPlan('notAThing').note||''));
     });
+    _stSuite('models');
     /* ---- typing coverage, missing data, measurement (ConBWork.md) ---- */
     withFixture('successful_cut',function(){
       var u=untypedQuantities();
@@ -2479,6 +2566,7 @@ function runSelfTest(opts){
           untypedQuantities();missingnessWeights('calories');measurementModel('weight');
           return DB.observations.length===n;})());
     });
+    _stSuite('general');
     /* ---- analytical materialization (ConBWork.md) ---- */
     withFixture('successful_cut',function(){
       var a2=materializeAll({force:true});
@@ -2517,6 +2605,7 @@ function runSelfTest(opts){
           var ex=serializeDB?serializeDB():null;
           return !ex||String(ex).indexOf('"materialized"')<0;})());
     });
+    _stSuite('bayesian');
     /* ---- WorkConC: real posterior, content addressing, named estimands ---- */
     withFixture('successful_cut',function(){
       /* The materialization bug: an in-place edit that leaves every count identical. */
@@ -2585,6 +2674,7 @@ function runSelfTest(opts){
       ok('it refuses to extrapolate beyond the observed dose range',
         dr.status!=='ok'||/Extrapolating beyond the observed dose range/.test(dr.caveat));
     });
+    _stSuite('governance');
     /* ---- one registry, formal MI (WorkConC.md) ---- */
     withFixture('successful_cut',function(){
       var u=unifiedRegistry();
@@ -2618,6 +2708,7 @@ function runSelfTest(opts){
       ok('the imputation model is conditional rather than drawing from the marginal',
         mi.status!=='ok'||/conditional model/.test(mi.note));
     });
+    _stSuite('causal');
     /* ---- identification beyond the backdoor (WorkConC.md) ---- */
     withFixture('successful_cut',function(){
       var st=identificationStrategy('calories','weight');
@@ -2682,6 +2773,7 @@ function runSelfTest(opts){
       ok('the rule admits its own thresholds are a judgement',
         pd.status!=='ok'||/thresholds are arguable/.test(pd.caveat));
     });
+    _stSuite('presentation');
     /* ---- presentation layer (visual system) ---- */
     withFixture('successful_cut',function(){
       ok('every epistemic class has a declared visual treatment',
@@ -2723,6 +2815,7 @@ function runSelfTest(opts){
         presentationAudit().findings.filter(function(f){return f.area==='semantics';}).length===0);
       ok('the presentation audit reports no P1',presentationAudit().ok);
     });
+    _stSuite('presentation');
     /* ---- fonts, chart types, presentation self-audit (visual spec §7, §18, §55) ---- */
     withFixture('successful_cut',function(){
       var f=fontRegistryAudit();
@@ -2754,6 +2847,7 @@ function runSelfTest(opts){
         !sa.parts.responsive.readable||
         !sa.parts.responsive.findings.some(function(x){return /safe-area/.test(x);}));
     });
+    _stSuite('presentation');
     /* ---- presentation completion (visual spec, strict verification) ---- */
     withFixture('successful_cut',function(){
       var pc=presentationCompletionAudit();
@@ -2799,6 +2893,7 @@ function runSelfTest(opts){
       ok('neomorphic elevation is declared unusable with the reason',
         /fails accessibility/.test(ELEVATION.neomorphic.caution));
     });
+    _stSuite('presentation');
     /* ---- appearance: reachable, and contrast-gated (§43) ---- */
     withFixture('successful_cut',function(){
       var ap=appearanceProfiles();
@@ -2842,6 +2937,7 @@ function runSelfTest(opts){
         (function(){setAppearance('theme','dark');
           return appearanceState().profile===null;})());
     });
+    _stSuite('presentation');
     /* ---- the two presentation registries are joined ---- */
     withFixture('successful_cut',function(){
       var r=uncertaintyStyleResolution();
@@ -2859,6 +2955,7 @@ function runSelfTest(opts){
       ok('the appearance apply layer from this branch is present',
         typeof applyPresentationAppearance==='function');
     });
+    _stSuite('general');
     /* ---- P0 foundation (implementation direction, steps 2, 6, 7, 8, 9) ---- */
     withFixture('successful_cut',function(){
       /* step 6: cryptographic identity, verified against published SHA-256 vectors */
@@ -2911,6 +3008,7 @@ function runSelfTest(opts){
       ok('implemented-but-unsurfaced capabilities are detected rather than hidden',
         Array.isArray(cm.detections.implementedButUnsurfaced));
     });
+    _stSuite('governance');
     /* ---- steps 3–5: registry as authority, infer through it, typed graph ---- */
     withFixture('successful_cut',function(){
       var ra=modelRegistryAudit();
@@ -2947,6 +3045,7 @@ function runSelfTest(opts){
       ok('it reports affected materializations and decisions',
         Array.isArray(af.materializations)&&Array.isArray(af.decisions));
     });
+    _stSuite('presentation');
     /* ---- step 10: presentation studio edits a specification ---- */
     withFixture('successful_cut',function(){
       DB.settings.theme='dark';
@@ -2981,6 +3080,7 @@ function runSelfTest(opts){
           return ti.rows.some(function(r){return /contrast/.test(r.token)&&/:1$/.test(String(r.value));});})());
       deleteAppearanceProfile('Test A');
     });
+    _stSuite('general');
     /* ---- step 11: one dashboard system and its editor ---- */
     withFixture('successful_cut',function(){
       var da=dashboardSystemAudit();
@@ -3029,6 +3129,7 @@ function runSelfTest(opts){
       ok('a count renders as an integer',
         !/\d\.\d\d/.test(renderWidget('system.attention',{widget:WIDGET_REGISTRY['system.attention']}).html.replace(/<[^>]+>/g,' ')));
     });
+    _stSuite('presentation');
     /* ---- step 12: one chart catalogue, the visualization pipeline, the studio ---- */
     withFixture('successful_cut',function(){
       ok('there is exactly one chart-type catalogue',CHART_TYPES===VISUALIZATION_REGISTRY);
@@ -3077,6 +3178,7 @@ function runSelfTest(opts){
         (function(){var id='chart.weighttrend.line',keep=WIDGET_REGISTRY[id];delete WIDGET_REGISTRY[id];
           restoreUserWidgets();var back=!!WIDGET_REGISTRY[id];if(!back)WIDGET_REGISTRY[id]=keep;return back;})());
     });
+    _stSuite('body-composition');
     /* ---- step 13: one anatomy, and the body map ---- */
     withFixture('successful_cut',function(){
       var aa=anatomyAudit();
@@ -3117,6 +3219,7 @@ function runSelfTest(opts){
         ok('with no record nothing is drawn as if it carried load',!/bm-load/.test(r.svg));
       }finally{DB.sessions=keep;}
     });
+    _stSuite('nutrition');
     /* ---- step 13 (continued): movement, mobility, program, nutrition renderers ---- */
     withFixture('successful_cut',function(){
       var ma=movementAudit();
@@ -3167,6 +3270,7 @@ function runSelfTest(opts){
       var rn=renderNutrition(nm);
       ok('the nutrition view renders with no NaN or undefined',!/NaN|undefined/.test(rn.composition+rn.trend));
     });
+    _stSuite('general');
     /* ---- the welcome message does not outlive its premise ---- */
     withFixture('successful_cut',function(){
       /* Set the state explicitly: in the running page the welcome really is showing after boot on an empty record,
@@ -3175,6 +3279,7 @@ function runSelfTest(opts){
       ok('loading the demo dismisses a welcome that told the person to load the demo',
         (function(){_WELCOME_SHOWN=true;loadDemo();return _WELCOME_SHOWN===false;})());
     });
+    _stSuite('forecasting');
     /* ---- step 14: uncertainty, forecasting, causal, Bayesian, measurement ---- */
     withFixture('successful_cut',function(){
       /* §13 */
@@ -3243,6 +3348,7 @@ function runSelfTest(opts){
           var st=identificationStrategy('calories','weight').strategies.filter(function(x){return /dayOfWeek/.test(x.strategy);})[0];
           return !st||iv.status!=='ok'||(!!st.available===!iv.weak);})());
     });
+    _stSuite('nutrition');
     /* ---- step 15: recovery, cardio, nutrition, adherence ---- */
     withFixture('successful_cut',function(){
       /* the divide-by-one family */
@@ -3301,6 +3407,7 @@ function runSelfTest(opts){
       });
       ok('a day with nothing recorded is not counted as a miss',/not a miss/.test(completionModel('calories').caveat||'not a miss'));
     });
+    _stSuite('causal');
     /* ---- step 16: experiments, knowledge, twin, optimization ---- */
     withFixture('successful_cut',function(){
       /* the false "within" finding */
@@ -3357,6 +3464,7 @@ function runSelfTest(opts){
       ok('plans dropped only by an unresolvable difference are listed, not discarded',
         o.status!=='ok'||Array.isArray(o.unresolvedAlternatives));
     });
+    _stSuite('ai');
     /* ---- step 17: copilot orchestration ---- */
     withFixture('successful_cut',function(){
       var q=askQuestion('why is my weight not dropping');
@@ -3396,6 +3504,7 @@ function runSelfTest(opts){
       ok('an answer can be traced to its model, run, readings and uncertainty',
         ex.status==='ok'&&!!ex.model.id&&!!ex.run&&ex.inputs.length>0&&!!ex.uncertainty);
     });
+    _stSuite('external');
     /* ---- step 18: export/import and advanced rendering ---- */
     withFixture('successful_cut',function(){
       ok('every registered export produces output in every format it declares',
@@ -3448,6 +3557,7 @@ function runSelfTest(opts){
         chartTypesFor('weight_trend').every(function(t){return ZERO_BASELINE_TYPES.indexOf(t)<0;}));
       ok('a refused chart cannot be saved as a widget',saveChartAsWidget({modelId:'weight_trend',chartType:'area'}).status==='refused');
     });
+    _stSuite('governance');
     /* ---- step 19: governance ---- */
     withFixture('successful_cut',function(){
       ok('the aggregate presentation audit runs and passes',visualCompleteAudit().ok,
@@ -3462,6 +3572,7 @@ function runSelfTest(opts){
             return (g.edges||[]).filter(function(x){return x.rel==='measured by'&&x.to==='experiment:'+e.id;}).every(function(x){
               var o=byKey[x.from];return !o||!o.date||o.date<=end;});});})());
     });
+    _stSuite('governance');
     /* ---- step 20: defects the release gate found ---- */
     withFixture('successful_cut',function(){
       ok('an impossible calendar date is rejected',
@@ -3481,6 +3592,7 @@ function runSelfTest(opts){
           _memoInvalidate();var c=infer({modelId:'weight_trend'}).runId;retractObservation(r.id,'selftest');_memoInvalidate();
           return a===b&&a!==c;})());
     });
+    _stSuite('schema');
     /* ---- step 21: photos, detail level, colours, capabilities, forecast validation ---- */
     withFixture('successful_cut',function(){
       /* detail level */
@@ -3532,6 +3644,7 @@ function runSelfTest(opts){
       ok('a photo keeps the view and lighting it was taken with',(function(){
         var src=String(addPhoto);return /view:view/.test(src)&&/lighting:meta\.lighting/.test(src);})());
     });
+    _stSuite('general');
     /* ---- step 22: losing faster than the band ---- */
     withFixture('successful_cut',function(){
       var fastCut=function(ageDays){
@@ -3549,6 +3662,7 @@ function runSelfTest(opts){
       ok('in the first two weeks of a cut, fast loss holds and extends the window rather than adding food',
         !early||(early.code==='WAIT'&&/water and glycogen/.test(early.lede))||early.code==='REDUCE_DEFICIT'&&early.verb==='Reduce the deficit');
     });
+    _stSuite('forecasting');
     /* ---- step 23: which forecast is shown ---- */
     withFixture('successful_cut',function(){
       var P=forecastPromotion();
@@ -3567,6 +3681,7 @@ function runSelfTest(opts){
         DB.observations=obs;_memoInvalidate();var p2=forecastPromotion();var r=p2.status==='ok'&&p2[28]&&p2[28].promoted===true&&displayedForecast(28).source==='weight_forecast_family';
         DB.observations=keep;_memoInvalidate();return r;})());
     });
+    _stSuite('general');
     /* ---- step 24: text and colour without codes ---- */
     withFixture('successful_cut',function(){
       ok('every offered typeface except the device\u2019s own is bundled',Object.keys(FONT_REGISTRY).every(function(k){return k==='system'||FONT_REGISTRY[k].bundled;}));
@@ -3584,6 +3699,7 @@ function runSelfTest(opts){
         DB.settings.theme='light';setAccentHue(200);var r=setTintFriendly(30,20);var t=tintedSurfaces(_currentPalette(),30,r.strength);
         var ok2=r.status==='ok'&&contrastRatio(_currentPalette().text,t.surface)>=4.5;DB.settings.theme=k[0];DB.settings.colorOverrides=k[1];DB.settings.accentHue=k[2];return ok2;})());
     });
+    _stSuite('presentation');
     /* ---- step 25: detail levels and casual reading ---- */
     withFixture('successful_cut',function(){
       ok('every panel rendered so far has a detail classification',panelLevelAudit().ok,panelLevelAudit().unclassified.slice(0,3).join('; '));
@@ -3593,6 +3709,7 @@ function runSelfTest(opts){
       ok('logging and following panels are Casual',['Quick log','Today\u2019s actions','Weight','Progress photos','Appearance','Text'].every(function(t){return panelLevel(t)==='casual';}));
       ok('forecasts and diagnosis are Insightful',['Forecast','What is happening','What if','Adequacy (7-day)'].every(function(t){return panelLevel(t)==='insightful';}));
     });
+    _stSuite('training');
     /* ---- step 26: movement, mobility, progressions, after the session ---- */
     withFixture('successful_cut',function(){
       var lib=exerciseLibraryAudit();ok('the exercise library is complete and consistent',lib.ok,lib.issues.slice(0,3).join('; '));
@@ -3620,6 +3737,7 @@ function runSelfTest(opts){
         var now={id:'t-now',date:todayISO(),name:'b',sets:[{exercise:'Bench press',load:200,reps:3,rir:1}],retracted:false};
         DB.sessions=[old,now];var P=postSessionSummary('t-now');DB.sessions=keep;return P&&P.records.length===1&&P.records[0].value===200;})());
     });
+    _stSuite('training');
     /* ---- step 27: session load, mobility history, programmes, setup ---- */
     withFixture('successful_cut',function(){
       /* training load */
@@ -3657,6 +3775,7 @@ function runSelfTest(opts){
       ok('the setup has a step for each part and can be skipped',WELCOME_STEPS.length===10&&!!ACTIONS['welcome.skip']&&!!ACTIONS['nav.welcome']);
     });
     ok('every entity contract matches the code and every store is owned or explained',entityContractAudit().ok,entityContractAudit().issues.slice(0,3).join('; '));
+    _stSuite('general');
     /* ---- H1: the product spine ---- */
     withFixture('successful_cut',function(){
       DB.plans=[];DB.executions=[];_memoInvalidate();
@@ -3693,6 +3812,7 @@ function runSelfTest(opts){
       ok('the next action names what to do and why',!!nextAction().label&&!!nextAction().why);
       ok('plan versions survive a rebuild from the event history',(function(){var p=projectEvents(_EVENTS);var db=p.db||p;return (db.plans||[]).length===plansOf().length;})());
     });
+    _stSuite('nutrition');
     /* ---- H1: fit, food constraints, signals, setup ---- */
     withFixture('successful_cut',function(){
       DB.plans=[];_memoInvalidate();ensurePlan();
@@ -3721,6 +3841,7 @@ function runSelfTest(opts){
     ok('a person starting their first phase gets a calorie suggestion from their profile',(function(){var keep=DB;DB=emptyDB();_memoInvalidate();
       applyProfileFields({sex:'female',age:36,heightFt:5,heightIn:6,startWeight:172});_memoInvalidate();
       var cs=calorieTargetSuggestion({band:rateBand(172,'cut')});DB=keep;_memoInvalidate();return !!cs&&cs.value>1000&&cs.cls==='PRIOR';})());
+    _stSuite('training');
     /* ---- H1: one queue, cooking and budget, programmes that fit ---- */
     withFixture('successful_cut',function(){
       var keepSave=_SAVE_STATE.ok,keepErr=_SAVE_STATE.lastError;_SAVE_STATE.ok=false;_SAVE_STATE.lastError='test';
@@ -3738,6 +3859,7 @@ function runSelfTest(opts){
       ok('every generated day fits the session length',g.status!=='ok'||g.candidates.every(function(c){return Object.keys(c.fit.dayMinutes).every(function(d){return c.fit.dayMinutes[d]<=40;});}));
       ok('every trim made to fit is stated',g.status!=='ok'||g.candidates.some(function(c){return Object.keys(c.fit.trims).length>0;})||g.candidates.every(function(c){return Object.keys(c.fit.dayMinutes).every(function(d){return c.fit.dayMinutes[d]<=40;});}));
     });
+    _stSuite('models');
     /* ---- H4: honest personalisation ---- */
     ok('knowledge never becomes more confident as it ages',['high','medium','low','very low'].every(function(l){var prev=CONF_LEVELS.indexOf(l);
       for(var a=0;a<=900;a+=10){var i=CONF_LEVELS.indexOf(decayConfidence(l,a));if(i>prev)return false;prev=i;}return true;}));
@@ -3755,6 +3877,7 @@ function runSelfTest(opts){
         ok('recent misses after earlier hits mark a model as getting less reliable',modelHealth(m).state==='degraded');
         mine.forEach(function(p,i){p.covered=keep[i];});_memoInvalidate();}
     });
+    _stSuite('governance');
     /* ---- H4: renderers the surfaced capabilities need ---- */
     (function(){
       var H=renderChartSpec('heatmap',{title:'t',rows:['A'],cols:['d1','d2','d3','d4'],cells:[[{state:'done'},{state:'partial'},{state:'skipped'},{state:'unknown'}]]});
@@ -3767,6 +3890,7 @@ function runSelfTest(opts){
       ok('the timeline keeps each lane and titles each event',/>Plan</.test(T)&&/>Phase</.test(T)&&(T.match(/<title>/g)||[]).length===2);
       var C=chartCatalogueSummary();ok('the catalogue says which chart types are only planned',C.available+C.planned.length===C.total&&chartTypeStatus('__noSuchType')==='planned'&&chartTypeStatus('heatmap')==='available');
     })();
+    _stSuite('general');
     /* ---- Schedules: weekly, rotating shifts, irregular ---- */
     withFixture('successful_cut',function(){
       var keep=DB.settings.schedule;
@@ -3784,15 +3908,19 @@ function runSelfTest(opts){
       ok('an irregular schedule uses the days marked free, sized by the time given',availabilityOn(addDays(todayISO(),1)).level==='full'&&availabilityOn(addDays(todayISO(),2)).level==='short'&&availabilityOn(addDays(todayISO(),3)).level==='none');
       DB.settings.schedule=keep;_memoInvalidate();
     });
+    _stSuite('training');
     /* ---- Movement drawings ---- */
     (function(){var A=movementVisualAudit();ok('every movement and pose drawing passes the visual audit: its view matches its plane, it visibly moves, and pushes go the right way',A.ok,A.issues.join('; '));
       ok('a bench press is drawn lying down and a push-up face down',exerciseOrientation('Bench press').id==='supine'&&exerciseOrientation('Push-up').id==='prone'&&exerciseOrientation('Lat pulldown').id==='seated');
       ok('a lateral raise is drawn from the front',movementModel('abduction').view==='front');})();
+    _stSuite('causal');
     /* ---- Ready-made experiments ---- */
     ok('every ready-made experiment says what you would actually do',EXPERIMENT_TEMPLATES.every(function(t){return !!t.todo;}));
+    _stSuite('presentation');
     /* ---- Usage review: Tools order, the guide, Today ---- */
     ok('External server is pinned to the top of Tools by default, and any section can be pinned',toolsPinned()[0]==='tools-server'&&typeof ACTIONS['tools.pin']==='function');
     ok('a feature opened from the guide closes the guide first (nothing opens behind it)',typeof ACTIONS['features.go']==='function'&&renderFeatureRow({id:'x',icon:'pin',label:'x',what:'x',on:false,act:'weather.open',cta:'Go'}).indexOf('features.go')>=0);
+    _stSuite('causal');
     /* ---- Response entity: what happened because of a change (constructed cases with known answers) ---- */
     withFixture('successful_cut',function(){
       var keepO=DB.observations,keepR=DB.responses,D=addDays(todayISO(),-21);
@@ -3810,6 +3938,7 @@ function runSelfTest(opts){
       ok('a response replays from its event, and a later record replaces the earlier',db.responses.length===1&&db.responses[0].id===r.id);
       DB.observations=keepO;DB.responses=keepR;_memoInvalidate();
     });
+    _stSuite('causal');
     /* ---- Personal response model (constructed responses, known answers) ---- */
     (function(){var keep=DB.responses,PR=RESPONSE_PRIORS()['calories\u2192weight'],pop=PR.perUnit*100;
       var mk=function(id,dose,effect,se,stage,adh,start){return {id:id,interventionId:id,variable:'calories',outcome:'weight',dose:dose,stage:stage||'final',start:start||'2026-01-01',
@@ -3826,6 +3955,7 @@ function runSelfTest(opts){
       DB.responses=[mk('x',-500,-3*500*PR.perUnit,0.02)];var withX=predictResponse('calories','weight',-500),without=predictResponse('calories','weight',-500,{excludeId:'x'});
       ok('a change is never judged against an expectation built from itself (leave-one-out)',withX.n===1&&without.n===0);
       DB.responses=keep;})();
+    _stSuite('adaptive-plan');
     /* ---- Friction and adherence ---- */
     (function(){var X=[],y=[];for(var i=0;i<200;i++){var f=i%2,p=f?0.3:0.9,u=((i*7919)%100)/100;X.push([1,f]);y.push(u<p?1:0);}   /* a planted friction: 90% done without it, 30% with it */
       var fit=_logitRidge(X,y,1),or=Math.exp(fit.b[1]);ok('the friction regression recovers a planted effect (done 90% without the factor, 30% with it)',or<0.15&&Math.abs(fit.b[1])>2*fit.se[1]);
@@ -3837,6 +3967,7 @@ function runSelfTest(opts){
       ok('levers are ranked by expected effect times the probability of carrying them out',L.every(function(o){return o.effectiveEffect==null||Math.abs(o.effectiveEffect-o.expectedEffect*o.pExecution)<0.002;})&&Math.abs(L[0].effectiveEffect)>=Math.abs(L[1].effectiveEffect));
       DB.responses=keep;})();
     withFixture('stall',function(){var d=decide();ok('population figures alone never switch the lever away from activity (no personal record here)',d.code!=='REDUCE_CALORIES');if(d.code==='ADD_STEPS'||d.code==='REDUCE_CALORIES')ok('a lever decision records both options, their effects and how likely each is to be done',!!(d.leverChoice&&d.leverChoice.options.length===2&&d.leverChoice.options.every(function(o){return o.pExecution>0;})));});
+    _stSuite('training');
     /* ---- Physique by region (constructed training with a known lagging region) ---- */
     withFixture('successful_cut',function(){
       var keepS=DB.sessions,keepO=DB.observations,keepP=DB.settings.physiquePriorities;DB.settings.physiquePriorities=[];DB.sessions=[];
@@ -3857,6 +3988,7 @@ function runSelfTest(opts){
       DB.observations=DB.observations.filter(function(o){return o.type!=='weight';});for(var j=20;j>=0;j--)DB.observations.push(makeObservation({type:'weight',date:addDays(todayISO(),-j),value:round(250*Math.pow(1-0.015/7,20-j),2),source:'test'}));_memoInvalidate();
       ok('a cut losing 1.5% a week is faster than the range',physiqueRate().state.indexOf('faster')===0);
       DB.sessions=keepS;DB.observations=keepO;DB.settings.physiquePriorities=keepP;_memoInvalidate();});
+    _stSuite('models');
     /* ---- Model competition (synthetic candidates make the lifecycle rules deterministic) ---- */
     (function(){var keepL=DB.settings.modelLifecycle,keepC=MODEL_COMPETITIONS.__t;DB.settings.modelLifecycle={};
       var S=[];for(var i=0;i<140;i++)S.push({date:addDays(todayISO(),-139+i),value:200-0.1*i+((i*7919)%7-3)*0.15});
@@ -3879,6 +4011,7 @@ function runSelfTest(opts){
       MODEL_COMPETITIONS.__d={label:'decline',unit:'lb',horizons:[14],series:function(){return D;},candidates:['naive','theil_sen']};
       var H=evaluateCompetition('__d',{series:D,force:true});ok('on a steady decline the trend clearly beats the flat baseline',H.primaryBeatsBaseline===true);
       ['__good','__bad','__awful'].forEach(function(c){delete COMPETITION_CANDIDATES[c];});['__t','__f','__d'].forEach(function(c){delete MODEL_COMPETITIONS[c];});DB.settings.modelLifecycle=keepL;})();
+    _stSuite('nutrition');
     /* ---- From use: logging and supplements ---- */
     withFixture('successful_cut',function(){
       var keepO=DB.observations,keepS=DB.settings.supplementStack,d=todayISO();DB.observations=DB.observations.filter(function(o){return !(o.type==='supplement'&&o.date===d);});_memoInvalidate();
@@ -3892,6 +4025,7 @@ function runSelfTest(opts){
       ok('water is entered in any unit and stored in litres',Math.abs(toLitres(16,'floz')-0.4732)<0.001&&Math.abs(toLitres(2,'cup')-0.4732)<0.001&&toLitres(500,'ml')===0.5);
       ok('self-rated adherence is no longer a log type (adherence is measured from what was done)',!LOG_TYPES.some(function(x){return x[0]==='adherence';}));
       DB.observations=keepO;DB.settings.supplementStack=keepS;_memoInvalidate();});
+    _stSuite('adaptive-plan');
     /* ---- From use: setup, profile, phase criteria, context ---- */
     withFixture('successful_cut',function(){
       var ph=activePhase(),keepS=ph.startDate,keepSess=DB.sessions,keepP=JSON.stringify(DB.profile);ph.startDate=addDays(todayISO(),-71);
@@ -3908,6 +4042,7 @@ function runSelfTest(opts){
         closeSheet();}
       DB.profile=JSON.parse(keepP);
       ok('context tags are the words the models look for',CONTEXT_TAGS.some(function(c){return /new scale/.test(c[0]);})&&CONTEXT_TAGS.every(function(c){return c[1].length>10;}));});
+    _stSuite('general');
     /* ---- From use: your own schedule choices ---- */
     withFixture('successful_cut',function(){
       var keepS=JSON.stringify(DB.settings.schedule||{}),keepT=DB.settings.trainingDays,P=trainingProgram(),seq=_liftSequence(P).map(function(x){return x.label;});
@@ -3922,11 +4057,13 @@ function runSelfTest(opts){
       var free=-1;for(var i=0;i<14;i++)if(!rot(i)){free=i;break;}
       if(free>=0){setSchedule({cycleChoice:{index:free%((scheduleModel().pattern||'x').length),choice:'train'}});ok('a cycle day you set to train is trained every cycle',rot(free));}
       DB.settings.schedule=JSON.parse(keepS);DB.settings.trainingDays=keepT;_memoInvalidate();});
+    _stSuite('training');
     /* ---- From use: workouts ---- */
     withFixture('successful_cut',function(){var P=trainingProgram(),d=null;for(var i=2;i<14;i++){var x=addDays(todayISO(),i),pl=scheduledPlan(x,P);if(pl&&pl.kind==='lift'){d=x;break;}}
       if(d){var W=buildWorkout(d);ok('a lifting day beyond the programme structure still builds its exercises (it built an empty session)',W.exercises.length>0&&W.label!=='Session');}
       ok('a stepper is minus and plus around the field, going through its own action',/data-act="ui.step"[\s\S]*<input id="t1"[\s\S]*data-act="ui.step"/.test(uiStepper('<input id="t1" data-act="x.y">','t1',5,0,null,1)));
       ok('a timer offers its choices before it starts',(uiTimer('tt',{choices:[30,60]}).match(/timer\.start/g)||[]).length===2);});
+    _stSuite('nutrition');
     /* ---- From use: food portions ---- */
     withFixture('successful_cut',function(){var keep=DB.foodLogs.slice(),f=seedFoods().filter(function(x){return (normalizeFood(x).portions||[]).length;})[0];
       if(f){var pt=normalizeFood(f).portions[0],L=logFood({date:todayISO(),meal:'lunch',food:f,amount:1,unit:'portion:'+pt.label,portionLabel:pt.label,silent:true,noSave:true});L=L&&L.id?L:DB.foodLogs[DB.foodLogs.length-1];
@@ -3936,6 +4073,7 @@ function runSelfTest(opts){
         var res=portionResolve(_foodForEdit(c1),2,c1.portion.unit);updateFoodLog(c1.id,res.qty,c1.meal,{amount:2,unit:c1.portion.unit,label:'2 \u00d7 '+pt.label});var c2=DB.foodLogs.filter(function(x){return x.supersedes===c1.id;})[0];
         ok('editing in the portion unit doubles the nutrients',c2&&Math.abs(c2.nutrients.kcal-2*c1.nutrients.kcal)<0.5&&c2.portion.amount===2);}
       DB.foodLogs=keep;_memoInvalidate();});
+    _stSuite('nutrition');
     /* ---- From use: hydration, and the larger catalogue ---- */
     withFixture('successful_cut',function(){var keepO=DB.observations,keepF=DB.foodLogs,d=todayISO();
       DB.observations=DB.observations.filter(function(o){return !(o.date===d&&/water|urine|sweatrate|cardio/.test(o.type));});DB.foodLogs=DB.foodLogs.filter(function(l){return l.date!==d;});
@@ -3950,6 +4088,7 @@ function runSelfTest(opts){
       DB.observations=keepO;DB.foodLogs=keepF;_memoInvalidate();});
     ok('the supplement catalogue covers 120 or more products, each graded',Object.keys(SUPPLEMENT_CATALOGUE).length>=120);
     ok('overlapping interaction rules say each warning once',(function(){var x=supplementInteractions(['greentea','ashwagandha','kava']).map(function(i){return i.text;});return x.length===x.filter(function(v,i,a){return a.indexOf(v)===i;}).length;})());
+    _stSuite('adaptive-plan');
     /* ---- Phase 11: the unified optimiser ---- */
     withFixture('successful_cut',function(){var keepO=DB.observations,keepPref=DB.settings.optimiserPreference;_memoInvalidate();var O=unifiedOptimiser({minutesBudget:180});
       if(O.status==='ok'&&O.pareto.length){
@@ -3964,6 +4103,7 @@ function runSelfTest(opts){
       DB.observations=DB.observations.filter(function(o){return o.type!=='fatigue';});for(var i=0;i<7;i++)DB.observations.push(makeObservation({type:'fatigue',date:addDays(todayISO(),-i),value:8,source:'test'}));_memoInvalidate();
       var F=unifiedOptimiser({minutesBudget:180});ok('with fatigue at 8, nothing on offer adds training or cardio',F.status!=='ok'||F.pareto.every(function(r){return !(r.changes.cardio>0||r.changes.training>0);}));
       DB.observations=keepO;DB.settings.optimiserPreference=keepPref;_memoInvalidate();});
+    _stSuite('decisions');
     /* ---- Phase 12: the learning loop ---- */
     withFixture('successful_cut',function(){var keepC=DB.cycles,keepX=DB.experiments;DB.cycles=[];_memoInvalidate();
       var c1=runLearningCycle(),c2=runLearningCycle();ok('one learning cycle a week: asking again returns the same record',c1.id===c2.id&&DB.cycles.length===1&&/^cycle:\d{4}-W\d{2}$/.test(c1.id));
@@ -3975,6 +4115,7 @@ function runSelfTest(opts){
       ok('what was learned names a moved estimate, a first estimate, a new friction, a new forecast, a muscle no longer lagging and adherence',/moved from -0.1 to -0.25/.test(L)&&/first estimate of your calories/.test(L)&&/clearly gets in the way/.test(L)&&/forecast now trusts/.test(L)&&/no longer lagging/.test(L)&&/80%/.test(L));
       DB.experiments=(DB.experiments||[]).concat([{id:'xx',variable:nextTest().variable,status:'running'}]);var n2=nextTest();ok('the next test skips a lever already being tested',n2.status!=='ok'||n2.variable!==DB.experiments[DB.experiments.length-1].variable);
       DB.cycles=keepC;DB.experiments=keepX;_memoInvalidate();});
+    _stSuite('causal');
     /* ---- Engineering control: canonical Response, one lifecycle, IndividualState ---- */
     withFixture('successful_cut',function(){
       /* a real intervention to judge: a steps experiment begun 25 days ago (a vacuous pass over no responses proves nothing) */
@@ -3986,6 +4127,7 @@ function runSelfTest(opts){
       ok('a lifecycle never claims a later state without the earlier ones',L.every(function(l){var idx=l.transitions.map(function(t){return INTERVENTION_STATES.indexOf(t.state);});return idx.every(function(v,i){return i===0||v>idx[i-1];});}));
       var S=individualState();ok('IndividualState composes every part and is read-only (audit A-005)',['goal','constraints','plan','training','nutrition','activity','recovery','bodyComposition','execution','response','evidence','adaptation'].every(function(k){return k in S;})&&Object.isFrozen(S));
       var threw=false;try{(function(){'use strict';S.goal=null;})();}catch(e){threw=true;}ok('writing through IndividualState is refused',threw);});
+    _stSuite('adaptive-plan');
     /* ---- Engineering control: the plan authority (audit A-004, rule 7) ---- */
     withFixture('successful_cut',function(){ensurePlan();var ph=activePhase(),n0=plansOf().length,k0=ph.calorieTarget,s0=ph.stepTarget;
       var r=changePlan({kind:'targets',source:'your edit',reason:'test: two targets at once',expected:'as you set',apply:function(){updatePhase(ph.id,{calorieTarget:k0-100},{noUndo:true});updatePhase(ph.id,{stepTarget:(s0||8000)+1000},{noUndo:true});}});
@@ -3996,6 +4138,7 @@ function runSelfTest(opts){
       var n1=plansOf().length;changePlan({kind:'targets',source:'your edit',reason:'outer',expected:'as you set',apply:function(){changePlan({kind:'targets',source:'your edit',reason:'inner',expected:'as you set',apply:function(){updatePhase(ph.id,{calorieTarget:k0-200},{noUndo:true});}});}});
       ok('a change nested in another joins it: still one version, with the outer reason',plansOf().length===n1+1&&plansOf().slice(-1)[0].trigger.reason==='outer');
       updatePhase(ph.id,{calorieTarget:k0,stepTarget:s0},{noUndo:true});});
+    _stSuite('training');
     /* ---- Acute recovery (black-box V-004 found a new person at fatigue 9 on 4.5 h read "recovery unknown") ---- */
     withFixture('successful_cut',function(){var keep=DB.observations,d=todayISO(),at=function(o){DB.observations=keep.filter(function(x){return !(x.date===d&&/^(fatigue|sleep|soreness)$/.test(x.type));});Object.keys(o).forEach(function(k){DB.observations.push(makeObservation({type:k,date:d,value:o[k],source:'test'}));});_memoInvalidate();return acuteRecovery(d);};
       ok('fatigue 9 means rest or very light; fatigue 8 means lighter; 7 is not flagged',at({fatigue:9}).level==='poor'&&at({fatigue:8}).level==='strained'&&!at({fatigue:7}).flag);
@@ -4003,6 +4146,7 @@ function runSelfTest(opts){
       ok('the acute advice names its readings',/fatigue 9\/10/.test(at({fatigue:9,sleep:4.4}).reasons.join(','))&&/4\.4 h/.test(at({fatigue:9,sleep:4.4}).reasons.join(',')));
       at({fatigue:9});ok('a severe reading raises a safety item, ranked above everything else',attentionQueue().items[0].id.indexOf('acute-recovery:')===0&&attentionQueue().items[0].severity==='safety');
       DB.observations=keep;_memoInvalidate();});
+    _stSuite('causal');
     /* ---- Stage B: Exposure and Outcome as their own records, the Response referring to them ---- */
     withFixture('successful_cut',function(){var keepX=DB.experiments,keepO=DB.observations;var start=addDays(todayISO(),-25);
       DB.observations=DB.observations.filter(function(o){return o.type!=='steps';});
@@ -4018,6 +4162,7 @@ function runSelfTest(opts){
       var db={exposures:[],outcomes:[]};EVENT_TYPES['exposure.recorded'].apply(db,{data:E});EVENT_TYPES['outcome.recorded'].apply(db,{data:O});
       ok('exposures and outcomes replay from their events',db.exposures[0].id===E.id&&db.outcomes[0].id===O.id);
       DB.experiments=keepX;DB.observations=keepO;_memoInvalidate();});
+    _stSuite('forecasting');
     /* ---- Stage B projections: regimes, the state vector, the capability vector (expectations computed here) ---- */
     withFixture('successful_cut',function(){var keepS=DB.sessions,keepO=DB.observations,t=todayISO();
       DB.sessions=[{id:'g1',date:addDays(t,-30),sets:[{exercise:'Squat',load:200,reps:5}]},{id:'g2',date:addDays(t,-17),sets:[{exercise:'Squat',load:200,reps:5}]},{id:'g3',date:addDays(t,-15),sets:[{exercise:'Squat',load:200,reps:5},{exercise:'Squat',load:200,reps:5}]}];
@@ -4033,6 +4178,7 @@ function runSelfTest(opts){
       var V=stateVector(),w=V.components.filter(function(c){return c.key==='weight';})[0];
       ok('every state value carries its uncertainty and its freshness',V.components.length>0&&V.components.every(function(c){return 'sd' in c&&'ageDays' in c;})&&w&&w.ageDays!=null);
       DB.sessions=keepS;DB.observations=keepO;_memoInvalidate();});
+    _stSuite('adaptive-plan');
     /* ---- Stage C: marginal returns, goal conflicts, arbitration (expectations computed here) ---- */
     (function(){var m=marginalReturn('sets',10),exp=100*((1-Math.exp(-11/7))-(1-Math.exp(-10/7)));
       ok('the next set at 10 a week adds what the curve 1\u2212e^(\u2212d/7) says',!!m&&Math.abs(m.marginalPct-exp)<0.06&&m.range[0]<=m.marginalPct&&m.range[1]>=m.marginalPct);
@@ -4049,6 +4195,7 @@ function runSelfTest(opts){
       ok('arbitration scores every claim on all seven dimensions and states its rule',A.status!=='ok'||(A.claims.every(function(c){return c.dimensions&&['priority','constraints','risk','confidence','reversibility','expectedBenefit','opportunityCost'].every(function(k){return k in c.dimensions;});})&&/goal you chose/.test(A.rule)));
       ok('a safety veto still leads whatever goal was chosen',A.status!=='ok'||!A.claims.some(function(c){return c.priority<10;})||A.winner.priority<10);
       DB.observations=keepO;DB.settings.goalPriorities=keepP;DB.settings.physiquePriorities=keepPr;_memoInvalidate();});
+    _stSuite('training');
     /* ---- Stage D: personal training dose-response (data simulated here from a known scale) ---- */
     (function(){var gen=function(sc){return [3,5,8,11,15,20].map(function(x){return {region:'r'+x,sets:x,gain:10*(1-Math.exp(-x/(7*sc))),se:0.4};});};
       var R1=personalDoseResponse(gen(0.6)),R2=personalDoseResponse(gen(1.8));
@@ -4059,12 +4206,14 @@ function runSelfTest(opts){
       ok('fewer than four regions is not enough',personalDoseResponse(gen(1).slice(0,3)).status==='insufficient');
       var pop=marginalReturn('sets',10,{population:true}),per=marginalReturn('sets',10,{personal:R1});
       ok('the next set uses the personal curve once the person\u2019s data carry it, and says so',per.personal&&/personal curve/.test(per.basis)&&per.marginalPct<pop.marginalPct);})();
+    _stSuite('causal');
     /* ---- Stage D: personal frequency response (simulated from a known slope, at equal volume) ---- */
     (function(){var gen=function(b,noise){var fq=[0.8,1.2,1.6,2.0,2.4,2.8];return fq.map(function(f,i){return {region:'f'+i,sets:10,frequency:f,gain:8+b*(f-1.8)+(noise?noise[i]:0),se:0.3};});};
       var R=personalFrequencyResponse(gen(2));ok('a known effect of frequency at equal volume is recovered inside its interval (+2%/month per exposure)',R.status==='ok'&&R.interval[0]<=2&&R.interval[1]>=2&&Math.abs(R.perExposure-2)<0.3);
       var Z=personalFrequencyResponse(gen(0,[0.2,-0.1,0.15,-0.2,0.1,-0.05]));ok('no effect gives an interval around zero and says so',Z.interval[0]<0&&Z.interval[1]>0&&/no clear difference/.test(Z.reading));
       var flat=gen(2).map(function(r){r.frequency=1.5;return r;});ok('regions trained equally often cannot show a frequency effect',personalFrequencyResponse(flat).status==='insufficient');
       ok('the frequency estimate states what it does not measure',/fatigue per exposure is not measured/.test(R.limits));})();
+    _stSuite('recovery');
     /* ---- Stage D: personal sleep response (simulated from known slopes) ---- */
     (function(){var t0=todayISO(),sl=[],fa=[],hu=[];for(var i=0;i<30;i++){var d=addDays(t0,-i),x=6+((i*7)%5)*0.6;sl.push({date:d,value:x});fa.push({date:d,value:5-0.8*(x-7.2)+((i%3)-1)*0.1});hu.push({date:d,value:4+((i%4)-1.5)*0.2});}
       var R=personalSleepResponse({sleep:sl,fatigue:fa,hunger:hu,performance:{},steps:[]}),F=R.outcomes.filter(function(o){return o.key==='fatigue';})[0],H=R.outcomes.filter(function(o){return o.key==='hunger';})[0];
@@ -4073,6 +4222,7 @@ function runSelfTest(opts){
       ok('an outcome without 14 paired days is not estimated',R.outcomes.filter(function(o){return o.key==='steps';})[0].status==='insufficient');
       ok('sleep that does not vary cannot show an effect',personalSleepResponse({sleep:sl.map(function(o){return {date:o.date,value:7};}),fatigue:fa,hunger:hu,performance:{},steps:[]}).outcomes[0].status==='insufficient');
       ok('the sleep response states it is an association, not proof of cause',/not proof of cause/.test(R.limits));})();
+    _stSuite('causal');
     /* ---- Stage D: personal NEAT response (simulated from a known slope) ---- */
     (function(){var gen=function(b,dpcts,noise){return dpcts.map(function(d,i){return {week:'w'+i,deficitPct:d,steps:9000+b*d/10+(noise?noise[i]:0)};});};
       var D=[0,5,10,15,20,25,12,8],R=personalNeatResponse(gen(-800,D,[60,-40,30,-70,50,-20,10,-30]));
@@ -4089,6 +4239,7 @@ function runSelfTest(opts){
         var steps=NEAT_PRIOR.mean*(100*300/t.value/10),kcal=steps*0.0005*kg,expect=p.mean+(-kcal*7/tissueKcalPerLb())*(1-(p.personalWeight||0));
         ok('a deeper calorie cut is credited with the everyday movement it tends to cost',Math.abs(e.mean-expect)<0.002&&e.mean>p.mean&&/everyday movement/.test(e.basis),round(e.mean,3)+' vs '+round(expect,3)+' (plain '+p.mean+')');
         var eb=energyBalance();ok('the energy balance states the movement its deficit is expected to cost',eb.status!=='ok'||eb.balance>=0||(eb.neat&&eb.neat.steps<0&&eb.neat.kcal<0));});})();
+    _stSuite('body-composition');
     /* ---- Stage D: body-composition latent state (from stated inputs; expectations from precision arithmetic) ---- */
     (function(){var d0='2026-01-01',pts=function(bf0,step,n,w){var o=[];for(var i=0;i<n;i++){var bf=bf0+step*i;o.push({date:addDays(d0,14*i),fat:w*bf/100,bf:bf});}return o;};
       var base={trend:{slope:-1.0,se:0.1},share:{mean:0.75,sd:0.1,basis:'test'},methods:[],anchor:null};
@@ -4107,6 +4258,7 @@ function runSelfTest(opts){
       ok('a fixed offset between methods does not read as change',X.methods.length===2&&X.methods.every(function(m){return Math.abs(m.fatPerWeek+0.35)<0.01;}));
       ok('the latent state states its limits',/water/.test(P.limits)&&/not calibrated against each other/.test(P.limits));
       ok('the circumference equation is the one bodyComp uses',Math.abs(navyBodyFat('male',70,36,15)-(86.010*Math.log10(21)-70.041*Math.log10(70)+36.76))<1e-9);})();
+    _stSuite('general');
     /* ---- Stage D: aerobic-capacity trend (simulated from a known slope) ---- */
     (function(){var d0='2026-03-01',gen=function(b,n,noise){var o=[];for(var i=0;i<n;i++)o.push({date:addDays(d0,9*i),estimate:42+b*(9*i)/30+(noise?noise[i%noise.length]:0),sd:2});return o;};
       var R=vo2Trend(gen(1.2,12,[0.6,-0.4,0.3,-0.6,0.2,-0.1]));
@@ -4114,6 +4266,7 @@ function runSelfTest(opts){
       var Z=vo2Trend(gen(0,12,[1.5,-1.2,0.8,-1.5,1.1,-0.7]));ok('a steady level leaves the trend interval around zero',Z.status==='ok'&&Z.interval[0]<0&&Z.interval[1]>0);
       ok('three sessions, or four within a fortnight, are not a trend',vo2Trend(gen(1.2,3)).status==='insufficient'&&vo2Trend(gen(1.2,4).map(function(o,i){o.date=addDays(d0,3*i);return o;})).status==='insufficient');
       var C=capabilityVector();ok('the capability vector\u2019s endurance entry carries capacity, or says what it needs, beside the minutes',C.endurance.cardioMinutesPerWeek!=null&&!!C.endurance.capacity&&(C.endurance.capacity.vo2max!=null||(C.endurance.capacity.need||[]).length>0));})();
+    _stSuite('bayesian');
     /* ---- Stage E: hierarchical personalisation (properties that follow from the model, not its own numbers) ---- */
     (function(){var same=hierarchicalPosterior([{id:'a',value:2,sd:1},{id:'b',value:2,sd:1},{id:'c',value:2,sd:1}]);
       ok('identical units each end at the shared value, and borrowing narrows each below its own sd',same.rows.every(function(r){return Math.abs(r.posterior-2)<1e-6&&r.posteriorSd<1&&r.posteriorSd>0;}));
@@ -4130,6 +4283,7 @@ function runSelfTest(opts){
       var C=poolResponseContexts(prior,ctx),cu=C.filter(function(c){return c.context==='cut';})[0],ma=C.filter(function(c){return c.context==='maintenance';})[0];
       ok('response contexts are pooled toward the person\u2019s own estimate, not the population figure',cu.pooled&&ma.pooled&&cu.mean<0.0032&&ma.mean>0.002&&cu.mean>ma.mean);
       ok('with one context there is nothing of the person\u2019s to pool, so the population prior is used',poolResponseContexts(prior,{cut:ctx.cut}).every(function(c){return c.pooled===false;}));})();
+    _stSuite('causal');
     /* ---- Causal estimation on Responses (Stage E): constructed records with known answers ---- */
     ['failed_intervention','successful_intervention'].forEach(function(f){withFixture(f,function(){var e=DB.experiments[0],its=interruptedTimeSeries({changeDate:e.startDate});
       if(f==='failed_intervention')ok('the interrupted series projects the old trend to the change: a change that did nothing (a flat trend before and after) shows no shift',its.status==='ok'&&/indistinguishable/.test(its.verdict),JSON.stringify([its.levelShift,its.slopeChangePerWeek,its.verdict]));
@@ -4172,6 +4326,7 @@ function runSelfTest(opts){
       ok('a record too short for four matched periods says how much more is needed, and gives no matched estimate',r.causal.matched.status==='insufficient'&&/more stretch/.test((r.causal.matched.need||[]).join())&&r.causal.estimates.length===2,JSON.stringify(r.causal.matched));
       DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();
     });
+    _stSuite('decisions');
     /* ---- Knowledge versioning, conflict and decay (Stage E): constructed findings with known answers ---- */
     withFixture('normal_loss',function(){var keep=DB.responses,keepN=DB.negatives,per=7/3500,today=todayISO();
       var mk=function(id,dose,effect,se,endDaysAgo){var end=addDays(today,-endDaysAgo),start=addDays(end,-20);return {id:id,interventionId:id,variable:'calories',outcome:'weight',dose:dose,stage:'final',start:start,
@@ -4206,6 +4361,7 @@ function runSelfTest(opts){
         r.modelVersion='response-1.1';var n=recordResponses().recorded,r2=responsesOf().filter(function(x){return x.id===id;})[0];
         ok('a finding derived by an earlier method is derived again as a new version that names the one it replaced, and the earlier stays in the log',n>=1&&r2.version===2&&r2.previous&&r2.previous.modelVersion==='response-1.1'&&r2.previous.stage==='final'&&r2.previous.effect===eff&&r2.modelVersion===RESPONSE_MODEL_VERSION&&events()===e0+1,JSON.stringify([n,r2.version,r2.previous,events(),e0]));
         ok('and once current it is not derived again',recordResponses().recorded===0&&responsesOf().filter(function(x){return x.id===id;})[0].version===2);}});
+    _stSuite('causal');
     /* ---- Experiment portfolio (Stage E): expected information gain across levers, with known answers ---- */
     withFixture('normal_loss',function(){var keepR=DB.responses,keepX=DB.experiments,today=todayISO();DB.responses=[];DB.experiments=[];_memoInvalidate();
       var P=experimentPortfolio(),row=function(k){return experimentPortfolio().rows.filter(function(r){return r.key===k;})[0];},s=P.rows.filter(function(r){return r.key==='steps→weight';})[0];
@@ -4233,6 +4389,7 @@ function runSelfTest(opts){
       DB.responses=[];_memoInvalidate();
       ok('the learning loop shows the portfolio behind its next test',loopCard().indexOf('narrower')>=0);
       DB.responses=keepR;DB.experiments=keepX;_memoInvalidate();});
+    _stSuite('general');
     /* ---- Policy simulation (Stage F): constructed options with paths computed by hand ---- */
     (function(){var base=[1,2,3,4].map(function(w){return {week:w,date:addDays(todayISO(),7*w),mean:200,sd:1};}),z=1.2816,t=(28-3)/7;
       var one=simulateOption({levers:[{mean:-0.5,sd:0.1,p:0.8}]},base),e=one.end,vr=0.8*(0.01+0.25)-0.16,m=200-0.4*t,s=Math.sqrt(1+vr*t*t);
@@ -4250,6 +4407,7 @@ function runSelfTest(opts){
       var keepF=DB.settings.folds;DB.settings.folds=Object.assign({},keepF||{},{'plan-options':true});var card=optimiserCard();DB.settings.folds=keepF;ok('the options card shows where each option leaves you in 8 weeks, and the path with no change',card.indexOf('In 8 weeks about')>=0&&card.indexOf('With no change')>=0);
       var n0=plansOf().length,res=applyOptimiserChoice(O.pareto[0]),last=plansOf().slice(-1)[0];
       ok('choosing an option records its simulated outcome in the plan’s expected result',res.status==='ok'&&plansOf().length===n0+1&&/in 8 weeks about/.test(String(last.expected||(last.trigger&&last.trigger.expected)||'')),JSON.stringify(last&&{e:last.expected,t:last.trigger}));});
+    _stSuite('forecasting');
     /* ---- Counterfactuals (Stage F): constructed records, the path without the change computed by hand ---- */
     withFixture('normal_loss',function(){
       var keep={o:DB.observations,ph:DB.phases,s:DB.sessions,e:DB.experiments,p:DB.plans,r:DB.responses,st:DB.settings.supplementStack};
@@ -4278,6 +4436,7 @@ function runSelfTest(opts){
       DB.responses=[r];var sheet=SHEETS.response({id:r.id}).body;
       ok('the response sheet shows the path without the change, with a chart',sheet.indexOf('Without the change')>=0&&sheet.indexOf('<svg')>=0);
       DB.observations=keep.o;DB.phases=keep.ph;DB.sessions=keep.s;DB.experiments=keep.e;DB.plans=keep.p;DB.responses=keep.r;DB.settings.supplementStack=keep.st;_memoInvalidate();});
+    _stSuite('models');
     /* ---- Sensor fusion (Stage G): two and three sources of one quantity, with known answers ---- */
     withFixture('normal_loss',function(){var keepO=DB.observations,keepP=DB.settings.sourcePreference,today=todayISO(),day0=addDays(today,-62);
       var w=function(i){return round(250-i/7,2);},e=function(i){return [-0.5,0,0.5][i%3];},mk=function(i,v,src,meta){var o=makeObservation({type:'weight',date:addDays(day0,i),value:round(v,2),source:src,meta:meta});o.at=o.createdAt=addDays(day0,i)+'T08:00:00.000Z';return o;};
@@ -4301,6 +4460,7 @@ function runSelfTest(opts){
       var part=function(key){var s=sourcesOverview().sources.filter(function(x){return x.key===key;})[0];return s&&s.fusion.filter(function(x){return x.type==='weight';})[0];},fu=part('manual'),fs=part('import:withings');
       ok('the sources sheet shows each source’s part: the hand entries corrected by 1 lb and noisier, the steady scale the reference carrying almost all the weight',!!fu&&!!fs&&fs.reference&&!fu.reference&&Math.abs(fu.bias-1)<0.01&&fu.overlap===39&&fu.noise>fs.noise&&fs.share>0.9&&fu.share<0.05,JSON.stringify([fu,fs]));
       DB.observations=keepO;DB.settings.sourcePreference=keepP;_memoInvalidate();});
+    _stSuite('general');
     /* ---- User-approved automation (Stage H): the approval policy, checked against its definition ---- */
     withFixture('normal_loss',function(){var keep={a:DB.settings.automations,ap:DB.settings.automationApprovals,p:DB.settings.automationPending};
       DB.settings.automations=[];DB.settings.automationApprovals={};DB.settings.automationPending=[];
@@ -4326,6 +4486,7 @@ function runSelfTest(opts){
       ok('approving is recorded and audited; the change itself then goes through the plan’s own authority, from the screen',R2.status==='ok'&&R2.pending.status==='approved'&&audits('approved')===a0+1&&plansOf().length===n0&&automationPending().length===0);
       ok('the automation sheet lists what automation did',SHEETS.automation().body.indexOf('What automation did')>=0);
       DB.settings.automations=keep.a;DB.settings.automationApprovals=keep.ap;DB.settings.automationPending=keep.p;});
+    _stSuite('forecasting');
     /* ---- Self-calibration (Stage H): the competition's rule, for every model that makes interval predictions ---- */
     (function(){var R=[];for(var i=0;i<20;i++)R.push({at:'2026-01-'+(i<9?'0':'')+(i+1),ratio:0.1*(i+1)});var C=intervalCalibration(R);
       /* by hand: 12 of the 20 ratios are within 1.2816; the 80th percentile (the 17th of 20) is 1.7; on the older ten it is 0.9,
@@ -4354,6 +4515,7 @@ function runSelfTest(opts){
       var keepDB=DB,A;try{DB=replayHistory(generateRecord(DEMO_SPEC,11),DEMO_SPEC);_memoInvalidate();A=cardioFitnessModel();}finally{DB=keepDB;_memoInvalidate();}
       ok('the aerobic filter calibrates its interval by its own one-step-ahead record, by the same rule (on the demo’s sessions)',A.status==='ok'&&A.states.some(function(s){return s.calibration.applied;})&&A.states.every(function(s){var c=intervalCalibration(s.scored);return s.calibration.applied===(c.n>=10)&&s.calibration.scale===round(c.n>=10?c.scale:1,2);}),JSON.stringify(A.states&&A.states.map(function(s){return s.calibration;})));
       DB.responses=keep;_memoInvalidate();});
+    _stSuite('presentation');
     /* ---- A new record starts at the Casual detail level; an existing one keeps the level it shows ---- */
     (function(){ok('a new record starts at the Casual detail level',emptyDB().settings.detail==='casual');
       var old=emptyDB();delete old.settings.detail;var m=migrate(JSON.parse(JSON.stringify(old)));
@@ -4365,6 +4527,7 @@ function runSelfTest(opts){
       ok('while a level chosen on another device, which arrives as an event, still wins',DB.settings.detail==='developer');});
     withFixture('normal_loss',function(){DB.settings.detail='insightful';loadDemo();var a=DB.settings.detail;DB.settings.detail='casual';loadDemo();var b=DB.settings.detail;
       ok('loading the demo replaces the record but keeps the detail level the person chose',a==='insightful'&&b==='casual');});
+    _stSuite('storage');
     /* UNDO REACHES BACK ACROSS A RESTORE MERGE. A restore merge restarts the log from the merged record, so an undo of it,
        or of anything before it, restarts the log again from the record the undo put back: checked after a restart, and on
        a second device that syncs afterwards, which must converge on the same record. */
@@ -4390,6 +4553,7 @@ function runSelfTest(opts){
         ok('a device that already had the restored record loses the backup’s entry when it syncs the undo',!has(x.id,B2)&&has(k2.id,B2));
       }finally{DB=savedDB;_EVENTS.length=0;Array.prototype.push.apply(_EVENTS,savedEvents);_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();}
     })();
+    _stSuite('training');
     /* ---- Mobility, conditioning, power and speed (Stage D, item 4): constructed tests with answers worked out here ---- */
     (function(){var T=todayISO(),rowsOf=function(doses,values){return doses.map(function(d,i){return {date:addDays(T,-7*(doses.length-i)),value:values[i],dose:d};});};
       /* six sit-and-reach tests at 0 to 2.5 units of mobility work (30 min a week each), 2 cm better per unit, ±0.2 cm noise */
@@ -4420,6 +4584,7 @@ function runSelfTest(opts){
       var keepSh=_SHEET,form;try{_SHEET={buf:{type:'tests',date:T}};form=SHEETS.log(_SHEET.buf).body;}finally{_SHEET=keepSh;}
       ok('the quick log has a Fitness tests form for all five',['f_sitreach','f_kneewall','f_hrr','f_cmj','f_sprint'].every(function(id){return form.indexOf(id)>=0;}));
       DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();});
+    _stSuite('models');
     /* ONE ENERGY-DENSITY SERVICE (catalogue W-003). The service is replaced by a known density, 3,000 kcal per lb (range
        2,600 to 3,300), then 3,500; every expectation is that figure and arithmetic. Each consumer must convert with exactly
        the service's figure, name the model and version, and follow the service when its assumption changes. */
@@ -4456,6 +4621,7 @@ function runSelfTest(opts){
       ok('the density is a registered model: it runs through the inference gateway with its version, a run identity and its assumptions',
         r.status==='ok'&&r.modelVersion==='1.0'&&!!r.runId&&!!r.assumptions,JSON.stringify({status:r.status,v:r.modelVersion,run:r.runId}));
     })();
+    _stSuite('governance');
     /* UNIQUE REGISTRY IDS (catalogue W-008). A duplicate is injected into every registry the audit names, and removed
        afterwards; each must be reported with its registry, id and places. Expected from the injection itself: seven array
        registries and fourteen keyed ones, the first entry's id at index 0 and at the end. */
@@ -4482,6 +4648,7 @@ function runSelfTest(opts){
       ok('a second view of one id is refused: the first view stands and the attempt is recorded',rv.status==='exists'&&VIEW_REGISTRY[vid]===keepV&&_REGISTRY_CONFLICTS.length===n1+1);
       _REGISTRY_CONFLICTS.length=n1;_SWALLOWED=JSON.parse(swKeep);
     })();
+    _stSuite('governance');
     /* NO PROSE AS DATA (catalogue doc 2, P1.4). Each value travels as a field, and here the sentence beside it is made to
        disagree with it, so code that read the sentence would answer differently. Expected from the literal fields. */
     (function(){
@@ -4498,6 +4665,7 @@ function runSelfTest(opts){
         ok('inventory confidence counts the rates measured from the log by their source, not by a phrase in the basis',!!ic&&ic.measuredRates===1&&ic.items===3,JSON.stringify(ic));
       }finally{inventoryLifecycle=keep;}
     })();
+    _stSuite('governance');
     /* VERIFICATION EVIDENCE (catalogue doc 2, P0.1 and P0.2). Reading statuses must execute nothing: every function a
        status could run is counted while the matrix is read, and must be called zero times. A status that needs a check
        reads the latest run's entry for this build; an entry from another build, or past its expiry, is not evidence. */
@@ -4530,6 +4698,7 @@ function runSelfTest(opts){
       ok('two verification runs in the same instant record distinct entries, and every entry id is unique',
         v1.generatedAt===v2.generatedAt&&ids.length===ids.filter(function(x,i){return ids.indexOf(x)===i;}).length,v1.generatedAt+' / '+v2.generatedAt);
     })();
+    _stSuite('governance');
     /* MATURITY IS DERIVED, NEVER ASSIGNED (catalogue W-029). No grade is typed in: each engine's grade comes from its
        declared evidence. Expected from the rule: a scored model is statistically validated with 20 or more scored
        forecasts and no significant bias, and operational otherwise; a tested function is infrastructure, never more. */
@@ -4545,6 +4714,7 @@ function runSelfTest(opts){
       try{ENGINE_EVIDENCE.mechanicalDemand={fn:'w029NoSuchFunction',gate:'engine'};gone=engineMaturity('mechanicalDemand');}finally{ENGINE_EVIDENCE.mechanicalDemand=keepE;}
       ok('an engine whose evidence is not in the build is ungraded, not given a grade',!!gone&&gone.grade===null&&/not in the build/.test(gone.derivedFrom));
     })();
+    _stSuite('causal');
     /* EPISTEMIC CLASSES (catalogue W-010). A causal claim needs an explicit pathway; a response estimated from a change over
        time does not inherit causal authority from the causal machinery. causalSupport() is set to a known grade, and each
        Response is built with a known effect (1.0 lb a week, standard error 0.2: clear, five standard errors). */
@@ -4570,6 +4740,7 @@ function runSelfTest(opts){
         validateAssistantReply({text:'Cutting calories caused the drop.'},pk('CAUSALLY_SUPPORTED','supported')).ok
           &&validateAssistantReply({text:'Your weight fell after you cut calories.'},pk('ASSOCIATED','correlated')).ok);
     })();
+    _stSuite('models');
     /* EXECUTABLE FAILURE CONDITIONS (catalogue W-036). Every condition a consequential model declares is classified, and
        each newly executable one is held to its class on a record built here: 28 days of weigh-ins falling 0.1 lb a day with
        small noise, 2,000 kcal logged daily, on a fixed today; then exactly the condition under test is added. */
@@ -4601,6 +4772,7 @@ function runSelfTest(opts){
         r.f28.status==='inapplicable'&&r.f28.point===undefined&&(r.f28.failing||[]).indexOf('phase change inside horizon')>=0&&r.f7.status==='ok',
         JSON.stringify({f28:r.f28.status,f7:r.f7.status}));
     })();
+    _stSuite('storage');
     /* ONE PERSISTENCE AUTHORITY (catalogue W-006). PERSIST_COLLECTIONS and PERSIST_SCALARS are the declaration; the record's
        own shape must match it exactly, so a collection added to the record but not declared (which would never be stored)
        fails here, and so does a declared one the record lacks. Every other list that names collections is a subset. */
@@ -4613,6 +4785,7 @@ function runSelfTest(opts){
       ok('every collection a save label, the sharding or the unevented list names is a declared persisted one',
         labels.concat(Object.keys(SHARDED_COLLECTIONS),UNEVENTED_COLLECTIONS).every(function(k){return PERSIST_COLLECTIONS.indexOf(k)>=0;}));
     })();
+    _stSuite('storage');
     /* WHAT A BACKUP HOLDS OF THE VISUAL HISTORY (catalogue W-004). Two progress photos, one of them removed: the backup must
        say it holds one photo's date and pose and not its image, and that it is not the complete visual history. */
     (function(){var keep=DB.settings.photos;
@@ -4625,6 +4798,7 @@ function runSelfTest(opts){
       ok('and with no photos it says nothing visual is left out',none.count===0&&none.completeVisualHistory===true,JSON.stringify(none));
     })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
+    _stSuite('external');
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){
       var keepO=DB.observations,keepP=DB.settings.sourcePreference,d=addDays(todayISO(),-3);DB.settings.sourcePreference={};
@@ -4645,6 +4819,7 @@ function runSelfTest(opts){
       ok('derived food-log totals cannot be deleted as a source',deleteSourceData('food-log').status==='refused');
       DB.observations=keepO;DB.settings.sourcePreference=keepP;_memoInvalidate();
     });
+    _stSuite('general');
     /* ---- Automation: defaults, quick actions, templates, patterns, rules, shortcuts ---- */
     withFixture('successful_cut',function(){
       ok('smart defaults never guess food intake',['calories','protein','carbs','fat','fiber'].every(function(k){return smartDefault(k)===null;}));
@@ -4672,6 +4847,7 @@ function runSelfTest(opts){
       ok('a supplement taken most days but not in the regimen is offered as a pattern',detectPatterns().some(function(p){return p.id==='supp:theanine';}));
       DB.observations=keepO;DB.settings.supplementStack=keepS;_memoInvalidate();
     });
+    _stSuite('general');
     /* ---- the expanded catalogue ---- */
     ok('the catalogue covers the named supplements and minerals',['theanine','pygeum','ashwagandha','copper','zinc','creatine','sawpalmetto','manganese','chromium','selenium','iodine','biotin','collagen','berberine'].every(function(k){return !!SUPPLEMENT_CATALOGUE[k];})&&Object.keys(SUPPLEMENT_CATALOGUE).length>=70);
     ok('a brand number is not read as a dose ("KSM-66 ashwagandha 600mg" is 600 mg)',resolveSupplement('KSM-66 ashwagandha 600mg').dose===600);
@@ -4680,6 +4856,7 @@ function runSelfTest(opts){
       DB.settings.supplementStack.push({id:'copper',dose:2,unit:'mg',when:'daily'});var b=supplementInteractions().some(function(x){return /copper deficiency/.test(x.text);});DB.settings.supplementStack=k;return a&&!b;})());
     ok('5-HTP with St John\u2019s wort is flagged as dangerous',supplementInteractions(['htp','stjohns']).some(function(x){return x.level==='danger';}));
     ok('saw palmetto is graded honestly (large trials found no benefit)',SUPPLEMENT_CATALOGUE.sawpalmetto.evidence[0][1]==='D');
+    _stSuite('nutrition');
     /* ---- Supplements and vitamins ---- */
     ok('every catalogue entry has a unit, a dose range, graded evidence, a source, and nutrient keys that exist',Object.keys(SUPPLEMENT_CATALOGUE).every(function(id){var c=SUPPLEMENT_CATALOGUE[id];
       return c.label&&c.unit&&c.dose&&c.dose[0]<=c.dose[1]&&c.evidence.length&&c.evidence.every(function(e){return /^[ABCD]$/.test(e[1]);})&&c.source&&Object.keys(c.per||{}).every(function(k){return !!MICRONUTRIENTS[k];});}));
@@ -4703,6 +4880,7 @@ function runSelfTest(opts){
       ok('an old text log and a structured log are one supplement',supplementIntakes(addDays(todayISO(),-1),todayISO()).filter(function(x){return x.id==='creatine';}).length===2&&supplementAdherence(2).rows[0].taken===2);
       DB.foodLogs=keepL;DB.observations=keepO;DB.settings.supplementStack=keepS;_memoInvalidate();
     });
+    _stSuite('models');
     /* ---- Physiology models: the arithmetic, on constructed cases ---- */
     ok('intensity is labelled by what was measured, never invented from duration',cardioIntensityClass({watts:200}).cls==='known'&&cardioIntensityClass({hr:130}).cls==='known'&&cardioIntensityClass({pace:10}).cls==='proxy'&&cardioIntensityClass({rpe:6}).cls==='proxy'&&cardioIntensityClass({minutes:30}).cls==='unknown');
     withFixture('successful_cut',function(){
@@ -4720,9 +4898,11 @@ function runSelfTest(opts){
     ok('protein quality comes from the food group',_foodGroup('Whey protein').q===1&&_foodGroup('Red lentils').q===0.65&&_foodGroup('Something unknown').group==='unclassified');
     ok('the prior is a FRIEND registry median, lower for cycling',(function(){var a=_vo2Prior('weight-bearing').mean,b=_vo2Prior('cycling').mean;return Math.abs(b-a*0.9)<0.01;})());
     ok('every physiology model is in the canonical registry with a full contract',['cardio_fitness_latent','hydration_balance','supplement_efficacy','energy_availability','diet_digestibility','recovery_allocation'].every(function(id){var c=modelContract(id);return c&&c.executable&&c.uncertaintyContract&&c.provenanceContract;}));
+    _stSuite('general');
     /* ---- Diagnostics from a live deployment ---- */
     ok('a same-site sync address is kept, and a relative one is used as given',_sameSiteServerUrl('/api/sync')==='/api/sync'&&typeof _cspAllows==='function');
     ok('the food database says once that it is missing, instead of failing every lookup',typeof _FOOD_DB_MISSING==='boolean');
+    _stSuite('general');
     /* ---- Icons, conditions, the feature guide ---- */
     ok('every weather condition has an icon, and a night version',Object.keys(WEATHER_CONDITIONS).every(function(k){var c=WEATHER_CONDITIONS[k];return !!ICONS[c[1]]&&!!ICONS[c[2]];}));
     ok('a condition without a code is derived from cloud cover and rain, and says so',(function(){var c=weatherCondition({cloudCover:90,precipitation:0});var r=weatherCondition({precipitation:2});return c&&c.label==='Overcast'&&c.derived&&r&&r.icon==='rain';})());
@@ -4732,13 +4912,16 @@ function runSelfTest(opts){
     ok('an unknown icon draws nothing rather than a broken image',uiIcon('no-such-icon')==='');
     ok('every feature in the guide leads somewhere real',featureGuide().every(function(f){return typeof ACTIONS[f.act]==='function'&&!!ICONS[f.icon];}));
     ok('setup offers a place for weather',WELCOME_STEPS.indexOf('place')>0);
+    _stSuite('ai');
     /* ---- Voice: every browser error is explained ---- */
     ok('every speech recognition error has an explanation',['no-speech','audio-capture','not-allowed','service-not-allowed','network'].every(function(k){return !!VOICE_ERRORS[k];}));
     ok('without speech recognition, voice capture says so rather than failing silently',(function(){var had=typeof window!=='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition);return had||startVoiceCapture(function(){}).ok===false;})());
+    _stSuite('general');
     /* ---- Deployment: errors say what failed, and the app states what it needs ---- */
     ok('an error without the server\u2019s envelope never reads "Something went wrong"',extError(undefined,'x').error.text!=='Something went wrong.'&&extError('bogus','x').error.category==='provider_unavailable'&&/problems/.test(extError('bogus','x').error.text));
     ok('a missing server is said plainly',/need the Physique OS server/.test(extError('configuration_error','x',{stage:'routing',text:EXT_NO_SERVER_TEXT}).error.text)&&extError('configuration_error','x',{stage:'routing'}).error.stage==='routing');
     ok('the deployment status says weather, online food lookups and sync need the server',(function(){var d=deploymentStatus();return d.client==='static'&&d.externalServer==='required'&&d.weatherRequiresServer&&d.foodExternalRequiresServer&&d.cloudSyncRequiresServer;})());
+    _stSuite('general');
     /* ---- Alerts: snoozed, never dismissed for good ---- */
     withFixture('successful_cut',function(){
       var keep=DB.settings.attentionSnooze;DB.settings.attentionSnooze={};
@@ -4753,6 +4936,7 @@ function runSelfTest(opts){
       ok('a snooze for an alert whose cause has gone is cleared',!('no-longer-applies' in DB.settings.attentionSnooze));
       DB.settings.attentionSnooze=keep||{};
     });
+    _stSuite('adaptive-plan');
     /* ---- External sources: registry, adapters, ingestion (integration spec \u00a75, \u00a76, \u00a741, \u00a743) ---- */
     (function(){
       var A=externalSourceAudit();ok('every external source has one registration, destinations, capabilities and a resolving adapter',A.ok&&A.count>=3,A.issues.join('; '));
@@ -4786,6 +4970,7 @@ function runSelfTest(opts){
       ok('an Open Food Facts product resolves into the existing food identity by barcode',foodIdentity(off.food)==='gtin:00123456789012');
       ok('label conflicts between two records of one product are reported',foodLabelConflicts({per100:{kcal:100,protein:5}},{per100:{kcal:130,protein:5}}).length===1);
     })();
+    _stSuite('schema');
     /* ---- H4: validation \u2014 placebo checks, prior sensitivity, calibration in context ---- */
     withFixture('successful_cut',function(){
       /* A pattern that is only a trend: hunger rising steadily while cardio days cluster late — future cardio "explains"
@@ -4801,6 +4986,7 @@ function runSelfTest(opts){
       ok('the share of the prior still carried in is stated',PS.status!=='ok'||(PS.share>=0&&PS.share<=1&&!!PS.note));
       var H=modelHealthInContext('weight_forecast');ok('model health is stated for the current situation or overall',!!H.state&&!!H.why);
     });
+    _stSuite('presentation');
     /* ---- H4: every chart type draws, and each refuses data that would mislead ---- */
     (function(){
       var drawn=function(t,pm){var h=renderChartSpec(t,Object.assign({title:t},pm));return /<svg/.test(h)&&!/chart-refused/.test(h);};
@@ -4825,6 +5011,7 @@ function runSelfTest(opts){
       ok('the rest draw from valid data',drawn('groupedBar',{categories:['a','b'],series:[{name:'s',values:[1,2]}]})&&drawn('bubble',{points:[1,2,3,4,5].map(function(i){return {x:i,y:i*2,size:i};})})&&
         drawn('network',{nodes:[{id:'a',label:'A'},{id:'b',label:'B'}],edges:[{a:'a',b:'b'}]})&&drawn('parallelCoordinates',{axes:['a','b','c'],rows:[{values:[1,2,3]},{values:[3,2,1]}]})&&drawn('tree',{root:{label:'r',children:[{label:'a'}]}}));
     })();
+    _stSuite('ai');
     /* ---- H4: the assistant answers the question asked, and knows its limits ---- */
     withFixture('successful_cut',function(){
       var A=function(q){return askQuestion(q);};
@@ -4838,6 +5025,7 @@ function runSelfTest(opts){
       ok('a health-condition question is declined, not answered',A('does my blood pressure medication affect my weight?').status==='declined');
       ok('an out-of-scope question is not guessed at',A('what stock should I buy?').status==='unmatched');
     });
+    _stSuite('training');
     /* ---- H4: one answer to "is this lift improving?", and claims that say what would change them ---- */
     withFixture('successful_cut',function(){
       var R=exerciseResponse().rows.filter(function(r){return r.status==='ok';});
@@ -4851,6 +5039,7 @@ function runSelfTest(opts){
       ok('every claim says what would change it',K.every(function(i){return !!i.wouldChange;}));
       ok('response claims can be tested',K.filter(function(i){return i.kind==='response';}).every(function(i){return i.testable===true;}));
     });
+    _stSuite('ai');
     /* ---- H4: the assistant answers the question asked, or says why not ---- */
     withFixture('successful_cut',function(){
       var A=function(q){return askQuestion(q);};
@@ -4869,6 +5058,7 @@ function runSelfTest(opts){
       ok('the knowledge sheet states the same maintenance as Today',(function(){var k=personalKnowledge().items.filter(function(i){return i.subject==='maintenance';})[0];var t=tdeeEstimate();
         return !k||k.statement.indexOf(fmtKcal(t.value))>=0;})());
     });
+    _stSuite('exports');
     /* ---- H3: real exports ---- */
     (function(){
       var X='<HealthData>'+
@@ -4896,6 +5086,7 @@ function runSelfTest(opts){
       var pv=importObservations([{type:'calories',date:d,value:2210,externalId:'t:cal:'+d}],'apple_health');
       ok('an imported day total never stacks on a day already recorded',!had||(pv.fresh===0&&pv.overlapSkipped.length===1));
     });
+    _stSuite('training');
     /* ---- H3: moved sessions, adherence, adaptations, recovery ---- */
     withFixture('successful_cut',function(){
       DB.plans=[];DB.executions=[];_memoInvalidate();ensurePlan();
@@ -4914,6 +5105,7 @@ function runSelfTest(opts){
         ok('the adaptation is in the plan audit and its contract',planAudit().ok&&entityContractAudit().ok);}
       ok('no recovery suggestion when recovery is about baseline',(function(){var r=recoveryLatentState();return /less recovered/.test(String(r.band||''))||recoverySuggestion()===null;})());
     });
+    _stSuite('nutrition');
     /* ---- H2: food identity ---- */
     withFixture('successful_cut',function(){
       var whole=seedFoods().filter(function(f){return /egg whole/i.test(f.name);})[0],white=seedFoods().filter(function(f){return /egg white/i.test(f.name);})[0];
@@ -4932,6 +5124,7 @@ function runSelfTest(opts){
       }
       ok('the meal for now is one of the day\u2019s meals',MEALS.indexOf(mealForNow())>=0);
     });
+    _stSuite('training');
     /* ---- H2: programme versions and the exercise catalogue ---- */
     withFixture('successful_cut',function(){
       var V=programVersions();
@@ -4944,6 +5137,7 @@ function runSelfTest(opts){
       ok('a barbell squat carries its back and knee cautions',exerciseOntology('squat').cautions.length>=2);
       ok('cautions are stated as general, not medical advice',/not medical advice/.test(exerciseOntology('squat').note));
     });
+    _stSuite('training');
     /* ---- H2: workout mode ---- */
     withFixture('successful_cut',function(){
       var lift=null;for(var i=0;i<7;i++){var d=addDays(todayISO(),i);var I=intendedFor(d);if(I.status==='ok'&&I.items.some(function(x){return x.item==='training';})){lift=d;break;}}
@@ -4964,6 +5158,7 @@ function runSelfTest(opts){
       ok('the rep range is read from the template',_repTarget('8\u201312').lo===8&&_repTarget('8\u201312').hi===12);
       ok('without a camera barcode reader the scanner says so rather than failing',typeof barcodeSupport==='function'&&(barcodeSupport()===false||barcodeSupport()===true));
     });
+    _stSuite('models');
     /* ---- H0: direct tests for the six models that had none, through the gateway ---- */
     var _CLASSES=['MEASURED','DERIVED','PREDICTIVE','HEURISTIC','PRIOR','BLENDED','CALIBRATED','POLICY','EMPIRICAL'];
     var _runOk=function(r){return r.status==='ok'&&_CLASSES.indexOf(r.cls)>=0&&!!r.uncertainty&&!!(r.provenance&&r.provenance.nodes.some(function(n){return n.type==='model-run';}));};
@@ -4987,9 +5182,11 @@ function runSelfTest(opts){
     });
     ok('the gateway reports a model\u2019s decline instead of labelling it a successful run',withFixture('insufficient',function(){
       var r=infer({modelId:'energy_balance'});return r.status!=='ok'&&r.result&&r.result.status==='insufficient';}));
+    _stSuite('governance');
     /* ---- build and release identity ---- */
     ok('the build declares both a source identity and a release identity covering every material input',
       typeof BUILD_ID==='string'&&BUILD_ID.length>=8&&typeof RELEASE_ID==='string'&&RELEASE_ID.length>=10&&RELEASE_ID!==BUILD_ID,BUILD_ID+' / '+RELEASE_ID);
+    _stSuite('exports');
     /* exports */
     withFixture('successful_cut',function(){var csv=exportCSV('weight');ok('CSV export has header and rows',csv.split('\n').length>10&&/^date,weight_lb/.test(csv));var rep=stateReport();ok('state report contains decision and learning sections',/DECISION:/.test(rep)&&/WHAT WE KNOW/.test(rep));var b=JSON.parse(backupJSON());ok('backup JSON carries schema/app/counts',b.backup&&b.backup.schemaVersion===SCHEMA_VERSION&&b.backup.counts.observations>0);var ics=icsExport();ok('ICS export is well-formed',/BEGIN:VCALENDAR/.test(ics)&&/END:VCALENDAR/.test(ics));});
     });
@@ -5001,5 +5198,9 @@ function runSelfTest(opts){
     if(typeof WIDGET_REGISTRY!=='undefined'){Object.keys(WIDGET_REGISTRY).forEach(function(k){if(WIDGET_REGISTRY[k]&&WIDGET_REGISTRY[k].userDefined&&!_stUserWidgets[k])delete WIDGET_REGISTRY[k];});Object.keys(_stUserWidgets).forEach(function(k){WIDGET_REGISTRY[k]=_stUserWidgets[k];});}
     _PERSIST_SUSPENDED=Math.max(0,_PERSIST_SUSPENDED-1);_memoInvalidate();}
   var passed=results.filter(function(r){return r.ok;}).length,failed=results.length-passed;
-  return {passed:passed,failed:failed,results:results,ms:Date.now()-t0,at:nowISO()};
+  _stSuite(_stCur);
+  var suites={};results.forEach(function(r){var k=r.suite||'general';var x=suites[k]=suites[k]||{id:k,n:0,failed:0,ms:_stMs[k]||0,firstFailure:null};
+    x.n++;if(!r.ok){x.failed++;if(!x.firstFailure)x.firstFailure=r.name;}});
+  return {passed:passed,failed:failed,results:results,ms:Date.now()-t0,at:nowISO(),
+    suites:Object.keys(suites).map(function(k){return suites[k];}).sort(function(x,y){return y.ms-x.ms;}),suiteCeilingMs:SELFTEST_SUITE_CEILING_MS};
 }

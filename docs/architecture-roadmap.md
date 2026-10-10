@@ -4304,3 +4304,20 @@ complete. Option B (an encrypted attachment store with content hashes and an off
 person.
 
 All 37 gates pass (reproducible included); release 24/24; 1,813 self-tests.
+
+## Self-test suites, and where both catalogues stand (build d0e36650b6)
+
+Catalogue doc 2, P0.3: decompose the one 4,800-line self-test. Every check is now filed under one of 19 suites: storage,
+schema, events, models, training, nutrition, recovery, body composition, forecasting, Bayesian, causal, decisions,
+adaptive plan, presentation, governance, AI, external, exports and general. A `_stSuite` marker before each of the 189
+blocks names its suite, chosen from the block's own heading. `runSelfTest()` returns each suite's checks, failures, first
+failure and time. The engine gate prints them, requires every check to belong to a suite (the suites account for all
+1,813), and holds each suite to doc 2's 45 s ceiling. The slowest, adaptive plan, takes about 7 s; a 1 s ceiling fails
+six suites. Running a suite on its own is not done: the blocks share one sequence of fixtures, so each suite would first
+need its own. New blocks open with their suite's marker (CLAUDE.md).
+
+`docs/handoff/CATALOGUE.md` now records every item of both catalogues: what was done in this round and in which build,
+what was already in place, what is partly done, what is blocked on accounts or decisions, and what the catalogues
+themselves defer. TRANSITION §8 summarises the state.
+
+1,813 self-tests pass; the full release record is in progress.

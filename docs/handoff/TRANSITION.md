@@ -180,3 +180,32 @@ Never start an item before what it depends on is in place.
 - **Waiting:** item 11 needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key.
 - **Open decision:** undoing a sync merge of another device's changes is not durable: the next sync brings them back.
   Making it durable would revoke that device's events, which removes them on every device.
+
+## 8. State at d0e36650b6 (after the work-and-direction catalogues)
+
+- **Gates and tests:** 37 gates (the 37th, `independent`, checks the app without asking it about itself), each under a
+  runtime ceiling in `tests/gates.mjs`; all pass, none skipped, and the release check passes 24/24. CI at the repository
+  root runs the same gates on GitHub, and is green. There are 1,813 in-app self-tests in 19 suites, 400 interface
+  tests and 10 black-box workflows.
+- **What the round did:** every item of both catalogues is in `docs/handoff/CATALOGUE.md`, with its status and the build
+  that carries it. In short:
+  - release integrity: root CI, the runtime contract, one gate list with ceilings, the clean room from the commit, one
+    browser build, the release environment written down;
+  - verification integrity: capability statuses read recorded verification runs and execute nothing; an independent
+    verification gate; self-test suites;
+  - analytical correctness: one energy-density service, unique registry ids, no prose as data, derived maturity,
+    epistemic classes, executable failure conditions;
+  - durability: sync retry cases, one persistence authority, backups that say they hold no photo images.
+- **Waiting on the person:**
+  - item 11 still needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key;
+  - making a red CI run block a merge needs a branch-protection rule in the repository's settings;
+  - photos stay local-only (option A) unless an encrypted attachment store (option B) is wanted;
+  - undoing a sync merge of another device's changes is still not durable (§7).
+- **Not done, and why:**
+  - structured explanations (catalogue P1.1 to P1.3) restructure the decision and explanation layers, a change of its own;
+  - running one self-test suite alone needs each suite to build its own fixture;
+  - prospective validation and calibration need months of real use.
+- **New limits to state:**
+  - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243;
+  - capability statuses that need a live check read "not run" until a verification run has happened for this build (the
+    internals sheet runs one when opened).

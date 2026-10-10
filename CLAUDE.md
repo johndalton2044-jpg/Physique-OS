@@ -1,6 +1,7 @@
 # Physique OS — working rules for Claude Code
 
 Read `docs/handoff/TRANSITION.md` before starting work: it holds the current state, the backlog and the order of work.
+`docs/handoff/CATALOGUE.md` says where each item of the two work-and-direction catalogues stands.
 This file holds the rules that apply to every change.
 
 ## What this is
@@ -65,7 +66,8 @@ Before a release: every gate, recorded (the list, order and runtime ceilings are
 ## Editing conventions
 
 - Self-tests live in `src/95-selftest.js`; add new blocks immediately before the line containing
-  `ok('Response is a first-class entity with its own event',`.
+  `ok('Response is a first-class entity with its own event',`, each opening with `_stSuite('<suite>');` so its checks
+  are filed and timed under their suite (the engine gate prints the suites and holds each to its ceiling).
 - When editing by script, assert that each anchor exists before replacing it; an edit that silently does not apply has
   happened in this project.
 - Write real characters in Markdown, never `\u2014`-style escapes.
