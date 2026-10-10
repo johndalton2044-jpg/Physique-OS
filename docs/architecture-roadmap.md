@@ -4227,4 +4227,4 @@ Checks, each seen to fail:
 - three causal phrasings are refused below causally supported, and accepted at it;
 - making causal support follow from the machinery's presence, or accepting every class, fails its test.
 
-1,805 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,805 self-tests.
