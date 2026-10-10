@@ -2368,8 +2368,8 @@ function runSelfTest(opts){
       ok('nothing claims experimental or prospective validation',
         m.experimentallyValidated===0&&/NOTHING in this system/.test(m.caveat));
       ok('the training-demand layer is graded as infrastructure rather than validated',
-        ENGINE_MATURITY.mechanicalDemand==='INFRASTRUCTURE_GRADE'&&
-        ENGINE_MATURITY.fatigueCompartments==='INFRASTRUCTURE_GRADE');
+        engineMaturity('mechanicalDemand').grade==='INFRASTRUCTURE_GRADE'&&
+        engineMaturity('fatigueCompartments').grade==='INFRASTRUCTURE_GRADE');
       /* reproducible run identity */
       ok('an identical analysis reproduces the same run id',
         runIdentity({model:'m',inputs:{a:1}}).runId===runIdentity({model:'m',inputs:{a:1}}).runId);
@@ -2925,7 +2925,7 @@ function runSelfTest(opts){
          'lifecycle','validation','consumers'].every(function(k){return c[k]!==undefined;}));
       ok('no heuristic is graded above infrastructure without outcome scoring',
         MODELS.filter(function(m){return m.cls==='HEURISTIC'&&!SCORED_AGAINST_OUTCOMES[m.id];})
-          .every(function(m){return modelMaturity(m)==='INFRASTRUCTURE_GRADE'||!!ENGINE_MATURITY[m.fn];}));
+          .every(function(m){return modelMaturity(m)==='INFRASTRUCTURE_GRADE';}));
       ok('nothing in the model registry claims experimental validation',
         MODELS.every(function(m){return modelMaturity(m)!=='EXPERIMENTALLY_VALIDATED'&&
           modelMaturity(m)!=='PRODUCTION_PREDICTIVE';}));
@@ -4529,6 +4529,46 @@ function runSelfTest(opts){
       var ids=_VERIFICATION_EVIDENCE.map(function(e){return e.id;});
       ok('two verification runs in the same instant record distinct entries, and every entry id is unique',
         v1.generatedAt===v2.generatedAt&&ids.length===ids.filter(function(x,i){return ids.indexOf(x)===i;}).length,v1.generatedAt+' / '+v2.generatedAt);
+    })();
+    /* MATURITY IS DERIVED, NEVER ASSIGNED (catalogue W-029). No grade is typed in: each engine's grade comes from its
+       declared evidence. Expected from the rule: a scored model is statistically validated with 20 or more scored
+       forecasts and no significant bias, and operational otherwise; a tested function is infrastructure, never more. */
+    (function(){
+      ok('there is no table of hand-typed grades, and every row of the maturity report says what its grade is derived from',
+        !('ENGINE_MATURITY' in ((typeof window!=='undefined')?window:{}))&&maturityReport().rows.every(function(r){return !!r.derivedFrom&&!/assign/i.test(r.derivedFrom);}));
+      var keep=forecastTrackRecord,r1=null,r2=null,r3=null;
+      var g=function(n,b){forecastTrackRecord=function(){return {n:n,biasSignificant:b,bias:0,biasT:0};};return engineMaturity('forecasting').grade;};
+      try{r1=g(25,false);r2=g(25,true);r3=g(19,false);}finally{forecastTrackRecord=keep;}
+      ok('the forecast’s grade follows its scored forecasts: 25 unbiased is statistically validated; 25 biased, or 19, is operational',
+        r1==='STATISTICALLY_VALIDATED'&&r2==='OPERATIONAL_ANALYTICAL'&&r3==='OPERATIONAL_ANALYTICAL',[r1,r2,r3].join(' / '));
+      var keepE=ENGINE_EVIDENCE.mechanicalDemand,gone=null;
+      try{ENGINE_EVIDENCE.mechanicalDemand={fn:'w029NoSuchFunction',gate:'engine'};gone=engineMaturity('mechanicalDemand');}finally{ENGINE_EVIDENCE.mechanicalDemand=keepE;}
+      ok('an engine whose evidence is not in the build is ungraded, not given a grade',!!gone&&gone.grade===null&&/not in the build/.test(gone.derivedFrom));
+    })();
+    /* EPISTEMIC CLASSES (catalogue W-010). A causal claim needs an explicit pathway; a response estimated from a change over
+       time does not inherit causal authority from the causal machinery. causalSupport() is set to a known grade, and each
+       Response is built with a known effect (1.0 lb a week, standard error 0.2: clear, five standard errors). */
+    (function(){var keep=causalSupport,mk=function(o){return Object.assign({variable:'calories',stage:'final',primary:{effect:-1,se:0.2}},o);};
+      var agree={agree:true,estimates:[{},{},{}]},disagree={agree:false,estimates:[{},{},{}]};
+      var as=function(grade,R){causalSupport=function(){return {grade:grade};};_memoInvalidate();return responseEpistemicClass(R).cls;};
+      var a=null,b=null,c=null,d=null,e=null;
+      try{a=as('correlated',mk({causal:agree}));b=as('supported',mk({causal:agree}));c=as('supported',mk({causal:disagree}));
+        d=as('supported',mk({causal:agree,placebo:{alreadyUnderWay:true}}));e=as('supported',mk({causal:agree,primary:{effect:-0.2,se:0.2}}));}
+      finally{causalSupport=keep;_memoInvalidate();}
+      ok('a response is causally supported only through the explicit pathway: a supported variable, agreeing estimates, a clear change not already under way',
+        a==='RESPONSIVE'&&b==='CAUSALLY_SUPPORTED'&&c==='RESPONSIVE'&&d==='RESPONSIVE'&&e==='RESPONSIVE',[a,b,c,d,e].join(' / '));
+      ok('a consumer of causal statements refuses a responsive claim; a recommendation accepts it',
+        !acceptClaim('causal statement','RESPONSIVE').accepted&&acceptClaim('causal statement','CAUSALLY_SUPPORTED').accepted&&acceptClaim('recommendation','RESPONSIVE').accepted&&!acceptClaim('knowledge causes edge','ASSOCIATED').accepted);
+      ok('a result’s class follows from what it is: measured is observed, fitted is associated, a forecast is predictive, a rule is no claim',
+        epistemicClassOf({cls:'MEASURED'})==='OBSERVED'&&epistemicClassOf({cls:'EMPIRICAL'})==='ASSOCIATED'&&epistemicClassOf({cls:'PREDICTIVE'})==='PREDICTIVE'&&epistemicClassOf({cls:'POLICY'})===null&&epistemicClassOf({cls:'EMPIRICAL',epistemicClass:'OBSERVED'})==='OBSERVED');
+      var pk=function(cls,grade){return {numbers:[],actions:[],claims:{calories:{cls:cls,grade:grade}}};};
+      ok('the assistant may not state a cause the record does not support, however it is worded',
+        !validateAssistantReply({text:'Cutting calories caused the drop.'},pk('ASSOCIATED','correlated')).ok
+          &&!validateAssistantReply({text:'The drop was because of the lower calories.'},pk('RESPONSIVE','correlated')).ok
+          &&!validateAssistantReply({text:'Lower calories led to it.'},pk('OBSERVED','unknown')).ok);
+      ok('and may, where the record does, or where it says only what followed what',
+        validateAssistantReply({text:'Cutting calories caused the drop.'},pk('CAUSALLY_SUPPORTED','supported')).ok
+          &&validateAssistantReply({text:'Your weight fell after you cut calories.'},pk('ASSOCIATED','correlated')).ok);
     })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */

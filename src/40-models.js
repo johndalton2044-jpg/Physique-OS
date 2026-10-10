@@ -13,6 +13,43 @@ var CLASSES={
   CALIBRATED:'corrected by comparing past predictions with what actually happened',
   PREDICTIVE:'a forecast of something that has not happened yet'
 };
+/* EPISTEMIC CLASSES (catalogue W-010). CLASSES says how a result was computed; an epistemic class says what kind of
+   claim it can support, and the two are kept apart so that a computation's sophistication never lends a claim more
+   authority. A response estimated from a change over time is RESPONSIVE. It is CAUSALLY_SUPPORTED only through an explicit
+   pathway: causalSupport() grades its variable supported or weakly supported (repeated, clear, unconfounded changes), and
+   its own causal estimates agree on a clear change that was not already under way. Never by the existence of the causal
+   machinery, and never by its name. Consumers declare the classes they accept (CLAIM_CONSUMERS); acceptClaim() refuses
+   the rest. The ladder maps onto causalSupport's grades, so there is one causal grading, not two. */
+var EPISTEMIC_CLASSES={
+  OBSERVED:{rank:1,means:'measured, or computed directly from what was measured'},
+  ASSOCIATED:{rank:2,means:'goes with something else in the record, or a population association applied to you'},
+  RESPONSIVE:{rank:3,means:'changed after a change, against its own earlier trend'},
+  CAUSALLY_SUPPORTED:{rank:4,means:'a change clearly and repeatedly produced it, unconfounded: the most a personal record supports, never "proven"'},
+  PREDICTIVE:{rank:0,means:'a statement about what has not happened yet, scored when it is due'}};
+var CLAIM_CONSUMERS={
+  'causal statement':['CAUSALLY_SUPPORTED'],
+  'knowledge causes edge':['CAUSALLY_SUPPORTED'],
+  'recommendation':['OBSERVED','ASSOCIATED','RESPONSIVE','CAUSALLY_SUPPORTED','PREDICTIVE']};
+var _CLS_EPISTEMIC={MEASURED:'OBSERVED',DERIVED:'OBSERVED',EMPIRICAL:'ASSOCIATED',CALIBRATED:'ASSOCIATED',BLENDED:'ASSOCIATED',PRIOR:'ASSOCIATED',HEURISTIC:'ASSOCIATED',PREDICTIVE:'PREDICTIVE',POLICY:null};
+var _CAUSAL_GRADE_EPISTEMIC={supported:'CAUSALLY_SUPPORTED','weakly supported':'CAUSALLY_SUPPORTED',correlated:'ASSOCIATED',confounded:'ASSOCIATED',contradicted:'ASSOCIATED',unknown:'OBSERVED'};
+function variableEpistemicClass(v){var k='epv:'+v+':'+asOf();var f=function(){var c=null;try{c=causalSupport(v);}catch(e){c=null;}
+    return {cls:c?(_CAUSAL_GRADE_EPISTEMIC[c.grade]||'ASSOCIATED'):'OBSERVED',grade:c?c.grade:'unknown'};};
+  return typeof memo==='function'?memo(k,f):f();}
+function responseEpistemicClass(R){
+  if(!R||!R.primary)return {cls:'OBSERVED',basis:'no judged outcome yet'};
+  var v=variableEpistemicClass(R.variable),c=R.causal||null,P=R.primary,clear=P.se>0&&Math.abs(P.effect)>2*P.se,under=!!(R.placebo&&R.placebo.alreadyUnderWay);
+  if(v.cls==='CAUSALLY_SUPPORTED'&&c&&c.agree===true&&clear&&!under)
+    return {cls:'CAUSALLY_SUPPORTED',basis:'its variable\u2019s causal grade is '+v.grade+', and its '+(c.estimates||[]).length+' estimates agree on a clear change that was not already under way'};
+  return {cls:'RESPONSIVE',basis:'a change against its own trend after the change; not causally supported because '+
+    (v.cls!=='CAUSALLY_SUPPORTED'?'its variable\u2019s causal grade is '+v.grade:(!c||c.agree!==true?'its causal estimates do not agree':(!clear?'the change is not clear':'the change was already under way')))};}
+function epistemicClassOf(x){if(!x)return null;if(x.epistemicClass)return x.epistemicClass;
+  if(x.primary&&x.variable&&x.stage)return responseEpistemicClass(x).cls;
+  return x.cls?(_CLS_EPISTEMIC.hasOwnProperty(x.cls)?_CLS_EPISTEMIC[x.cls]:null):null;}
+function acceptClaim(consumer,cls){var allowed=CLAIM_CONSUMERS[consumer];
+  if(!allowed)return {accepted:false,cls:cls,why:'no consumer called '+consumer};
+  if(cls!=null&&!EPISTEMIC_CLASSES[cls])return {accepted:false,cls:cls,why:cls+' is not an epistemic class'};
+  if(allowed.indexOf(cls)>=0)return {accepted:true,cls:cls};
+  return {accepted:false,cls:cls,why:consumer+' accepts '+allowed.join(' or ')+'; this claim is '+(cls||'unclassed')};}
 var MODELS=[
   {id:'weight_avg',name:'Rolling weight average',cls:'DERIVED',version:'1.0',inputs:['weight'],minN:4,assumes:['weigh-ins under similar conditions'],failsWhen:['fewer than 4 of the last 7 days logged','scale changed inside the window'],output:'7- and 14-day mean of daily weight'},
   {id:'weight_trend',name:'Weight trend',cls:'DERIVED',version:'1.1',inputs:['weight'],minN:7,assumes:['Theil\u2013Sen slope is robust to a few odd weigh-ins','a 14-day window separates noise from tissue change'],failsWhen:['fewer than 7 weigh-ins spanning 10+ days','scale change in window','extreme water disturbance (illness, travel, high sodium)'],output:'slope in lb/week with residual noise and confidence'},

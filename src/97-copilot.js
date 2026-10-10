@@ -225,6 +225,7 @@ function contextPacket(opts){
     schema:'physique-context/1',
     state:{},
     classes:CLASSES,
+    claimClasses:EPISTEMIC_CLASSES,   /* what each epistemic class may claim (W-010); pack.claims gives each variable's */
     uncertainty:null,
     decision:null,
     domains:[],
@@ -264,6 +265,9 @@ function contextPacket(opts){
     pack.notes=obsOf('note').slice(-10).map(function(o){return String(o.value).slice(0,160);});
     pack.redactions=pack.redactions.filter(function(r){return r!=='free-text notes';});
   }
+  /* the epistemic class of what the record says about each changeable variable (W-010): a causal statement needs
+     CAUSALLY_SUPPORTED, and the reply is checked against this, not against a list of words */
+  try{pack.claims={};Object.keys(typeof RESPONSE_VARS!=='undefined'?RESPONSE_VARS:{}).forEach(function(v){pack.claims[v]=variableEpistemicClass(v);});}catch(e){_q(e,'P2');}
   pack.numbers=_packetNumbers(pack);
   return pack;
 }
@@ -340,6 +344,14 @@ function validateAssistantReply(reply,pack){
     issues.push('reads as clinical advice');
   if(/\b(proven|proves|definitely causes|guaranteed)\b/i.test(text))
     issues.push('claims certainty beyond what a personal record can support');
+  /* A causal statement is a claim of class CAUSALLY_SUPPORTED (catalogue W-010). About a variable whose evidence in the
+     context is below that, it is refused, however it is worded: "led to", "because of" and "caused" alike. */
+  var claims=(pack&&pack.claims)||{};
+  text.split(/(?<=[.!?])\s+/).forEach(function(sent){
+    if(!/\b(caus(e|es|ed|ing)|led to|leads to|lead to|because of|due to|drove|drives|made (you|your)|responsible for|thanks to|resulted in|results in)\b/i.test(sent))return;
+    Object.keys(claims).forEach(function(v){if(!new RegExp('\\b'+v.replace(/\s+/g,'\\s+'),'i').test(sent))return;
+      var a=acceptClaim('causal statement',claims[v].cls);
+      if(!a.accepted)issues.push('states a cause about '+v+', whose evidence here is '+String(claims[v].cls).toLowerCase().replace(/_/g,' ')+' ('+claims[v].grade+')');});});
   return {ok:issues.length===0,issues:issues,
     note:issues.length?'Rejected rather than corrected. A plausible wrong number is worse than no answer.':'Reply is consistent with the context it was given.'};
 }

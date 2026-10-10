@@ -143,6 +143,8 @@ function responsesOf(){return (DB.responses||[]).slice().sort(function(a,b){retu
 /* 1.2: each record carries its causal estimates beside the before/after one (Stage E) */
 var RESPONSE_MODEL_VERSION='response-1.2';
 function canonicalResponse(r,iv){if(!r)return r;var A=r.windows&&r.windows.after,P=r.primary||null,today=todayISO();
+  /* what kind of claim this response supports (catalogue W-010): responsive, unless the explicit causal pathway holds */
+  try{var ec=responseEpistemicClass(r);r.epistemicClass=ec.cls;r.epistemicBasis=ec.basis;}catch(e){_q(e,'P2');}
   r.exposureWindow=A?{from:A[0],to:A[1],days:Math.max(0,daysBetween(A[0],A[1]<today?A[1]:today)+1)}:null;
   r.executionIds=A?(DB.executions||[]).filter(function(x){return x.date>=A[0]&&x.date<=A[1]&&(!r.variable||!x.item||x.item===r.variable||x.item==='nutrition'&&r.variable==='calories'||x.item==='steps'&&r.variable==='steps');}).map(function(x){return x.id;}):[];
   r.expectedOutcome=r.expected?{mean:r.expected.mean,lo:r.expected.lo,hi:r.expected.hi,basis:r.expected.basis||null,unit:P&&P.unit||null}:null;

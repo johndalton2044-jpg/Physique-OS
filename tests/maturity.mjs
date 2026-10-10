@@ -35,6 +35,13 @@ const table=['<!-- maturity:begin (generated from docs/capabilities.json by test
 const re=/<!-- maturity:begin[\s\S]*?<!-- maturity:end -->/;
 if(process.argv.includes('--write')){const next=re.test(readme)?readme.replace(re,table):readme.replace(/\n## /,'\n## Capability maturity\n\nWhat is finished, what is partial and what is not built, with the evidence for each. Levels: '+L.join(' \u2192 ')+'.\n\n'+table+'\n\n## ');fs.writeFileSync('README.md',next);console.log('README maturity table written');process.exit(0);}
 if(!re.test(readme))problems.push('the README has no generated maturity table (run node tests/maturity.mjs --write)');else if(readme.match(re)[0]!==table)problems.push('the README\u2019s maturity table differs from the ledger (edit docs/capabilities.json, then --write)');
+/* the engines' grades are derived from declared evidence (catalogue W-029): every gate it cites must be a release gate, and
+   every function it cites must be declared in src/, or a grade would rest on evidence that does not exist */
+{const src=fs.readdirSync('src').filter(f=>f.endsWith('.js')).map(f=>fs.readFileSync('src/'+f,'utf8')).join('\n');
+  const m=src.match(/var ENGINE_EVIDENCE=\{([\s\S]*?)\n\};/);
+  if(!m)problems.push('ENGINE_EVIDENCE is missing: the engines have nothing to derive their grades from');
+  else{for(const g of m[1].matchAll(/gate:'([^']+)'/g))if(!GATES.includes(g[1])||!pkg[g[1]])problems.push('engine evidence cites gate '+g[1]+', which is not a release gate');
+    for(const f of m[1].matchAll(/fn:'([^']+)'/g))if(!new RegExp('^function '+f[1]+'\\(','m').test(src))problems.push('engine evidence cites function '+f[1]+', which src/ does not declare');}}
 const by={};C.capabilities.forEach(c=>{by[c.maturity]=(by[c.maturity]||0)+1;});
 console.log('  '+C.capabilities.length+' capabilities: '+L.filter(l=>by[l]).map(l=>by[l]+' '+l).join(', '));
 problems.forEach(p=>console.log('  FAIL  '+p));if(!problems.length)console.log('  pass  every claim is within its capability\u2019s maturity');

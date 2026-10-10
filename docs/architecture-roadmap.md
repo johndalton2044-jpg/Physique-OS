@@ -4161,4 +4161,70 @@ they name the input set by its content, so the check now recomputes that hash. D
 
 The W-003 self-tests wrote their known densities as literals (3,000, 3,300). The audit's own energy scan, which reads the
 self-tests too, reported that as a tolerated P1, in CI and here. The densities are now derived from `ENERGY_PER_LB` in the
-test, so the audit has no findings. 1,796 self-tests pass; the full release record is in progress.
+test, so the audit has no findings. Its first release failed the timezone gate on a defect in the verification entries (fixed below); it is released with
+the entries that follow.
+
+## Verification runs are numbered (build fe11609746)
+
+The first release of the verification evidence failed the `timezones` gate, which runs the whole self-test under a fixed
+browser clock at three awkward local times. Under a fixed clock every verification run in one self-test had the same
+timestamp, so its entries had the same ids. A status then traced to an earlier, failing entry of the same id, and the
+"a status traces to its entry" test failed. Each run is now numbered, and the number is part of every entry's id. A
+self-test runs two verifications under one pinned instant (`_NOW_OVERRIDE`) and requires every id to be unique; resetting
+the counter makes it fail. The timezone gate passes.
+
+## Maturity is derived, never assigned (build 78c311cc38)
+
+Catalogue W-029: removing a hand-typed maturity label must not change the truth of the maturity report. `ENGINE_MATURITY`
+was such a table: twenty engines with typed grades, presented as "how far each engine has actually been validated".
+- Forecasting read statistically validated whatever its scored forecasts showed.
+- `modelMaturity()` let any entry override the grade the model's own evidence gave.
+- Only three of the twenty names were models; most were not even functions.
+
+It is replaced by `ENGINE_EVIDENCE`, which says what each grade is derived from:
+- a registered model (five engines), graded by `modelMaturity()` from its class and, where it is scored, its track record
+  (statistically validated needs 20 scored forecasts with no significant bias);
+- a function plus the release gate that tests it (fifteen), which earns infrastructure grade and never more, because
+  nothing scores it against outcomes.
+
+Evidence missing from the build leaves an engine ungraded. Every row of the maturity report says what its grade came
+from, model provenance names the derived grade, and the override is gone. Forecasting now reads operational, as its record
+shows. The maturity gate checks that every gate the evidence cites is a release gate and every function it cites is
+declared in `src/`.
+
+Seen to fail:
+- an assigned table winning again fails two tests;
+- ignoring bias fails the track-record test;
+- a missing function or gate fails the maturity gate.
+
+The absence test reads the global object rather than using a `typeof` guard. The governance gate rejects guards for names
+nothing declares, and caught the first version.
+
+## Epistemic classes, enforced at the consumers (build 78c311cc38)
+
+Catalogue W-010: separate observed, associated, responsive, causally supported and predictive, so that a response
+estimated from a change over time cannot inherit causal authority from the causal machinery.
+
+- **One ladder.** `EPISTEMIC_CLASSES` sits beside `CLASSES`: how a result was computed and what claim it supports are kept
+  apart. It maps onto `causalSupport()`'s existing grades, so there is one causal grading: supported and weakly supported
+  give causally supported, and correlated, confounded and contradicted give associated.
+- **Responses.** Every Response now carries `epistemicClass` and `epistemicBasis`. It is responsive unless the explicit
+  pathway holds: its variable is graded supported or weakly supported, and its own causal estimates agree on a clear change
+  that was not already under way. On the demo every response is responsive.
+- **Consumers.** `CLAIM_CONSUMERS` declares what each consumer accepts: a causal statement and a knowledge `causes` edge
+  need causally supported, and a recommendation accepts any class. `acceptClaim()` refuses the rest, and refuses a class
+  that is not on the ladder.
+- **The assistant.** The context packet carries each changeable variable's class (`claims`) and the ladder's meanings.
+  `validateAssistantReply()` refuses a sentence that states a cause ("caused", "led to", "because of", "due to" and the
+  like) about a variable whose class is below causally supported. This is a check against the record, not a word list.
+  "Your weight fell after you cut calories" passes.
+
+Checks, each seen to fail:
+- with `causalSupport()` set to known grades, a supported variable with agreeing estimates is causally supported;
+- a correlated variable, disagreeing estimates, a change already under way, or an unclear effect each stays responsive;
+- a responsive claim is refused by the causal-statement consumer and accepted by a recommendation;
+- class follows kind: measured is observed, fitted is associated, a forecast is predictive, a rule is no claim;
+- three causal phrasings are refused below causally supported, and accepted at it;
+- making causal support follow from the machinery's presence, or accepting every class, fails its test.
+
+1,805 self-tests pass; the full release record is in progress.

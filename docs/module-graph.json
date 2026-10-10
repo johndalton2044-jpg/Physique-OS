@@ -261,6 +261,9 @@
    "52-response.js": [
     "exerciseResponse"
    ],
+   "59-graph.js": [
+    "causalSupport"
+   ],
    "79-rigour.js": [
     "tissueEnergyDensity"
    ],
@@ -1163,6 +1166,7 @@
     "seriesWindow"
    ],
    "40-models.js": [
+    "responseEpistemicClass",
     "adherenceState"
    ],
    "50-decision.js": [
@@ -4667,6 +4671,9 @@
     "applyProfileFields"
    ],
    "40-models.js": [
+    "responseEpistemicClass",
+    "epistemicClassOf",
+    "acceptClaim",
     "modelById",
     "resolveContractRef",
     "contractLabel",
@@ -5467,6 +5474,7 @@
     "tdeeBayesUniversal",
     "propensityScoreModel",
     "doseResponse",
+    "engineMaturity",
     "maturityReport",
     "sha256",
     "canonicalJSON",
@@ -5523,6 +5531,9 @@
    "30-observations.js": [
     "asOf",
     "seriesWindow"
+   ],
+   "91-inference.js": [
+    "modelMaturity"
    ],
    "93-bayes.js": [
     "tdeeBayes",
@@ -5693,6 +5704,8 @@
     "seriesWindow"
    ],
    "40-models.js": [
+    "variableEpistemicClass",
+    "acceptClaim",
     "prof",
     "currentWeight",
     "weightTrend",

@@ -499,23 +499,38 @@ var MATURITY={
   EXPERIMENTALLY_VALIDATED:{rank:4,means:'its claims have been tested by controlled experiment on this person'},
   PRODUCTION_PREDICTIVE:{rank:5,means:'predicts prospectively at stated accuracy over a sustained period'}
 };
-var ENGINE_MATURITY={
-  eventSourcing:'INFRASTRUCTURE_GRADE',sync:'INFRASTRUCTURE_GRADE',
-  foodDatabase:'INFRASTRUCTURE_GRADE',replay:'INFRASTRUCTURE_GRADE',
-  weightTrend:'OPERATIONAL_ANALYTICAL',tdeeBayes:'OPERATIONAL_ANALYTICAL',
-  forecasting:'STATISTICALLY_VALIDATED',
-  readiness:'OPERATIONAL_ANALYTICAL',unifiedRecovery:'OPERATIONAL_ANALYTICAL',
-  effectiveSets:'INFRASTRUCTURE_GRADE',fatigueCompartments:'INFRASTRUCTURE_GRADE',
-  mechanicalDemand:'INFRASTRUCTURE_GRADE',recoveryCost:'INFRASTRUCTURE_GRADE',
-  recoveryAllocation:'INFRASTRUCTURE_GRADE',
-  causalInference:'OPERATIONAL_ANALYTICAL',distributedLag:'OPERATIONAL_ANALYTICAL',
-  shrinkage:'OPERATIONAL_ANALYTICAL',tissueDensity:'OPERATIONAL_ANALYTICAL',
-  personalResponse:'OPERATIONAL_ANALYTICAL',movementEngine:'INFRASTRUCTURE_GRADE'
+/* MATURITY IS DERIVED, NEVER ASSIGNED (catalogue W-029). This was a table of grades typed by hand, twenty engines,
+   presented as "how far each engine has actually been validated": forecasting read statistically validated whatever its
+   scored forecasts showed, and modelMaturity let any entry override the grade its own evidence gave. Only three of the
+   twenty names were models; most were not even functions. Now each engine names what its grade is derived from:
+     model  a registered model: graded by modelMaturity from its class and, if it is scored, its track record
+     fn     a function the build has, tested by the named release gate: it runs and is tested, so infrastructure grade,
+            and never more, because nothing scores it against outcomes
+   An engine whose evidence is missing from the build is ungraded, not given a grade. */
+var ENGINE_EVIDENCE={
+  eventSourcing:{fn:'projectEvents',gate:'spine'},sync:{fn:'mergeEvents',gate:'cloud:e2e'},
+  foodDatabase:{fn:'foodSearchBranded',gate:'blackbox'},replay:{fn:'projectEvents',gate:'spine'},
+  weightTrend:{model:'weight_trend'},tdeeBayes:{fn:'tdeeBayes',gate:'engine'},
+  forecasting:{model:'weight_forecast'},
+  readiness:{fn:'readinessState',gate:'engine'},unifiedRecovery:{fn:'unifiedRecovery',gate:'engine'},
+  effectiveSets:{fn:'effectiveSets',gate:'engine'},fatigueCompartments:{fn:'fatigueCompartments',gate:'engine'},
+  mechanicalDemand:{fn:'mechanicalDemand',gate:'engine'},recoveryCost:{fn:'exerciseRecoveryCost',gate:'engine'},
+  recoveryAllocation:{model:'recovery_allocation'},
+  causalInference:{fn:'causalAnalysis',gate:'engine'},distributedLag:{fn:'distributedLag',gate:'engine'},
+  shrinkage:{fn:'shrink',gate:'engine'},tissueDensity:{model:'tissue_energy_density'},
+  personalResponse:{model:'response_matrix'},movementEngine:{fn:'resolveExercise',gate:'engine'}
 };
+function engineMaturity(k){var e=ENGINE_EVIDENCE[k];if(!e)return {engine:k,grade:null,derivedFrom:'no evidence declared'};
+  var g=(typeof window!=='undefined')?window:{};
+  if(e.model){var m=MODELS.filter(function(x){return x.id===e.model;})[0];
+    return m?{engine:k,grade:modelMaturity(m),derivedFrom:'model '+e.model+(SCORED_AGAINST_OUTCOMES[e.model]?', scored against outcomes':', its class ('+m.cls+')')}
+      :{engine:k,grade:null,derivedFrom:'model '+e.model+' is not in the registry'};}
+  return typeof g[e.fn]==='function'?{engine:k,grade:'INFRASTRUCTURE_GRADE',derivedFrom:'function '+e.fn+', tested by the '+e.gate+' gate'}
+    :{engine:k,grade:null,derivedFrom:'function '+e.fn+' is not in the build'};}
 function maturityReport(){
-  var rows=Object.keys(ENGINE_MATURITY).map(function(k){
-    var g=ENGINE_MATURITY[k];
-    return {engine:k,grade:g,rank:MATURITY[g].rank,means:MATURITY[g].means};
+  var rows=Object.keys(ENGINE_EVIDENCE).map(function(k){
+    var d=engineMaturity(k),g=d.grade;
+    return {engine:k,grade:g,rank:g?MATURITY[g].rank:0,means:g?MATURITY[g].means:'ungraded: its evidence is not in this build',derivedFrom:d.derivedFrom};
   }).sort(function(a,b){return b.rank-a.rank;});
   var byGrade={};
   rows.forEach(function(r){(byGrade[r.grade]=byGrade[r.grade]||[]).push(r.engine);});
@@ -602,7 +617,7 @@ function versionVector(modelId){
     applicationVersion:(typeof APP_VERSION!=='undefined')?APP_VERSION:'unknown',
     schemaVersion:(typeof SCHEMA_VERSION!=='undefined')?SCHEMA_VERSION:0,
     ontologyVersion:ONTOLOGY_VERSION,
-    modelVersion:(modelId&&MODEL_VERSIONS[modelId])||(modelId&&ENGINE_MATURITY&&ENGINE_MATURITY[modelId]?'1':'1'),
+    modelVersion:(modelId&&MODEL_VERSIONS[modelId])||'1',   /* both branches of the old fallback gave '1'; it read the maturity table, now gone */
     referenceDataVersion:REFERENCE_DATA_VERSION,
     foodDatabaseVersion:(typeof FOOD_DB_VERSION!=='undefined')?FOOD_DB_VERSION:'fdc-2026-04',
     adapterVersion:ADAPTER_VERSION
