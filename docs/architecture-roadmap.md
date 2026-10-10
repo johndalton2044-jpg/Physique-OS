@@ -4320,4 +4320,4 @@ need its own. New blocks open with their suite's marker (CLAUDE.md).
 what was already in place, what is partly done, what is blocked on accounts or decisions, and what the catalogues
 themselves defer. TRANSITION §8 summarises the state.
 
-1,813 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,813 self-tests.
