@@ -4,7 +4,7 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 49 |
+| models | 50 |
 | capabilities | 22 |
 | entity contracts | 27 |
 | commands | 540 |
@@ -74,4 +74,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- none
+- added model: tissue_energy_density

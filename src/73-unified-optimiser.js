@@ -30,8 +30,8 @@ function _leverEffect(k,dose,kg){if(!dose)return {mean:0,sd:0,basis:'no change'}
     if(k==='steps'){var pull=null;try{var eb=energyBalance();pull=eb.status==='ok'&&eb.neat?eb.neat:null;}catch(e){}
       if(pull&&pull.steps<0)out.basis+='; your current deficit is expected to pull everyday steps down by about '+Math.abs(pull.steps).toLocaleString()+' a day, which a step target holds against';}
     return out;}}
-  if(k==='cardio'){var kcal=6*(kg||85)*0.5*dose,m=-kcal/3500,pp=typeof predictResponse==='function'?predictResponse('cardio','weight',dose):null;return pp&&pp.n?{mean:pp.mean,sd:Math.abs(pp.hi-pp.lo)/4,basis:pp.basis}:{mean:m,sd:Math.abs(m)*0.4,basis:'about 6 METs for 30 minutes per session'};}
-  if(k==='training'){var e=-(4*(kg||85)*1*dose)/3500;return {mean:e,sd:Math.abs(e)*0.6,basis:'about 4 METs for an hour per session; mainly for strength, not weight'};}
+  if(k==='cardio'){var kcal=6*(kg||85)*0.5*dose,m=-kcal/tissueKcalPerLb(),pp=typeof predictResponse==='function'?predictResponse('cardio','weight',dose):null;return pp&&pp.n?{mean:pp.mean,sd:Math.abs(pp.hi-pp.lo)/4,basis:pp.basis}:{mean:m,sd:Math.abs(m)*0.4,basis:'about 6 METs for 30 minutes per session'};}
+  if(k==='training'){var e=-(4*(kg||85)*1*dose)/tissueKcalPerLb();return {mean:e,sd:Math.abs(e)*0.6,basis:'about 4 METs for an hour per session; mainly for strength, not weight'};}
   return {mean:0,sd:0,basis:k==='sleep'?'sleep helps hunger, recovery and muscle retention more than the scale':'protein protects muscle and fullness; little direct effect on weight'};}
 function unifiedOptimiser(opts){opts=opts||{};if(typeof memo==='function'&&!opts.minutesBudget)return memo('uopt:'+(DB.settings.optimiserPreference||'balanced')+':'+todayISO(),function(){return _unifiedOptimiser(opts);});return _unifiedOptimiser(opts);}
 function _unifiedOptimiser(opts){opts=opts||{};

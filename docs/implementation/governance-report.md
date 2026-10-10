@@ -1,8 +1,8 @@
 # Governance report
 
-Build 7dd314744b · generated 2026-10-10T18:36:30.468Z
+Build 4fecf793ba · generated 2026-10-10T19:05:49.338Z
 
-**0 hard** (fail the build) · **0 soft** (tracked) · **25 passing**
+**0 hard** (fail the build) · **0 soft** (tracked) · **26 passing**
 
 ## Passing
 
@@ -15,12 +15,13 @@ Build 7dd314744b · generated 2026-10-10T18:36:30.468Z
 - **system-authority** — every authority named in SYSTEM_AUTHORITY.md exists in the build (41)
 - **action-before-registry** — no file uses a registry before the file that defines it
 - **goal-ownership** — every goal read goes through canonicalGoal()
+- **energy-density-literal** — every kcal-per-lb conversion goes through the one energy-density service
 - **sheet-defined-twice** — no sheet is silently redefined
 - **registry-without-consumer** — every registry is read somewhere or classified with a reason (1 classified)
 - **audit-never-run** — 48 audit functions, every one invoked
-- **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
+- **catalogue** — catalogue generated from the running registries — 1 change(s) since the previous run
 - **entity-contracts** — all 27 entity contracts hold, and every store in the record is owned or explained
-- **model-without-version** — 49 models, each versioned
+- **model-without-version** — 50 models, each versioned
 - **model-without-provenance** — every model result carries provenance
 - **model-without-uncertainty** — every model result carries the full uncertainty contract
 - **registered-but-unimplemented** — every registry entry resolves to an implementation

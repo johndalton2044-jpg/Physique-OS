@@ -6,9 +6,9 @@
    much of it rests on your own data. The bridge from adaptive rules to personalised adaptation.
    ============================================================================ */
 /* priors per unit of dose (per day, sustained), with a relative SD; null mean = no population figure (centred on zero, wide) */
-function RESPONSE_PRIORS(){var kg=typeof _kgNow==='function'?(_kgNow()||90):90;return {
-  'calories\u2192weight':{perUnit:7/3500,sdAbs:0.3*7/3500,scale:100,label:'per 100 kcal a day',unit:'lb/week',basis:'energy arithmetic: about 3,500 kcal per lb'},
-  'steps\u2192weight':{perUnit:-0.0005*kg*7/3500,sdAbs:0.5*0.0005*kg*7/3500,scale:1000,label:'per 1,000 steps a day',unit:'lb/week',basis:'about 0.5 kcal per step per kg of body weight'},
+function RESPONSE_PRIORS(){var kg=typeof _kgNow==='function'?(_kgNow()||90):90,D=energyDensityRef(),kl=D.kcalPerLb;return {
+  'calories\u2192weight':{perUnit:7/kl,sdAbs:0.3*7/kl,scale:100,label:'per 100 kcal a day',unit:'lb/week',basis:'energy arithmetic: about '+kl.toLocaleString()+' kcal per lb of scale weight',density:D},
+  'steps\u2192weight':{perUnit:-0.0005*kg*7/kl,sdAbs:0.5*0.0005*kg*7/kl,scale:1000,label:'per 1,000 steps a day',unit:'lb/week',basis:'about 0.5 kcal per step per kg of body weight, at '+kl.toLocaleString()+' kcal per lb',density:D},
   'training days\u2192weight':{perUnit:0,sdAbs:0.3,scale:1,label:'per training day a week',unit:'lb/week',basis:'no reliable population figure: centred on no effect'},
   'protein\u2192hunger':{perUnit:0,sdAbs:0.03,scale:20,label:'per 20 g of protein a day',unit:'hunger points',basis:'no reliable population figure: centred on no effect'}};}
 function _respKey(r){return r.variable+'\u2192'+(r.outcome||'?');}

@@ -1192,6 +1192,9 @@
    "64-physique.js": [
     "physiqueRate"
    ],
+   "79-rigour.js": [
+    "energyDensityRef"
+   ],
    "94-causal.js": [
     "responseCausal"
    ]
@@ -1219,6 +1222,9 @@
    ],
    "61-physiology.js": [
     "_kgNow"
+   ],
+   "79-rigour.js": [
+    "energyDensityRef"
    ],
    "96-bayes-engine.js": [
     "hierarchicalPosterior"
@@ -4875,6 +4881,7 @@
     "changePlan"
    ],
    "58-response-entity.js": [
+    "_expectedWeightChange",
     "evaluateResponse",
     "recordResponses",
     "exposuresOf",
@@ -5161,6 +5168,8 @@
    ],
    "79-rigour.js": [
     "tissueEnergyDensity",
+    "lbToKcal",
+    "kcalToLb",
     "shrunkResponseMatrix",
     "effectiveN",
     "changePointsRigorous"

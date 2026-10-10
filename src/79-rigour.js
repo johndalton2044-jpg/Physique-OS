@@ -25,6 +25,13 @@
 /* fat and lean are the endpoints of the mixture; fallback is the only value any energy path may use when
    the composition model cannot resolve, and it lives here so there is exactly one place to find it. */
 var ENERGY_PER_LB={fat:3500,lean:700,glycogenWater:0,fallback:3200};
+/* ONE ENERGY-DENSITY SERVICE (catalogue W-003). The response entity's expected weight change, the response priors and
+   the optimiser's cardio and training levers each still divided by 3,500, so one intervention was read as different
+   amounts of weight depending on which part of the app did the arithmetic. Every conversion now goes through this
+   function, every converted result names the model and version it was converted under (so a result stored under an
+   earlier version can be told apart), and the governance gate fails on arithmetic with an energy-density literal
+   anywhere else. */
+var ENERGY_DENSITY_MODEL={id:'tissue_energy_density',version:'1.0'};
 function tissueEnergyDensity(opts){
   opts=opts||{};
   var reasons=[],fatShare=0.75;   // a common central estimate for a moderate deficit in a trained person
@@ -61,7 +68,7 @@ function tissueEnergyDensity(opts){
   /* The interval spans a plausible partitioning range rather than a statistical confidence band, because
      the uncertainty here is about the mixture and not about sampling. */
   var loShare=clamp(fatShare-0.15,0.45,0.95),hiShare=clamp(fatShare+0.15,0.5,0.98);
-  return {status:'ok',cls:'PRIOR',
+  return {status:'ok',cls:'PRIOR',model:ENERGY_DENSITY_MODEL.id,version:ENERGY_DENSITY_MODEL.version,
     kcalPerLb:Math.round(central),
     lo:Math.round(loShare*ENERGY_PER_LB.fat+(1-loShare)*ENERGY_PER_LB.lean),
     hi:Math.round(hiShare*ENERGY_PER_LB.fat+(1-hiShare)*ENERGY_PER_LB.lean),
@@ -71,15 +78,34 @@ function tissueEnergyDensity(opts){
     caveat:'Partitioning cannot be measured from this record, so this is an informed assumption with a stated range. A fifteen-point shift in the fat share moves the figure by roughly '+
       Math.round(0.15*(ENERGY_PER_LB.fat-ENERGY_PER_LB.lean))+' kcal per pound, which is why it is not quoted as a constant.'};
 }
+/* What a converted result names: the model, its version and the figure it was converted with. */
+function energyDensityRef(){var d=null;try{d=tissueEnergyDensity();}catch(e){d=null;}var ok=!!(d&&d.status==='ok');
+  return {model:ENERGY_DENSITY_MODEL.id,version:ENERGY_DENSITY_MODEL.version,kcalPerLb:ok?d.kcalPerLb:ENERGY_PER_LB.fallback,
+    lo:ok?d.lo:null,hi:ok?d.hi:null,source:ok?'composition model':'fallback (the composition model could not resolve)'};}
+/* A quantity in the unit a conversion expects: a plain number, or {value, unit} in that unit. Anything else (a pound
+   handed to the kcal side, a missing value) is refused rather than converted into a plausible-looking number. */
+function _energyQuantity(x,unit){if(typeof x==='number')return isFinite(x)?x:null;
+  if(x&&typeof x==='object'&&typeof x.value==='number'&&isFinite(x.value)&&x.unit===unit)return x.value;return null;}
 /* The conversion every energy model should use, so the assumption lives in one place. */
 function lbToKcal(lb,opts){
+  var v=_energyQuantity(lb,'lb');if(v==null)return {status:'invalid',kcal:null,lo:null,hi:null,density:null,why:'lbToKcal takes pounds: a number, or {value, unit:"lb"}'};
   var d=tissueEnergyDensity(opts);
-  return {kcal:Math.round(lb*d.kcalPerLb),lo:Math.round(lb*d.lo),hi:Math.round(lb*d.hi),density:d};
+  return {status:'ok',kcal:Math.round(v*d.kcalPerLb),lo:Math.round(v*d.lo),hi:Math.round(v*d.hi),model:d.model,version:d.version,density:d};
 }
 function kcalToLb(kcal,opts){
+  var v=_energyQuantity(kcal,'kcal');if(v==null)return {status:'invalid',lb:null,lo:null,hi:null,density:null,why:'kcalToLb takes kcal: a number, or {value, unit:"kcal"}'};
   var d=tissueEnergyDensity(opts);
-  return {lb:round(kcal/d.kcalPerLb,3),lo:round(kcal/d.hi,3),hi:round(kcal/d.lo,3),density:d};
+  return {status:'ok',lb:round(v/d.kcalPerLb,3),lo:round(v/d.hi,3),hi:round(v/d.lo,3),model:d.model,version:d.version,density:d};
 }
+/* registered with the other models, so it runs through the inference gateway with a run identity and provenance */
+(function(){if(typeof MODELS==='undefined'||MODELS.some(function(m){return m.id===ENERGY_DENSITY_MODEL.id;}))return;
+  MODELS.push({id:ENERGY_DENSITY_MODEL.id,name:'Tissue energy density',cls:'PRIOR',version:ENERGY_DENSITY_MODEL.version,
+    inputs:['bodyfat','weight_trend|the rate of loss','adherence|protein adherence','session.sets|resistance training'],minN:0,
+    assumes:['adipose tissue holds about 3,500 kcal per lb and lean tissue about 700','the share of a change that is fat moves with body fat, the rate of loss, protein and training','partitioning cannot be measured from the record, so the range is a plausible-partitioning band, not a sampling interval'],
+    failsWhen:['day-to-day water and glycogen shifts, which carry almost no energy','no weight trend and no body fat, when only the central estimate remains'],
+    output:'kcal per lb of scale weight, with a range and the reasons for the fat share',
+    consumers:['tdee_personal','energy_balance','_expectedWeightChange|a response\u2019s expected weight change','RESPONSE_PRIORS|the response priors','_leverEffect|the optimiser\u2019s levers'],
+    freshnessDays:14,uncertainty:{kind:'plausible-partitioning range'},fn:'tissueEnergyDensity'});})();
 /* ---------------- §10 EMPIRICAL-BAYES SHRINKAGE ----------------
    One noisy observation should not be believed at face value and should not be thrown away. Shrinking it
    toward the population prior in proportion to how noisy it is does both correctly: with n=1 the estimate

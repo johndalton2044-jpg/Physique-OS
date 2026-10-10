@@ -3978,3 +3978,57 @@ Checks, each seen to fail:
   `tests/gates.mjs`.
 
 The application's source is unchanged, so the build ID stays 7dd314744b. The full release record is in progress.
+
+## Recorded weather replayed at its recorded time (build 7dd314744b)
+
+The first release on the pinned Node failed one gate, `external`, and on both Node versions, so the runtime was not the
+cause. Its recorded Open-Meteo forecast covers 2026-09-19 to 2026-10-09. The server's fixture mode stamped it as
+retrieved now, and the app labels each day against the retrieval time, so on 2026-10-10 every day read as past and Today
+had no days ahead. A test that was bound to fail on a date, not a regression.
+
+- A recording now carries the time it was recorded (`__retrievedAt`). The server reports that time in fixture mode and
+  drops the fixture's own keys from the payload.
+- The gate runs the browser at the recorded time (`page.clock.setSystemTime`), as the person would have seen it.
+- The stale-refresh check had compared the refreshed stamp with the test machine's clock. It now checks that the aged
+  stamp was replaced by the recording's own time, which only a refresh can do.
+- With the server ignoring `__retrievedAt`, two checks fail again.
+
+The clean room also uses the corpus the commit carries in `data/food` when it is given no archive. The corpus is tracked
+in git, and the build checks every file against the lock either way. So the `reproducible` gate can run in CI without the
+`FOOD_DATA_URL` secret, which the earlier CI runs passed through empty.
+
+## One energy-density service for every conversion (build 4fecf793ba)
+
+Catalogue W-003, and a defect this project has now fixed three times. `tissueEnergyDensity()` turns a pound of scale
+weight into energy by what is probably being lost (adipose about 3,500 kcal, lean about 700). Three consumers still
+divided by a bare 3,500:
+- a Response's expected weight change;
+- the response model's population priors;
+- the optimiser's cardio and training levers.
+
+So one intervention was read as different amounts of weight depending on which part of the app did the arithmetic. An
+earlier fix had removed 3,200 after a check that searched only for 3,500; this time the check is structural.
+
+- **The consumers** convert through `tissueKcalPerLb()` / `energyDensityRef()`. Each converted result carries `density`:
+  the model id (`tissue_energy_density`), its version (1.0) and the figure used. A Response is stored with its expected
+  outcome, so one recorded under an earlier density keeps it and says which it was.
+- **A registered model.** `tissue_energy_density` joins `MODELS`, class PRIOR, with inputs that resolve, assumptions,
+  failure conditions, its range as the uncertainty and five consumers. It runs through the inference gateway with a run
+  identity, provenance and applicability. `tdee_personal`'s stated assumption ("3,200 kcal/lb (±500)") now names it.
+- **Unit checks.** `kcalToLb` and `lbToKcal` take a number, or `{value, unit}` in their own unit. Pounds handed to the
+  kcal side, or a missing value, return `status: 'invalid'` rather than a plausible number.
+- **The structural check.** A governance detector removes comments and strings, keeping line numbers, and fails on
+  arithmetic with a kcal-per-lb or kcal-per-kg literal (3000–3999 except 3600, 7000–7999) anywhere but the service and the
+  self-tests.
+
+Checks, each seen to fail:
+- self-tests replace the service with a known density, 3,000 kcal per lb (range 2,600 to 3,300), then 3,500. Every
+  expectation is that figure and arithmetic: −500 kcal a day is −500×7/3,000 lb a week ±30%; the prior per kcal a day is
+  7/3,000; two cardio sessions at 80 kg are −480/3,000; one training session is −320/3,000. The tests also check that the
+  entity and the prior agree, that changing the assumption changes every consumer, and that a recorded Response keeps its
+  density;
+- the unit checks and the gateway run;
+- restoring the three old consumers fails six of them;
+- the governance detector names `58-response-entity.js:36`, `58-response-model.js:10` and the rest, by file and line.
+
+1,784 self-tests pass; the full release record is in progress.

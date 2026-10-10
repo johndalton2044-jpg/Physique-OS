@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-10T18:36:30.468Z",
-  "build": "7dd314744b",
+  "generatedAt": "2026-10-10T19:05:49.338Z",
+  "build": "4fecf793ba",
   "counts": {
     "hard": {},
     "soft": {}
@@ -45,6 +45,10 @@
       "msg": "every goal read goes through canonicalGoal()"
     },
     {
+      "cat": "energy-density-literal",
+      "msg": "every kcal-per-lb conversion goes through the one energy-density service"
+    },
+    {
       "cat": "sheet-defined-twice",
       "msg": "no sheet is silently redefined"
     },
@@ -58,7 +62,7 @@
     },
     {
       "cat": "catalogue",
-      "msg": "catalogue generated from the running registries — 0 change(s) since the previous run"
+      "msg": "catalogue generated from the running registries — 1 change(s) since the previous run"
     },
     {
       "cat": "entity-contracts",
@@ -66,7 +70,7 @@
     },
     {
       "cat": "model-without-version",
-      "msg": "49 models, each versioned"
+      "msg": "50 models, each versioned"
     },
     {
       "cat": "model-without-provenance",

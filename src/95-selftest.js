@@ -4419,6 +4419,40 @@ function runSelfTest(opts){
       var keepSh=_SHEET,form;try{_SHEET={buf:{type:'tests',date:T}};form=SHEETS.log(_SHEET.buf).body;}finally{_SHEET=keepSh;}
       ok('the quick log has a Fitness tests form for all five',['f_sitreach','f_kneewall','f_hrr','f_cmj','f_sprint'].every(function(id){return form.indexOf(id)>=0;}));
       DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();});
+    /* ONE ENERGY-DENSITY SERVICE (catalogue W-003). The service is replaced by a known density, 3,000 kcal per lb (range
+       2,600 to 3,300), then 3,500; every expectation is that figure and arithmetic. Each consumer must convert with exactly
+       the service's figure, name the model and version, and follow the service when its assumption changes. */
+    (function(){var keep=tissueEnergyDensity,keepPredict=predictResponse;
+      var stub=function(k,lo,hi){return function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:k,lo:lo,hi:hi,fatShare:0.7,reasons:[]};};};
+      try{
+        tissueEnergyDensity=stub(3000,2600,3300);predictResponse=function(){return null;};   /* no personal response: the population path */
+        var e=_expectedWeightChange({variable:'calories',from:2500,to:2000});
+        ok('a calorie change’s expected weight change converts with the one density: −500 kcal a day at 3,000 kcal per lb, ±30%',
+          !!e&&Math.abs(e.lo-(-500*7/3000*1.3))<1e-9&&Math.abs(e.hi-(-500*7/3000*0.7))<1e-9,JSON.stringify(e));
+        ok('and it names the model, the version and the figure it was converted with',
+          !!(e&&e.density)&&e.density.model==='tissue_energy_density'&&e.density.version==='1.0'&&e.density.kcalPerLb===3000);
+        var P=RESPONSE_PRIORS()['calories→weight'];
+        ok('the response prior per kcal a day uses the same figure: 7/3,000 lb a week',Math.abs(P.perUnit-7/3000)<1e-12&&P.density.kcalPerLb===3000,JSON.stringify(P));
+        ok('so the response entity and the response prior agree on what −500 kcal a day does',Math.abs(P.perUnit*-500-e.lo/1.3)<1e-9);
+        var c=_leverEffect('cardio',2,80),t=_leverEffect('training',1,80);
+        ok('the optimiser’s cardio lever converts with it too: two sessions at 80 kg are 480 kcal, −480/3,000 lb a week',
+          Math.abs(c.mean-(-480/3000))<1e-9,JSON.stringify(c));
+        ok('and the training lever: one more session at 80 kg is 320 kcal, −320/3,000 lb a week',Math.abs(t.mean-(-320/3000))<1e-9,JSON.stringify(t));
+        var q=kcalToLb(700);
+        ok('kcalToLb converts with the central figure, and its range comes from the service’s range',q.status==='ok'&&q.lb===round(700/3000,3)&&q.lo===round(700/3300,3)&&q.hi===round(700/2600,3)&&q.version==='1.0',JSON.stringify(q));
+        var stored={responses:[]};EVENT_TYPES['response.recorded'].apply(stored,{data:{id:'rx-w003',expected:e}});
+        tissueEnergyDensity=stub(3500,3200,3500);
+        var e2=_expectedWeightChange({variable:'calories',from:2500,to:2000});
+        ok('changing the one assumption changes every consumer: −500 kcal a day at 3,500 kcal per lb',
+          Math.abs(e2.lo-(-500*7/3500*1.3))<1e-9&&Math.abs(RESPONSE_PRIORS()['calories→weight'].perUnit-7/3500)<1e-12&&Math.abs(_leverEffect('training',1,80).mean-(-320/3500))<1e-9);
+        ok('a response recorded under the earlier density keeps it, and says which it was',stored.responses[0].expected.density.kcalPerLb===3000&&stored.responses[0].expected.density.version==='1.0');
+      }finally{tissueEnergyDensity=keep;predictResponse=keepPredict;}
+      ok('a conversion refuses what is not the unit it takes, rather than returning a plausible number',
+        kcalToLb({value:2,unit:'lb'}).status==='invalid'&&kcalToLb({value:2,unit:'lb'}).lb===null&&kcalToLb(NaN).status==='invalid'&&lbToKcal('1').status==='invalid'&&kcalToLb({value:700,unit:'kcal'}).status==='ok');
+      var r=infer({modelId:'tissue_energy_density'});
+      ok('the density is a registered model: it runs through the inference gateway with its version, a run identity and its assumptions',
+        r.status==='ok'&&r.modelVersion==='1.0'&&!!r.runId&&!!r.assumptions,JSON.stringify({status:r.status,v:r.modelVersion,run:r.runId}));
+    })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */
     withFixture('successful_cut',function(){

@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "7dd314744b",
+ "build": "4fecf793ba",
  "models": [
   {
    "id": "adherence",
@@ -216,6 +216,11 @@
    "id": "tdee_prior",
    "cls": "PRIOR",
    "fn": "tdeePrior"
+  },
+  {
+   "id": "tissue_energy_density",
+   "cls": "PRIOR",
+   "fn": "tissueEnergyDensity"
   },
   {
    "id": "uncertainty_chain",

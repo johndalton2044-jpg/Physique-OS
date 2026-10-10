@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "3a1aac173953",
+ "ontologyVersion": "51bc2537ced1",
  "observationTypes": [
   {
    "id": "adherence",
@@ -2554,6 +2554,18 @@
    ]
   },
   {
+   "id": "tissue_energy_density",
+   "cls": "PRIOR",
+   "output": "kcal per lb of scale weight, with a range and the reasons for the fat share",
+   "uncertainty": "plausible-partitioning range",
+   "inputs": [
+    "bodyfat",
+    "weight_trend|the rate of loss",
+    "adherence|protein adherence",
+    "session.sets|resistance training"
+   ]
+  },
+  {
    "id": "uncertainty_chain",
    "cls": "DERIVED",
    "output": "an energy-balance interval and the decision confidence ceiling it implies",
@@ -2844,6 +2856,7 @@
    "supplement_efficacy",
    "tdee_personal",
    "tdee_prior",
+   "tissue_energy_density",
    "uncertainty_chain",
    "unified_optimiser",
    "water_noise",
