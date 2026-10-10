@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T04:44:06.996Z",
+  "generatedAt": "2026-10-10T18:36:30.468Z",
   "build": "7dd314744b",
   "counts": {
     "hard": {},
@@ -58,7 +58,7 @@
     },
     {
       "cat": "catalogue",
-      "msg": "catalogue generated from the running registries — 9 change(s) since the previous run"
+      "msg": "catalogue generated from the running registries — 0 change(s) since the previous run"
     },
     {
       "cat": "entity-contracts",

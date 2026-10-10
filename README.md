@@ -86,13 +86,19 @@ Foundation Foods (354 foods with analytical nutrients and portions) are embedded
 
 ## Building and verifying
 
-**Requirements.** Node 20 or later. The build itself needs nothing else. The gates need two dev dependencies
-and, for the real-browser gate, a Chromium-family browser:
+**Requirements.** Node 22.23.3, the version in `.nvmrc` (any Node in `^22.22.2 || ^24.15.0 || >=26.0.0`, the range every
+locked dependency accepts, also works). A development build needs only the repository
+(`PHYSIQUE_DEV_BUILD=1 node build.mjs`); a production build also needs the pinned food corpus, and refuses to run without
+it. The gates need two dev dependencies and, for the real-browser gate, a Chromium-family browser:
 
 ```
-npm install                    # jsdom and playwright-core (dev dependencies only)
+npm ci                         # jsdom and playwright-core, exactly as locked (dev dependencies only)
 npx playwright install chromium   # only if Chrome, Chromium or Edge is not already installed
+node scripts/food-fetch.mjs --url <archive>   # the food corpus, checked against data/food.lock.json
 ```
+
+The whole release environment (runtime, browser, corpus identity and size, environment variables, what fails when a
+part is missing) is in `docs/release-environment.md`.
 
 The browser gate finds a browser on its own — `CHROME_PATH` if set, then the standard Chrome, Chromium and Edge
 locations on Linux, macOS and Windows, then Playwright's browser cache. If it finds none it fails with these

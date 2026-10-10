@@ -7,7 +7,8 @@ This file holds the rules that apply to every change.
 
 An offline-first personal training and nutrition system: one HTML page built from `src/*.js` (concatenated in file-name
 order into one script; every top-level function is a global), an optional sync server (`server/server.mjs`), and a
-release discipline of 36 gates. Node 22 (`>=20`). No framework, no bundler.
+release discipline of 36 gates. Node 22.23.3 (`.nvmrc`; `package.json` promises only the range every locked dependency
+accepts). No framework, no bundler.
 
 ## Commands
 
@@ -19,12 +20,14 @@ node build.mjs                                  # build dist/ (fails without the
 PHYSIQUE_DEV_BUILD=1 node build.mjs             # development build without the corpus (marked in version.json)
 node tests/<gate>.mjs                           # one gate directly
 node tests/gate-record.mjs <gate>               # one gate, recorded against the current build
+node tests/gate-record.mjs --all                # every release gate in order (needs PHYSIQUE_FOOD_ARCHIVE; commit first)
 node tests/release.mjs --from-results           # the release check (refuses a missing, failed or skipped gate)
 ```
 
 Fast loop after a change: `node build.mjs`, then `node tests/authority.mjs`, `node tests/layers.mjs`,
 `node tests/maturity.mjs`, `node tests/dictionary.mjs`, `node tests/engine-check.mjs`, then the gates the change touches.
-Before a release: every gate, recorded (the list and order are in `docs/handoff/TRANSITION.md`).
+Before a release: every gate, recorded (the list, order and runtime ceilings are in `tests/gates.mjs`; the procedure is in
+`docs/handoff/TRANSITION.md`).
 
 ## Rules (each is enforced by a gate; the gate names are in brackets)
 

@@ -74,12 +74,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- added model: personal_conditioning_response
-- added model: personal_mobility_response
-- added model: personal_power_response
-- added model: personal_speed_response
-- added observationType: cmj
-- added observationType: hrr
-- added observationType: kneewall
-- added observationType: sitreach
-- added observationType: sprint
+- none

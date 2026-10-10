@@ -13,7 +13,8 @@ Everything below is to be executed in order. The rules for every change are in `
    - `dist/` is ignored by `.gitignore`; Vercel builds it.
 2. The archive contains `.gitattributes`, which forces LF line endings. Run `git add --renormalize .` once.
    - Build identities hash source bytes, so a CRLF checkout builds a different ID and fails the `reproducible` gate.
-3. Install and build:
+3. Install and build, on the Node in `.nvmrc` (22.23.3; the deploy gate fails on a Node outside the range in
+   `package.json`):
    ```
    npm ci
    npx playwright install --with-deps chromium
@@ -27,15 +28,18 @@ Everything below is to be executed in order. The rules for every change are in `
 
 ## 1. Release procedure (after every change)
 
+Commit first: the `reproducible` gate builds the committed commit, not the working tree.
+
 ```
 node build.mjs
 rm -f docs/release/gate-results.json
-for g in build authority layers maturity dictionary engine adversarial audit conformance governance shipped test browser visual persistence spine parity adapt integration intelligence external voice direction inputs blackbox ai deploy server connect timezones; do node tests/gate-record.mjs $g || break; done
-PHYSIQUE_FOOD_ARCHIVE=/path/to/physique-os-food-data.tar.gz node tests/gate-record.mjs reproducible
-for g in perf cloud:e2e yields:gate baseline verify; do node tests/gate-record.mjs $g; done
+PHYSIQUE_FOOD_ARCHIVE=/path/to/physique-os-food-data.tar.gz node tests/gate-record.mjs --all
 npm run -s audit
 node tests/release.mjs --from-results     # must end: 24/24 verification items pass
 ```
+
+- **The gates:** `--all` runs the 36 gates in `tests/gates.mjs` in order, the same list CI and the release check read, and
+  records each one even after a failure. A gate that runs past its ceiling there is stopped and recorded as failed.
 
 - **Slow gates:** `test`, `browser`, `shipped`, `timezones` and `reproducible` take about 2–5 minutes each.
 - **On failure:** fix the cause; never loosen the gate.

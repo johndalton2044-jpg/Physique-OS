@@ -3933,3 +3933,48 @@ The black-box harness gains `ui.waitFor` (a state reached asynchronously). V-014
 rule 12), and choosing a level through the Display card now waits until the level applies instead of a fixed 80 ms
 (V-011, V-012 and V-013 use it). With the Fitness tests save disabled, V-014 times out waiting for the Log page.
 All 36 gates pass (reproducible included); release 24/24; 1,773 self-tests.
+
+## Release integrity: root CI, one gate list, the runtime contract, the clean room from the commit (build 7dd314744b)
+
+The work-and-direction catalogues (two documents, written against build ed2073643a) put release integrity first: the
+release suite must run from a clean environment before anything else is trusted. Checked against this build, four of
+their findings held:
+- the CI workflow sat in `data/.github/workflows/`, where GitHub never runs it (W-001);
+- `package.json` promised Node 20 or later, while the locked dependencies need `^22.22.2 || ^24.15.0 || >=26.0.0`
+  (jsdom) and `>=22.19.0` (undici) (W-002);
+- the gate list was written out four times (the release check, CI, TRANSITION and the maturity gate's text search),
+  and a gate had no time limit, so a hung gate hung the release (doc 2, P0.4);
+- the clean room copied the working tree, so it proved that the files on disk rebuild, not that the commit does (W-032),
+  and it turned a food archive URL into a file path.
+
+What changed:
+- **One list.** `tests/gates.mjs` holds the 36 gates in order, each with a runtime ceiling (about two and a half times its
+  measured time, never under 60 s). The release check, the maturity gate, the gate recorder and CI read it.
+  `node tests/gate-record.mjs --all` runs every gate and records each one, with how long it took, even after a failure.
+- **Ceilings.** Each gate runs in its own process group. Past its ceiling it is stopped, with everything it started, and
+  recorded as failed. A 3-second ceiling stopped the engine gate and left nothing running.
+- **Root CI.** `.github/workflows/ci.yml` is at the root. It installs the Node in `.nvmrc` and the locked dependencies,
+  runs every gate and the release check, and keeps `docs/release/` as an artifact. The misplaced copy is gone.
+- **The runtime contract.** `engines.node` is now the range every locked dependency accepts, and `.nvmrc` pins Node
+  22.23.3. The deploy gate computes the contract from `package-lock.json`, with a small range evaluator of its own:
+  - every promised Node must be one each locked dependency accepts;
+  - `.nvmrc` must be one exact version inside the promise;
+  - the gate must itself run on a promised Node;
+  - the CI workflow must be at the root, run every gate and the release check, and keep the evidence.
+  Releases now run on Node 22.23.3: the container's 22.22.0 is below jsdom's floor, and the gate says so.
+- **The clean room from the commit.** `scripts/clean-room.mjs` exports `git archive HEAD`, so a build that needs an
+  untracked file fails. It records the commit, Node, npm and platform, and names uncommitted changes when they are why
+  the trees differ. A URL for the food archive now stays a URL.
+- **The environment, written down.** `docs/release-environment.md` covers both builds (development from the repository
+  alone, production with the pinned corpus), the runtime, browser, operating system, food-corpus identity and sizes,
+  environment variables, the mock-only external-test mode, and what fails when a part is missing. The README's "Node 20
+  or later" and `npm install` are corrected.
+
+Checks, each seen to fail:
+- the old `>=20` promise fails the deploy gate and names every dependency that needs more;
+- Node 22.22.0 fails the runtime check;
+- moving the workflow out of the root fails four CI checks;
+- the maturity gate failed 25 checks while it still searched `release.mjs` for the list, and passes now that it reads
+  `tests/gates.mjs`.
+
+The application's source is unchanged, so the build ID stays 7dd314744b. The full release record is in progress.
