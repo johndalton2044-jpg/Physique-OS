@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build 78c311cc38. Every status is derived from evidence the build can check; none is assigned by hand.
+Build f1ecf89ed2. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|

@@ -4303,4 +4303,4 @@ Self-tests with two photos, one removed, expect one photo, images not included a
 complete. Option B (an encrypted attachment store with content hashes and an off-device copy) remains a decision for the
 person.
 
-1,813 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,813 self-tests.

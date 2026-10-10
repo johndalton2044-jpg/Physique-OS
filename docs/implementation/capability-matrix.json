@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-10T20:47:30.737Z",
-  "buildId": "78c311cc38",
+  "generatedAt": "2026-10-10T21:08:23.217Z",
+  "buildId": "f1ecf89ed2",
   "statuses": [
     "specified",
     "implemented",
@@ -23,7 +23,7 @@
       "evidence": {
         "implemented": true,
         "contract": "holds",
-        "contractRun": "ver-b9ebc973",
+        "contractRun": "ver-2f650135",
         "integrated": true,
         "surfaced": true,
         "gradeSource": "no derived grade",
@@ -44,7 +44,7 @@
       "evidence": {
         "implemented": true,
         "contract": "holds",
-        "contractRun": "ver-4b85ab2b",
+        "contractRun": "ver-f219e76d",
         "integrated": true,
         "surfaced": true,
         "gradeSource": "no derived grade",
@@ -65,7 +65,7 @@
       "evidence": {
         "implemented": true,
         "contract": "holds",
-        "contractRun": "ver-dd03b2b3",
+        "contractRun": "ver-4a9223f5",
         "integrated": true,
         "surfaced": true,
         "gradeSource": "no derived grade",
@@ -86,7 +86,7 @@
       "evidence": {
         "implemented": true,
         "contract": "holds",
-        "contractRun": "ver-b9d19e15",
+        "contractRun": "ver-d9f80507",
         "integrated": true,
         "surfaced": true,
         "gradeSource": "no derived grade",
@@ -338,8 +338,8 @@
         "surfaced": true,
         "gradeSource": "live verification",
         "verification": "passes",
-        "verificationRun": "ver-45608ad3",
-        "verifiedAt": "2026-10-10T20:47:31.851Z",
+        "verificationRun": "ver-1c973095",
+        "verifiedAt": "2026-10-10T21:08:24.263Z",
         "validated": true,
         "productionReady": false
       }
@@ -360,8 +360,8 @@
         "surfaced": true,
         "gradeSource": "live verification",
         "verification": "passes",
-        "verificationRun": "ver-bc15ce11",
-        "verifiedAt": "2026-10-10T20:47:31.851Z",
+        "verificationRun": "ver-a604962b",
+        "verifiedAt": "2026-10-10T21:08:24.263Z",
         "validated": true,
         "productionReady": false
       }
@@ -382,8 +382,8 @@
         "surfaced": true,
         "gradeSource": "live verification",
         "verification": "passes",
-        "verificationRun": "ver-29910539",
-        "verifiedAt": "2026-10-10T20:47:31.851Z",
+        "verificationRun": "ver-865cac93",
+        "verifiedAt": "2026-10-10T21:08:24.263Z",
         "validated": true,
         "productionReady": false
       }
@@ -404,8 +404,8 @@
         "surfaced": true,
         "gradeSource": "live verification",
         "verification": "passes",
-        "verificationRun": "ver-ad211e2b",
-        "verifiedAt": "2026-10-10T20:47:31.851Z",
+        "verificationRun": "ver-53b55a6d",
+        "verifiedAt": "2026-10-10T21:08:24.263Z",
         "validated": true,
         "productionReady": false
       }
@@ -426,8 +426,8 @@
         "surfaced": true,
         "gradeSource": "live verification",
         "verification": "passes",
-        "verificationRun": "ver-3be953a6",
-        "verifiedAt": "2026-10-10T20:47:31.851Z",
+        "verificationRun": "ver-4504a2c4",
+        "verifiedAt": "2026-10-10T21:08:24.263Z",
         "validated": true,
         "productionReady": false
       }
