@@ -159,6 +159,7 @@ item(21,'Production build',G.build.ok&&G.verify.ok,G.verify.summary);
 const manifest=fs.existsSync('dist/BUILD-MANIFEST.json')?JSON.parse(fs.readFileSync('dist/BUILD-MANIFEST.json','utf8')):null;
 item(22,'Release manifest',!!manifest,manifest?('build '+manifest.build+', release '+manifest.release+', '+(manifest.inputs||[]).length+' hashed inputs'):'no manifest');
 item(23,'Architecture/conformance report',G.governance.ok&&G.conformance.ok,'docs/implementation/governance-report.md');
+w.runVerification();   /* the matrix reads the latest verification run; the release records one */
 const cm=w.capabilityMatrix();const mr=w.maturityReport();
 item(24,'Capability maturity report',!!(cm&&mr),'docs/release/capability-maturity.md');
 

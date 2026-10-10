@@ -3508,8 +3508,9 @@ function runSelfTest(opts){
       /* capabilities */
       ok('no capability is validated by a hand-assigned grade',capabilityMatrix().rows.every(function(r){var e=r.evidence||{};
         return !e.validated||e.gradeSource==='live verification'||VALIDATED_GRADES.indexOf(capabilityDerivedGrade(r.id,CAPABILITIES[r.id]))>=0;}));
-      ok('a live infrastructure check can fail',(function(){var k=provenanceAudit;provenanceAudit=function(){return {ok:false};};
-        var v=capabilityStatus('provenance').evidence.verification;provenanceAudit=k;return v==='fails';})());
+      ok('a live infrastructure check can fail',(function(){var k=provenanceAudit,v=null;provenanceAudit=function(){return {ok:false};};
+        try{runVerification({only:['provenance']});v=capabilityStatus('provenance').evidence.verification;}finally{provenanceAudit=k;}
+        runVerification({only:['provenance']});return v==='fails';})());
       ok('nothing is production-ready without experimental or prospective evidence',capabilityMatrix().rows.every(function(r){return !(r.evidence||{}).productionReady;}));
       /* forecast validation */
       var hv=forecastHoldoutValidation();
@@ -4423,29 +4424,31 @@ function runSelfTest(opts){
        2,600 to 3,300), then 3,500; every expectation is that figure and arithmetic. Each consumer must convert with exactly
        the service's figure, name the model and version, and follow the service when its assumption changes. */
     (function(){var keep=tissueEnergyDensity,keepPredict=predictResponse;
+      /* the known densities, from the adipose figure: D = 3,000 kcal per lb (LO 2,600, HI 3,300), then D2 = 3,500 (LO2 3,200) */
+      var D=ENERGY_PER_LB.fat-500,LO=D-400,HI=D+300,D2=ENERGY_PER_LB.fat,LO2=D2-300;
       var stub=function(k,lo,hi){return function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:k,lo:lo,hi:hi,fatShare:0.7,reasons:[]};};};
       try{
-        tissueEnergyDensity=stub(3000,2600,3300);predictResponse=function(){return null;};   /* no personal response: the population path */
+        tissueEnergyDensity=stub(D,LO,HI);predictResponse=function(){return null;};   /* no personal response: the population path */
         var e=_expectedWeightChange({variable:'calories',from:2500,to:2000});
         ok('a calorie change’s expected weight change converts with the one density: −500 kcal a day at 3,000 kcal per lb, ±30%',
-          !!e&&Math.abs(e.lo-(-500*7/3000*1.3))<1e-9&&Math.abs(e.hi-(-500*7/3000*0.7))<1e-9,JSON.stringify(e));
+          !!e&&Math.abs(e.lo-(-500*7/D*1.3))<1e-9&&Math.abs(e.hi-(-500*7/D*0.7))<1e-9,JSON.stringify(e));
         ok('and it names the model, the version and the figure it was converted with',
-          !!(e&&e.density)&&e.density.model==='tissue_energy_density'&&e.density.version==='1.0'&&e.density.kcalPerLb===3000);
+          !!(e&&e.density)&&e.density.model==='tissue_energy_density'&&e.density.version==='1.0'&&e.density.kcalPerLb===D);
         var P=RESPONSE_PRIORS()['calories→weight'];
-        ok('the response prior per kcal a day uses the same figure: 7/3,000 lb a week',Math.abs(P.perUnit-7/3000)<1e-12&&P.density.kcalPerLb===3000,JSON.stringify(P));
+        ok('the response prior per kcal a day uses the same figure: 7/3,000 lb a week',Math.abs(P.perUnit-7/D)<1e-12&&P.density.kcalPerLb===D,JSON.stringify(P));
         ok('so the response entity and the response prior agree on what −500 kcal a day does',Math.abs(P.perUnit*-500-e.lo/1.3)<1e-9);
         var c=_leverEffect('cardio',2,80),t=_leverEffect('training',1,80);
         ok('the optimiser’s cardio lever converts with it too: two sessions at 80 kg are 480 kcal, −480/3,000 lb a week',
-          Math.abs(c.mean-(-480/3000))<1e-9,JSON.stringify(c));
-        ok('and the training lever: one more session at 80 kg is 320 kcal, −320/3,000 lb a week',Math.abs(t.mean-(-320/3000))<1e-9,JSON.stringify(t));
+          Math.abs(c.mean-(-480/D))<1e-9,JSON.stringify(c));
+        ok('and the training lever: one more session at 80 kg is 320 kcal, −320/3,000 lb a week',Math.abs(t.mean-(-320/D))<1e-9,JSON.stringify(t));
         var q=kcalToLb(700);
-        ok('kcalToLb converts with the central figure, and its range comes from the service’s range',q.status==='ok'&&q.lb===round(700/3000,3)&&q.lo===round(700/3300,3)&&q.hi===round(700/2600,3)&&q.version==='1.0',JSON.stringify(q));
+        ok('kcalToLb converts with the central figure, and its range comes from the service’s range',q.status==='ok'&&q.lb===round(700/D,3)&&q.lo===round(700/HI,3)&&q.hi===round(700/LO,3)&&q.version==='1.0',JSON.stringify(q));
         var stored={responses:[]};EVENT_TYPES['response.recorded'].apply(stored,{data:{id:'rx-w003',expected:e}});
-        tissueEnergyDensity=stub(3500,3200,3500);
+        tissueEnergyDensity=stub(D2,LO2,D2);
         var e2=_expectedWeightChange({variable:'calories',from:2500,to:2000});
         ok('changing the one assumption changes every consumer: −500 kcal a day at 3,500 kcal per lb',
-          Math.abs(e2.lo-(-500*7/3500*1.3))<1e-9&&Math.abs(RESPONSE_PRIORS()['calories→weight'].perUnit-7/3500)<1e-12&&Math.abs(_leverEffect('training',1,80).mean-(-320/3500))<1e-9);
-        ok('a response recorded under the earlier density keeps it, and says which it was',stored.responses[0].expected.density.kcalPerLb===3000&&stored.responses[0].expected.density.version==='1.0');
+          Math.abs(e2.lo-(-500*7/D2*1.3))<1e-9&&Math.abs(RESPONSE_PRIORS()['calories→weight'].perUnit-7/D2)<1e-12&&Math.abs(_leverEffect('training',1,80).mean-(-320/D2))<1e-9);
+        ok('a response recorded under the earlier density keeps it, and says which it was',stored.responses[0].expected.density.kcalPerLb===D&&stored.responses[0].expected.density.version==='1.0');
       }finally{tissueEnergyDensity=keep;predictResponse=keepPredict;}
       ok('a conversion refuses what is not the unit it takes, rather than returning a plausible number',
         kcalToLb({value:2,unit:'lb'}).status==='invalid'&&kcalToLb({value:2,unit:'lb'}).lb===null&&kcalToLb(NaN).status==='invalid'&&lbToKcal('1').status==='invalid'&&kcalToLb({value:700,unit:'kcal'}).status==='ok');
@@ -4494,6 +4497,33 @@ function runSelfTest(opts){
         var ic=inventoryConfidence();
         ok('inventory confidence counts the rates measured from the log by their source, not by a phrase in the basis',!!ic&&ic.measuredRates===1&&ic.items===3,JSON.stringify(ic));
       }finally{inventoryLifecycle=keep;}
+    })();
+    /* VERIFICATION EVIDENCE (catalogue doc 2, P0.1 and P0.2). Reading statuses must execute nothing: every function a
+       status could run is counted while the matrix is read, and must be called zero times. A status that needs a check
+       reads the latest run's entry for this build; an entry from another build, or past its expiry, is not evidence. */
+    (function(){var G=(typeof window!=='undefined')?window:{};
+      var names=['infer','provenanceAudit','modelRegistryAudit','forecastHoldoutValidation','registryDrift','_viewIdentity','runIdentity','_resultContractHolds']
+        .concat(Object.keys(CAPABILITIES).map(function(k){return CAPABILITIES[k].fn;}).filter(Boolean));
+      /* resolveQuantity is a registry lookup (is the output type in the quantity registry?), which a status needs; it runs nothing */
+      names=names.filter(function(n,i){return names.indexOf(n)===i&&typeof G[n]==='function'&&n!=='resolveQuantity';});
+      var keep={},calls=0;names.forEach(function(n){keep[n]=G[n];G[n]=function(){calls++;return keep[n].apply(this,arguments);};});
+      var t0=Date.now(),m=null;try{m=capabilityMatrix();}finally{names.forEach(function(n){G[n]=keep[n];});}
+      var ms=Date.now()-t0;
+      ok('reading the capability matrix runs no model and no check: none of the '+names.length+' functions a status could run is called',
+        calls===0&&!!m&&m.capabilities===Object.keys(CAPABILITIES).length,calls+' calls');
+      ok('and it takes well under its 1 s ceiling (it took about 5 s while it ran the checks)',ms<1000,ms+' ms');
+      var v=runVerification({only:['provenance','runIdentity']});
+      var st=capabilityStatus('provenance').evidence,ent=_VERIFICATION_EVIDENCE.filter(function(e){return e.id===st.verificationRun;})[0];
+      ok('after a verification run a status traces to its entry: this build, the record revision, an expiry 7 days on, and frozen',
+        v.entries===2&&!!ent&&ent.capabilityId==='provenance'&&ent.suiteId==='live verification'&&ent.buildId===BUILD_ID&&ent.dataRegime==='record revision '+(DB.revision||0)
+          &&ent.expiresAt===addDays(ent.generatedAt.slice(0,10),7)&&Object.isFrozen(ent)&&st.verification===(ent.passed?'passes':'fails'),JSON.stringify(ent||null).slice(0,160));
+      var keepE=_VERIFICATION_EVIDENCE,other=null,expired=null;
+      try{_VERIFICATION_EVIDENCE=keepE.map(function(e){return e.capabilityId==='provenance'?Object.assign({},e,{buildId:'another-build'}):e;});
+        other=capabilityStatus('provenance').evidence.verification;
+        _VERIFICATION_EVIDENCE=keepE.map(function(e){return e.capabilityId==='provenance'?Object.assign({},e,{expiresAt:addDays(todayISO(),-1)}):e;});
+        expired=capabilityStatus('provenance').evidence.verification;}
+      finally{_VERIFICATION_EVIDENCE=keepE;}
+      ok('an entry from another build, or past its expiry, is not evidence: the check reads as not run',other==='not run'&&expired==='not run',other+' / '+expired);
     })();
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */

@@ -7,7 +7,7 @@ This file holds the rules that apply to every change.
 
 An offline-first personal training and nutrition system: one HTML page built from `src/*.js` (concatenated in file-name
 order into one script; every top-level function is a global), an optional sync server (`server/server.mjs`), and a
-release discipline of 36 gates. Node 22.23.3 (`.nvmrc`; `package.json` promises only the range every locked dependency
+release discipline of 37 gates (the list is `tests/gates.mjs`). Node 22.23.3 (`.nvmrc`; `package.json` promises only the range every locked dependency
 accepts). No framework, no bundler.
 
 ## Commands

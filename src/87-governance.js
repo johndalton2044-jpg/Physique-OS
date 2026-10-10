@@ -398,7 +398,7 @@ function capabilityStatus(id){
   evidence.implemented=!c.fn||typeof g[c.fn]==='function';
   /* integrated: its output type is in the canonical quantity registry, or it is runtime infrastructure. */
   evidence.integrated=evidence.implemented&&
-    (c.quantity?!!resolveQuantity(c.quantity):c.resultContract?_resultContractHolds(c):(c.domain==='runtime'||c.domain==='semantic'||c.domain==='testing'||c.domain==='inference'||c.domain==='measurement'||c.domain==='presentation'||c.domain==='forecast'));
+    (c.quantity?!!resolveQuantity(c.quantity):c.resultContract?_verifiedPass(id,'result contract',evidence):(c.domain==='runtime'||c.domain==='semantic'||c.domain==='testing'||c.domain==='inference'||c.domain==='measurement'||c.domain==='presentation'||c.domain==='forecast'));
   /* surfaced: a registered action exposes it to the person. */
   evidence.surfaced=evidence.integrated&&!!(c.action&&typeof ACTIONS!=='undefined'&&ACTIONS[c.action]);
   /* validated. The first version read ENGINE_MATURITY — a hand-assigned table — and counted any grade above
@@ -409,8 +409,10 @@ function capabilityStatus(id){
   var grade=capabilityDerivedGrade(id,c);
   var verify=CAPABILITY_VERIFY[id];
   evidence.gradeSource=verify?'live verification':(grade?'derived from evidence':'no derived grade');
-  if(verify){var vr=false;try{vr=!!verify();}catch(e){vr=false;}evidence.verification=vr?'passes':'fails';
-    evidence.validated=evidence.surfaced&&vr;}
+  /* read from the latest verification run for this build, never by running the check here */
+  if(verify){var ve=verificationEvidence(id,'live verification');
+    evidence.verification=ve?(ve.passed?'passes':'fails'):'not run';evidence.verificationRun=ve?ve.id:null;evidence.verifiedAt=ve?ve.generatedAt:null;
+    evidence.validated=evidence.surfaced&&!!(ve&&ve.passed);}
   else evidence.validated=evidence.surfaced&&VALIDATED_GRADES.indexOf(grade)>=0;
   /* production-ready: validated AND experimentally or prospectively validated. Nothing here reaches it,
      and deriving that from evidence rather than assigning it is the point. */
@@ -448,6 +450,50 @@ function registryIdAudit(){
   var issues=[];REGISTRY_ID_SOURCES.arrays.concat(REGISTRY_ID_SOURCES.keyed).forEach(function(n){issues=issues.concat(assertUniqueRegistryIds(g[n],n));});
   _REGISTRY_CONFLICTS.forEach(function(c){issues.push({registry:c.registry,id:c.id,locations:[],conflict:true,why:c.why});});
   return {ok:!issues.length,checked:REGISTRY_ID_SOURCES.arrays.length+REGISTRY_ID_SOURCES.keyed.length,issues:issues};}
+/* ---------------- VERIFICATION EVIDENCE (catalogue doc 2, P0.1 and P0.2) ----------------
+   Reading the capability matrix ran the live checks: infer() over every model, twice, and each capability's own function,
+   about five seconds on the demo record every time anything asked for a status, so asking about the system changed what
+   the system was doing. A status now traces to a verification run. runVerification() runs the checks once and records
+   one immutable entry per capability and suite: the build, schema, model versions, reference data and record revision it
+   ran against, whether it passed, what failed, how long it took, and when it expires. capabilityStatus() and
+   capabilityMatrix() only read the entries and never execute a model. An entry from another build, or past its expiry,
+   is ignored, and the status then says the check was not run. Kept in memory (it describes this running build), and
+   rebuilt by any reader that needs verified statuses: the internals sheet, the governance gate, the release check. */
+var VERIFICATION_EXPIRY_DAYS=7;
+var _VERIFICATION_EVIDENCE=[];
+function _verificationContext(){
+  return {buildId:BUILD_ID,schemaVersion:SCHEMA_VERSION,
+    modelVersions:_hash(MODELS.map(function(m){return m.id+'@'+(m.version||'?');}).sort().join(',')),
+    referenceVersions:{food:(DB&&DB.settings&&DB.settings.foodDatabaseVersion)||null},
+    dataRegime:'record revision '+((DB&&DB.revision)||0)};}
+function _verificationSuites(id){var c=CAPABILITIES[id],out=[];
+  if(CAPABILITY_VERIFY[id])out.push({suite:'live verification',run:function(){return {passed:!!CAPABILITY_VERIFY[id]()};}});
+  if(c&&c.resultContract&&!c.quantity)out.push({suite:'result contract',run:function(){return {passed:_resultContractHolds(c)};}});
+  if(id==='forecast'&&typeof forecastHoldoutValidation==='function')out.push({suite:'hold-out grade',run:function(){var h=forecastHoldoutValidation();
+    return {passed:h.status==='ok',grade:h.status==='ok'?h.grade:null,why:h.status==='ok'?null:'hold-out validation '+h.status};}});
+  return out;}
+function runVerification(opts){
+  opts=opts||{};var ctx=_verificationContext(),at=nowISO(),made=[],t00=Date.now();
+  Object.keys(CAPABILITIES).forEach(function(id){if(opts.only&&opts.only.indexOf(id)<0)return;
+    _verificationSuites(id).forEach(function(S){var t0=Date.now(),r={passed:false},failures=[];
+      try{r=S.run()||{passed:false};}catch(e){failures.push(String(e&&e.message||e).slice(0,160));}
+      if(!r.passed&&!failures.length)failures.push(r.why||'the check did not hold');
+      var e={id:'ver-'+_hash(id+'|'+S.suite+'|'+ctx.buildId+'|'+ctx.dataRegime+'|'+at),capabilityId:id,suiteId:S.suite,buildId:ctx.buildId,
+        schemaVersion:ctx.schemaVersion,modelVersions:ctx.modelVersions,referenceVersions:Object.freeze(Object.assign({},ctx.referenceVersions)),
+        dataRegime:ctx.dataRegime,passed:!!r.passed,grade:r.grade||null,durationMs:Date.now()-t0,checks:Object.freeze([S.suite]),
+        failures:Object.freeze(failures),generatedAt:at,expiresAt:addDays(at.slice(0,10),VERIFICATION_EXPIRY_DAYS)};
+      made.push(Object.freeze(e));});});
+  _VERIFICATION_EVIDENCE=_VERIFICATION_EVIDENCE.concat(made).slice(-500);
+  return {status:'ok',generatedAt:at,buildId:ctx.buildId,entries:made.length,passed:made.filter(function(e){return e.passed;}).length,
+    failed:made.filter(function(e){return !e.passed;}).map(function(e){return e.capabilityId+' ('+e.suiteId+')';}),durationMs:Date.now()-t00};}
+/* the latest entry for one capability and suite that still applies: this build, not expired */
+function verificationEvidence(id,suite){var today=todayISO();
+  for(var i=_VERIFICATION_EVIDENCE.length-1;i>=0;i--){var e=_VERIFICATION_EVIDENCE[i];
+    if(e.capabilityId===id&&e.suiteId===suite&&e.buildId===BUILD_ID&&e.expiresAt>=today)return e;}
+  return null;}
+function _verifiedPass(id,suite,evidence){var e=verificationEvidence(id,suite);
+  if(evidence){evidence.contract=e?(e.passed?'holds':'fails'):'not run';evidence.contractRun=e?e.id:null;}
+  return !!(e&&e.passed);}
 function capabilityMatrix(){
   var rows=Object.keys(CAPABILITIES).map(capabilityStatus);
   var byStatus={};
@@ -458,13 +504,18 @@ function capabilityMatrix(){
     registeredButUnimplemented:rows.filter(function(r){return !r.evidence.implemented;}).map(function(r){return r.id;}),
     productionReady:rows.filter(function(r){return r.status==='production-ready';}).map(function(r){return r.id;})
   };
+  var last=_VERIFICATION_EVIDENCE.length?_VERIFICATION_EVIDENCE[_VERIFICATION_EVIDENCE.length-1]:null;
   return {capabilities:rows.length,rows:rows,byStatus:byStatus,detections:detections,cls:'POLICY',
+    verification:{lastRun:last?last.generatedAt:null,buildId:BUILD_ID,current:!!(last&&last.buildId===BUILD_ID&&last.expiresAt>=todayISO()),
+      note:'statuses that need a check are read from the latest verification run (runVerification) for this build; none is computed while the matrix is read'},
     note:'Every status is derived from evidence the build can check \u2014 existence, registry membership, a surfacing action, a maturity grade \u2014 and none is assigned by hand. Nothing is production-ready, because nothing has been experimentally or prospectively validated.'};
 }
 
 var VALIDATED_GRADES=['STATISTICALLY_VALIDATED','EXPERIMENTALLY_VALIDATED','PRODUCTION_PREDICTIVE'];
 function capabilityDerivedGrade(id,c){
-  if(id==='forecast'&&typeof forecastHoldoutValidation==='function'){var h=forecastHoldoutValidation();return h.status==='ok'?h.grade:'OPERATIONAL_ANALYTICAL';}
+  /* the forecast's grade comes from its hold-out validation, which runs backtests: so it is taken from the verification
+     run's record of that validation, not computed while a status is read */
+  if(id==='forecast'){var hv=verificationEvidence(id,'hold-out grade');return hv&&hv.passed?hv.grade:null;}
   /* A capability backed by a registered model takes that model's derived maturity. Nothing else earns a grade. */
   var mid=Object.keys(MODEL_BINDINGS).filter(function(k){return MODEL_BINDINGS[k]===c.fn;})[0];
   if(mid){var m=MODELS.filter(function(x){return x.id===mid;})[0];return m?modelMaturity(m):null;}

@@ -12,7 +12,7 @@ export const GATE_CEILINGS={
   build:180,authority:60,layers:60,maturity:60,dictionary:60,engine:240,test:240,adversarial:60,audit:120,
   conformance:60,governance:60,shipped:120,browser:420,visual:120,persistence:180,spine:60,parity:60,adapt:60,
   integration:60,intelligence:60,external:90,deploy:240,voice:60,direction:60,server:120,timezones:180,connect:60,
-  inputs:60,blackbox:90,ai:60,reproducible:600,perf:120,'cloud:e2e':120,'yields:gate':60,baseline:60,verify:60
+  inputs:60,blackbox:90,ai:60,independent:150,reproducible:600,perf:120,'cloud:e2e':120,'yields:gate':60,baseline:60,verify:60
 };
 export const GATES=Object.keys(GATE_CEILINGS);
 

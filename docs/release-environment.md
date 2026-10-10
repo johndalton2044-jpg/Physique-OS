@@ -20,7 +20,7 @@ gate checks the parts of it that can be checked from the repository (see "What i
 | Operating system | Linux x64 (CI: `ubuntu-latest`). The gates also find Chrome, Chromium or Edge on macOS and Windows, but releases are made on Linux | `.github/workflows/ci.yml` |
 | Food corpus | USDA FoodData Central `fdc-2026-04-30`: 1,107 files, 97.8 MB unpacked; archive `physique-os-food-data.tar.gz`, 26.1 MB | `data/food.lock.json` |
 | Reproducible time | `SOURCE_DATE_EPOCH` (CI: the commit's time; the clean room: 1790000000) | `.github/workflows/ci.yml`, `scripts/clean-room.mjs` |
-| Gates | 36, in the order and under the runtime ceilings in `tests/gates.mjs` | `tests/gates.mjs` |
+| Gates | every gate in `tests/gates.mjs`, in its order and under its runtime ceiling | `tests/gates.mjs` |
 
 ## The food corpus
 
@@ -76,3 +76,15 @@ The deploy gate fails when:
 - the release check does not read the gate list in `tests/gates.mjs`, or a gate in it is not a script.
 
 The gate recorder fails a gate that runs past its ceiling, and records how long each gate took.
+
+## Independent verification
+
+The `independent` gate (`tests/independent.mjs`) checks the application without asking it about itself. It never calls
+the self-test, the capability matrix, the verification run, or any function of the app that reads the store or replays
+the log. It acts only through the screen and recomputes each expectation in the test:
+- the checksum of every shipped file;
+- the build identity, as the hash of `src/`;
+- the persisted observations, read from IndexedDB with the browser's own API;
+- the event log, replayed by a reducer of its own;
+- the weight trend, as the Theil–Sen slope of the persisted weigh-ins;
+- the trend's provenance, whose content hash is recomputed.

@@ -191,6 +191,8 @@ const dom=new JSDOM(fs.readFileSync('dist/index.html','utf8'),{url:'https://phys
     w.fetch=undefined;w.HTMLElement.prototype.scrollIntoView=function(){};}});
 await new Promise(r=>setTimeout(r,1000));
 const w=dom.window;w.loadDemo();
+/* statuses that need a check read the latest verification run; this gate runs one first, as a person opening Internals does */
+w.runVerification();
 /* S2i — REGISTRY IDS ARE UNIQUE (catalogue W-008). In the running app: no array registry holds an id twice, no keyed entry
    names another id, and no registration found its id taken. In the source: no keyed registry is given one key twice (in
    its literal, an Object.assign extension or an assignment), which run time cannot see because the later replaces the

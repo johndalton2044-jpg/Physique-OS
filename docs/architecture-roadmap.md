@@ -4110,3 +4110,55 @@ Self-tests make the sentence disagree with the field, so code that read the sent
 - a stated rate whose basis does not say "entries over".
 
 Each old implementation fails its test. All 36 gates pass (reproducible included); release 24/24; 1,792 self-tests.
+
+## Capability status reads recorded verification evidence (build 6f28264507)
+
+Catalogue doc 2, P0.1 and P0.2. Reading the capability matrix ran the live checks: `infer()` over every model, twice
+(the inference-gateway check 4.3 s, the provenance check 2.5 s), and each capability's own function, about five seconds
+on the demo record every time anything asked for a status. So asking about the system changed what the system was doing,
+and the matrix could not be read often.
+
+- **A verification run.** `runVerification()` runs the checks once and records one immutable entry per capability and
+  suite: live verification, result contract, and the forecast's hold-out grade. Each entry records the build, schema,
+  model versions, reference data and record revision it ran against, whether it passed, what failed, how long it took
+  and when it expires (7 days). Its id is derived from those.
+- **Statuses read it.** `capabilityStatus()` and `capabilityMatrix()` read the latest entry for this build and never
+  execute a model or a check. An entry from another build, or an expired one, is ignored, and the status says "not run".
+  The matrix now takes about 1 ms.
+- **The readers run it first.** The internals sheet runs its five checks when opened, as a recorded run, and shows how
+  long they took. The governance gate, the release check and the baseline each run one before reading statuses.
+
+Checks, each seen to fail:
+- while the matrix is read, 26 functions a status could run are counted, and must be called zero times. A status that ran
+  its check, as the old one did, made 1,229 calls;
+- the matrix must take under 1 s;
+- after a run, a status traces to its entry: this build, the record revision, an expiry seven days on, and frozen;
+- an entry from another build or past its expiry reads as not run. An evidence reader that ignored the build fails this.
+
+The existing "a live infrastructure check can fail" test now breaks the check and runs verification. The quantity-registry
+lookup a status needs (is the output type registered?) is a lookup, not a computation, and is the one call allowed.
+
+## Independent verification gate (build 6f28264507)
+
+Catalogue doc 2, P0.5: the application must be able to be wrong about itself. `tests/independent.mjs` is the 37th gate.
+It never calls the self-test, the capability matrix, the verification run, the governance or maturity reports, or any
+function of the app that reads the store or replays the log. It acts only through the screen (Tools, the demo section,
+Load, confirm) and recomputes every expectation in the test:
+- every file `dist/SHA256SUMS` lists hashes to its checksum, and no shipped file is left out;
+- the build identity in `version.json` and in the page is the hash of `src/`, recomputed;
+- the store, read with the browser's IndexedDB API alone, holds the observations as JSON month shards, and the app's
+  record is exactly what it persisted (1,067 observations on the demo);
+- the event log in the store, replayed by a reducer written in the test (snapshots, additions, corrections, retractions,
+  revocations), gives the same live observations as the persisted record;
+- the weight trend the app reports is the Theil–Sen slope of the persisted weigh-ins' daily means, recomputed (−1.741
+  lb a week over 13 days on the demo);
+- the trend's provenance node is the content hash of exactly the persisted weigh-ins, recomputed with Node's SHA-256.
+
+Seen to fail: a shipped file changed by one byte fails the checksum check, and a trend computed with 7.01 days to the week
+(−1.7437 against −1.7412) fails the recomputation. The provenance check first assumed node ids named single observations;
+they name the input set by its content, so the check now recomputes that hash. Docs that stated a gate count now say
+"every gate in `tests/gates.mjs`", so adding one cannot make them wrong.
+
+The W-003 self-tests wrote their known densities as literals (3,000, 3,300). The audit's own energy scan, which reads the
+self-tests too, reported that as a tolerated P1, in CI and here. The densities are now derived from `ENERGY_PER_LB` in the
+test, so the audit has no findings. 1,796 self-tests pass; the full release record is in progress.

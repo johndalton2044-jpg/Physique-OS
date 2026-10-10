@@ -3023,6 +3023,7 @@
     "modelRegistryAudit"
    ],
    "96-bayes-engine.js": [
+    "_hash",
     "runIdentity"
    ],
    "98-measurement.js": [
@@ -3626,7 +3627,8 @@
     "resolvePrompt"
    ],
    "87-governance.js": [
-    "capabilityStatus"
+    "capabilityStatus",
+    "runVerification"
    ],
    "89-presentation-governance.js": [
     "responsiveSpec",
@@ -5300,6 +5302,7 @@
     "capabilityStatus",
     "assertUniqueRegistryIds",
     "registryIdAudit",
+    "runVerification",
     "capabilityMatrix",
     "capabilityDerivedGrade"
    ],

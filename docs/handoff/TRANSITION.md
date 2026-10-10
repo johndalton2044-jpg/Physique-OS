@@ -38,7 +38,7 @@ npm run -s audit
 node tests/release.mjs --from-results     # must end: 24/24 verification items pass
 ```
 
-- **The gates:** `--all` runs the 36 gates in `tests/gates.mjs` in order, the same list CI and the release check read, and
+- **The gates:** `--all` runs every gate in `tests/gates.mjs` in order, the same list CI and the release check read, and
   records each one even after a failure. A gate that runs past its ceiling there is stopped and recorded as failed.
 
 - **Slow gates:** `test`, `browser`, `shipped`, `timezones` and `reproducible` take about 2–5 minutes each.
@@ -67,7 +67,7 @@ Each item is done only when every common acceptance criterion holds:
 - it has at least one real consumer;
 - it has self-tests with independently computed expectations, including one that was seen to fail;
 - it has a black-box workflow when it changes what a person does on screen;
-- all 36 gates pass;
+- every gate in `tests/gates.mjs` passes;
 - the roadmap entry and the plan table are updated.
 
 ### Stage D — physiology (remaining)

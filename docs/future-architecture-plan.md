@@ -20,7 +20,7 @@ that covers part of the item. **Missing**: nothing yet. Ratings are from the cod
 | 5 | Deterministic model-run identity (§59) | Exists | `runId` on model runs; reproduced across independent loads (visual gate). |
 | 6 | Model lifecycle | Exists | `MODEL_LIFECYCLE_STATES`, promotion and rollback (58-model-competition). |
 | 7 | Self-auditing (§156–158) | Exists | Gates `governance`, `authority`, `layers`, `maturity`, `inputs`, `conformance`. |
-| 8 | Release governance | Exists | Fail-closed build, skipped gate = not passed, release check. CI at the repository root runs the 36 gates of `tests/gates.mjs` under runtime ceilings (a timeout fails); the runtime is pinned in `.nvmrc` and the deploy gate checks it against the lock (catalogue W-001, W-002). |
+| 8 | Release governance | Exists | Fail-closed build, skipped gate = not passed, release check. CI at the repository root runs every gate of `tests/gates.mjs` under runtime ceilings (a timeout fails); the runtime is pinned in `.nvmrc` and the deploy gate checks it against the lock (catalogue W-001, W-002). |
 | 9 | Reproducible food data | Exists | Locked corpus; `reproducible` gate is byte-identical, built from the exact commit (`git archive HEAD`) and recording the runtime; the environment is in `docs/release-environment.md` (catalogue W-031, W-032). |
 | 10 | Production observability | Exists | Server metrics, health, tracing, verified off-host backups. |
 

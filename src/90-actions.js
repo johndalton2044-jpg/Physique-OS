@@ -488,9 +488,12 @@ SHEETS.recoveryLatent=function(){var r=recoveryLatentState();
   if(legacy&&legacy.status==='ok')body+='<div class="prov">The older readiness summary, an average of the same ratings, reads '+esc(String(legacy.score!=null?legacy.score:legacy.label||''))+' \u2014 kept as a summary of the readings, not as the state.</div>';
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 SHEETS.internals=function(){
-  var rows=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'].map(function(id){
+  var ids=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'];
+  /* opening this sheet asks for the checks: they run once, as a recorded verification run, and the rows read its entries */
+  var vr=runVerification({only:ids});
+  var rows=ids.map(function(id){
     var st=capabilityStatus(id),e=st.evidence||{};
-    return uiRow(esc(id),e.verification==='passes'?uiPill('verified','good'):uiPill('check fails','negative'),{sub:'live check of its behaviour, run now'});}).join('');
+    return uiRow(esc(id),e.verification==='passes'?uiPill('verified','good'):uiPill(e.verification==='not run'?'not run':'check fails',e.verification==='not run'?'neutral':'negative'),{sub:'live check of its behaviour, run when this opened ('+vr.durationMs+' ms)'});}).join('');
   var ra=modelRegistryAudit();
   rows+=uiRow('Registered models',ra.executable+' of '+MODELS.length+' executable',{sub:'every model resolves through the gateway with version, provenance and uncertainty'});
   var t=infer({modelId:'weight_trend'});
