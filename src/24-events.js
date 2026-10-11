@@ -209,6 +209,13 @@ var EVENT_TYPES={
   'archive.recorded':{apply:function(db,e){(db.archive=db.archive||[]).push(JSON.parse(JSON.stringify(e.data)));}},
   'profile.changed':{apply:function(db,e){db.profile=Object.assign(db.profile||{},JSON.parse(JSON.stringify(e.data)));}},
   'settings.changed':{apply:function(db,e){Object.keys(e.data||{}).forEach(function(k){db.settings[k]=e.data[k];});}},
+  /* progress photos and their encrypted images (catalogue W-004, option B): the metadata and the manifest travel as events;
+     the images never do (65-attachments.js) */
+  'photo.added':{apply:function(db,e){db.settings.photos=(db.settings.photos||[]).filter(function(p){return p.id!==e.data.id;}).concat([JSON.parse(JSON.stringify(e.data))]);}},
+  'photo.linked':{apply:function(db,e){db.settings.photos=(db.settings.photos||[]).map(function(p){return p.id===e.data.id?Object.assign({},p,{attachmentId:e.data.attachmentId,hash:e.data.hash,encrypted:true}):p;});}},
+  'photo.removed':{apply:function(db,e){db.settings.photos=(db.settings.photos||[]).map(function(p){return p.id===e.data.id?Object.assign({},p,{removedAt:e.data.at}):p;});}},
+  'attachment.recorded':{apply:function(db,e){db.attachments=(db.attachments||[]).filter(function(a){return a.id!==e.data.id;});db.attachments.push(JSON.parse(JSON.stringify(e.data)));}},
+  'attachment.removed':{apply:function(db,e){db.attachments=(db.attachments||[]).map(function(a){return a.id===e.data.id?Object.assign({},a,{removedAt:e.data.at,removedReason:e.data.reason||'removed'}):a;});}},
   'inventory.changed':{apply:function(db,e){
     db.settings.inventory=db.settings.inventory||[];
     if(e.data.op==='add')db.settings.inventory.push(JSON.parse(JSON.stringify(e.data.item)));

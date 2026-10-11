@@ -300,7 +300,10 @@ function cloudSync(opts){
       lastReset:reset?{at:nowISO(),resent:sent}:((DB.settings.cloud||{}).lastReset||null)});
     save('cloud:sync');_cloud.status='synced';_cloud.busy=false;
     if(typeof auditAppend==='function')auditAppend('cloud.sync',{sent:sent,received:received,conflicts:conflicts,serverReset:reset});
-    return {ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq,serverReset:reset};
+    var out={ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq,serverReset:reset};
+    /* then the photo images (W-004 option B): uploaded, retried, deleted or fetched in their own channel, after the events */
+    return (typeof cloudSyncAttachments==='function'?cloudSyncAttachments():Promise.resolve(null)).then(function(a){if(a)out.attachments=a;return out;},
+      function(e){_q(e,'P2');out.attachments={error:String(e&&e.message||e)};return out;});
   }).catch(function(e){
     clearTimeout(waking);_cloud.busy=false;_cloud.status='error';
     _cloud.lastError=e&&e.status===404&&/vault/.test(String(e.message))?'The server no longer has this vault \u2014 it probably lost its data (free hosting wipes files on restart). Join again from Tools \u2192 Cloud sync, then sync to re-send this device\u2019s record.':String(e&&e.message||e);

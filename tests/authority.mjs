@@ -9,7 +9,7 @@ import fs from 'node:fs';import vm from 'node:vm';
 const ctx={console};vm.createContext(ctx);vm.runInContext(fs.readFileSync('src/23-entity-contracts.js','utf8'),ctx);const C=ctx.ENTITY_CONTRACTS;
 const SYSTEM=new Set(['adoptMergedEvents','replayEvents','applyEventLog','migrate','loadDB','hydrate','action:data.restoreApply','action:data.reset','resetAll','wipeAll']);
 const EXCLUDE=/95-selftest|70-demo|71-fixtures/;
-const STORES=['profile','observations','sessions','phases','plans','foodLogs','executions','responses','cycles','decisions','experiments','interventions','negatives','notes','recipes','foods','predictions','snapshots','archive'];
+const STORES=['profile','observations','sessions','phases','plans','foodLogs','executions','responses','cycles','decisions','experiments','interventions','negatives','notes','recipes','foods','predictions','snapshots','archive','attachments'];
 const writers={};
 for(const f of fs.readdirSync('src').filter(f=>f.endsWith('.js')&&!EXCLUDE.test(f)).sort()){let at='(top level)';
   fs.readFileSync('src/'+f,'utf8').split('\n').forEach((l,i)=>{const fm=/^function ([\w$]+)\(/.exec(l),am=/^registerAction\('([\w.]+)'/.exec(l);if(fm)at=fm[1];if(am)at='action:'+am[1];

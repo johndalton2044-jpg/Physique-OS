@@ -19,7 +19,7 @@
    sourcing. Full event sourcing is the right end state (see docs/architecture-roadmap.md) but it is a
    rewrite of every mutator, not a layer that can be bolted underneath one.
    ============================================================================ */
-var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses','cycles','exposures','outcomes'];
+var PERSIST_COLLECTIONS=['observations','sessions','foodLogs','foods','recipes','phases','decisions','interventions','predictions','experiments','negatives','snapshots','archive','notes','plans','executions','environment','responses','cycles','exposures','outcomes','attachments'];
 var PERSIST_SCALARS=['schemaVersion','appVersion','revision','instance','createdAt','profile','settings','ledger','models','demo'];
 /* Save labels are already semantic. This maps them to the collections they can possibly have touched;
    anything unmatched falls back to writing everything, so a new label is slow rather than wrong. */
@@ -34,6 +34,7 @@ var LABEL_COLLECTIONS={
   prediction:['predictions'],'prediction:score':['predictions'],experiment:['experiments','interventions'],responses:['responses','exposures','outcomes'],cycles:['cycles'],
   'experiment:evaluate':['experiments','negatives','interventions'],negative:['negatives'],
   snapshot:['snapshots'],archive:['archive','phases'],note:['notes'],
+  photo:['attachments'],'photo:delete':['attachments'],
   program:[],settings:[],profile:[],focus:[],'device-test':[],'food-db-version':[],daily:['snapshots'],
   'bulk:retract':['observations','foodLogs'],'bulk:flag':['observations'],'bulk:meal':['foodLogs'],'bulk:copy':['foodLogs','observations']
 };
@@ -76,6 +77,11 @@ function mergeRecordCollections(incoming){
       DB[k].push(x);n++;if(x.id)have[x.id]=1;if(k==='snapshots'&&x.date)have['d:'+x.date]=1;});
     if(n)byCollection[k]=n;added+=n;
   });
+  /* progress photos are longitudinal records held in the settings: merged by id like a collection, or a merge restore
+     brought back their images with nothing to show them by */
+  var ph=incoming&&incoming.settings&&Array.isArray(incoming.settings.photos)?incoming.settings.photos:[];
+  if(ph.length){var hp={};(DB.settings.photos||[]).forEach(function(p){hp[p.id]=1;});var np=ph.filter(function(p){return p&&p.id&&!hp[p.id];});
+    if(np.length){DB.settings.photos=(DB.settings.photos||[]).concat(np);byCollection.photos=np.length;added+=np.length;}}
   return {added:added,byCollection:byCollection};
 }
 function _scalarBlob(){var o={};PERSIST_SCALARS.forEach(function(k){o[k]=DB[k];});return o;}
@@ -282,12 +288,14 @@ function _deriveKey(passphrase,salt){
 }
 function _b64(buf){var b='';var a=new Uint8Array(buf);for(var i=0;i<a.length;i++)b+=String.fromCharCode(a[i]);return btoa(b);}
 function _unb64(s){var bin=atob(s);var a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
-function encryptBackup(passphrase){
+function encryptBackup(passphrase,opts){opts=opts||{};
   if(!_cryptoOk())return Promise.reject(new Error('encryption needs the Web Crypto API, which requires a secure context (https or localhost)'));
   if(!passphrase||passphrase.length<8)return Promise.reject(new Error('use a passphrase of at least 8 characters'));
   var salt=crypto.getRandomValues(new Uint8Array(16));
   var iv=crypto.getRandomValues(new Uint8Array(12));
-  var plain=new TextEncoder().encode(serializeDB());
+  /* the photo images ride inside the ciphertext, beside the record (W-004 option B); never in a plain backup */
+  var doc=serializeDB();if(opts.attachments&&opts.attachments.length){var o=JSON.parse(doc);o.backupAttachments=opts.attachments;doc=JSON.stringify(o);}
+  var plain=new TextEncoder().encode(doc);
   return _deriveKey(passphrase,salt).then(function(key){
     return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,plain);
   }).then(function(cipher){

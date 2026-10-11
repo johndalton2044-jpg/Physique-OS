@@ -127,6 +127,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "nowISO"
    ],
    "20-schema-storage.js": [
@@ -142,6 +143,9 @@
     "deviceId",
     "mergeEvents",
     "adoptMergedEvents"
+   ],
+   "65-attachments.js": [
+    "cloudSyncAttachments"
    ],
    "82-views-a.js": [
     "renderAll"
@@ -1723,6 +1727,36 @@
    ]
   }
  },
+ "65-attachments.js": {
+  "layer": "engine",
+  "calls": {
+   "10-core.js": [
+    "_q",
+    "uid",
+    "nowISO"
+   ],
+   "20-schema-storage.js": [
+    "idbGet",
+    "idbSet",
+    "idbDel",
+    "idbKeys",
+    "save"
+   ],
+   "22-persistence.js": [
+    "auditAppend"
+   ],
+   "24-events.js": [
+    "emitEvent"
+   ],
+   "28-cloud.js": [
+    "cloudLocked",
+    "_api"
+   ],
+   "65-import.js": [
+    "linkPhotoAttachment"
+   ]
+  }
+ },
  "65-import.js": {
   "layer": "engine",
   "calls": {
@@ -1735,6 +1769,7 @@
     "addDays",
     "daysBetween",
     "isValidISO",
+    "shortDate",
     "ageLabel",
     "num",
     "round",
@@ -1775,6 +1810,12 @@
    ],
    "55-generate.js": [
     "programStructure"
+   ],
+   "65-attachments.js": [
+    "attachmentsSupported",
+    "putAttachment",
+    "readAttachment",
+    "removeAttachment"
    ],
    "91-inference.js": [
     "infer"
@@ -2466,6 +2507,9 @@
     "weeklyMuscleSets",
     "movementCoverage"
    ],
+   "65-import.js": [
+    "livePhotos"
+   ],
    "67-program-edit.js": [
     "programVersions"
    ],
@@ -2717,6 +2761,7 @@
    ],
    "90-actions.js": [
     "backupPhotoStatement",
+    "photoDurabilitySummary",
     "applyToolsOrder"
    ],
    "90-ai-ui.js": [
@@ -3300,6 +3345,7 @@
    "22-persistence.js": [
     "mergeRecordCollections",
     "writeCheckpoint",
+    "auditAppend",
     "storageManager",
     "storageEstimate",
     "clearFoodCache",
@@ -3528,12 +3574,20 @@
     "ladderFor",
     "exerciseOntology"
    ],
+   "65-attachments.js": [
+    "_attState",
+    "attachmentsForBackup",
+    "restoreAttachmentsFromBackup",
+    "visualHistoryStatement",
+    "eraseAllAttachments"
+   ],
    "65-import.js": [
     "createAppleHealthParser",
     "parseGenericCSV",
     "importObservations",
     "photoMeta",
     "addPhoto",
+    "livePhotos",
     "loadPhoto",
     "deletePhoto",
     "photoPosePairs",
@@ -5124,6 +5178,14 @@
     "bodyCompositionState",
     "bodyCompositionByMethod"
    ],
+   "65-attachments.js": [
+    "_dataUrlBytes",
+    "_bytesDataUrl",
+    "recordAttachment",
+    "retractAttachment",
+    "attachmentAuditOf",
+    "visualHistoryStatement"
+   ],
    "65-import.js": [
     "normalizeImported",
     "reconcileDay",
@@ -5132,6 +5194,9 @@
     "parseGenericCSV",
     "importObservations",
     "barcodeSupported",
+    "photoMeta",
+    "livePhotos",
+    "deletePhoto",
     "notificationState",
     "exportArtifact",
     "importArtifact",
@@ -5996,6 +6061,9 @@
    ],
    "62-food.js": [
     "loadFoodManifest"
+   ],
+   "65-attachments.js": [
+    "_attState"
    ],
    "66-external.js": [
     "startWeatherAuto"

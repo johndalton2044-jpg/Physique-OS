@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "0dbd06b359",
+ "build": "6da68267d3",
  "models": [
   {
    "id": "adherence",
@@ -555,6 +555,16 @@
   },
   {
    "entity": "Exposure",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "Attachment",
+   "status": "implemented",
+   "horizon": null
+  },
+  {
+   "entity": "ProgressPhoto",
    "status": "implemented",
    "horizon": null
   },
@@ -2884,6 +2894,8 @@
  ],
  "events": [
   "archive.recorded",
+  "attachment.recorded",
+  "attachment.removed",
   "copilot.authorized",
   "cycle.recorded",
   "decision.applied",
@@ -2915,6 +2927,9 @@
   "phase.ended",
   "phase.started",
   "phase.targetsChanged",
+  "photo.added",
+  "photo.linked",
+  "photo.removed",
   "plan.created",
   "prediction.scored",
   "prediction.stamped",

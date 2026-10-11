@@ -15,6 +15,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 |---|---|---|---|---|---|---|---|---|---|
 | Local persistence (IndexedDB, incremental writes) | validated | — | real data path | — | surfaced | local | independent | — | gate persistence |
 | Backup and restore | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-010 |
+| Progress photos: encrypted on the device, copied encrypted to the vault, carried by encrypted backups | validated | — | real data path | — | workflow-tested | server | independent | — | workflow V-016, gate cloud:e2e, gate server, gate persistence |
 | Erase everything | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-009 |
 | Food logging with portions | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-002 |
 | Training sessions and sets | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-003 |

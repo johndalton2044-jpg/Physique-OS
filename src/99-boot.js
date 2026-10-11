@@ -91,6 +91,8 @@ function boot(){
       _reportLostSaves(_bootMetaRev,_bootLoadedRev);_release();firstRun();
     });
   }).catch(function(e){_IDB_RECONCILING=false;_q(e,'P1');firstRun();}).then(function(){_reconcileDone();},function(){_reconcileDone();});
+  /* photos stored before attachments move into the encrypted store once the record is reconciled (W-004 option B) */
+  _RECONCILED.then(function(){return typeof migrateLegacyPhotos==='function'?_attState().then(migrateLegacyPhotos):null;}).then(function(r){if(r&&r.moved)renderAll();}).catch(function(e){_q(e,'P2');});
   document.documentElement.setAttribute('data-focus',focusMode()?'on':'off');
   try{if(typeof watchPanelLevels==='function')watchPanelLevels();}catch(e){_q(e,'P2');}
   try{applyLayout();window.addEventListener('resize',function(){applyLayout();},{passive:true});}catch(e){_q(e,'P3');}

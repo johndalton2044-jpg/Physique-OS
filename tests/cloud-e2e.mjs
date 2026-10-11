@@ -92,6 +92,64 @@ const ledgerIds=()=>fs.readFileSync(DATA+'/vaults/'+created.vaultId+'/events.ndj
   expect('a device that lost its sent list re-sends without adding rows',resent.sent===0&&ledgerIds().length===rowsBefore,
     JSON.stringify({sent:resent.sent,rows:ledgerIds().length,before:rowsBefore}));}
 
+console.log('--- progress photos: encrypted here, copied encrypted to the vault, restored on another device (W-004 option B) ---');
+/* A photo of about 400 KB (three parts) made here, byte by byte. Every expectation is about those bytes: the same bytes
+   come back on another device, the server's copy does not contain them, and a changed byte is refused. */
+{const JPEG=Buffer.concat([Buffer.from([0xFF,0xD8,0xFF,0xE0,0x00,0x10]),Buffer.from('JFIF-e2e-photo-'+'x'.repeat(400000)),Buffer.from([0xFF,0xD9])]);
+  const asUrl=b=>'data:image/jpeg;base64,'+b.toString('base64');
+  const added=await A.addPhoto(new A.File([JPEG],'front.jpg',{type:'image/jpeg'}),{view:'front',lighting:'mixed'});
+  expect('A stores the photo as an encrypted attachment',!!added.attachmentId&&added.encrypted===true,JSON.stringify(added));
+  const vf=await A.verifyAttachment(added.attachmentId);
+  expect('what A holds is ciphertext that decrypts to the hash on record, and a changed byte is refused',!!(vf.ciphertext&&vf.decrypts&&vf.hashMatches&&vf.tamperRefused),JSON.stringify(vf));
+  expect('and it reads back as exactly the bytes taken',(await A.loadPhoto(added.id))===asUrl(JPEG));
+  let dup=null;await A.addPhoto(new A.File([JPEG],'again.jpg',{type:'image/jpeg'}),{view:'front'}).catch(e=>{dup=e.message;});
+  expect('the same photo again is refused as a duplicate',/already in your record/.test(dup||''),dup);
+  /* failed upload recovery: the first attempt fails at the network; the failure is kept with its attempt count, and the retry sends it */
+  const realFetch=A.fetch;let failOnce=true;A.fetch=(u,o)=>{if(failOnce&&/attachments\/part/.test(String(u))){failOnce=false;return Promise.reject(new Error('network down'));}return realFetch(u,o);};
+  const s1=await A.cloudSync();A.fetch=realFetch;
+  const st1=A.attachmentRemoteState(added.attachmentId);
+  expect('an upload that fails is kept as failed, with its attempt and a time to retry, not lost',s1.attachments&&s1.attachments.failed===1&&st1.state==='failed'&&st1.attempts===1&&st1.nextTryAt>Date.now(),JSON.stringify({a:s1.attachments,st1}));
+  const s2=await A.cloudSyncAttachments({force:true});
+  expect('the retry uploads it',s2.uploaded===1&&A.attachmentRemoteState(added.attachmentId).state==='uploaded',JSON.stringify(s2));
+  const adir=DATA+'/vaults/'+created.vaultId+'/attachments/'+added.attachmentId,held=fs.readdirSync(adir).map(f=>fs.readFileSync(adir+'/'+f,'utf8')).join('');
+  expect('the vault holds the image in three parts, ciphertext only',fs.readdirSync(adir).length===3&&!/JFIF|e2e-photo/.test(held)&&!held.includes(JPEG.subarray(6,60).toString('base64')),fs.readdirSync(adir).join());
+  const sb=await B.cloudSync(),bimg=await B.loadPhoto(added.id);
+  expect('B receives the photo and fetches its image: the same bytes',sb.attachments&&sb.attachments.downloaded===1&&bimg===asUrl(JPEG),JSON.stringify(sb.attachments));
+  /* a lost phone: a new device with only the phrase, authorised by A */
+  const C=mk('C');globalThis.__windows.push(C);await new Promise(r=>setTimeout(r,600));
+  C.DB=C.emptyDB();C._EVENTS.length=0;C.DB.settings.cloud={url:URL_};C.DB.settings.deviceId='device-C';C._memoInvalidate();
+  await C.cloudUnlock(PHRASE);const cKeys=await C.deviceKeyPair();await A.cloudAuthenticate();
+  await fetch(URL_+'/v1/vault/device',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+A._cloud.token},body:JSON.stringify({deviceId:'device-C',devicePublicKey:cKeys.publicPem})});
+  await C.cloudSync();
+  expect('a lost device: a new one with the phrase restores the photo and its image',C.livePhotos().some(p=>p.id===added.id)&&(await C.loadPhoto(added.id))===asUrl(JPEG));
+  /* retraction reaches the vault and the other devices */
+  A.deletePhoto(added.id);await new Promise(r=>setTimeout(r,50));await A.cloudSync();await B.cloudSync();
+  const ab=await B.attachmentAudit();
+  expect('removing the photo on A deletes its image from the vault and from B, and B keeps it marked removed',!fs.existsSync(adir)&&!B.livePhotos().some(p=>p.id===added.id)&&B.DB.settings.photos.some(p=>p.id===added.id&&p.removedAt)&&ab.stored===0&&ab.orphans.length===1,JSON.stringify(ab));
+  /* B still held the bytes of the removed photo: the audit calls them an orphan, and removing orphans clears them */
+  expect('an image left without a live record is reported as an orphan and can be cleared',(await B.removeOrphanAttachments()).removed===1&&(await B.attachmentAudit()).orphans.length===0);
+  /* an encrypted backup carries the images; a restore checks each one, and one that was altered is named, not stored */
+  const P2=Buffer.concat([Buffer.from([0xFF,0xD8,0xFF]),Buffer.from('second-photo-'+'y'.repeat(2000))]),P3=Buffer.concat([Buffer.from([0xFF,0xD8,0xFF]),Buffer.from('third-photo-'+'z'.repeat(2000))]);
+  const r2=await A.addPhoto(new A.File([P2],'p2.jpg',{type:'image/jpeg'}),{view:'side'}),r3=await A.addPhoto(new A.File([P3],'p3.jpg',{type:'image/jpeg'}),{view:'back'});
+  const B1=await A.attachmentsForBackup();
+  expect('the backup gathers both live images, and no others',B1.items.length===2&&B1.complete&&B1.items.map(i=>i.id).sort().join()===[r2.attachmentId,r3.attachmentId].sort().join());
+  const env=await A.encryptBackup('backup passphrase one',{attachments:B1.items});
+  expect('the encrypted backup does not carry the images in the clear',!JSON.stringify(env).includes(P2.subarray(3,40).toString('base64'))&&!/second-photo/.test(JSON.stringify(env)));
+  const D=mk('D');globalThis.__windows.push(D);await new Promise(r=>setTimeout(r,600));D.DB=D.emptyDB();D._EVENTS.length=0;D._memoInvalidate();
+  const plain=await D.decryptBackup(env,'backup passphrase one');const atts=plain.backupAttachments;delete plain.backupAttachments;
+  D.DB=D.migrate(plain).db;D._memoInvalidate();
+  const bad=atts.map(x=>x.id===r3.attachmentId?Object.assign({},x,{data:Buffer.from('altered').toString('base64')}):x);
+  const rr=await D.restoreAttachmentsFromBackup(bad);
+  expect('a restore stores each image that matches its record and names the one that does not: a partial restore, reported',rr.restored===1&&rr.failed.length===1&&rr.failed[0].id===r3.attachmentId&&/does not match/.test(rr.failed[0].why),JSON.stringify(rr));
+  expect('the restored image is the one taken',(await D.loadPhoto(r2.id))===asUrl(P2)&&(await D.loadPhoto(r3.id))===null);
+  const da=await D.attachmentAudit();
+  expect('and the audit says which image the restore could not bring back',da.missing.length===1&&da.missing[0].id===r3.attachmentId,JSON.stringify(da));
+  /* quota: when the browser reports no room, a new image is refused rather than half-written */
+  Object.defineProperty(D.navigator,'storage',{value:{estimate:()=>Promise.resolve({usage:999000,quota:1000000})},configurable:true});
+  let qe=null;await D.putAttachment('photo',asUrl(Buffer.concat([Buffer.from([0xFF,0xD8,0xFF]),Buffer.from('q'.repeat(5000))])),null).catch(e=>{qe=e.message;});
+  expect('with too little storage left, a new image is refused and says how much is free and needed',/not enough storage/.test(qe||'')&&/KB free/.test(qe||''),qe);
+  A.deletePhoto(r2.id);A.deletePhoto(r3.id);await new Promise(r=>setTimeout(r,50));await A.cloudSync();}
+
 console.log('--- a large record (a restored backup, the demo, a compaction) syncs in parts ---');
 /* The restore restarts the log from one snapshot event holding the whole record, larger than the server takes for one
    event, so before parts it failed every sync. A server that moves a part cannot make it decrypt in its new place. */

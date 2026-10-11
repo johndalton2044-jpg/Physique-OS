@@ -37,7 +37,7 @@ decision only the person can make), **deferred** (later in the catalogues' own o
 
 | Item | Status | What and where |
 |---|---|---|
-| W-004 photo durability | decided (A), stated, f1ecf89ed2 | Photos are local-only by design; every backup and the Data card now say a backup holds no photo images. Option B (encrypted attachment store, off-device copy) is the person's decision. |
+| W-004 photo durability | done (option B), 6da68267d3 | Each image an encrypted attachment with a content hash and a synced manifest; an encrypted copy in the vault (restores a lost device), carried by encrypted backups; retraction, orphans, duplicates, failed uploads, partial restore and quota handled; every backup says whether it holds the complete visual history. Black-box workflow V-016. |
 | W-005 sync idempotency | done, f1ecf89ed2 | Second device, replayed batch, partly stored retry; the ledger stays set-like and ordered. |
 | W-006 one persistence authority | done, f1ecf89ed2 | The record's shape must equal `PERSIST_COLLECTIONS` and `PERSIST_SCALARS`; every collection was already walked through the whole lifecycle. |
 | W-007 event/document boundary | in place | The engine gate checks every save against its own log; the independent gate replays the log with its own reducer. |

@@ -1,23 +1,25 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-015). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-016). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
        published e1RM formula) \u2014 never a value computed by calling the app's own functions (audit rule 10);
      \u2022 reads results back from the screen; the stored record is read only as a second witness.
    Each workflow starts from a fresh, empty app. */
-import fs from 'node:fs';import {JSDOM,VirtualConsole} from 'jsdom';
+import fs from 'node:fs';import nodeCrypto from 'node:crypto';import {JSDOM,VirtualConsole} from 'jsdom';
 const HTML=fs.readFileSync('dist/index.html','utf8');let failed=0,passed=0;
 const line=(ok,msg,detail)=>{ok?passed++:failed++;console.log('  '+(ok?'pass':'FAIL')+'  '+msg+(!ok&&detail?'  \u2014 '+detail:''));};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 /* jsdom cannot navigate: a download (a link clicked to a blob) reports “Not implemented: navigation”. That is this test
    environment's limit, not the app's error; every other uncaught error still fails the workflow. */
-const ENV_LIMIT=/^Not implemented: navigation/;
+const ENV_LIMIT=/^Not implemented: (navigation|HTMLCanvasElement's getContext)/;   /* nor draw on a canvas: the app then keeps a photo at its own size */
 /* the clock is a system boundary: a test may set it (time travel needs knowledge time, not just a date field) */
 let CLOCK_OFFSET=0;
-async function fresh(){CLOCK_OFFSET=0;const errors=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>{const m=String(e&&e.message||e);if(!ENV_LIMIT.test(m))errors.push(m);});
+/* jsdom has no Web Crypto; a real browser in a secure context does. A workflow that needs it (encrypted photos) is given
+   Node's, the same API, as the cloud:e2e gate does. */
+async function fresh(opts){opts=opts||{};CLOCK_OFFSET=0;const errors=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>{const m=String(e&&e.message||e);if(!ENV_LIMIT.test(m))errors.push(m);});
   const downloads=[];
   const dom=new JSDOM(HTML,{url:'https://physique.local/app/index.html',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
-    w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.fetch=undefined;w.HTMLElement.prototype.scrollIntoView=function(){};
+    w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.fetch=undefined;if(opts.webcrypto)Object.defineProperty(w,'crypto',{value:nodeCrypto.webcrypto,configurable:true,writable:true});w.HTMLElement.prototype.scrollIntoView=function(){};
     const RD=w.Date;class ClockDate extends RD{constructor(...a){if(a.length)super(...a);else super(RD.now()+CLOCK_OFFSET);}static now(){return RD.now()+CLOCK_OFFSET;}}w.Date=ClockDate;
     /* the system boundary: a download is captured instead of saved */
     w.URL.createObjectURL=b=>{downloads.push(b);return 'blob:captured-'+downloads.length;};w.URL.revokeObjectURL=()=>{};}});
@@ -51,7 +53,7 @@ async function logAs(ui,type,value,field){ui.press('log.open');await wait(40);co
    for Insightful) */
 async function useLevel(ui,level){ui.tab('tools');await ui.until('details[data-fold="tools-display"] summary');ui.expand('tools-display');await ui.until('[data-act="settings.detail"][data-arg="'+level+'"]');ui.press('settings.detail',level);
   await ui.waitFor(()=>ui.d.documentElement.getAttribute('data-detail')===level&&/btn-primary/.test(ui.d.querySelector('[data-act="settings.detail"][data-arg="'+level+'"]').className),'the '+level+' level to apply');}
-const run=async(name,fn)=>{let ui;try{ui=await fresh();await fn(ui);}catch(e){line(false,name,e.message);}finally{if(ui){if(ui.errors.length)line(false,name+': no uncaught errors',ui.errors.slice(0,2).join(' | '));ui.close();}}};
+const run=async(name,fn,opts)=>{let ui;try{ui=await fresh(opts);await fn(ui);}catch(e){line(false,name,e.message);}finally{if(ui){if(ui.errors.length)line(false,name+': no uncaught errors',ui.errors.slice(0,2).join(' | '));ui.close();}}};
 
 /* V-002 NUTRITION: a food \u2192 a portion \u2192 the day's total */
 await run('V-002 nutrition',async ui=>{
@@ -214,6 +216,46 @@ await run('V-015 explanation levels',async ui=>{
   line(dev.items.every(i=>/\[(OBSERVED|ASSOCIATED|RESPONSIVE|CAUSALLY_SUPPORTED|PREDICTIVE)/.test(i.text)),'V-015 at Developer each reason names its epistemic class',dev.items.map(i=>i.text.slice(-60)).join(' | ').slice(0,240));
   line(dev.rules>0&&/POLICY/.test(dev.ruleText),'V-015 at Developer the rules applied are shown as policies, apart from the evidence',dev.ruleText.slice(0,200));
 });
+
+/* V-016 PHOTO DURABILITY (catalogue W-004, option B). A progress photo is added through the photo vault's real file input,
+   an encrypted backup is made with a passphrase typed into the real prompt, everything is erased, and the encrypted
+   backup is restored through the real restore input with the same passphrase. The photo is made here, byte by byte, so
+   the expectation is those bytes: the image shown after the restore is exactly what was taken, the backup carries no
+   image in the clear, and the screen and the backup's own header say it held the complete visual history. */
+await run('V-016 photo durability',async ui=>{
+  const BYTES=new Uint8Array([0xFF,0xD8,0xFF,0xE0].concat(Array.from('v016-progress-photo-'.repeat(150),ch=>ch.charCodeAt(0)),[0xFF,0xD9]));
+  const URL_EXPECTED='data:image/jpeg;base64,'+Buffer.from(BYTES).toString('base64'),PASS='v016 passphrase here';
+  const photoOnScreen=()=>{const i=ui.d.querySelector('#editBackdrop img[data-photo]');return i&&i.getAttribute('src');};
+  ui.tab('body');await ui.until('[data-act="nav.photos"]');ui.press('nav.photos');await ui.until('#photoLib');
+  const inp=ui.d.getElementById('photoLib');Object.defineProperty(inp,'files',{value:[new ui.w.File([BYTES],'front.jpg',{type:'image/jpeg'})],configurable:true});inp.dispatchEvent(new ui.w.Event('change',{bubbles:true}));
+  await ui.waitFor(()=>photoOnScreen()===URL_EXPECTED,'the photo to show in the vault');
+  line(photoOnScreen()===URL_EXPECTED,'V-016 the photo vault shows exactly the photo taken');
+  await ui.waitFor(()=>/encrypted/.test(ui.text('#editBackdrop [data-durability]')),'the photo to say where its image is');
+  line(/encrypted/.test(ui.text('#editBackdrop [data-durability]')),'V-016 the photo says its image is encrypted on this device',ui.text('#editBackdrop [data-durability]'));
+  ui.press('edit.close',null,'#editBackdrop');await wait(60);
+  ui.tab('tools');await ui.until('details[data-fold="tools-data"] summary');ui.expand('tools-data');await ui.until('[data-photo-statement]');
+  const st=ui.text('[data-photo-statement]');
+  line(/1 progress photo, not the images/.test(st)&&/1 of 1 photo images are encrypted on this device/.test(st),'V-016 the Data card says a plain backup holds no image, and where the image is',st);
+  const n0=ui.downloads.length;ui.press('data.backupEncrypted');
+  await ui.until('#promptBackdrop.show');ui.type('promptInput',PASS);ui.press('prompt.ok');
+  await ui.waitFor(()=>ui.downloads.length===n0+1,'the encrypted backup to be offered',30000);
+  const envText=await ui.readDownload(),env=JSON.parse(envText);
+  line(env.format==='physique-os-encrypted-backup'&&env.photos&&env.photos.completeVisualHistory===true&&env.photos.imagesIncluded===1&&/all 1 progress photo/.test(env.photos.statement),'V-016 the encrypted backup says it holds the complete visual history',JSON.stringify(env.photos));
+  line(!envText.includes(Buffer.from(BYTES.subarray(4,64)).toString('base64').slice(0,40))&&!/v016-progress-photo/.test(envText),'V-016 and it carries no image in the clear');
+  ui.expand('tools-demo');await ui.until('[data-act="demo.reset"]');ui.press('demo.reset');await wait(60);ui.d.getElementById('confirmOk').click();await wait(200);
+  await ui.waitFor(()=>!(ui.w.DB.settings.photos||[]).length&&!Object.keys(ui.w._ATT_MEM).some(k=>/^att:/.test(k)),'the erase to finish');
+  line(!(ui.w.DB.settings.photos||[]).length&&!Object.keys(ui.w._ATT_MEM).some(k=>/^att:/.test(k)),'V-016 second witness: erasing everything removed the photo and deleted its image');
+  ui.tab('tools');await ui.until('details[data-fold="tools-data"] summary');ui.expand('tools-data');await ui.until('#restoreFile');
+  const rf=ui.d.getElementById('restoreFile');Object.defineProperty(rf,'files',{value:[new ui.w.File([envText],'backup.encrypted.json',{type:'application/json'})],configurable:true});rf.dispatchEvent(new ui.w.Event('change',{bubbles:true}));
+  await ui.until('#promptBackdrop.show');ui.type('promptInput',PASS);ui.press('prompt.ok');
+  await ui.until('#editBackdrop [data-act="data.restoreApply"]',30000);
+  line(/1 \(1 with images\)/.test(ui.text('#editBackdrop')),'V-016 the restore preview says the backup holds 1 photo with its image',ui.text('#editBackdrop').slice(0,300));
+  ui.press('data.restoreApply',null,'#editBackdrop');
+  await ui.waitFor(()=>(ui.w.DB.settings.photos||[]).length===1&&Object.keys(ui.w._ATT_MEM).some(k=>/^att:/.test(k)),'the photo and its image to be restored');
+  ui.tab('body');await ui.until('[data-act="nav.photos"]');ui.press('nav.photos');
+  await ui.waitFor(()=>photoOnScreen()===URL_EXPECTED,'the restored image to show',15000);
+  line(photoOnScreen()===URL_EXPECTED,'V-016 after restoring the encrypted backup, the photo shows with exactly its image');
+},{webcrypto:true});
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

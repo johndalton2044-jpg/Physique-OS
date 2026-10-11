@@ -4390,3 +4390,71 @@ figure: plain sentences at Casual, and each claim's epistemic class and the rule
 capability `structured-explanation` is rated validated on that workflow.
 
 All 37 gates pass (reproducible included); release 24/24; 1,853 self-tests.
+
+## Progress photos, durable and encrypted (build 6da68267d3)
+
+Catalogue W-004, option B, chosen by the person: photos are longitudinal records and need encrypted durability. Before
+this, an image lived only in this browser's database, in the clear. Nothing synced it, and no backup carried it, so a
+lost or cleared device lost the visual history, and erasing everything left the images behind. Now each image is an
+attachment (`src/65-attachments.js`), kept apart from the record and from every event:
+- **Stored encrypted, by its content hash.** Each image is hashed (SHA-256) and encrypted with AES-GCM under a key made
+  on this device. The key is not extractable and is kept beside the bytes, and the attachment id is bound into the
+  ciphertext. Every read decrypts and checks the hash, so an altered image is refused, not shown.
+- **A manifest in the record.** `DB.attachments` is a new persisted collection, owned by the new `Attachment` contract,
+  with events `attachment.recorded` and `attachment.removed`. Each entry holds the attachment's id, content hash, size,
+  type, what it belongs to, when it was made and when it was retracted. Photo metadata gets events of its own
+  (`photo.added`, `photo.linked`, `photo.removed`; contract `ProgressPhoto`), so photos reach every device of a vault.
+  Before this, photos never synced at all.
+- **Retraction, not deletion.** Removing a photo keeps its entry, marked removed: a replay of an earlier day still
+  sees it. Its image is deleted here at once, and from the vault at the next sync.
+- **A duplicate is refused.** The same image again is refused, and the message names the photo it duplicates.
+- **Quota.** When the browser reports too little room, an image is refused before anything is written, and the message
+  says how much space is free and how much is needed.
+- **The encrypted cloud copy.** After the events, a sync uploads each image in parts of at most 150 KB, each encrypted
+  under the vault key and bound to its id and part number. It deletes images that were retracted and fetches the images
+  this device lacks, which restores a lost device from the phrase alone.
+  - The server keeps the parts apart from the ledger. It refuses an id that could name a path and parts over 256 KB,
+    and holds each vault to `MAX_ATTACHMENT_BYTES` (default 500 MB). A part sent again replaces itself, and a deleted
+    vault takes its images with it.
+  - A failed upload is kept with its attempt count and a time to retry (1 min, 5 min, 30 min, then every 2 h), and the
+    next sync resumes it.
+  - This device's transfer state is not in the record.
+- **Backups.** The passphrase-encrypted backup now carries the images inside its ciphertext, and its header says
+  whether it holds the complete visual history. A plain backup says it holds only dates and poses. Restoring an
+  encrypted backup stores each image only if it matches its hash, and names any that do not.
+  `attachmentAudit()` reports:
+  - orphans (bytes with no live record);
+  - missing bytes, and whether the vault has them;
+  - duplicates, and photos with no image;
+  - uploads waiting and uploads failed.
+- **The screens.** The Data card says where the images are: how many are encrypted on this device and how many are
+  copied to the vault. It also offers an encrypted backup with photos. Each photo says whether it is in the vault or
+  only on this device.
+- **Erasing everything now erases the images too**, with this device's key for them; the confirmation says Undo does not
+  bring them back.
+- **Migration.** Photos stored before this move into the encrypted store when the app opens. Where the browser has no
+  Web Crypto, a photo is kept unencrypted on the device and says so.
+
+Tests:
+- Nine self-tests: the backup statement, the audit, the events, retraction and the merge restore.
+- The server gate: eleven attachment cases.
+- `cloud:e2e`, eighteen photo checks across four devices, with an image of about 400 KB made byte by byte:
+  - encryption verified, and a changed byte refused;
+  - a duplicate refused;
+  - a failed upload recovered;
+  - ciphertext only on the server;
+  - the same bytes on a second device, and on a third with only the phrase (device loss);
+  - retraction reaching the vault and the other device, and the orphan it leaves found and cleared;
+  - an encrypted backup with no image in the clear, and a partial restore that names the altered image;
+  - quota refusal.
+- The persistence gate: an image is ciphertext at rest in a real browser's IndexedDB, under a non-extractable key, and
+  reads back exactly after the page is reopened.
+- Black-box workflow V-016, through the screen: a photo through the real file input, an encrypted backup through the
+  passphrase prompt, erase, restore, and the same bytes shown again.
+
+Every new check was made to fail once on purpose. The capability `photo-durability` is rated validated on V-016 and
+those gates. The structured-explanation tests no longer write an energy-density literal (the audit's one P1 at build
+0dbd06b359): their stub is derived from `ENERGY_PER_LB`.
+
+1,862 self-tests pass; the full release record is in progress.
+

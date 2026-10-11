@@ -54,6 +54,36 @@
    }
   },
   {
+   "id": "photo-durability",
+   "label": "Progress photos: encrypted on the device, copied encrypted to the vault, carried by encrypted backups",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-016"
+    },
+    {
+     "gate": "cloud:e2e"
+    },
+    {
+     "gate": "server"
+    },
+    {
+     "gate": "persistence"
+    }
+   ],
+   "note": "each image an attachment with a content hash; retraction, orphans, duplicates, failed uploads, partial restore and quota are handled and tested; the cloud copy needs the sync server",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "server",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "data-deletion",
    "label": "Erase everything",
    "maturity": "validated",

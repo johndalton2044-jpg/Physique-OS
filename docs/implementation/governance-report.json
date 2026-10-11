@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-11T19:52:27.402Z",
-  "build": "0dbd06b359",
+  "generatedAt": "2026-10-11T20:17:53.715Z",
+  "build": "6da68267d3",
   "counts": {
     "hard": {},
     "soft": {}
@@ -62,7 +62,7 @@
     },
     {
       "cat": "audit-never-run",
-      "msg": "49 audit functions, every one invoked"
+      "msg": "50 audit functions, every one invoked"
     },
     {
       "cat": "registry-id-unique",
@@ -86,11 +86,11 @@
     },
     {
       "cat": "catalogue",
-      "msg": "catalogue generated from the running registries — 0 change(s) since the previous run"
+      "msg": "catalogue generated from the running registries — 7 change(s) since the previous run"
     },
     {
       "cat": "entity-contracts",
-      "msg": "all 27 entity contracts hold, and every store in the record is owned or explained"
+      "msg": "all 29 entity contracts hold, and every store in the record is owned or explained"
     },
     {
       "cat": "model-without-version",

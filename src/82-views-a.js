@@ -70,7 +70,7 @@ RENDERERS.today=function(){
   /* TODAY, REORGANISED (usage review: "the long block of text on open", "photo is too small"). A compact summary comes
      first \u2014 the latest photo, the date, the week's decision as one line, three numbers \u2014 and the decision's full
      reasoning sits in a fold beneath it. */
-  var _phH=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+  var _phH=(DB.settings.showPhotoOnToday!==false&&livePhotos().length)?livePhotos().slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
   var _num=function(l,v){return '<div class="hero-num"><span class="hint">'+esc(l)+'</span><b>'+v+'</b></div>';};
   var _wa=weightAverages(),_tr=weightTrend(14),_phT=activePhase();
   var _wt=_wa&&_wa.avg7!=null?fmtWeight(_wa.avg7):'\u2014',_rate=_tr&&_tr.status==='ok'&&_tr.slopePerWeek!=null?(fmtSigned(_tr.slopePerWeek,1)+' /wk'):'\u2014',_kc=_phT&&_phT.calorieTarget?fmtNum(_phT.calorieTarget,0):'\u2014';
@@ -94,8 +94,8 @@ RENDERERS.today=function(){
   // actions checklist
   /* The latest progress photo as a small icon on Today (usage review): off by default \u2014 progress photos are personal and
      Today is the screen other people glance at \u2014 and shown only when a photo exists. */
-  var _ph=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
-    (DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+  var _ph=(DB.settings.showPhotoOnToday!==false&&livePhotos().length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
+    livePhotos().slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
   _ph=null;   /* the photo now lives in the summary at the top */
   var _nextUp=(function(){try{return renderNextUp();}catch(e){_q(e,'P2');return '';}})();   /* quick actions for this moment */
   setHTML('actionsZone',_nextUp+(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})()+(function(){try{return renderSetupMore();}catch(e){_q(e,'P2');return '';}})());   /* weather once a place is set; then what is not set up yet */

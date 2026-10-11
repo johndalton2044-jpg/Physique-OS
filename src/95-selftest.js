@@ -4794,7 +4794,7 @@ function runSelfTest(opts){
         DB.settings.photos=[];var none=JSON.parse(backupJSON()).backup.photos;}
       finally{DB.settings.photos=keep;}
       ok('a backup says whether it holds the complete visual history: one photo kept, its image not included, so not complete',
-        h.count===1&&h.imagesIncluded===false&&h.completeVisualHistory===false&&/1 progress photo,/.test(h.statement)&&/not the images/.test(h.statement),JSON.stringify(h));
+        h.count===1&&h.imagesIncluded===0&&h.completeVisualHistory===false&&/1 progress photo,/.test(h.statement)&&/not the images/.test(h.statement),JSON.stringify(h));
       ok('and with no photos it says nothing visual is left out',none.count===0&&none.completeVisualHistory===true,JSON.stringify(none));
     })();
     _stSuite('decisions');
@@ -4817,7 +4817,7 @@ function runSelfTest(opts){
       var dec={code:'REDUCE_DEFICIT',verb:'Reduce the deficit',date:asOf(),confidence:'medium',recheckDays:14,phaseType:'cut',rulesVersion:'test',
         action:[{key:'calories',text:'raise intake by 200 kcal/day'}],intervention:{variable:'calories',from:2000,to:2200,recheckDays:14},
         reversal:[reversalCondition('the trend','moves into',{band:{lo:-1.0,hi:-0.5}},14)]};
-      try{tissueEnergyDensity=function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:3000,lo:2600,hi:3300,fatShare:0.7,reasons:[]};};predictResponse=function(){return null;};
+      try{tissueEnergyDensity=function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:ENERGY_PER_LB.fat-500,lo:ENERGY_PER_LB.fat-900,hi:ENERGY_PER_LB.fat-200,fatShare:0.7,reasons:[]};};predictResponse=function(){return null;};
         E=explainDecision(dec,state(-1.2));E2=explainDecision(dec,state(-0.8));
         ED=explainDecision({code:'DELOAD',verb:'Deload',date:asOf(),confidence:'medium',action:[{key:'training',text:'one deload week'}],reversal:[]},state(-1.2));}
       finally{tissueEnergyDensity=keepTED;predictResponse=keepPR;}
@@ -4920,7 +4920,7 @@ function runSelfTest(opts){
     (function(){var keepTED=tissueEnergyDensity,keepPR=predictResponse,E=null;
       var S={phase:{type:'cut',startDate:addDays(asOf(),-30)},trend:{status:'ok',slopePerWeek:-1.2,lo:-1.5,hi:-0.9,n:12,span:14,cls:'DERIVED',confidence:'high',first:addDays(asOf(),-13),last:asOf()},
         targetRate:{lo:-1.0,hi:-0.5,source:'user target'},recovery:{status:'ok',level:'poor',n:5,cls:'HEURISTIC',confidence:'medium'},training:{strength:{status:'none'}},appetite:{status:'none'},adherence:{},trust:{overall:{level:'high',pct:90}}};
-      try{tissueEnergyDensity=function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:3000,lo:2600,hi:3300,fatShare:0.7,reasons:[]};};predictResponse=function(){return null;};
+      try{tissueEnergyDensity=function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:ENERGY_PER_LB.fat-500,lo:ENERGY_PER_LB.fat-900,hi:ENERGY_PER_LB.fat-200,fatShare:0.7,reasons:[]};};predictResponse=function(){return null;};
         E=explainDecision({code:'REDUCE_DEFICIT',verb:'Reduce the deficit',date:asOf(),confidence:'medium',phaseType:'cut',action:[{key:'calories',text:'raise intake by 200 kcal/day'}],intervention:{variable:'calories',from:2000,to:2200,recheckDays:14},reversal:[]},S);}
       finally{tissueEnergyDensity=keepTED;predictResponse=keepPR;}
       var X=assistantClaimSet(E),pack={explanation:X,actions:[],claims:{}};pack.numbers=_packetNumbers(pack);
@@ -4937,6 +4937,49 @@ function runSelfTest(opts){
       ok('a rule with no published evidence is listed as uncited, a design rule is not',u.claims.some(function(c){return /calls for a deload/.test(c.claim);})&&!u.claims.some(function(c){return /one major variable/.test(c.claim);}),JSON.stringify(u.claims));
       var ef=evidenceFor('protein'),ids=ef.citations.map(function(c){return c.id;});
       ok('evidence linking finds entries by their topic and domains (the tags it matched on never existed)',ids.indexOf('morton2018')>=0&&ids.indexOf('protein_timing2013')>=0&&ef.citations.every(function(c){return !!c.grade;}),ids.join());
+    })();
+    _stSuite('storage');
+    /* ENCRYPTED PHOTO ATTACHMENTS (catalogue W-004, option B), the parts that need no browser: what a backup says of the
+       visual history, the attachment audit, the events and the retraction. The asynchronous parts (encryption, the vault,
+       backups with images, a lost device) are held by the cloud:e2e, server and blackbox gates. */
+    (function(){
+      var all=visualHistoryStatement({count:3,withImages:true,included:3}),part=visualHistoryStatement({count:3,withImages:true,included:2}),
+        plain=visualHistoryStatement({count:3,withImages:false}),none=visualHistoryStatement({count:0});
+      ok('an encrypted backup with every image is the complete visual history; with 2 of 3 it is not, and says one is missing; a plain one never is',
+        all.completeVisualHistory===true&&all.imagesIncluded===3&&/all 3/.test(all.statement)&&part.completeVisualHistory===false&&part.imagesIncluded===2&&/2 of 3/.test(part.statement)&&/1 is not on this device/.test(part.statement)
+          &&plain.completeVisualHistory===false&&plain.imagesIncluded===0&&/not the images/.test(plain.statement)&&none.completeVisualHistory===true);
+      /* a1 and a2 hold the same image; a3 is retracted but its bytes are still here; x9 is bytes with no record at all;
+         a4 is live but its bytes are not here and its upload failed twice; photo p3 has no image */
+      var man=[{id:'a1',kind:'photo',hash:'h1'},{id:'a2',kind:'photo',hash:'h1'},{id:'a3',kind:'photo',hash:'h3',removedAt:'2026-01-01T00:00:00Z'},{id:'a4',kind:'photo',hash:'h4'}];
+      var A=attachmentAuditOf(man,['a1','a3','x9'],[{id:'p1',attachmentId:'a1'},{id:'p2',attachmentId:'a4'},{id:'p3'},{id:'p4',attachmentId:'a3',removedAt:'2026-01-01T00:00:00Z'}],
+        {a1:{state:'uploaded'},a4:{state:'failed',attempts:2,lastError:'HTTP 503'}});
+      ok('the audit finds the orphans (bytes with no live record), the missing bytes, the duplicates and the photo with no image',
+        A.live===3&&A.stored===1&&JSON.stringify(A.orphans)==='["a3","x9"]'&&JSON.stringify(A.missing.map(function(m){return m.id;}))==='["a2","a4"]'
+          &&JSON.stringify(A.duplicates)==='[["a1","a2"]]'&&JSON.stringify(A.photosWithoutImage)==='["p3"]',JSON.stringify(A));
+      ok('and what is waiting to upload, what failed (with its attempts) and what is in the vault',A.pendingUpload===1&&A.failedUpload.length===1&&A.failedUpload[0].id==='a4'&&A.failedUpload[0].attempts===2&&A.inVault===1);
+      var u='data:image/jpeg;base64,/9j/4AAQQUI=',d=_dataUrlBytes(u);   /* FF D8 FF E0 00 10 41 42, encoded by hand */
+      ok('an image’s bytes are read from its data URL exactly, and written back the same',!!d&&d.type==='image/jpeg'&&d.bytes.length===8&&d.bytes[0]===0xFF&&d.bytes[6]===0x41&&_bytesDataUrl(d.type,d.bytes)===u);
+      var db=emptyDB(),ap=function(type,data){EVENT_TYPES[type].apply(db,{type:type,data:data,at:'2026-05-02T08:00:00Z'});};
+      ap('photo.added',{id:'ph1',date:'2026-05-01',pose:'front'});ap('attachment.recorded',{id:'att-1',kind:'photo',hash:'hx',bytes:10,type:'image/jpeg',removedAt:null});
+      ap('photo.linked',{id:'ph1',attachmentId:'att-1',hash:'hx'});ap('photo.added',{id:'ph2',date:'2026-05-02',pose:'side'});
+      ap('photo.removed',{id:'ph2',at:'2026-05-03T08:00:00Z'});ap('attachment.removed',{id:'att-1',at:'2026-05-03T09:00:00Z',reason:'photo removed'});
+      ok('the photo and attachment events replay to the same record on any device: added, linked, removed, retracted',
+        db.settings.photos.length===2&&db.settings.photos[0].attachmentId==='att-1'&&db.settings.photos[0].encrypted===true&&db.settings.photos[1].removedAt==='2026-05-03T08:00:00Z'
+          &&db.attachments.length===1&&db.attachments[0].removedAt==='2026-05-03T09:00:00Z'&&db.attachments[0].removedReason==='photo removed');
+      var keepDB=DB,keepNow=_NOW_OVERRIDE,ev=null,ret=null,live0=null,meta0=null,metaY=null,merged=null;
+      try{_NOW_OVERRIDE='2026-06-10T12:00:00Z';DB=emptyDB();_memoInvalidate();
+        var n0=_EVENTS.length;recordAttachment({id:'att-aaaaaaaaaaaa-t1',kind:'photo',hash:'h',bytes:5,type:'image/jpeg'});ev=_EVENTS.slice(n0).map(function(e){return e.type;});
+        ret=retractAttachment('att-aaaaaaaaaaaa-t1','test');
+        DB.settings.photos=[{id:'ph-t',date:'2026-06-07',pose:'front',addedAt:'2026-06-07T08:00:00Z'}];deletePhoto('ph-t');
+        live0=livePhotos().length;meta0=photoMeta().length;_NOW_OVERRIDE='2026-06-09T12:00:00Z';metaY=photoMeta().length;
+        _NOW_OVERRIDE='2026-06-10T12:00:00Z';DB.settings.photos=[{id:'ph-a',date:'2026-06-01',pose:'front'}];
+        merged=mergeRecordCollections({settings:{photos:[{id:'ph-a',date:'2026-06-01',pose:'front'},{id:'ph-b',date:'2026-06-02',pose:'side'}]}});
+        merged.photos=DB.settings.photos.map(function(p){return p.id;}).join();}
+      finally{DB=keepDB;_NOW_OVERRIDE=keepNow;_memoInvalidate();}
+      ok('recording an attachment is an event, and a retraction keeps the entry, marked removed',JSON.stringify(ev)==='["attachment.recorded"]'&&!!ret&&!!ret.removedAt&&ret.removedReason==='test');
+      ok('removing a photo retracts it: gone today, still there in a replay of the day before it was removed',live0===0&&meta0===0&&metaY===1,JSON.stringify({live0:live0,meta0:meta0,metaY:metaY}));
+      ok('a merge restore brings back photos by id, not only the collections',merged.byCollection.photos===1&&merged.photos==='ph-a,ph-b',JSON.stringify(merged));
+      ok('the manifest is a persisted collection of the record',PERSIST_COLLECTIONS.indexOf('attachments')>=0&&Array.isArray(emptyDB().attachments));
     })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);

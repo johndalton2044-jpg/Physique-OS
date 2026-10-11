@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "51bc2537ced1",
+ "ontologyVersion": "ed9b53d4d903",
  "observationTypes": [
   {
    "id": "adherence",
@@ -634,6 +634,18 @@
    ]
   },
   {
+   "id": "attachment.recorded",
+   "entities": [
+    "Attachment"
+   ]
+  },
+  {
+   "id": "attachment.removed",
+   "entities": [
+    "Attachment"
+   ]
+  },
+  {
    "id": "copilot.authorized",
    "entities": [
     "Decision"
@@ -824,6 +836,24 @@
    ]
   },
   {
+   "id": "photo.added",
+   "entities": [
+    "ProgressPhoto"
+   ]
+  },
+  {
+   "id": "photo.linked",
+   "entities": [
+    "ProgressPhoto"
+   ]
+  },
+  {
+   "id": "photo.removed",
+   "entities": [
+    "ProgressPhoto"
+   ]
+  },
+  {
    "id": "plan.created",
    "entities": [
     "Plan",
@@ -1007,7 +1037,8 @@
   },
   "settings": {
    "entities": [
-    "Constraint"
+    "Constraint",
+    "ProgressPhoto"
    ],
    "fields": {
     "contrast": [
@@ -1770,6 +1801,12 @@
      "array"
     ]
    }
+  },
+  "attachments": {
+   "entities": [
+    "Attachment"
+   ],
+   "fields": {}
   },
   "outcomes": {
    "entities": [
@@ -2749,6 +2786,8 @@
   ],
   "events": [
    "archive.recorded",
+   "attachment.recorded",
+   "attachment.removed",
    "copilot.authorized",
    "cycle.recorded",
    "decision.applied",
@@ -2780,6 +2819,9 @@
    "phase.ended",
    "phase.started",
    "phase.targetsChanged",
+   "photo.added",
+   "photo.linked",
+   "photo.removed",
    "plan.created",
    "prediction.scored",
    "prediction.stamped",
@@ -2803,6 +2845,7 @@
   ],
   "stores": [
    "archive",
+   "attachments",
    "cycles",
    "decisions",
    "executions",

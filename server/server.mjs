@@ -39,6 +39,8 @@ const HOST=args.host||process.env.HOST||'127.0.0.1';
 const DATA=path.resolve(args.data||process.env.DATA_DIR||'./server-data');
 const MAX_BODY=+(args.maxBody||2*1024*1024);          // one sync batch
 const MAX_EVENTS_PER_VAULT=+(args.maxEvents||200000);
+/* encrypted attachments (catalogue W-004, option B): progress-photo images, as ciphertext parts */
+const MAX_ATTACHMENT_BYTES=+(args.maxAttachmentBytes||process.env.MAX_ATTACHMENT_BYTES||500*1024*1024),MAX_ATTACHMENT_PARTS=64,MAX_ATTACHMENT_PART=256*1024;
 const TOKEN_TTL_MS=30*60*1000;
 const CHALLENGE_TTL_MS=2*60*1000;
 const RATE_WINDOW_MS=60*1000, RATE_MAX=120;
@@ -66,6 +68,16 @@ const log=(level,msg,extra)=>{
 const vaultDir=id=>path.join(DATA,'vaults',id);
 const vaultMetaPath=id=>path.join(vaultDir(id),'vault.json');
 const validId=id=>typeof id==='string'&&/^[a-f0-9]{32}$/.test(id);
+const validAttId=id=>typeof id==='string'&&/^att-[a-f0-9]{12}-[a-z0-9]{1,12}$/.test(id);
+const attachmentsRoot=vid=>path.join(vaultDir(vid),'attachments');
+const attachmentDir=(vid,aid)=>path.join(attachmentsRoot(vid),aid);
+/* what a vault holds of attachments: per image, the parts present and their bytes (ciphertext only) */
+function attachmentList(vid){const root=attachmentsRoot(vid);if(!fs.existsSync(root))return [];
+  return fs.readdirSync(root).filter(validAttId).map(aid=>{const dir=attachmentDir(vid,aid);let of=null,bytes=0,parts=0;
+    for(const f of fs.readdirSync(dir).filter(n=>/^\d+\.json$/.test(n))){const p=path.join(dir,f);bytes+=fs.statSync(p).size;parts++;
+      if(of==null){try{of=JSON.parse(fs.readFileSync(p,'utf8')).of;}catch(e){}}}
+    return {id:aid,of,parts,complete:of!=null&&parts===of,bytes};});}
+const attachmentBytes=vid=>attachmentList(vid).reduce((a,x)=>a+x.bytes,0);
 /* THE LEDGER IS AUTHORITATIVE. events.ndjson rows carry their serverSeq; vault.json is written after the append. A crash
    between the two left events the metadata did not know about, so reading a vault reconciles it with the ledger's tail
    (and a torn last line from a crash mid-append is skipped and fenced off by a newline before the next append).
@@ -442,7 +454,7 @@ async function _fetchWindow(p,token,start,end){
 /* ============================================================================
    OPERATIONS (audit §63\u2013§69, §111 phase 3): storage verified, metrics, backup, key rotation.
    ============================================================================ */
-const METRICS={startedAt:Date.now(),requests:{},errors:0,errorsByRoute:{},recentErrors:[],rateLimited:0,push:{sent:0,failed:0,removed:0},sync:{appended:0,duplicates:0},backup:{configured:false,lastAt:null,ok:null,verified:null,bytes:null,key:null,error:null}};
+const METRICS={startedAt:Date.now(),requests:{},errors:0,errorsByRoute:{},recentErrors:[],rateLimited:0,push:{sent:0,failed:0,removed:0},sync:{appended:0,duplicates:0},attachments:{parts:0,deleted:0,refused:0},backup:{configured:false,lastAt:null,ok:null,verified:null,bytes:null,key:null,error:null}};
 function _dirBytes(d){let n=0;try{for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,f.name);n+=f.isDirectory()?_dirBytes(p):fs.statSync(p).size;}}catch(e){}return n;}
 function storageStatus(){let free=null,total=null,writable=false;try{const st=fs.statfsSync(DATA);free=st.bavail*st.bsize;total=st.blocks*st.bsize;}catch(e){}
   try{const f=path.join(DATA,'.probe-'+process.pid);fs.writeFileSync(f,'ok');writable=fs.readFileSync(f,'utf8')==='ok';fs.unlinkSync(f);}catch(e){}
@@ -699,6 +711,54 @@ const routes={
     if(subs.length)writeVault(v);
     METRICS.push.sent+=results.filter(r=>r.ok).length;METRICS.push.failed+=results.filter(r=>!r.ok).length;METRICS.push.removed+=(+removed||0);
     return {code:200,body:{ok:true,sent:results.filter(r=>r.ok).length,attempted:results.length,removed}};
+  },
+
+  /* ENCRYPTED ATTACHMENTS (catalogue W-004, option B). Progress-photo images arrive as parts encrypted under the vault
+     key, which this server never holds; they are kept apart from the event ledger, because an image is not an event.
+     A part is at most 256 KB of ciphertext and an image at most 64 parts; a vault holds at most MAX_ATTACHMENT_BYTES.
+     What the server learns: how many images, how large, and when. Sending a part again replaces it (a retried upload);
+     a part whose part count differs from those held starts the image over. */
+  'POST /v1/attachments/part':async(req,body)=>{
+    const auth=authFor(req);if(!auth)return {code:401,body:{error:'authenticate first'}};
+    const v=readVault(auth.vaultId);if(!v)return {code:404,body:{error:'no such vault'}};
+    if(!validAttId(body.id))return {code:400,body:{error:'an attachment id looks like att-<12 hex>-<suffix>'}};
+    const part=+body.part,of=+body.of;
+    if(!Number.isInteger(part)||!Number.isInteger(of)||of<1||of>MAX_ATTACHMENT_PARTS||part<1||part>of)return {code:400,body:{error:'part must be between 1 and of, and of at most '+MAX_ATTACHMENT_PARTS}};
+    if(typeof body.ciphertext!=='string'||!body.ciphertext||body.ciphertext.length>MAX_ATTACHMENT_PART)return {code:400,body:{error:'each part needs a ciphertext of at most 256 KB'}};
+    if(typeof body.iv!=='string'||!body.iv||body.iv.length>64)return {code:400,body:{error:'iv required'}};
+    const dir=attachmentDir(v.id,body.id),file=path.join(dir,part+'.json');
+    const held=attachmentList(v.id).find(x=>x.id===body.id);
+    if(held&&held.of!=null&&held.of!==of){fs.rmSync(dir,{recursive:true,force:true});}
+    const row=JSON.stringify({part,of,iv:body.iv,ciphertext:body.ciphertext,receivedAt:new Date().toISOString(),device:auth.deviceId});
+    const prev=fs.existsSync(file)?fs.statSync(file).size:0;
+    if(attachmentBytes(v.id)-prev+row.length>MAX_ATTACHMENT_BYTES){METRICS.attachments.refused++;return {code:507,body:{error:'the vault\u2019s attachment storage is full'}};}
+    fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(file,row);METRICS.attachments.parts++;
+    const now=attachmentList(v.id).find(x=>x.id===body.id);
+    return {code:200,body:{ok:true,id:body.id,part,of,complete:!!(now&&now.complete),note:'ciphertext only; this server cannot read it'}};
+  },
+  'GET /v1/attachments':async(req)=>{
+    const auth=authFor(req);if(!auth)return {code:401,body:{error:'authenticate first'}};
+    const v=readVault(auth.vaultId);if(!v)return {code:404,body:{error:'no such vault'}};
+    const list=attachmentList(v.id);
+    return {code:200,body:{attachments:list,bytes:list.reduce((a,x)=>a+x.bytes,0),limit:MAX_ATTACHMENT_BYTES,note:'ciphertext only; this server cannot read these'}};
+  },
+  'GET /v1/attachments/part':async(req,body,url)=>{
+    const auth=authFor(req);if(!auth)return {code:401,body:{error:'authenticate first'}};
+    const v=readVault(auth.vaultId);if(!v)return {code:404,body:{error:'no such vault'}};
+    const id=url.searchParams.get('id'),part=+url.searchParams.get('part');
+    if(!validAttId(id)||!Number.isInteger(part)||part<1||part>MAX_ATTACHMENT_PARTS)return {code:400,body:{error:'id and part required'}};
+    const file=path.join(attachmentDir(v.id,id),part+'.json');
+    if(!fs.existsSync(file))return {code:404,body:{error:'no such attachment part'}};
+    const r=JSON.parse(fs.readFileSync(file,'utf8'));
+    return {code:200,body:{id,part:r.part,of:r.of,iv:r.iv,ciphertext:r.ciphertext}};
+  },
+  'POST /v1/attachments/delete':async(req,body)=>{
+    const auth=authFor(req);if(!auth)return {code:401,body:{error:'authenticate first'}};
+    const v=readVault(auth.vaultId);if(!v)return {code:404,body:{error:'no such vault'}};
+    if(!validAttId(body.id))return {code:400,body:{error:'an attachment id looks like att-<12 hex>-<suffix>'}};
+    const dir=attachmentDir(v.id,body.id),existed=fs.existsSync(dir);
+    fs.rmSync(dir,{recursive:true,force:true});if(existed)METRICS.attachments.deleted++;
+    return {code:200,body:{ok:true,deleted:existed}};
   },
 
   /* Delete everything. Immediate and total, because a service holding health data that cannot be left is

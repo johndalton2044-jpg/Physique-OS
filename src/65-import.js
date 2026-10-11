@@ -290,9 +290,10 @@ function scanBarcode(videoEl){
   }catch(e){return Promise.reject(e);}
 }
 /* ---------- photo vault (§21) ----------
-   Photos live in IndexedDB as blobs, never in the record document: they would bloat every save and every
-   export. The record holds only metadata, so a backup stays small and a photo is never accidentally shared
-   by exporting a record. */
+   Photos never live in the record document: they would bloat every save and every export. The record holds each
+   photo's metadata and, through its attachment, the image's content hash; the image itself is an encrypted attachment
+   (65-attachments.js, catalogue W-004 option B). Where the browser offers no Web Crypto the image is kept on this
+   device unencrypted, and the photo says so. */
 var PHOTO_POSES=[{id:'front',label:'Front relaxed'},{id:'side',label:'Side relaxed'},{id:'back',label:'Back relaxed'}];
 /* Photos take an as-of date like every other read: one added today must not appear in a replay of an
    earlier day, and one deleted today must not vanish from one. */
@@ -318,22 +319,33 @@ function addPhoto(file,meta){
      exists the original is kept, under the old limit. */
   return downscaleImage(file,PHOTO_MAX_EDGE,0.85).then(function(img){
     if(!img.scaled&&file.size>8*1024*1024)throw new Error('image is larger than 8 MB and cannot be resized here; photograph at a lower resolution');
-    idbWrite('photo:'+id,img.dataUrl);
-    /* Held in memory as well: the durable write is debounced, and the gallery asked for the image before it landed,
-       so a photo just taken showed as "not found on this device" until the sheet was reopened. */
-    _PHOTO_CACHE[id]=img.dataUrl;
-    /* The capture conditions are stored. The first version validated view and lighting and then left them out of the
-       record, so no two photos could ever be checked for a fair comparison — the thing they are validated for. */
-    var view=meta.view||meta.pose||'front';
-    DB.settings.photos=(DB.settings.photos||[]).concat([{id:id,date:meta.date||todayISO(),pose:view,view:view,
-      lighting:meta.lighting||'mixed',weight:meta.weight!=null?meta.weight:(currentWeight().value),
-      bytes:img.bytes,originalBytes:file.size,width:img.width,height:img.height,at:nowISO(),
-      note:String(meta.note||'').slice(0,200),source:meta.source||'library'}]);
-    save('photo');
-    if(typeof auditAppend==='function')auditAppend('photo.added',{id:id,bytes:img.bytes});
-    return {id:id,bytes:img.bytes,originalBytes:file.size,scaled:img.scaled,width:img.width,height:img.height};
+    /* the image becomes an encrypted attachment; the same image twice is refused, not stored twice */
+    var stored=attachmentsSupported()?putAttachment('photo',img.dataUrl,{store:'photos',id:id}):Promise.resolve(null);
+    return stored.then(function(att){
+      if(att&&att.duplicateOf){var was=livePhotos().filter(function(p){return p.attachmentId===att.duplicateOf;})[0];
+        throw new Error('this photo is already in your record'+(was?' (the one dated '+shortDate(was.date)+')':''));}
+      if(!att)idbWrite('photo:'+id,img.dataUrl);
+      /* Held in memory as well, so a photo just taken shows at once rather than "not found on this device". */
+      _PHOTO_CACHE[id]=img.dataUrl;
+      /* The capture conditions are stored, so two photos can be checked for a fair comparison. */
+      var view=meta.view||meta.pose||'front';
+      recordPhoto({id:id,date:meta.date||todayISO(),pose:view,view:view,
+        lighting:meta.lighting||'mixed',weight:meta.weight!=null?meta.weight:(currentWeight().value),
+        bytes:img.bytes,originalBytes:file.size,width:img.width,height:img.height,at:nowISO(),addedAt:nowISO(),
+        note:String(meta.note||'').slice(0,200),source:meta.source||'library',
+        attachmentId:att?att.id:null,hash:att?att.hash:null,encrypted:!!att});
+      save('photo');
+      if(typeof auditAppend==='function')auditAppend('photo.added',{id:id,bytes:img.bytes});
+      return {id:id,bytes:img.bytes,originalBytes:file.size,scaled:img.scaled,width:img.width,height:img.height,attachmentId:att?att.id:null,encrypted:!!att};
+    });
   });
 }
+/* the photo records (owners: recordPhoto, linkPhotoAttachment, deletePhoto); each change is an event, so photos reach
+   every device of a vault, and the images follow as attachments */
+function livePhotos(){return ((DB.settings&&DB.settings.photos)||[]).filter(function(p){return p&&!p.removedAt;});}
+function recordPhoto(meta){DB.settings.photos=(DB.settings.photos||[]).filter(function(p){return p.id!==meta.id;}).concat([meta]);emitEvent('photo.added',meta);return meta;}
+function linkPhotoAttachment(photoId,attachmentId,hash){DB.settings.photos=(DB.settings.photos||[]).map(function(p){return p.id===photoId?Object.assign({},p,{attachmentId:attachmentId,hash:hash,encrypted:true}):p;});
+  emitEvent('photo.linked',{id:photoId,attachmentId:attachmentId,hash:hash});}
 var PHOTO_MAX_EDGE=1600;
 function downscaleImage(file,maxEdge,quality){
   var readAsDataUrl=function(){return new Promise(function(res,rej){var fr=new FileReader();
@@ -353,10 +365,17 @@ function downscaleImage(file,maxEdge,quality){
     im.src=src;});});
 }
 var _PHOTO_CACHE={};
-function loadPhoto(id){if(_PHOTO_CACHE[id])return Promise.resolve(_PHOTO_CACHE[id]);if(!_IDB)return Promise.resolve(null);return idbGet(_IDB,'photo:'+id);}
+function loadPhoto(id){if(_PHOTO_CACHE[id])return Promise.resolve(_PHOTO_CACHE[id]);
+  var p=((DB.settings&&DB.settings.photos)||[]).filter(function(x){return x.id===id;})[0];
+  if(p&&p.attachmentId)return readAttachment(p.attachmentId).then(function(u){if(u)_PHOTO_CACHE[id]=u;return u;}).catch(function(e){_q(e,'P1');return null;});
+  if(!_IDB)return Promise.resolve(null);return idbGet(_IDB,'photo:'+id);}
+/* removing a photo retracts it: the record keeps it, marked removed (a replay of an earlier day still sees it), and its
+   image is deleted here and, at the next sync, from the vault */
 function deletePhoto(id){
-  delete _PHOTO_CACHE[id];
-  DB.settings.photos=(DB.settings.photos||[]).filter(function(p){return p.id!==id;});
+  delete _PHOTO_CACHE[id];var p=((DB.settings&&DB.settings.photos)||[]).filter(function(x){return x.id===id;})[0];if(!p)return false;
+  var at=nowISO();DB.settings.photos=(DB.settings.photos||[]).map(function(x){return x.id===id?Object.assign({},x,{removedAt:at}):x;});
+  emitEvent('photo.removed',{id:id,at:at});
+  if(p.attachmentId)removeAttachment(p.attachmentId,'photo removed').catch(function(e){_q(e,'P2');});
   try{idbWrite('photo:'+id,'');}catch(e){_q(e,'P2');}
   save('photo:delete');return true;
 }
