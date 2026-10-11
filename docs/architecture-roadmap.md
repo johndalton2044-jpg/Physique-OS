@@ -4490,4 +4490,4 @@ Tests:
   action. It stays undone on A after a sync and a restart, it is removed on B at B's next sync (B is told), and further
   syncs on either device do not bring it back.
 
-1,867 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,867 self-tests.
