@@ -1,6 +1,6 @@
 # Governance report
 
-Build 0dc41f684f · generated 2026-10-11T21:01:37.658Z
+Build 0dc41f684f · generated 2026-10-11T21:09:07.843Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **33 passing**
 
@@ -26,7 +26,7 @@ Build 0dc41f684f · generated 2026-10-11T21:01:37.658Z
 - **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (24)
 - **decision-grounds** — every decision code has declared grounds (15 codes)
 - **current-state** — docs/CURRENT_STATE.md generated from the running registries (96 lines)
-- **catalogue** — catalogue generated from the running registries — 2 change(s) since the previous run
+- **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 29 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned
 - **model-without-provenance** — every model result carries provenance

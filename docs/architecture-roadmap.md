@@ -4548,5 +4548,5 @@ What stays open, and why:
 - Running one self-test suite alone needs each block to build its own fixture.
 - W-015 to W-020 and W-044 are deferred by the catalogue's own order.
 
-1,889 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,889 self-tests.
 

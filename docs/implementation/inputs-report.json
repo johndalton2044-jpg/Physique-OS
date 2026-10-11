@@ -1363,6 +1363,7 @@
  ],
  "unopened": [
   "restore",
+  "experimentDetail",
   "exercise",
   "routine",
   "whyShown",
@@ -1374,5 +1375,5 @@
   "aiConsent",
   "aiProposals"
  ],
- "forms": 120
+ "forms": 121
 }
