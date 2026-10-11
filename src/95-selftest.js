@@ -4794,9 +4794,227 @@ function runSelfTest(opts){
         DB.settings.photos=[];var none=JSON.parse(backupJSON()).backup.photos;}
       finally{DB.settings.photos=keep;}
       ok('a backup says whether it holds the complete visual history: one photo kept, its image not included, so not complete',
-        h.count===1&&h.imagesIncluded===false&&h.completeVisualHistory===false&&/1 progress photo,/.test(h.statement)&&/not the images/.test(h.statement),JSON.stringify(h));
+        h.count===1&&h.imagesIncluded===0&&h.completeVisualHistory===false&&/1 progress photo,/.test(h.statement)&&/not the images/.test(h.statement),JSON.stringify(h));
       ok('and with no photos it says nothing visual is left out',none.count===0&&none.completeVisualHistory===true,JSON.stringify(none));
     })();
+    _stSuite('decisions');
+    /* STRUCTURED EXPLANATION (catalogue doc 2, P1.1 to P1.3). A state is written here by hand: a cut on day 30; the trend
+       −1.2 lb a week (−1.5 to −0.9) from 12 weigh-ins over 14 days; the person's own band −1.0 to −0.5; recovery poor from 5
+       ratings; strength declining on 2 of 4 lifts. The decision raises calories from 2,000 to 2,200 for 14 days. The one
+       energy density is set to 3,000 kcal per lb. Every expectation is one of these values, or arithmetic on them. */
+    (function(){var keepTED=tissueEnergyDensity,keepPR=predictResponse,E=null,E2=null,ED=null;
+      var bad=function(o){try{explanationClaim(o);return false;}catch(e){return true;}};
+      ok('a claim needs a proposition and a known type, an epistemic class unless it is a policy, a source if it is a finding, and PREDICTIVE if it is a prediction',
+        bad({type:'observation',proposition:{subject:'x'}})&&bad({type:'guess',proposition:{subject:'x',predicate:'y'}})&&bad({type:'inference',proposition:{subject:'x',predicate:'y'}})
+        &&bad({type:'prediction',proposition:{subject:'x',predicate:'y'},epistemicClass:'OBSERVED'})&&bad({type:'finding',proposition:{subject:'x',predicate:'y'},epistemicClass:'ASSOCIATED'})
+        &&!bad({type:'policy',proposition:{subject:'x',predicate:'y'}}));
+      var a=explanationClaim({type:'observation',proposition:{subject:'steps',predicate:'averaged',object:{value:8000}},epistemicClass:'OBSERVED'}),
+          b=explanationClaim({type:'observation',proposition:{subject:'steps',predicate:'averaged',object:{value:8000}},epistemicClass:'OBSERVED'});
+      ok('the same proposition has the same id, and a claim cannot be changed once made',a.id===b.id&&Object.isFrozen(a)&&Object.isFrozen(a.proposition.object));
+      var state=function(slope){return {phase:{type:'cut',startDate:addDays(asOf(),-30)},trend:{status:'ok',slopePerWeek:slope,lo:slope-0.3,hi:slope+0.3,n:12,span:14,cls:'DERIVED',confidence:'high',first:addDays(asOf(),-13),last:asOf()},
+        targetRate:{lo:-1.0,hi:-0.5,source:'user target'},recovery:{status:'ok',level:'poor',n:5,cls:'HEURISTIC',confidence:'medium'},
+        training:{strength:{status:'ok',overall:'declining',declining:2,tracked:4,cls:'DERIVED',confidence:'medium'}},appetite:{status:'none'},adherence:{},trust:{overall:{level:'high',pct:90}}};};
+      var dec={code:'REDUCE_DEFICIT',verb:'Reduce the deficit',date:asOf(),confidence:'medium',recheckDays:14,phaseType:'cut',rulesVersion:'test',
+        action:[{key:'calories',text:'raise intake by 200 kcal/day'}],intervention:{variable:'calories',from:2000,to:2200,recheckDays:14},
+        reversal:[reversalCondition('the trend','moves into',{band:{lo:-1.0,hi:-0.5}},14)]};
+      try{tissueEnergyDensity=function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:ENERGY_PER_LB.fat-500,lo:ENERGY_PER_LB.fat-900,hi:ENERGY_PER_LB.fat-200,fatShare:0.7,reasons:[]};};predictResponse=function(){return null;};
+        E=explainDecision(dec,state(-1.2));E2=explainDecision(dec,state(-0.8));
+        ED=explainDecision({code:'DELOAD',verb:'Deload',date:asOf(),confidence:'medium',action:[{key:'training',text:'one deload week'}],reversal:[]},state(-1.2));}
+      finally{tissueEnergyDensity=keepTED;predictResponse=keepPR;}
+      var by=function(X,s,p){return X.claims.filter(function(c){return c.proposition.subject===s&&(!p||c.proposition.predicate===p);})[0];};
+      var tr=by(E,'weight trend','estimated'),cmp=by(E,'weight trend','compared with the band'),rc=by(E,'recovery'),st=by(E,'strength'),pr=E.claims.filter(function(c){return c.type==='prediction';})[0];
+      ok('the explanation’s claims are the values it was built from, not sentences: −1.2 (−1.5 to −0.9) from 12 weigh-ins, below a −1.0 to −0.5 band, recovery poor, 2 of 4 lifts declining',
+        !!tr&&tr.proposition.object.value===-1.2&&tr.proposition.object.lo===-1.5&&tr.proposition.object.hi===-0.9&&tr.proposition.object.n===12&&tr.model==='weight_trend'
+          &&!!cmp&&cmp.proposition.object.position==='below'&&cmp.basedOn.indexOf(tr.id)>=0&&!!rc&&rc.proposition.object.state==='poor'&&!!st&&st.proposition.object.declining===2&&st.proposition.object.tracked===4,
+        JSON.stringify(E.claims.map(function(c){return c.proposition;})).slice(0,300));
+      /* +200 kcal a day at 3,000 kcal per lb is 200×7/3,000 = 0.467 lb a week, ±30%: 0.33 to 0.61 */
+      ok('the expected outcome is a prediction with its range: +200 kcal a day at 3,000 kcal per lb, ±30%, is 0.33 to 0.61 lb a week, judged after 14 days',
+        !!pr&&pr.epistemicClass==='PREDICTIVE'&&!!pr.proposition.object.change&&pr.proposition.object.change.lo===0.33&&pr.proposition.object.change.hi===0.61&&pr.proposition.object.withinDays===14&&E.expectedOutcome.claimId===pr.id,
+        JSON.stringify(pr&&pr.proposition.object));
+      var pol=E.claims.filter(function(c){return c.type==='policy';}).map(function(c){return c.validation&&c.validation.contract||c.proposition.subject;});
+      ok('the rules it applies are claims of type policy: one variable at a time, an unlogged day is unknown, and the band the person set',
+        pol.indexOf('rule.one-variable')>=0&&pol.indexOf('rule.unlogged-unknown')>=0&&pol.indexOf('rate band')>=0&&E.evidence.length===0,JSON.stringify(pol));
+      var fm=ED.claims.filter(function(c){return c.type==='finding';}),cp=ED.claims.filter(function(c){return c.validation&&c.validation.contract==='curve.protein';})[0];
+      ok('a policy built on evidence brings its findings as separate claims: the protein curve cites Morton 2018, a finding about a population, ASSOCIATED when applied to you',
+        !!cp&&cp.sourceIds.join()==='morton2018'&&fm.length===1&&fm[0].sourceIds[0]==='morton2018'&&fm[0].epistemicClass==='ASSOCIATED'&&fm[0].population===REF_EVIDENCE.filter(function(r){return r.id==='morton2018';})[0].claim.population&&ED.evidence.indexOf(fm[0].id)>=0);
+      var L={};['simple','analytical','scientific'].forEach(function(k){L[k]=compileExplanation(E,k);});
+      var G=E.claims.filter(function(c){return c.type!=='policy'&&c.type!=='finding';}).map(function(c){return c.id;});
+      ok('every level renders the same claims, by id and in order',['simple','analytical','scientific'].every(function(k){return JSON.stringify(L[k].claimIds)===JSON.stringify(G)&&JSON.stringify(L[k].grounds.map(function(g){return g.claimId;}))===JSON.stringify(G);}),JSON.stringify(G));
+      var trLine=function(X){return (X.grounds.filter(function(g){return g.claimId===tr.id;})[0]||{}).text||'';};
+      ok('and the same figure: the trend reads '+fmtRate(-1.2)+' at every level',['simple','analytical','scientific'].every(function(k){return trLine(L[k]).indexOf(fmtRate(-1.2))>=0;}),trLine(L.simple));
+      ok('the simple level says it plainly: no classes, model ids, grades or rules',
+        L.simple.grounds.every(function(g){return !/OBSERVED|ASSOCIATED|PREDICTIVE|POLICY|weight_trend|grade [A-E]/.test(g.text);})&&!L.simple.rules.length&&!L.simple.evidence.length,L.simple.grounds.map(function(g){return g.text;}).join(' | '));
+      ok('the analytical level adds the range and the rules applied',trLine(L.analytical).indexOf(fmtRate(-1.5))>=0&&trLine(L.analytical).indexOf(fmtRate(-0.9))>=0&&L.analytical.rules.length>=3,trLine(L.analytical));
+      var LD=compileExplanation(ED,'scientific'),pline=LD.rules.filter(function(r){return r.claimId===cp.id;})[0].text,fline=LD.evidence[0].text;
+      ok('the scientific level names each claim’s class and model, says a rule is a policy that is not validated, and grades the finding behind it',
+        /OBSERVED/.test(trLine(L.scientific))&&/weight_trend/.test(trLine(L.scientific))&&/POLICY/.test(pline)&&/not validated/.test(pline)&&/morton2018/.test(pline)&&/grade A/.test(fline)&&/Morton/.test(fline)&&/association, not a measured effect/.test(fline),pline+' | '+fline);
+      var tr2=by(E2,'weight trend','estimated');
+      ok('a sentence is a rendering, not stored: a trend of −0.8 instead changes every level',!!tr2&&['simple','analytical','scientific'].every(function(k){var X=compileExplanation(E2,k),t=(X.grounds.filter(function(g){return g.claimId===tr2.id;})[0]||{}).text||'';return t.indexOf(fmtRate(-0.8))>=0&&t.indexOf(fmtRate(-1.2))<0;}));
+      ok('a reversal condition is a value, and its sentence is a rendering of it',
+        renderReversal(reversalAll([reversalCondition('logging','rises above',{pct:80}),reversalCondition('calorie adherence','rises above',{pct:70})]))==='logging rises above 80% and calorie adherence rises above 70%'
+          &&renderReversal(reversalCondition('steps','at target for',{days:7},null,'re-evaluate the trend'))==='steps at target for 7+ days → re-evaluate the trend'
+          &&renderReversal(reversalAny([reversalCondition('strength','begins to fall'),reversalCondition('recovery','begins to fall')],14))==='strength begins to fall or recovery begins to fall within 14 days');
+      var keepDB=DB,rec=null,why=null,live=null;
+      try{DB=emptyDB();_memoInvalidate();live=decide();rec=recordDecision(live);why=whyShown('decision',rec.id);}finally{DB=keepDB;_memoInvalidate();}
+      ok('a recorded decision keeps its explanation and its reversal conditions as values, and “why am I seeing this” reads them: with no phase, “This phase is not set up”',
+        !!rec&&!!rec.explanation&&rec.explanation.claims[0].proposition.subject==='phase'&&rec.explanation.claims[0].proposition.object.state==='none'&&Array.isArray(rec.reversal)&&!!why&&why.because==='This phase is not set up',
+        JSON.stringify({why:why&&why.because}));
+      ok('the live decision’s reverse-if sentences are exactly its reversal values rendered',!!live&&live.reverseIf.length===live.reversal.length&&live.reverseIf.every(function(t,i){return t===renderReversal(live.reversal[i]);}));
+    })();
+    _stSuite('governance');
+    /* THE CLAIM REGISTRY AND THE HEURISTIC CONTRACTS (catalogue doc 2, P1.5 and P1.7). Grades are checked against the
+       design each entry states; the review date against a clock set past it; a finding supports a policy and the policy
+       names the finding, both ways. */
+    (function(){var R=claimRegistry(),H=heuristicContracts();
+      var F=['proposition','outcome','population','scope','applicability','limitations','grade','confidence','reviewDate','domains'];
+      ok('every evidence entry carries a claim with its proposition, outcome, population, scope, applicability, limitations, grade, confidence, review date and domains',
+        REF_EVIDENCE.every(function(e){return e.claim&&F.every(function(f){return e.claim[f]!=null;})&&e.claim.proposition.subject&&e.claim.proposition.predicate;})&&R.ok,R.issues.join('; '));
+      /* A needs a systematic review or meta-analysis; B a trial; D a consensus, position stand, guideline, review or model */
+      var consistent=function(e){var d=String(e.design).toLowerCase(),g=e.claim.grade;
+        return g==='A'?/meta-|systematic review|overview of/.test(d):g==='B'?/trial|randomi|crossover|\brct\b/.test(d):g==='C'?/meta-|systematic review/.test(d):g==='D'?/consensus|position stand|guideline|review|model/.test(d):g==='E'?/trial|study/.test(d):false;};
+      ok('each grade matches the design the entry states',REF_EVIDENCE.every(consistent),REF_EVIDENCE.filter(function(e){return !consistent(e);}).map(function(e){return e.id+' '+e.claim.grade+' / '+e.design;}).join('; '));
+      ok('an entry whose citation is not confirmed is low confidence, whatever its grade',R.claims.filter(function(c){return c.unverified;}).length>=1&&R.claims.filter(function(c){return c.unverified;}).every(function(c){return c.confidence==='low';}));
+      var keepNow=_NOW_OVERRIDE,due=null,fc=null;try{_NOW_OVERRIDE='2027-10-02T12:00:00Z';_memoInvalidate();due=claimRegistry();fc=findingClaim('morton2018');}finally{_NOW_OVERRIDE=keepNow;_memoInvalidate();}
+      ok('past its review date (1 October 2027) every claim is due for review, and a high-confidence finding drops to medium',
+        due.reviewDue.length===REF_EVIDENCE.length&&R.reviewDue.length===0&&fc.confidence==='medium'&&findingClaim('morton2018').confidence==='high');
+      var expGaps=CLAIM_DOMAINS.filter(function(d){return !REF_EVIDENCE.some(function(e){return e.claim&&e.claim.domains.indexOf(d)>=0;});});
+      ok('the registry says which priority domains have no claim behind them',JSON.stringify(R.gaps)===JSON.stringify(expGaps),JSON.stringify(R.gaps));
+      ok('every heuristic contract is complete, and every evidence id it names is in the registry',H.ok&&H.contracts.length>=18,H.issues.join('; '));
+      ok('evidence and policy point at each other: each finding lists the rules that cite it, and only those',
+        H.contracts.every(function(h){return h.evidenceBasis.every(function(id){return R.policiesFor[id].indexOf(h.id)>=0;});})
+          &&Object.keys(R.policiesFor).every(function(id){return R.policiesFor[id].every(function(p){return H.contracts.filter(function(h){return h.id===p;})[0].evidenceBasis.indexOf(id)>=0;});}));
+      var cs=H.contracts.filter(function(c){return c.id==='curve.sets';})[0];
+      ok('a curve’s contract reads its parameters from the curve itself: the sets curve flags past 25 a week, on a scale of 7',cs.parameters.negBeyond.value===25&&cs.parameters.k.value===7);
+      ok('the rate band’s zones are its contract’s parameters: 260 lb works within −2.5 to −1.5 lb a week, 200 lb within −1.5 to −0.75',
+        rateBand(260,'cut').lo===-2.5&&rateBand(260,'cut').hi===-1.5&&rateBand(200,'cut').lo===-1.5&&rateBand(200,'cut').hi===-0.75&&rateBand(200,'maintain').hi===0.25);
+      var keepZ=RATE_BAND_ZONES[0].hi;try{RATE_BAND_ZONES[0].hi=3;var moved=rateBand(260,'cut').lo;}finally{RATE_BAND_ZONES[0].hi=keepZ;}
+      ok('and changing the parameter changes the band: 3 lb a week for the top zone gives −3',moved===-3);
+      var keepP=DECISION_RULE_CONTRACTS.filter(function(c){return c.id==='rule.protein-adequacy';})[0].parameters.minPct,keepDB=DB,pct=null,codes=[];
+      try{DB=emptyDB();loadDemo();_memoInvalidate();var ad=getCurrentState().adherence.protein;pct=ad?ad.pct:null;
+        if(pct!=null)[pct-1,pct+1].forEach(function(t){keepP.value=t;_memoInvalidate();codes.push(decide().code);});}
+      finally{keepP.value=60;DB=keepDB;_memoInvalidate();}
+      ok('the decision reads its thresholds from the contracts: protein met on '+pct+'% of days is a priority when the threshold is '+(pct+1)+'%, and not at '+(pct-1)+'%',
+        pct!=null&&codes[0]!=='PROTEIN'&&codes[1]==='PROTEIN',JSON.stringify({pct:pct,codes:codes}));
+    })();
+    _stSuite('adaptive-plan');
+    /* GOAL ARBITRATION AS VALUES (catalogue doc 2, P1.8). The goal state is set here: 170 cardio minutes a week with
+       strength a priority, against the contract's 150. */
+    (function(){var keepGS=_goalState,keepP=DB.settings.goalPriorities,t=GOAL_TENSIONS.filter(function(x){return x.id==='cardio-vs-strength';})[0],keepFrom=t.heuristic.parameters.from.value,a=null,b=null,c=null,txt=null,keepNeg=MARGINAL_CURVES.cardio.negBeyond;
+      try{_goalState=function(){return {phase:'cut',priorityRegions:0,strengthPriority:true,cardio:170,setsPerWeek:30,haveMinutes:400,needMinutes:200,deficit:0.4,fatigue:3};};
+        DB.settings.goalPriorities={};a=goalConflicts().conflicts.filter(function(x){return x.id==='cardio-vs-strength';})[0];
+        DB.settings.goalPriorities={'cardio-vs-strength':'favour-strength'};b=goalConflicts().conflicts.filter(function(x){return x.id==='cardio-vs-strength';})[0];
+        MARGINAL_CURVES.cardio.negBeyond=200;txt=goalConflicts().conflicts.filter(function(x){return x.id==='cardio-vs-strength';})[0].tradeoff;MARGINAL_CURVES.cardio.negBeyond=keepNeg;
+        t.heuristic.parameters.from.value=180;c=goalConflicts().conflicts.filter(function(x){return x.id==='cardio-vs-strength';})[0];}
+      finally{_goalState=keepGS;DB.settings.goalPriorities=keepP;t.heuristic.parameters.from.value=keepFrom;MARGINAL_CURVES.cardio.negBeyond=keepNeg;}
+      ok('a goal conflict reports its trade-off as values: 170 cardio minutes against a 150 threshold, the outcomes it affects and the objectives that compete',
+        !!a&&!!a.tradeoffMagnitude&&a.tradeoffMagnitude.value===170&&a.tradeoffMagnitude.threshold===150&&a.affectedOutcomes.length===2&&a.competingObjectives.join()==='endurance,strength'&&a.confidence==='low'&&a.heuristic==='tension.cardio-vs-strength');
+      ok('with no choice made it favours neither goal, and says so',!!a&&a.chosenObjective===null&&a.expectedConsequence===null&&a.rejectedAlternatives.length===0&&/favours neither/.test(a.arbitration));
+      ok('with a choice it names the chosen objective, the alternative set aside and the expected consequence',
+        !!b&&b.chosenObjective==='Favour strength'&&b.rejectedAlternatives.join()==='Favour endurance'&&!!b.expectedConsequence&&b.expectedConsequence.outcome==='aerobic fitness'&&b.expectedConsequence.direction==='slower');
+      ok('the threshold and its sentence come from the contract: 200 minutes shows in the trade-off, and at a 180 threshold 170 minutes is no conflict',/150–200 minutes/.test(txt||'')&&!c,txt);
+    })();
+    _stSuite('ai');
+    /* THE ALLOWED CLAIM SET (catalogue doc 2, P1.6). The pack is the explanation of a decision written here: a cut, a trend of
+       −1.2 lb a week, recovery rated poor at medium confidence, and one change, +200 kcal a day. Each reply below is written
+       to break exactly one rule, and one to break none. */
+    (function(){var keepTED=tissueEnergyDensity,keepPR=predictResponse,E=null;
+      var S={phase:{type:'cut',startDate:addDays(asOf(),-30)},trend:{status:'ok',slopePerWeek:-1.2,lo:-1.5,hi:-0.9,n:12,span:14,cls:'DERIVED',confidence:'high',first:addDays(asOf(),-13),last:asOf()},
+        targetRate:{lo:-1.0,hi:-0.5,source:'user target'},recovery:{status:'ok',level:'poor',n:5,cls:'HEURISTIC',confidence:'medium'},training:{strength:{status:'none'}},appetite:{status:'none'},adherence:{},trust:{overall:{level:'high',pct:90}}};
+      try{tissueEnergyDensity=function(){return {status:'ok',cls:'PRIOR',model:'tissue_energy_density',version:'1.0',kcalPerLb:ENERGY_PER_LB.fat-500,lo:ENERGY_PER_LB.fat-900,hi:ENERGY_PER_LB.fat-200,fatShare:0.7,reasons:[]};};predictResponse=function(){return null;};
+        E=explainDecision({code:'REDUCE_DEFICIT',verb:'Reduce the deficit',date:asOf(),confidence:'medium',phaseType:'cut',action:[{key:'calories',text:'raise intake by 200 kcal/day'}],intervention:{variable:'calories',from:2000,to:2200,recheckDays:14},reversal:[]},S);}
+      finally{tissueEnergyDensity=keepTED;predictResponse=keepPR;}
+      var X=assistantClaimSet(E),pack={explanation:X,actions:[],claims:{}};pack.numbers=_packetNumbers(pack);
+      var v=function(t){return validateAssistantReply({text:t},pack);},has=function(r,re){return r.issues.some(function(i){return re.test(i);});};
+      ok('the claim set carries the claims, the levers the decision moves and the relations the record holds',X.claims.length===E.claims.length&&X.levers.join()==='calories'&&X.relations.some(function(r){return r.from==='kcal'&&r.to==='mass';})&&X.phaseType==='cut');
+      ok('a faithful reply passes: it restates the claims and the one change',v('Your weight trend is falling faster than your band, so raise intake by 200 kcal a day.').ok,JSON.stringify(v('Your weight trend is falling faster than your band, so raise intake by 200 kcal a day.').issues));
+      ok('certainty beyond the evidence is refused: recovery is rated at medium confidence',has(v('Your recovery will definitely improve.'),/more certainty than its evidence/));
+      ok('a change the decision does not make is refused: it moves calories, not cardio',has(v('You should add a cardio session.'),/change to cardio/));
+      ok('a quantitative relation the record does not hold is refused: minutes of cardio to grams of fat',has(v('Each 30 minutes of cardio burns 10 g of fat.'),/relation between/));
+      ok('and one it does hold is not: calories to pounds is the energy density',!has(v('Each 200 kcal a day changes the weight trend by a fraction of a lb a week.'),/relation between/));
+      ok('a claim outside the explanation’s applicability is refused: the claims apply to a cut, not a bulk',has(v('In a bulk you would eat more.'),/gaining phase/));
+      ok('a medical interpretation is refused',has(v('This looks like a thyroid problem.'),/medical interpretation/));
+      var keepDec=decide,u=null;try{decide=function(){return {explanation:explainDecision({code:'DELOAD',verb:'Deload',date:asOf(),confidence:'medium',action:[],reversal:[]},S)};};u=uncitedClaims();}finally{decide=keepDec;}
+      ok('a rule with no published evidence is listed as uncited, a design rule is not',u.claims.some(function(c){return /calls for a deload/.test(c.claim);})&&!u.claims.some(function(c){return /one major variable/.test(c.claim);}),JSON.stringify(u.claims));
+      var ef=evidenceFor('protein'),ids=ef.citations.map(function(c){return c.id;});
+      ok('evidence linking finds entries by their topic and domains (the tags it matched on never existed)',ids.indexOf('morton2018')>=0&&ids.indexOf('protein_timing2013')>=0&&ef.citations.every(function(c){return !!c.grade;}),ids.join());
+    })();
+    _stSuite('storage');
+    /* ENCRYPTED PHOTO ATTACHMENTS (catalogue W-004, option B), the parts that need no browser: what a backup says of the
+       visual history, the attachment audit, the events and the retraction. The asynchronous parts (encryption, the vault,
+       backups with images, a lost device) are held by the cloud:e2e, server and blackbox gates. */
+    (function(){
+      var all=visualHistoryStatement({count:3,withImages:true,included:3}),part=visualHistoryStatement({count:3,withImages:true,included:2}),
+        plain=visualHistoryStatement({count:3,withImages:false}),none=visualHistoryStatement({count:0});
+      ok('an encrypted backup with every image is the complete visual history; with 2 of 3 it is not, and says one is missing; a plain one never is',
+        all.completeVisualHistory===true&&all.imagesIncluded===3&&/all 3/.test(all.statement)&&part.completeVisualHistory===false&&part.imagesIncluded===2&&/2 of 3/.test(part.statement)&&/1 is not on this device/.test(part.statement)
+          &&plain.completeVisualHistory===false&&plain.imagesIncluded===0&&/not the images/.test(plain.statement)&&none.completeVisualHistory===true);
+      /* a1 and a2 hold the same image; a3 is retracted but its bytes are still here; x9 is bytes with no record at all;
+         a4 is live but its bytes are not here and its upload failed twice; photo p3 has no image */
+      var man=[{id:'a1',kind:'photo',hash:'h1'},{id:'a2',kind:'photo',hash:'h1'},{id:'a3',kind:'photo',hash:'h3',removedAt:'2026-01-01T00:00:00Z'},{id:'a4',kind:'photo',hash:'h4'}];
+      var A=attachmentAuditOf(man,['a1','a3','x9'],[{id:'p1',attachmentId:'a1'},{id:'p2',attachmentId:'a4'},{id:'p3'},{id:'p4',attachmentId:'a3',removedAt:'2026-01-01T00:00:00Z'}],
+        {a1:{state:'uploaded'},a4:{state:'failed',attempts:2,lastError:'HTTP 503'}});
+      ok('the audit finds the orphans (bytes with no live record), the missing bytes, the duplicates and the photo with no image',
+        A.live===3&&A.stored===1&&JSON.stringify(A.orphans)==='["a3","x9"]'&&JSON.stringify(A.missing.map(function(m){return m.id;}))==='["a2","a4"]'
+          &&JSON.stringify(A.duplicates)==='[["a1","a2"]]'&&JSON.stringify(A.photosWithoutImage)==='["p3"]',JSON.stringify(A));
+      ok('and what is waiting to upload, what failed (with its attempts) and what is in the vault',A.pendingUpload===1&&A.failedUpload.length===1&&A.failedUpload[0].id==='a4'&&A.failedUpload[0].attempts===2&&A.inVault===1);
+      var u='data:image/jpeg;base64,/9j/4AAQQUI=',d=_dataUrlBytes(u);   /* FF D8 FF E0 00 10 41 42, encoded by hand */
+      ok('an image’s bytes are read from its data URL exactly, and written back the same',!!d&&d.type==='image/jpeg'&&d.bytes.length===8&&d.bytes[0]===0xFF&&d.bytes[6]===0x41&&_bytesDataUrl(d.type,d.bytes)===u);
+      var db=emptyDB(),ap=function(type,data){EVENT_TYPES[type].apply(db,{type:type,data:data,at:'2026-05-02T08:00:00Z'});};
+      ap('photo.added',{id:'ph1',date:'2026-05-01',pose:'front'});ap('attachment.recorded',{id:'att-1',kind:'photo',hash:'hx',bytes:10,type:'image/jpeg',removedAt:null});
+      ap('photo.linked',{id:'ph1',attachmentId:'att-1',hash:'hx'});ap('photo.added',{id:'ph2',date:'2026-05-02',pose:'side'});
+      ap('photo.removed',{id:'ph2',at:'2026-05-03T08:00:00Z'});ap('attachment.removed',{id:'att-1',at:'2026-05-03T09:00:00Z',reason:'photo removed'});
+      ok('the photo and attachment events replay to the same record on any device: added, linked, removed, retracted',
+        db.settings.photos.length===2&&db.settings.photos[0].attachmentId==='att-1'&&db.settings.photos[0].encrypted===true&&db.settings.photos[1].removedAt==='2026-05-03T08:00:00Z'
+          &&db.attachments.length===1&&db.attachments[0].removedAt==='2026-05-03T09:00:00Z'&&db.attachments[0].removedReason==='photo removed');
+      var keepDB=DB,keepNow=_NOW_OVERRIDE,ev=null,ret=null,live0=null,meta0=null,metaY=null,merged=null;
+      try{_NOW_OVERRIDE='2026-06-10T12:00:00Z';DB=emptyDB();_memoInvalidate();
+        var n0=_EVENTS.length;recordAttachment({id:'att-aaaaaaaaaaaa-t1',kind:'photo',hash:'h',bytes:5,type:'image/jpeg'});ev=_EVENTS.slice(n0).map(function(e){return e.type;});
+        ret=retractAttachment('att-aaaaaaaaaaaa-t1','test');
+        DB.settings.photos=[{id:'ph-t',date:'2026-06-07',pose:'front',addedAt:'2026-06-07T08:00:00Z'}];deletePhoto('ph-t');
+        live0=livePhotos().length;meta0=photoMeta().length;_NOW_OVERRIDE='2026-06-09T12:00:00Z';metaY=photoMeta().length;
+        _NOW_OVERRIDE='2026-06-10T12:00:00Z';DB.settings.photos=[{id:'ph-a',date:'2026-06-01',pose:'front'}];
+        merged=mergeRecordCollections({settings:{photos:[{id:'ph-a',date:'2026-06-01',pose:'front'},{id:'ph-b',date:'2026-06-02',pose:'side'}]}});
+        merged.photos=DB.settings.photos.map(function(p){return p.id;}).join();}
+      finally{DB=keepDB;_NOW_OVERRIDE=keepNow;_memoInvalidate();}
+      ok('recording an attachment is an event, and a retraction keeps the entry, marked removed',JSON.stringify(ev)==='["attachment.recorded"]'&&!!ret&&!!ret.removedAt&&ret.removedReason==='test');
+      ok('removing a photo retracts it: gone today, still there in a replay of the day before it was removed',live0===0&&meta0===0&&metaY===1,JSON.stringify({live0:live0,meta0:meta0,metaY:metaY}));
+      ok('a merge restore brings back photos by id, not only the collections',merged.byCollection.photos===1&&merged.photos==='ph-a,ph-b',JSON.stringify(merged));
+      ok('the manifest is a persisted collection of the record',PERSIST_COLLECTIONS.indexOf('attachments')>=0&&Array.isArray(emptyDB().attachments));
+    })();
+    _stSuite('events');
+    /* UNDOING A SYNC MERGE HOLDS (TRANSITION §7's open decision, now taken: the undo revokes what the merge brought).
+       Devices A and B share a log holding A's weigh-in of 210 lb; B adds one of 212 lb and sends its envelope; A merges it,
+       then undoes the merge. Every expectation is one of those two weigh-ins. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedStack=_undoStack.slice(),T=todayISO(),r={};
+      var has=function(v,db){return (db||DB).observations.some(function(o){return o.type==='weight'&&o.value===v&&!o.retracted;});};
+      var restart=function(){var stored=_EVENTS.slice();_EVENTS.length=0;adoptMergedEvents(mergeEvents([],stored));};
+      try{DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;clearUndo();DB.settings.deviceId='dev-A';resetEventLog('merge undo test');_memoInvalidate();
+        addObservation({type:'weight',date:addDays(T,-3),value:210,source:'manual'},{noSave:true});
+        var shared=_EVENTS.slice(),aDB=JSON.parse(JSON.stringify(DB));
+        DB.settings.deviceId='dev-B';addObservation({type:'weight',date:addDays(T,-1),value:212,source:'manual'},{noSave:true});
+        var envB=buildEnvelope(),bLog=_EVENTS.slice();
+        DB=JSON.parse(JSON.stringify(aDB));DB.settings.deviceId='dev-A';_EVENTS=shared.slice();_memoInvalidate();
+        r.merge=mergeEnvelope(envB);r.afterMerge=has(212);
+        undo();r.result=lastUndoResult();r.afterUndo=has(212);
+        restart();r.afterRestart={b:has(212),a:has(210)};
+        mergeEnvelope(envB);r.afterResync=has(212);
+        var aLog=_EVENTS.slice(),inB={};bLog.forEach(function(e){inB[e.id]=1;});
+        r.onB=(function(){var P=projectEvents(mergeEvents(bLog,aLog).events).db;return {b:has(212,P),a:has(210,P)};})();
+        DB.settings.deviceId='dev-B';_EVENTS=bLog.slice();r.told=undoneElsewhere(aLog.filter(function(e){return !inB[e.id];}));
+        /* a merge that brings a whole record B restored keeps it, and says so */
+        DB=JSON.parse(JSON.stringify(aDB));DB.settings.deviceId='dev-B';_EVENTS=shared.slice();resetEventLog('record restored from a backup');var envSnap=buildEnvelope();
+        DB=JSON.parse(JSON.stringify(aDB));DB.settings.deviceId='dev-A';_EVENTS=shared.slice();clearUndo();_memoInvalidate();
+        mergeEnvelope(envSnap);undo();r.snap=lastUndoResult();}
+      finally{DB=savedDB;_EVENTS=savedEvents;_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();}
+      ok('undoing a merge revokes what it brought: B’s 212 lb is gone at once and after a restart, and A’s own 210 lb stays',
+        !!r.merge&&r.merge.ok&&r.afterMerge&&!r.afterUndo&&!!r.result&&r.result.merge===true&&r.result.revoked===1&&!r.afterRestart.b&&r.afterRestart.a,JSON.stringify(r));
+      ok('the same envelope merged again does not bring it back',r.afterResync===false);
+      ok('device B, merging A’s log, removes its own 212 lb too, and keeps 210: one record on every device',!!r.onB&&!r.onB.b&&r.onB.a);
+      ok('and B is told that one of its changes was undone on another device, and by which',!!r.told&&r.told.count===1&&r.told.by.join()==='dev-A');
+      ok('a merge that brought a whole record another device restored keeps that record, and the undo says so',!!r.snap&&r.snap.merge===true&&r.snap.keptSnapshot===1&&r.snap.revoked===0,JSON.stringify(r.snap));
+    })();
+    _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');
     /* ---- Sources: identity, deduplication, preferences, deletion ---- */

@@ -162,7 +162,9 @@ registerAction('ui.fold',function(id,ev,el){setTimeout(function(){
   if(d.open&&wasEmpty){try{if(_SHEET)renderSheet();else renderAll();}catch(e){_q(e,'P2');}}
 },0);});
 registerAction('ui.openAbout',function(){openSheet('edit',{form:'about',title:'About Physique OS',desc:'',buf:{}});});
-registerAction('undo.last',function(){var label=undoLabel();if(!label)return;if(undo()){_memoInvalidate();renderAll();toast('Undid: '+esc(label));}});
+registerAction('undo.last',function(){var label=undoLabel();if(!label)return;if(undo()){_memoInvalidate();renderAll();var r=lastUndoResult();
+  /* undoing a merge removes the other device's changes everywhere, and says so; a restored record it brought is kept */
+  toast('Undid: '+esc(label)+(r&&r.merge&&r.revoked?' \u00b7 '+r.revoked+' change'+(r.revoked===1?'':'s')+' from another device removed on every device at the next sync':'')+(r&&r.keptSnapshot?' \u00b7 a whole record another device restored is kept: restore your own backup to replace it':''),{ms:r&&r.merge?9000:undefined});}});
 /* ---- log sheet ---- */
 registerAction('log.open',function(arg){openLog(arg||'weight');});
 registerAction('log.close',function(){closeSheet();});
@@ -609,16 +611,22 @@ registerAction('settings.profile',function(arg){
 registerAction('settings.showModels',function(arg){DB.settings.showModels=(arg==='on');save('settings');applySettings();renderAll();});
 /* ---- demo ---- */
 registerAction('demo.load',function(){return confirmDialog({title:'Load the demo record?',msg:DB.observations.length&&!(DB.demo&&DB.demo.active)?'You have real data. Loading the demo <b>replaces the current record</b>. A backup is written to IndexedDB first, and Undo restores the previous record.':'Ten weeks of generated data will be loaded and marked as demo.',okLabel:'Load demo'}).then(function(ok){if(!ok)return;pushUndo('load demo');writeAutoBackup();loadDemo();applySettings();_memoInvalidate();switchTab('today');toast('Demo loaded',{undo:true});});});
-registerAction('demo.reset',function(){var demo=DB.demo&&DB.demo.active;return confirmDialog({title:demo?'Clear the demo record?':'Erase everything?',msg:demo?'The record becomes empty. Undo restores it.':'All observations, sessions, food logs, phases, experiments and predictions are removed from this device. A backup is written to IndexedDB first. Export a JSON backup before doing this if you want to keep anything.',okLabel:demo?'Clear':'Erase',danger:!demo}).then(function(ok){if(!ok)return;pushUndo('reset');writeAutoBackup();DB=emptyDB();DB.settings.onboarded=true;save('reset');_memoInvalidate();applySettings();switchTab('today');toast('Record cleared',{undo:true});});});
+registerAction('demo.reset',function(){var demo=DB.demo&&DB.demo.active;return confirmDialog({title:demo?'Clear the demo record?':'Erase everything?',msg:demo?'The record becomes empty. Undo restores it.':'All observations, sessions, food logs, phases, experiments and predictions are removed from this device. A backup is written to IndexedDB first. Progress photo images are deleted too, and Undo does not bring them back: an encrypted backup carries them. Export a backup before doing this if you want to keep anything.',okLabel:demo?'Clear':'Erase',danger:!demo}).then(function(ok){if(!ok)return;pushUndo('reset');writeAutoBackup();DB=emptyDB();DB.settings.onboarded=true;save('reset');_memoInvalidate();applySettings();switchTab('today');
+  if(!demo&&typeof eraseAllAttachments==='function')eraseAllAttachments().catch(function(e){_q(e,'P1');});
+  toast('Record cleared',{undo:true});});});
 /* ---- data: backup, restore, exports ---- */
 function downloadText(name,text,mime){try{var blob=new Blob([text],{type:mime||'application/octet-stream'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);return true;}catch(e){_q(e);return false;}}
-/* WHAT A BACKUP HOLDS OF THE VISUAL HISTORY (catalogue W-004). Progress photos are kept on this device only, by design:
-   the record holds each photo's date and pose, and the images stay in the browser database, so an exported backup never
-   carries a photo. The backup says so in its own header, and the Data card says so before one is made, so nobody takes
-   a backup for a complete visual history. */
-function backupPhotoStatement(){var n=((DB.settings&&DB.settings.photos)||[]).filter(function(p){return p&&!p.removedAt;}).length;
-  return {count:n,imagesIncluded:false,completeVisualHistory:n===0,
-    statement:n?('This backup holds the dates and poses of '+n+' progress photo'+(n===1?'':'s')+', not the images: the images stay on this device only.'):'There are no progress photos, so nothing visual is left out.'};}
+/* WHAT A BACKUP HOLDS OF THE VISUAL HISTORY (catalogue W-004). A plain backup holds each photo's date and pose, never the
+   images; an encrypted backup carries the images too (option B). Each says which in its own header, and the Data card
+   says it before one is made, so nobody takes a backup for a complete visual history when it is not one. */
+function backupPhotoStatement(){return visualHistoryStatement({count:livePhotos().length,withImages:false});}
+/* where the images are: encrypted here, copied to the vault, waiting, or failed (this device's state; null until read) */
+function photoDurabilitySummary(){var live=livePhotos(),att=live.filter(function(p){return p.attachmentId;});
+  var st=typeof _ATT_STATE!=='undefined'&&_ATT_STATE?_ATT_STATE.remote:null;
+  var inVault=st?att.filter(function(p){return st[p.attachmentId]&&st[p.attachmentId].state==='uploaded';}).length:null,
+    failed=st?att.filter(function(p){return st[p.attachmentId]&&st[p.attachmentId].state==='failed';}).length:null;
+  return {count:live.length,encrypted:att.length,unencrypted:live.length-att.length,inVault:inVault,failed:failed,
+    statement:live.length?(att.length+' of '+live.length+' photo images are encrypted on this device'+(inVault!=null&&(DB.settings.cloud||{}).vaultId?'; '+inVault+' copied to your vault'+(failed?', '+failed+' failed to upload and will be retried':''):'')+'.'):''};}
 function backupJSON(){var counts={observations:DB.observations.length,sessions:DB.sessions.length,foodLogs:DB.foodLogs.length,phases:DB.phases.length,predictions:DB.predictions.length,experiments:DB.experiments.length};var obj=Object.assign({},DB,{backup:{exportedAt:nowISO(),app:APP_NAME,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,build:BUILD_ID,counts:counts,photos:backupPhotoStatement()}});return JSON.stringify(obj,null,1);}
 registerAction('data.backup',function(){var s=backupJSON();if(downloadText('physique-os-backup-'+todayISO()+'.json',s,'application/json')){DB.settings.lastBackupAt=nowISO();save('backup');renderAll();toast('Backup exported \u00b7 '+fmtNum(s.length/1024,0)+' KB');}});
 registerAction('data.restore',function(){var f=document.getElementById('restoreFile');if(f){f.value='';f.click();}else toast('Open Tools \u2192 Data to restore');});
@@ -640,15 +648,18 @@ registerAction('data.restoreFile',function(arg,ev,el){var file=el.files&&el.file
         if(!pass){el.value='';return;}
         decryptBackup(obj,pass).then(function(plain){
           /* Once decrypted it goes through exactly the same preview as a plaintext backup: same validation,
-             same counts, same merge-or-replace choice. An encrypted file gets no shortcut. */
+             same counts, same merge-or-replace choice. An encrypted file gets no shortcut. The photo images it carries
+             are set apart and stored, each checked against its hash, after the record is restored. */
+          var atts=Array.isArray(plain.backupAttachments)?plain.backupAttachments:[];delete plain.backupAttachments;
           var v2=validateDB(plain);
           openSheet('edit',{form:'restore',title:'Restore from an encrypted backup',desc:'',
-            buf:{fileName:file.name+' (decrypted)',obj:plain,mode:'merge',
+            buf:{fileName:file.name+' (decrypted)',obj:plain,mode:'merge',attachments:atts,
               preview:{schemaVersion:plain.schemaVersion,appVersion:plain.appVersion,createdAt:plain.createdAt,
                 valid:v2.ok,errors:v2.errors||[],
                 counts:{observations:(plain.observations||[]).length,sessions:(plain.sessions||[]).length,
                   foodLogs:(plain.foodLogs||[]).length,phases:(plain.phases||[]).length,
-                  predictions:(plain.predictions||[]).length,experiments:(plain.experiments||[]).length}}}});
+                  predictions:(plain.predictions||[]).length,experiments:(plain.experiments||[]).length,
+                  photos:((plain.settings&&plain.settings.photos)||[]).filter(function(p){return !p.removedAt;}).length,images:atts.length}}}});
         }).catch(function(e){toast(String(e&&e.message||e),{tone:'negative',ms:9000});el.value='';});
       });
     return;
@@ -659,7 +670,11 @@ registerAction('data.restoreApply',function(){var b=_SHEET.buf;var obj=b.obj;var
   else{added=mergeRecordCollections(incoming).added;if(!DB.profile.age&&incoming.profile)DB.profile=incoming.profile;}
   DB.ledger.migrations=(DB.ledger.migrations||[]).concat((m.applied||[]).map(function(x){return {at:nowISO(),step:'restore: '+x};}));
   try{resetEventLog('record restored from a backup');}catch(e){_q(e,'P1');}
-  save('restore');_memoInvalidate();closeSheet();applySettings();renderAll();toast((mode==='replace'?'Record replaced':'Merged '+added+' records'),{undo:true});});
+  save('restore');_memoInvalidate();closeSheet();applySettings();renderAll();toast((mode==='replace'?'Record replaced':'Merged '+added+' records'),{undo:true});
+  /* the photo images an encrypted backup carried: each stored only if it matches its hash, and a partial restore says which failed */
+  if(b.attachments&&b.attachments.length)restoreAttachmentsFromBackup(b.attachments).then(function(r){_PHOTO_CACHE={};renderAll();
+    toast(r.failed.length?('Restored '+r.restored+' of '+b.attachments.length+' photo images; '+r.failed.length+' did not match their record and were not stored'):('Restored '+r.restored+' photo image'+(r.restored===1?'':'s')+(r.already?' ('+r.already+' already here)':'')),{tone:r.failed.length?'attention':'good',ms:9000});
+    if(r.failed.length&&typeof auditAppend==='function')auditAppend('restore.attachments.partial',{failed:r.failed.map(function(f){return f.id;})});});});
 function csvEscape(v){if(v==null)return '';var s=String(v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 /* toCSV moved to 65-import.js (engine layer) */
 /* exportCSV moved to 65-import.js (engine layer) */
@@ -1035,6 +1050,7 @@ registerAction('why.shown',function(arg){
   var p=String(arg).split('|');var w=whyShown(p[0],p[1]);
   if(!w){toast('No explanation is recorded for that');return;}
   openSheet('edit',{form:'whyShown',title:'Why am I seeing this?',desc:'',buf:{w:w}});});
+registerAction('why.level',function(k){if(!_SHEET||!_SHEET.buf||!EXPLANATION_LEVELS[k])return;_SHEET.buf.level=k;renderSheet();});
 registerAction('copy.decision',function(arg){
   var txt=decisionReport(arg);
   if(!txt){toast('No decision to copy');return;}
@@ -1190,11 +1206,15 @@ registerAction('data.backupEncrypted',function(){
   promptDialog({title:'Encrypt this backup',label:'Passphrase (at least 8 characters) \u2014 there is no recovery if you lose it',value:''})
     .then(function(pass){
       if(!pass)return;
-      encryptBackup(pass).then(function(env){
+      /* the encrypted backup carries the photo images (W-004 option B), and its header says whether it holds them all */
+      var live=livePhotos();
+      attachmentsForBackup().then(function(A){return encryptBackup(pass,{attachments:A.items}).then(function(env){
+        var inc=live.filter(function(p){return p.attachmentId&&A.items.some(function(i){return i.id===p.attachmentId;});}).length;
+        env.photos=visualHistoryStatement({count:live.length,withImages:true,included:inc});return env;});}).then(function(env){
         var name='physique-backup-'+todayISO()+'.encrypted.json';
         if(downloadText(name,JSON.stringify(env,null,1),'application/json')){
           DB.settings.lastBackupAt=nowISO();save('settings');
-          toast('Encrypted backup exported \u00b7 keep the passphrase somewhere safe');}
+          toast('Encrypted backup exported \u00b7 '+(env.photos.count?env.photos.statement+' ':'')+'Keep the passphrase somewhere safe.',{ms:9000});}
       }).catch(function(e){toast(String(e&&e.message||e),{tone:'negative'});});});});
 registerAction('data.restoreEncrypted',function(){
   var inp=document.getElementById('restoreFile');if(!inp)return;
@@ -1288,6 +1308,7 @@ SHEETS.cloud=function(){var c=cloudState();
   return {body:uiRow('Status',esc(c.status),{sub:c.configured?('vault '+esc(String(c.vaultId).slice(0,10))+'\u2026'):'no vault on this device'})+
     uiRow('Server',esc(c.url),{sub:'run server/server.mjs, or point this at your own \u2014 it holds ciphertext only'})+
     uiRow('Local events',fmtNum(c.localEvents,0),{sub:c.pushedCount+' already uploaded \u00b7 last sync '+(c.lastSyncAt?ageLabel(localDateOf(c.lastSyncAt)):'never')})+
+    (function(){var u=(DB.settings.cloud||{}).undoneElsewhere;return u&&u.count?'<div class="hint attention" data-undone-elsewhere>'+esc(u.count+' of this device\u2019s change'+(u.count===1?' was':'s were')+' undone on another device ('+(u.by||[]).join(', ')+') '+ageLabel(localDateOf(u.at))+', and removed here too.')+'</div>':'';})()+
     '<div class="btn-row">'+
       (c.configured?uiBtn('Sync now','cloud.sync',null,'btn-sm btn-primary'):uiBtn('Create a vault','cloud.create',null,'btn-sm btn-primary'))+
       uiBtn('Unlock an existing vault','cloud.unlock',null,'btn-sm btn-secondary')+
@@ -2534,14 +2555,15 @@ SHEETS['import']=function(){
     (_IMPORT.preview?_importPreviewHtml():'')+
     '<div class="prov">No wearable API is called and none can be without platform credentials: these are file imports. An imported value is never presented as one you measured \u2014 it carries its source, its device and a trust weight, and where two sources disagree the disagreement is reported rather than silently resolved.</div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
-function openPhotos(){setTimeout(hydratePhotoThumbs,0);openSheet('edit',{form:'photos',title:'Progress photos',desc:'Photos are stored in the browser database, never in the record document, so exports stay small and a photo is never shared by exporting a backup.',buf:{}});}
+function openPhotos(){setTimeout(hydratePhotoThumbs,0);if(typeof _attState==='function')_attState().then(function(){if(_SHEET&&_SHEET.opts.form==='photos')renderSheet();});
+  openSheet('edit',{form:'photos',title:'Progress photos',desc:'Each image is encrypted on this device, never in the record document. With cloud sync it is copied, encrypted, to your vault; an encrypted backup carries it too. A plain backup holds only the dates and poses.',buf:{}});}
 /* ---- PROGRESS PHOTOS ----
    The gallery and comparisons existed, and addPhoto() existed, but nothing ever called it: there was no way to add a
    photo at all. Taking one (the camera, on a phone) and choosing one from the library both land here, with the
    view and lighting recorded so photos can be compared fairly. */
 var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',note:''};
 SHEETS.photos=function(){
-  var _todaySwitch=(DB.settings.photos||[]).length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
+  var _todaySwitch=livePhotos().length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
   var pairs=photoPosePairs();
   var chips=function(reg,cur,act){return '<div class="btn-row" style="margin-top:4px">'+Object.keys(reg).map(function(k){
     return uiBtn(reg[k].label,act,k,'btn-sm '+(cur===k?'btn-primary':'btn-secondary'));}).join('')+'</div>';};
@@ -2553,11 +2575,13 @@ SHEETS.photos=function(){
     '<div class="btn-row">'+uiBtn('Take photo','photo.pick','camera','btn-sm btn-primary')+uiBtn('Choose from library','photo.pick','library','btn-sm btn-secondary')+'</div>'+
     '<input id="photoCam" class="visually-hidden" aria-label="Take a photo" type="file" accept="image/*" capture="environment" data-act="photo.file" data-arg="camera" data-ev="change" tabindex="-1" aria-hidden="true">'+
     '<input id="photoLib" class="visually-hidden" aria-label="Choose a photo" type="file" accept="image/*" data-act="photo.file" data-arg="library" data-ev="change" tabindex="-1" aria-hidden="true">'+
-    '<div class="hint">Photos stay on this device, resized to '+PHOTO_MAX_EDGE+' px. Same view, same light and the same time of day make two photos worth comparing.</div>';
-  var gallery=m.length?('<div class="card-title" style="margin-top:12px">Your photos</div><div class="photo-grid">'+m.slice(0,24).map(function(p){
+    '<div class="hint">Photos are resized to '+PHOTO_MAX_EDGE+' px and encrypted on this device. Same view, same light and the same time of day make two photos worth comparing.</div>';
+  var dur=photoDurabilitySummary();
+  var gallery=m.length?((dur.statement?'<div class="hint" data-photo-durability>'+esc(dur.statement)+'</div>':'')+'<div class="card-title" style="margin-top:12px">Your photos</div><div class="photo-grid">'+m.slice(0,24).map(function(p){
     var vw=(PHOTO_VIEWS[p.view||p.pose]||{}).label||p.pose;
     return '<figure class="photo-cell"><img data-photo="'+esc(p.id)+'" alt="'+esc(vw+' photo, '+shortDate(p.date))+'" loading="lazy">'+
       '<figcaption><span>'+esc(vw)+' \u00b7 '+esc(shortDate(p.date))+'</span>'+(p.weight!=null?'<span>'+fmtWeight(p.weight)+'</span>':'')+
+      '<span class="hint" data-durability="'+esc(p.id)+'">'+esc(!p.attachmentId?'this device only, not encrypted':(function(){var s=attachmentRemoteState(p.attachmentId).state;return s==='uploaded'?'encrypted \u00b7 in your vault':(s==='failed'?'encrypted \u00b7 upload failed, retrying':'encrypted \u00b7 this device');})())+'</span>'+
       uiBtn('Delete','photo.delete',p.id,'btn-sm btn-ghost')+'</figcaption></figure>';}).join('')+'</div>'):
     uiEmpty('No photos yet','Add one above. A photo every two to four weeks, same view and light, shows change that the scale cannot.','');
   var comps=pairs.length?('<div class="card-title" style="margin-top:10px">Comparisons</div>'+pairs.map(function(p){return uiRow(esc(p.label),p.days+' days apart',
@@ -2645,9 +2669,17 @@ SHEETS.obsInspect=function(b){var o=b.o;var t=OBS_TYPES[o.type]||{};var mq=measu
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'+(o.retracted?'':'<button class="btn btn-danger" data-act="obs.retract" data-arg="'+o.id+'">Retract</button>')};};
 function openDecisionInspect(id){var d=(DB.decisions||[]).filter(function(x){return x.id===id;})[0];if(!d)return;openSheet('edit',{form:'decisionInspect',title:d.verb||d.code,desc:'',buf:{d:d}});}
 SHEETS.decisionInspect=function(b){var d=b.d;var li=function(w){return '<li>'+esc(typeof w==='string'?w:(w.text||''))+'</li>';};
+  /* a decision recorded with its explanation is shown from it, at the level chosen here (doc 2, P1.3): the same claims at every level */
+  var lv=b.level||currentExplanationLevel(),X=null;try{X=d.explanation?compileExplanation(d.explanation,lv):null;}catch(e){_q(e,'P2');}
+  var cl=function(g){return '<li data-claim="'+attrEsc(g.claimId)+'">'+esc(g.text)+'</li>';};
+  var levels=X?'<div class="chips" role="group" aria-label="Explanation level">'+Object.keys(EXPLANATION_LEVELS).map(function(k){return '<button type="button" class="chip sm'+(k===lv?' active':'')+'" data-act="why.level" data-arg="'+k+'" aria-pressed="'+(k===lv)+'">'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</button>';}).join('')+'</div>':'';
   var body=uiRow('Decided',longDate(d.date),{sub:esc(d.code)+' \u00b7 confidence '+esc(d.confidence||'\u2014')+' \u00b7 '+esc(d.source||'system')})+
-    (d.lede?'<div class="lead" style="font-size:14px;margin:8px 0">'+esc(d.lede)+'</div>':'')+
-    (d.why&&d.why.length?'<div class="d-block"><div class="d-block-title">WHY</div><ul>'+d.why.map(li).join('')+'</ul></div>':'')+
+    (d.lede?'<div class="lead" style="font-size:14px;margin:8px 0">'+esc(d.lede)+'</div>':'')+levels+
+    (X?'<div class="d-block" data-block="why"><div class="d-block-title">WHY</div><ul>'+X.grounds.map(cl).join('')+'</ul></div>'+
+      (X.rules.length?'<div class="d-block" data-block="rules"><div class="d-block-title">THE RULES APPLIED</div><ul>'+X.rules.map(cl).join('')+'</ul></div>':'')+
+      (X.evidence.length?'<div class="d-block" data-block="evidence"><div class="d-block-title">EVIDENCE BEHIND THE RULES</div><ul>'+X.evidence.map(cl).join('')+'</ul><div class="hint">Published findings support these rules; the rules themselves are this system\u2019s and are not validated as models.</div></div>':'')+
+      (X.provenance?'<div class="prov">'+esc(X.provenance.join(' \u00b7 '))+'</div>':''):
+    (d.why&&d.why.length?'<div class="d-block"><div class="d-block-title">WHY</div><ul>'+d.why.map(li).join('')+'</ul></div>':''))+
     (d.action&&d.action.length?'<div class="d-block"><div class="d-block-title">DO</div><ul>'+d.action.map(li).join('')+'</ul></div>':'')+
     (d.reverseIf&&d.reverseIf.length?'<div class="d-block"><div class="d-block-title">WHAT WOULD CHANGE IT</div><ul>'+d.reverseIf.map(function(w){return '<li class="attention">'+esc(w)+'</li>';}).join('')+'</ul></div>':'')+
     (d.uncertainty?'<div class="d-block"><div class="d-block-title">HOW SURE THE NUMBERS WERE</div><div class="muted">'+esc(d.uncertainty.text||'')+'</div></div>':'')+
@@ -2953,7 +2985,7 @@ registerAction('dictate',function(id,ev,btn){var el=document.getElementById(id);
   try{r.start();}catch(e){toast('Dictation could not start');}});
 /* ---- FEATURE GUIDE: every feature pointed to, with whether it is set up (usage review: features were found by accident
    or only through the command search) ---- */
-function featureGuide(){var P=DB.settings.photos||[],C=DB.settings.cloud||{},S=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
+function featureGuide(){var P=livePhotos(),C=DB.settings.cloud||{},S=typeof scheduleModel==='function'?scheduleModel():{mode:'weekly'};
   var voice=typeof window!=='undefined'&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   return [
     {id:'place',icon:'pin',label:'Weather for your place',what:'Conditions, the next hours, 14 days and air quality on Today.',on:!!weatherLocation(),act:'weather.open',cta:'Set a place'},

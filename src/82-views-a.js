@@ -70,7 +70,7 @@ RENDERERS.today=function(){
   /* TODAY, REORGANISED (usage review: "the long block of text on open", "photo is too small"). A compact summary comes
      first \u2014 the latest photo, the date, the week's decision as one line, three numbers \u2014 and the decision's full
      reasoning sits in a fold beneath it. */
-  var _phH=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?(DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+  var _phH=(DB.settings.showPhotoOnToday!==false&&livePhotos().length)?livePhotos().slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
   var _num=function(l,v){return '<div class="hero-num"><span class="hint">'+esc(l)+'</span><b>'+v+'</b></div>';};
   var _wa=weightAverages(),_tr=weightTrend(14),_phT=activePhase();
   var _wt=_wa&&_wa.avg7!=null?fmtWeight(_wa.avg7):'\u2014',_rate=_tr&&_tr.status==='ok'&&_tr.slopePerWeek!=null?(fmtSigned(_tr.slopePerWeek,1)+' /wk'):'\u2014',_kc=_phT&&_phT.calorieTarget?fmtNum(_phT.calorieTarget,0):'\u2014';
@@ -94,8 +94,8 @@ RENDERERS.today=function(){
   // actions checklist
   /* The latest progress photo as a small icon on Today (usage review): off by default \u2014 progress photos are personal and
      Today is the screen other people glance at \u2014 and shown only when a photo exists. */
-  var _ph=(DB.settings.showPhotoOnToday!==false&&(DB.settings.photos||[]).length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
-    (DB.settings.photos||[]).slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
+  var _ph=(DB.settings.showPhotoOnToday!==false&&livePhotos().length)?   /* shown once a photo exists, unless hidden (it was off by default, and a person who added a photo saw nothing) */
+    livePhotos().slice().sort(function(a,b){return String(a.date||a.at)<String(b.date||b.at)?1:-1;})[0]:null;
   _ph=null;   /* the photo now lives in the summary at the top */
   var _nextUp=(function(){try{return renderNextUp();}catch(e){_q(e,'P2');return '';}})();   /* quick actions for this moment */
   setHTML('actionsZone',_nextUp+(_ph?'<button class="today-photo" data-act="nav.photos" aria-label="Open progress photos"><img data-photo="'+attrEsc(_ph.id)+'" alt="Latest progress photo, '+attrEsc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'"><span>Latest photo \u00b7 '+esc(shortDate(_ph.date||String(_ph.at||'').slice(0,10)))+'</span></button>':'')+renderActionsChecklist(dec,S)+(function(){try{return renderWeatherCard();}catch(e){_q(e,'P2');return '';}})()+(function(){try{return renderSetupMore();}catch(e){_q(e,'P2');return '';}})());   /* weather once a place is set; then what is not set up yet */
@@ -113,7 +113,12 @@ RENDERERS.today=function(){
 };
 function renderDecisionCard(dec,S){
   var tone={good:'var(--good)',attention:'var(--attention)',negative:'var(--negative)',inferred:'var(--inferred)',neutral:'var(--neutral)'}[dec.tone]||'var(--neutral)';
-  var why=(dec.why||[]).map(function(w){return '<li>'+esc(w)+'</li>';}).join('');
+  /* the reasons are the decision's structured explanation, compiled at the person's detail level (doc 2, P1.3) */
+  var X=null;try{X=dec.explanation?compileExplanation(dec.explanation,currentExplanationLevel()):null;}catch(e){_q(e,'P2');}
+  var _cl=function(g){return '<li data-claim="'+attrEsc(g.claimId)+'">'+esc(g.text)+'</li>';};
+  var why=X?X.grounds.map(_cl).join(''):(dec.why||[]).map(function(w){return '<li>'+esc(w)+'</li>';}).join('');
+  var rules=X&&X.rules.length?'<div class="d-block" data-block="rules"><div class="d-block-title">THE RULES APPLIED</div><ul>'+X.rules.map(_cl).join('')+'</ul></div>':'';
+  var evid=X&&X.evidence.length?'<div class="d-block" data-block="evidence"><div class="d-block-title">EVIDENCE BEHIND THE RULES</div><ul>'+X.evidence.map(_cl).join('')+'</ul><div class="hint">Published findings support these rules; the rules themselves are this system\u2019s and are not validated as models.</div></div>':'';
   var act=(dec.action||[]).map(function(a){return '<li class="good">'+esc(a.text)+'</li>';}).join('');
   var rev=(dec.reverseIf||[]).map(function(r){return '<li class="attention">'+esc(r)+'</li>';}).join('');
   var askRow='<div class="btn-row" style="margin-top:10px">'+uiBtn('Ask the record','nav.ask',null,'btn-sm btn-ghost')+'</div>';
@@ -129,7 +134,7 @@ function renderDecisionCard(dec,S){
   else if(dec.code==='SETUP')btns+=uiBtn('Set up profile and phase','profile.edit',null,'btn-primary')+uiBtn('Load the demo record','demo.load',null,'btn-secondary');
   else if(dec.code==='TRANSITION')btns+=uiBtn('Start a transition phase','phase.start','transition','btn-primary');
   else btns+=uiBtn('Record my own decision','decision.user',null,'btn-secondary')+uiBtn('Why this, in full','nav.tab','diagnose','btn-ghost');
-  return '<section class="decision" style="--dcol:'+tone+'" aria-label="Decision"><div class="d-eyebrow"><span>DECISION \u00b7 '+esc(dec.priority||'').toUpperCase()+'</span><span>'+(dec.recheckDays?'recheck in '+dec.recheckDays+' days':'')+'</span></div><div class="d-verb'+(dec.confidence==='insufficient'?' insufficient':'')+'">'+esc(dec.verb)+'</div><div class="d-lede">'+esc(dec.lede)+'</div>'+(why?'<div class="d-block"><div class="d-block-title">WHY</div><ul>'+why+'</ul></div>':'')+(act?'<div class="d-block"><div class="d-block-title">DO</div><ul>'+act+'</ul></div>':'')+(rev?'<div class="d-block"><div class="d-block-title">REVERSE IF</div><ul>'+rev+'</ul></div>':'')+hold+unc+presp+mind+attn+askRow+setupStrip()+(dec.intervention?'<div class="d-block"><div class="d-block-title">PREDICTION TO BE STAMPED</div><div class="lead" style="font-size:13px">'+esc(dec.intervention.expected)+' \u00b7 recheck '+dec.intervention.recheckDays+' days</div></div>':'')+'<div class="d-meta">'+confPill(dec.confidence)+uiPill('rules v'+DECISION_RULES_VERSION)+(dec.diagnosis?uiPill(dec.diagnosis.title.toLowerCase()+' \u00b7 '+dec.diagnosis.likelihood,'inferred'):'')+(dec.costOfWaiting?uiPill('cost of waiting: '+esc(dec.costOfWaiting),'neutral'):'')+'</div><div class="d-actions">'+btns+'</div></section>';
+  return '<section class="decision" style="--dcol:'+tone+'" aria-label="Decision"><div class="d-eyebrow"><span>DECISION \u00b7 '+esc(dec.priority||'').toUpperCase()+'</span><span>'+(dec.recheckDays?'recheck in '+dec.recheckDays+' days':'')+'</span></div><div class="d-verb'+(dec.confidence==='insufficient'?' insufficient':'')+'">'+esc(dec.verb)+'</div><div class="d-lede">'+esc(dec.lede)+'</div>'+(why?'<div class="d-block" data-block="why"><div class="d-block-title">WHY</div><ul>'+why+'</ul></div>':'')+rules+evid+(act?'<div class="d-block"><div class="d-block-title">DO</div><ul>'+act+'</ul></div>':'')+(rev?'<div class="d-block"><div class="d-block-title">REVERSE IF</div><ul>'+rev+'</ul></div>':'')+hold+unc+presp+mind+attn+askRow+setupStrip()+(dec.intervention?'<div class="d-block"><div class="d-block-title">PREDICTION TO BE STAMPED</div><div class="lead" style="font-size:13px">'+esc(dec.intervention.expected)+' \u00b7 recheck '+dec.intervention.recheckDays+' days</div></div>':'')+'<div class="d-meta">'+confPill(dec.confidence)+uiPill('rules v'+DECISION_RULES_VERSION)+(dec.diagnosis?uiPill(dec.diagnosis.title.toLowerCase()+' \u00b7 '+dec.diagnosis.likelihood,'inferred'):'')+(dec.costOfWaiting?uiPill('cost of waiting: '+esc(dec.costOfWaiting),'neutral'):'')+'</div><div class="d-actions">'+btns+'</div></section>';
 }
 /* A decision is only honest if it names the observation that would overturn it. This component is shared by
    Today, Plan and Diagnose so the falsification conditions read identically wherever they appear. */

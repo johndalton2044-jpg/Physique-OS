@@ -7,7 +7,7 @@ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pos-srv-'));
 /* a real P-256 pair in web-push's format */
 const kp=crypto.generateKeyPairSync('ec',{namedCurve:'prime256v1'});const jw=kp.privateKey.export({format:'jwk'});
 const PUB=Buffer.concat([Buffer.from([4]),Buffer.from(jw.x,'base64url'),Buffer.from(jw.y,'base64url')]).toString('base64url'),PRIV=jw.d;
-Object.assign(process.env,{PHYSIQUE_SERVER_TEST:'1',DATA_DIR:tmp,LEDGER_INDEX_IDS:'8',VAPID_PUBLIC_KEY:PUB,VAPID_PRIVATE_KEY:PRIV,NODE_TLS_REJECT_UNAUTHORIZED:'0'});
+Object.assign(process.env,{PHYSIQUE_SERVER_TEST:'1',DATA_DIR:tmp,LEDGER_INDEX_IDS:'8',MAX_ATTACHMENT_BYTES:'600000',VAPID_PUBLIC_KEY:PUB,VAPID_PRIVATE_KEY:PRIV,NODE_TLS_REJECT_UNAUTHORIZED:'0'});
 const S=await import('../server/server.mjs?'+Date.now());
 /* 1. the push-key invariant */
 line(S.vapidKeys().publicKey===PUB&&/BEGIN PRIVATE KEY/.test(S.vapidKeys().privateKeyPem),'web-push format keys (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) are accepted and converted');
@@ -95,6 +95,35 @@ let n=0;for(let i=0;i<30;i++)if(S.rateOk('sock:test',25))n++;line(n===25,'the so
   const LL=ledger(),seqs=LL.map(r=>r.serverSeq),ids=LL.map(r=>r.id);
   line(JSON.stringify(seqs)==='[1,2,3,4,5,6,7]'&&new Set(ids).size===ids.length&&S.readVault(vid).eventCount===7,
     'after every retry the ledger is set-like by id, in strictly increasing sequence, with its count matching',JSON.stringify({seqs,ids,count:S.readVault(vid).eventCount}));
+  srv.close();}
+/* 9. encrypted attachments (catalogue W-004, option B): ciphertext parts, kept apart from the event ledger, under a quota
+      of 600,000 bytes set for this test; two parts of about 200 KB fit, a third does not */
+{const vid=crypto.randomBytes(16).toString('hex');S.writeVault({id:vid,serverSeq:0,devices:[],createdAt:new Date().toISOString()});
+  const tok='t-'+crypto.randomBytes(8).toString('hex');S.tokens.set(tok,{vaultId:vid,deviceId:'d1',exp:Date.now()+60000});
+  const srv=S.server.listen(0,'127.0.0.1');await new Promise(r=>srv.on('listening',r));const base='http://127.0.0.1:'+srv.address().port;
+  const call=(m,p,body,t)=>fetch(base+p,{method:m,headers:Object.assign({'content-type':'application/json'},t===null?{}:{authorization:'Bearer '+(t||tok)}),body:body?JSON.stringify(body):undefined}).then(async r=>({status:r.status,body:await r.json()}));
+  const AID='att-0123456789ab-t1',ct=n=>crypto.randomBytes(n).toString('base64'),dir=path.join(tmp,'vaults',vid,'attachments',AID);
+  line((await call('POST','/v1/attachments/part',{id:AID,part:1,of:2,iv:'iv',ciphertext:ct(10)},null)).status===401,'an attachment part needs an authenticated device');
+  line((await call('POST','/v1/attachments/part',{id:'../../etc',part:1,of:1,iv:'iv',ciphertext:'x'})).status===400,'an attachment id that could name a path is refused');
+  line((await call('POST','/v1/attachments/part',{id:AID,part:1,of:1,iv:'iv',ciphertext:'x'.repeat(256*1024+1)})).status===400,'a part over 256 KB of ciphertext is refused');
+  line((await call('POST','/v1/attachments/part',{id:AID,part:3,of:2,iv:'iv',ciphertext:'x'})).status===400,'a part numbered past its count is refused');
+  const c1=ct(150000),c2=ct(150000);
+  const p1=await call('POST','/v1/attachments/part',{id:AID,part:1,of:2,iv:'iv1',ciphertext:c1});
+  const p1b=await call('POST','/v1/attachments/part',{id:AID,part:1,of:2,iv:'iv1b',ciphertext:c1});
+  const p2=await call('POST','/v1/attachments/part',{id:AID,part:2,of:2,iv:'iv2',ciphertext:c2});
+  line(p1.status===200&&p1.body.complete===false&&p1b.status===200&&p2.body.complete===true,'an image arrives in parts, and is complete when its last part arrives',JSON.stringify([p1.body,p2.body]));
+  const L=await call('GET','/v1/attachments');
+  line(L.body.attachments.length===1&&L.body.attachments[0].parts===2&&L.body.attachments[0].of===2,'a part sent again (a retried upload) replaces itself: the image still has 2 parts',JSON.stringify(L.body));
+  const back=await call('GET','/v1/attachments/part?id='+AID+'&part=2');
+  line(back.status===200&&back.body.ciphertext===c2&&back.body.iv==='iv2'&&back.body.of===2,'a part comes back exactly as it was sent');
+  line(S.readEvents(S.readVault(vid),0,10).rows.length===0&&JSON.stringify(fs.readdirSync(dir).sort())==='["1.json","2.json"]','an image never enters the event ledger: its parts are files of their own');
+  const q=await call('POST','/v1/attachments/part',{id:'att-0123456789ab-t2',part:1,of:1,iv:'iv',ciphertext:ct(150000)});
+  line(q.status===507&&!fs.existsSync(path.join(tmp,'vaults',vid,'attachments','att-0123456789ab-t2','1.json')),'past the vault’s attachment quota a part is refused, not half-stored',JSON.stringify(q));
+  const d1=await call('POST','/v1/attachments/delete',{id:AID}),d2=await call('POST','/v1/attachments/delete',{id:AID});
+  line(d1.body.deleted===true&&d2.body.deleted===false&&!fs.existsSync(dir)&&(await call('GET','/v1/attachments/part?id='+AID+'&part=1')).status===404,'deleting an image removes its parts, and deleting it again is harmless');
+  await call('POST','/v1/attachments/part',{id:AID,part:1,of:1,iv:'iv',ciphertext:ct(100)});
+  const vd=await call('POST','/v1/vault/delete',{confirm:vid});
+  line(vd.body.deleted===true&&!fs.existsSync(path.join(tmp,'vaults',vid)),'deleting the vault deletes its images with it');
   srv.close();}
 fs.rmSync(tmp,{recursive:true,force:true});
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

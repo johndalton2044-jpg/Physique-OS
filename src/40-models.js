@@ -519,12 +519,27 @@ function fatVsOther(){
   return out;
 }
 /* ---- rate bands and goal ---- */
+/* The rate band's weight zones are the parameters of a policy (catalogue doc 2, P1.7): chosen operating limits, each
+   zone's loss in lb a week, tightening as body mass falls. The contract says where they come from and what they are not. */
+/* what a heuristic contract says about validation unless it says more (catalogue doc 2, P1.7) */
+var HEURISTIC_NOT_VALIDATED='not validated: cited evidence supports the domain finding, not this system\u2019s rule built on it';
+var RATE_BAND_ZONES=[{above:250,lo:1.5,hi:2.5,zone:'above 250 lb \u00b7 fat loss dominant'},{above:230,lo:1.25,hi:2.0,zone:'230\u2013250 lb \u00b7 fat loss + retention'},
+  {above:210,lo:1.0,hi:1.75,zone:'210\u2013230 lb \u00b7 recomposition'},{above:190,lo:0.75,hi:1.5,zone:'190\u2013210 lb \u00b7 preservation'},{above:-Infinity,lo:0.5,hi:1.0,zone:'under 190 lb \u00b7 composition'}];
+var RATE_BAND_CONTRACT={id:'rate_band',subject:'rate band',predicate:'works within',
+  parameters:{zones:{value:RATE_BAND_ZONES,unit:'lb a week by weight zone',meaning:'the loss each weight zone works within'},
+    pctLo:{value:0.5,unit:'% of body weight a week',meaning:'the slow end of the percentage band'},pctHi:{value:1,unit:'% of body weight a week',meaning:'past this, more of the loss is lean mass'},
+    maintenance:{value:0.25,unit:'lb a week either way',meaning:'outside a cut, the band for a stable weight'}},
+  statement:function(v){return v.lo!=null&&v.hi!=null?('this plan works within a loss of '+fmtRateRange(v.lo,v.hi)+(v.zone?' for the '+v.zone+' zone':'')):'this plan works within 0.5\u20131% of body weight a week';},
+  rationale:'loss faster than about 1% of body weight a week takes more of the loss from lean mass; heavier people lose a smaller share of lean mass at the same rate, so the band widens with mass',
+  evidenceBasis:['garthe2011rate','helms2014prep','hall2011model'],parameterSource:'chosen by this system from the cited ranges; the zone boundaries (250/230/210/190 lb) are operating limits, not measured thresholds',
+  parameterVersion:'1.1',calibrationStatus:'not calibrated to this person; a target the person sets replaces it',validationStatus:'not validated: cited evidence supports the 0.5\u20131% finding in lean athletes, not these zones',
+  applicability:{phases:['cut'],population:'adults losing fat; the cited trials were in lean, trained people'},failureConditions:['no weight','a medically supervised diet','pregnancy'],outcomes:['lean-mass retention','fat lost each week']};
 function rateBand(weightLb,phaseType){
   if(weightLb==null)return null;
-  if(phaseType&&phaseType!=='cut')return {lo:-0.25,hi:0.25,label:'stable',zone:'maintenance'};
-  var b;
-  if(weightLb>250)b={lo:1.5,hi:2.5,zone:'above 250 lb \u00b7 fat loss dominant'};else if(weightLb>230)b={lo:1.25,hi:2.0,zone:'230\u2013250 lb \u00b7 fat loss + retention'};else if(weightLb>210)b={lo:1.0,hi:1.75,zone:'210\u2013230 lb \u00b7 recomposition'};else if(weightLb>190)b={lo:0.75,hi:1.5,zone:'190\u2013210 lb \u00b7 preservation'};else b={lo:0.5,hi:1.0,zone:'under 190 lb \u00b7 composition'};
-  var pct={lo:weightLb*0.005,hi:weightLb*0.01};
+  var M=RATE_BAND_CONTRACT.parameters.maintenance.value;
+  if(phaseType&&phaseType!=='cut')return {lo:-M,hi:M,label:'stable',zone:'maintenance'};
+  var b=RATE_BAND_ZONES.filter(function(z){return weightLb>z.above;})[0];
+  var pct={lo:weightLb*RATE_BAND_CONTRACT.parameters.pctLo.value/100,hi:weightLb*RATE_BAND_CONTRACT.parameters.pctHi.value/100};
   return {lo:-b.hi,hi:-b.lo,label:fmtRateRange(-b.hi,-b.lo),zone:b.zone,pctBand:pct,cls:'HEURISTIC'};
 }
 function targetRate(){

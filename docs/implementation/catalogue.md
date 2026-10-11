@@ -6,10 +6,10 @@ Produced from the running registries on every governance run. Do not edit by han
 |---|---|
 | models | 50 |
 | capabilities | 22 |
-| entity contracts | 27 |
-| commands | 540 |
+| entity contracts | 29 |
+| commands | 541 |
 | sheets | 120 |
-| event types | 52 |
+| event types | 57 |
 | observation types | 39 |
 | exercises | 159 |
 | movement patterns | 28 |
@@ -39,6 +39,8 @@ Produced from the running registries on every governance run. Do not edit by han
 - **InterventionLifecycle**: projection
 - **Undo**: implemented
 - **Exposure**: implemented
+- **Attachment**: implemented
+- **ProgressPhoto**: implemented
 - **Outcome**: implemented
 - **Regime**: projection
 - **Evidence**: reference

@@ -43,6 +43,13 @@ const want=await p.evaluate(()=>{
   window.setCustomAccent('#6fb3ff');window.setStateColorPreset('okabeIto');window.save('settings');
   window.addObservation({type:'weight',date:window.todayISO(),value:249.4,note:'persistence-gate'});window.save('observation');
   const s=window.DB.settings;return {theme:s.theme,accent:s.accent,font:s.font,shape:s.shape,textScale:s.textScale,density:s.density,detail:s.detail,customAccent:s.customAccent,preset:(s.colorOverrides||{}).preset};});
+/* an encrypted photo image (catalogue W-004, option B) in the real IndexedDB: ciphertext at rest under a key kept as a
+   non-extractable CryptoKey, and the same bytes again after the page is closed and reopened. The image is made here. */
+const PHOTO=(!THROTTLE&&!DELAYED)?await p.evaluate(async()=>{const bytes='\xFF\xD8\xFF'+'persistence-photo-'.repeat(200),u='data:image/jpeg;base64,'+btoa(bytes);
+  const r=await window.putAttachment('photo',u,{store:'photos',id:'persistence'});window.save('photo');
+  const raw=await window.idbGet(window._IDB,'att:'+r.id),key=await window.idbGet(window._IDB,'attkey:v1');
+  return {id:r.id,u,plainAtRest:new TextDecoder('latin1').decode(raw.ct).includes('persistence-photo'),isKey:key instanceof CryptoKey,extractable:key&&key.extractable};}):null;
+if(PHOTO)line(!PHOTO.plainAtRest&&PHOTO.isKey&&PHOTO.extractable===false,'an image is ciphertext at rest in IndexedDB, under a non-extractable key kept beside it');
 await p.waitForTimeout(800);let lastRev=await p.evaluate(()=>window.DB.revision||0);
 console.log('        before close: '+JSON.stringify(await p.evaluate(()=>({src:window._BOOT_SOURCE,rev:window.DB.revision,events:(window._EVENTS||[]).length,
   saveOk:window._SAVE_STATE&&window._SAVE_STATE.ok,saveErr:window._SAVE_STATE&&window._SAVE_STATE.lastError,reconciling:window._IDB_RECONCILING,suspended:window._PERSIST_SUSPENDED}))));
@@ -63,6 +70,8 @@ for(let k=1;k<=3;k++){
   line(lost.length===0,`reopen ${k}: every appearance setting is kept`+(lost.length?' \u2014 lost '+lost.map(x=>x+' ('+want[x]+' \u2192 '+got[x]+')').join(', '):''));
   line(got.shown===want.theme,`reopen ${k}: the kept theme is the one shown`);
   line(got.logged,`reopen ${k}: data logged before closing is still there`);
+  if(PHOTO&&k===1){const back=await p.evaluate(async id=>{try{return await window.readAttachment(id);}catch(e){return 'error: '+e.message;}},PHOTO.id);
+    line(back===PHOTO.u,'reopen 1: the encrypted image reads back as exactly the bytes stored, with its key kept across the close');}
   /* The root cause of a timing-dependent loss: a startup merge reset the revision to 0, so which stored copy won the next
      startup depended on luck. Asserted directly rather than waiting for the symptom. */
   const rev=await p.evaluate(()=>window.DB.revision||0);

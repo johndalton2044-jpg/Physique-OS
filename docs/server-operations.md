@@ -63,7 +63,11 @@ public service as written. Running it on the open internet responsibly needs:
 2. **A process supervisor** — systemd, or a container with a restart policy.
 3. **Backups of the data directory.** The server holds the only copy of events uploaded from a device that
    has since been lost. It is ciphertext, so backups need no special handling beyond ordinary care.
-4. **Disk monitoring.** `MAX_EVENTS_PER_VAULT` caps a single vault; nothing caps the number of vaults.
+4. **Disk monitoring.** `MAX_EVENTS_PER_VAULT` caps a single vault's events and `MAX_ATTACHMENT_BYTES` (default
+   500 MB) its encrypted photo images; nothing caps the number of vaults. Images are stored apart from the event
+   ledger, under `vaults/<id>/attachments/`, as parts of at most 256 KB of ciphertext each; the server cannot read them
+   and learns only how many there are, how large, and when. Deleting a vault deletes them with it, and the off-host
+   backups carry them like everything else in the data folder.
 5. **Real rate limiting at the proxy.** The in-process limiter is per-IP and in-memory: it survives a burst,
    not a distributed flood.
 6. **A CORS origin.** Pass `--cors https://your.app.origin` rather than leaving the default `*` if the

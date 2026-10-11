@@ -31,13 +31,13 @@ decision only the person can make), **deferred** (later in the catalogues' own o
 | W-037 missingness | in place | `insufficient()` with what is needed; no model reads a missing value as zero in the paths checked this round. Not re-audited model by model. |
 | W-038 observation time vs knowledge time | in place | As-of replay, knowledge-time filtering, the `timezones` and `spine` gates; the independent gate replays the log. |
 | W-039 dependency invalidation | partly | A typed dependency graph from the registry (`registryDependencyGraph`); invalidation is one global memo flush, not per dependency. |
-| W-040 decision arbitration | in place | The decision lattice's priority order; `goalConflicts()` shows trade-offs. |
+| W-040 decision arbitration | in place | The decision lattice's priority order; goal conflicts report their trade-offs as values (0dbd06b359). |
 
 ### Phase C: durability
 
 | Item | Status | What and where |
 |---|---|---|
-| W-004 photo durability | decided (A), stated, f1ecf89ed2 | Photos are local-only by design; every backup and the Data card now say a backup holds no photo images. Option B (encrypted attachment store, off-device copy) is the person's decision. |
+| W-004 photo durability | done (option B), 6da68267d3 | Each image an encrypted attachment with a content hash and a synced manifest; an encrypted copy in the vault (restores a lost device), carried by encrypted backups; retraction, orphans, duplicates, failed uploads, partial restore and quota handled; every backup says whether it holds the complete visual history. Black-box workflow V-016. |
 | W-005 sync idempotency | done, f1ecf89ed2 | Second device, replayed batch, partly stored retry; the ledger stays set-like and ordered. |
 | W-006 one persistence authority | done, f1ecf89ed2 | The record's shape must equal `PERSIST_COLLECTIONS` and `PERSIST_SCALARS`; every collection was already walked through the whole lifecycle. |
 | W-007 event/document boundary | in place | The engine gate checks every save against its own log; the independent gate replays the log with its own reducer. |
@@ -89,12 +89,12 @@ power responses, TRANSITION item 4, were done before this round.)
 | P0.5 independent verification | done, 78c311cc38 | The `independent` gate recomputes checksums, the build identity, the persisted record, a log replay, the weight trend and its provenance hash, without asking the app about itself. |
 | P0.6 food artifact | done | The corpus is pinned and content-verified; the clean room uses the archive or the commit's own copy. |
 | P0.7 documentation alignment | done, 7dd314744b | `docs/release-environment.md`; README requirements corrected. |
-| P1.1 to P1.3 structured explanations | not done | ExplanationClaim, a structured Explanation and a compiler would restructure the decision and explanation layers; the first step taken is P1.4. |
+| P1.1 to P1.3 structured explanations | done, 0dbd06b359 | `explanationClaim()`, `explainDecision()` and `compileExplanation()` (`src/58-explanation.js`): a decision's reasons are claims built from the values its rule read, rendered simple, analytical or scientific by the person's detail level; reversal conditions are values; black-box workflow V-015. |
 | P1.4 no prose as data | done, 106152bbde | Three sites that read values out of sentences now carry fields; a governance detector fails on the pattern. |
-| P1.5 claim registry | partly | Evidence references (`66-data-reference.js`) and the knowledge graph carry evidence and applicability; a registry of every general claim with grade and review date is not built. |
-| P1.6 AI semantic control | partly, 78c311cc38 | Replies are checked against the record's figures, offered actions, and now each variable's epistemic class for causal statements. |
-| P1.7 goal heuristics formalised | not done | The goal system's thresholds are still constants with their reasons in comments. |
-| P1.8 goal arbitration | in place | `goalConflicts()`. |
+| P1.5 claim registry | done, 0dbd06b359 | The evidence registry extended in place: 24 entries, each with a proposition, outcome, population, scope, applicability, limitations, grade (A to E), confidence and review date; `claimRegistry()` reports domain gaps (hydration), claims due for review, and the policies citing each finding. Evidence and policy are separate: findings support heuristic contracts, never validate them. |
+| P1.6 AI semantic control | done, 0dbd06b359 | The context pack carries the decision's claim set; replies are rejected for certainty beyond a claim's confidence, a change to a lever the decision does not move, an unheld quantitative relation, a phase the claims do not apply to, or a medical interpretation, besides figures, actions and causal class (78c311cc38). |
+| P1.7 goal heuristics formalised | done, 0dbd06b359 | 18 heuristic contracts (rate band zones, six decision rules, six curves, five goal tensions), each with parameter source and version, rationale, evidence basis, calibration and validation status, applicability and failure conditions; the engine reads its thresholds from them. |
+| P1.8 goal arbitration | done, 0dbd06b359 | Each conflict reports affected outcomes, competing objectives, the trade-off's magnitude against its threshold, the person's priority, the chosen objective or none (then it favours neither, and says so), alternatives set aside, expected consequence and confidence. |
 | P1.9 browser and integration certification | done for the repository's gates | Locally and in CI. The live chain (host, rewrite, server, providers) needs a deployment. |
 | P1.10 release certification | in place | The release check's 24 items and `verify-dist`. |
 | P2 items | deferred | After P0 and P1, as the catalogue orders them. |

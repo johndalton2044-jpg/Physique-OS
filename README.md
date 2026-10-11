@@ -15,6 +15,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 |---|---|---|---|---|---|---|---|---|---|
 | Local persistence (IndexedDB, incremental writes) | validated | — | real data path | — | surfaced | local | independent | — | gate persistence |
 | Backup and restore | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-010 |
+| Progress photos: encrypted on the device, copied encrypted to the vault, carried by encrypted backups | validated | — | real data path | — | workflow-tested | server | independent | — | workflow V-016, gate cloud:e2e, gate server, gate persistence |
 | Erase everything | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-009 |
 | Food logging with portions | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-002 |
 | Training sessions and sets | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-003 |
@@ -31,6 +32,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Unified optimiser | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Marginal returns: the next unit of each dose | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | real data path | population | surfaced | local | internal | — | gate engine |
+| Structured explanations: claims, rules and evidence at three levels | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-015, gate engine, gate governance |
 | Body composition: fat and lean trajectories | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | measured | gate engine |
 | Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | gate engine, workflow V-014 |

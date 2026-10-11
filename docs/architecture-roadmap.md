@@ -4321,3 +4321,173 @@ what was already in place, what is partly done, what is blocked on accounts or d
 themselves defer. TRANSITION §8 summarises the state.
 
 All 37 gates pass (reproducible included); release 24/24; 1,813 self-tests.
+
+## Structured explanations, the claim registry and heuristic contracts (build 0dbd06b359)
+
+Catalogue doc 2, P1.1 to P1.3 and P1.5 to P1.8. A decision's reasons were sentences: `why`, `reverseIf` and `lede` were
+written per rule, and readers that needed a reason took the sentence. Now an explanation is a value, and the sentences
+are renderings of it.
+- **ExplanationClaim** (`src/58-explanation.js`). A claim is a proposition, `{subject, predicate, object}`, with:
+  - its type (observation, inference, finding, policy, prediction) and epistemic class;
+  - its confidence, and the evidence ids it rests on (observation ids, or evidence-registry ids);
+  - its assumptions, what currently counts against it (the model's failing conditions), its limitations, its
+    applicability and its review date.
+  Claims are frozen, and their ids come from their content. A finding needs its source; a prediction is PREDICTIVE.
+- **Explanation.** `explainDecision(dec, S)` builds a decision's explanation from the values its rule read. It has:
+  - the subject and the question;
+  - the claims, sorted into observations, evidence, inferences and policies;
+  - the uncertainty, the alternatives and the action;
+  - the expected outcome: a prediction with its range from the one energy density;
+  - the reversal conditions, the provenance and the applicability.
+  Each decision code declares its grounds and the policies it applies (`DECISION_GROUNDS`, `DECISION_POLICIES`).
+  `decide()` attaches the explanation, and `recordDecision()` stores it with the decision.
+- **Reversal conditions are values.** Each rule's "what would change it" is a list of conditions, each with a subject,
+  predicate, threshold and window. `reverseIf` is their rendering.
+- **The compiler.** `compileExplanation(E, level)` renders one explanation simple, analytical or scientific. The levels
+  differ in how much they say, never in what they claim: every level renders every ground claim, by id and with the
+  same figures.
+  - The analytical level adds ranges and the rules applied.
+  - The scientific level adds each claim's class, model and version, the evidence grade and population of each
+    finding, and a statement on each policy that it is a policy and not a validated model.
+  The person's detail level chooses the rendering (Casual is simple, Insightful analytical, Developer scientific). The
+  Today card, the decision sheet (which can switch level) and "why am I seeing this" render it.
+- **The claim registry is the evidence registry, extended in place.** Each of its 24 entries carries:
+  - a proposition, the outcome and the population studied, and its scope and applicability;
+  - its limitations, a grade from A to E, a confidence and a review date.
+  Ten sources that the goal curves cited as text were added: Schoenfeld 2017, Pelland 2024 (unconfirmed), Paluch 2022,
+  WHO 2020, Wilson 2012, Watson 2015, Garthe 2011, Helms 2014, Schoenfeld 2019 and Grgic 2018.
+  `claimRegistry()` reports the priority domains with no claim (hydration), the claims due for review and the policies
+  that cite each finding.
+- **Evidence and policy are separate.** Every threshold and curve behind a decision or a goal now has a heuristic
+  contract:
+  - the rate band's weight zones, now a parameter table;
+  - six decision rules, whose thresholds the engine now reads from the contracts;
+  - the six marginal-return curves and the five goal tensions.
+  Each contract states its parameter source and version, rationale, evidence basis, calibration status, validation
+  status, applicability and failure conditions. A finding supports a policy; the scientific rendering says the policy is
+  not validated as a model.
+- **Goal arbitration as values.** Each goal conflict reports what it affects and the objectives that compete. It also
+  gives the trade-off's magnitude against its threshold, the person's priority, the chosen objective (or none: then it
+  favours neither, and says so), the alternatives set aside, the expected consequence and its confidence.
+- **The assistant explains the claim set and adds nothing.** The context pack carries the decision's claim set: claims,
+  the levers it moves, the relations the record holds and the phase it applies to. A reply is now rejected, sentence by
+  sentence, for:
+  - certainty beyond a claim's confidence;
+  - a change to a lever the decision does not move;
+  - a quantitative relation the record does not hold;
+  - talk of a phase the claims do not apply to;
+  - a medical interpretation.
+  `uncitedClaims()` reads the explanation instead of matching words. `evidenceFor()` matches each entry's topic and
+  domains: the tags it matched on had never been defined, so before this it matched summaries only.
+
+The same change fixed two faults. The AI layer's evidence tool called `.slice` on an object. The governance gate now
+also requires every heuristic contract and every claim to be complete, and every decision code the engine assigns to
+have declared grounds.
+
+Tests: 40 self-tests, each made to fail once on purpose, and black-box workflow V-015. V-015 reads Today's reasons off
+the screen at Casual and at Developer. It requires the same claims, in the same order, with the same weight-trend
+figure: plain sentences at Casual, and each claim's epistemic class and the rules as policies at Developer. The
+capability `structured-explanation` is rated validated on that workflow.
+
+All 37 gates pass (reproducible included); release 24/24; 1,853 self-tests.
+
+## Progress photos, durable and encrypted (build 6da68267d3)
+
+Catalogue W-004, option B, chosen by the person: photos are longitudinal records and need encrypted durability. Before
+this, an image lived only in this browser's database, in the clear. Nothing synced it, and no backup carried it, so a
+lost or cleared device lost the visual history, and erasing everything left the images behind. Now each image is an
+attachment (`src/65-attachments.js`), kept apart from the record and from every event:
+- **Stored encrypted, by its content hash.** Each image is hashed (SHA-256) and encrypted with AES-GCM under a key made
+  on this device. The key is not extractable and is kept beside the bytes, and the attachment id is bound into the
+  ciphertext. Every read decrypts and checks the hash, so an altered image is refused, not shown.
+- **A manifest in the record.** `DB.attachments` is a new persisted collection, owned by the new `Attachment` contract,
+  with events `attachment.recorded` and `attachment.removed`. Each entry holds the attachment's id, content hash, size,
+  type, what it belongs to, when it was made and when it was retracted. Photo metadata gets events of its own
+  (`photo.added`, `photo.linked`, `photo.removed`; contract `ProgressPhoto`), so photos reach every device of a vault.
+  Before this, photos never synced at all.
+- **Retraction, not deletion.** Removing a photo keeps its entry, marked removed: a replay of an earlier day still
+  sees it. Its image is deleted here at once, and from the vault at the next sync.
+- **A duplicate is refused.** The same image again is refused, and the message names the photo it duplicates.
+- **Quota.** When the browser reports too little room, an image is refused before anything is written, and the message
+  says how much space is free and how much is needed.
+- **The encrypted cloud copy.** After the events, a sync uploads each image in parts of at most 150 KB, each encrypted
+  under the vault key and bound to its id and part number. It deletes images that were retracted and fetches the images
+  this device lacks, which restores a lost device from the phrase alone.
+  - The server keeps the parts apart from the ledger. It refuses an id that could name a path and parts over 256 KB,
+    and holds each vault to `MAX_ATTACHMENT_BYTES` (default 500 MB). A part sent again replaces itself, and a deleted
+    vault takes its images with it.
+  - A failed upload is kept with its attempt count and a time to retry (1 min, 5 min, 30 min, then every 2 h), and the
+    next sync resumes it.
+  - This device's transfer state is not in the record.
+- **Backups.** The passphrase-encrypted backup now carries the images inside its ciphertext, and its header says
+  whether it holds the complete visual history. A plain backup says it holds only dates and poses. Restoring an
+  encrypted backup stores each image only if it matches its hash, and names any that do not.
+  `attachmentAudit()` reports:
+  - orphans (bytes with no live record);
+  - missing bytes, and whether the vault has them;
+  - duplicates, and photos with no image;
+  - uploads waiting and uploads failed.
+- **The screens.** The Data card says where the images are: how many are encrypted on this device and how many are
+  copied to the vault. It also offers an encrypted backup with photos. Each photo says whether it is in the vault or
+  only on this device.
+- **Erasing everything now erases the images too**, with this device's key for them; the confirmation says Undo does not
+  bring them back.
+- **Migration.** Photos stored before this move into the encrypted store when the app opens. Where the browser has no
+  Web Crypto, a photo is kept unencrypted on the device and says so.
+
+Tests:
+- Nine self-tests: the backup statement, the audit, the events, retraction and the merge restore.
+- The server gate: eleven attachment cases.
+- `cloud:e2e`, eighteen photo checks across four devices, with an image of about 400 KB made byte by byte:
+  - encryption verified, and a changed byte refused;
+  - a duplicate refused;
+  - a failed upload recovered;
+  - ciphertext only on the server;
+  - the same bytes on a second device, and on a third with only the phrase (device loss);
+  - retraction reaching the vault and the other device, and the orphan it leaves found and cleared;
+  - an encrypted backup with no image in the clear, and a partial restore that names the altered image;
+  - quota refusal.
+- The persistence gate: an image is ciphertext at rest in a real browser's IndexedDB, under a non-extractable key, and
+  reads back exactly after the page is reopened.
+- Black-box workflow V-016, through the screen: a photo through the real file input, an encrypted backup through the
+  passphrase prompt, erase, restore, and the same bytes shown again.
+
+Every new check was made to fail once on purpose. The capability `photo-durability` is rated validated on V-016 and
+those gates. The structured-explanation tests no longer write an energy-density literal (the audit's one P1 at build
+0dbd06b359): their stub is derived from `ENERGY_PER_LB`.
+
+All 37 gates pass (reproducible included); release 24/24; 1,862 self-tests.
+
+## Undoing a sync merge holds, on every device (build 38097babc5)
+
+TRANSITION §7 left a decision open. Undo after a sync merge put the earlier record back on this device, but it revoked
+nothing, so the merged changes came back at the next start or sync. Making it hold means revoking the other device's
+events, which removes them on every device. The person chose that.
+- **The undo step names what the merge adopted.** Each merge, from the cloud or from a sync file, now records in its
+  undo step the ids of the events it brought in. `pushUndo(label, extra)` carries them.
+- **Undoing the merge revokes them.** `undoInLog()` records one `events.revoked` event, marked as a merge undo, naming
+  those events and the devices that made them. This is the same mechanism that already makes local undo hold:
+  - a restart rebuilds the record without them;
+  - a later sync cannot bring them back, because they are still in the log and a projection leaves them out;
+  - every device that merges the revocation, the device that made them included, removes them too.
+- **Two kinds of merged event are not revoked.** A revocation is never itself revoked. A whole record that another
+  device restored (a snapshot) is kept, because revoking it could empty that device's record. The undo says it kept it
+  and suggests restoring a backup instead.
+- **The other device is told.** When a device merges a revocation of its own events from another device,
+  `undoneElsewhere()` counts them. The sync result carries the count, and the Encrypted sync sheet shows how many of
+  this device's changes were undone elsewhere, by which device and when.
+- **The undo says what it did.** Its message says how many changes from another device will be removed on every
+  device at the next sync.
+
+Tests:
+- Five self-tests with two simulated devices sharing a log, each made to fail once on purpose. B's weigh-in of 212 lb is
+  merged into A and the merge is undone:
+  - it is gone at once and after a restart, and A's own weigh-in stays;
+  - the same envelope merged again does not bring it back;
+  - B, merging A's log, loses its 212 lb too, and is told by which device;
+  - a merge that brought a whole restored record keeps it, and says so.
+- `cloud:e2e`, the same through the real server: B logs 6.1 h of sleep and A undoes the merge from the screen's undo
+  action. It stays undone on A after a sync and a restart, it is removed on B at B's next sync (B is told), and further
+  syncs on either device do not bring it back.
+
+All 37 gates pass (reproducible included); release 24/24; 1,867 self-tests.
