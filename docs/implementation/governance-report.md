@@ -1,6 +1,6 @@
 # Governance report
 
-Build 6da68267d3 · generated 2026-10-11T20:17:53.715Z
+Build 6da68267d3 · generated 2026-10-11T20:25:04.642Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **32 passing**
 
@@ -25,7 +25,7 @@ Build 6da68267d3 · generated 2026-10-11T20:17:53.715Z
 - **heuristic-contracts** — every threshold and curve behind a decision or goal has a complete contract (18)
 - **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (24)
 - **decision-grounds** — every decision code has declared grounds (15 codes)
-- **catalogue** — catalogue generated from the running registries — 7 change(s) since the previous run
+- **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 29 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned
 - **model-without-provenance** — every model result carries provenance

@@ -76,10 +76,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- added entitie: Attachment
-- added entitie: ProgressPhoto
-- added event: attachment.recorded
-- added event: attachment.removed
-- added event: photo.added
-- added event: photo.linked
-- added event: photo.removed
+- none

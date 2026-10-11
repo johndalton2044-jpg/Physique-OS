@@ -4456,5 +4456,5 @@ Every new check was made to fail once on purpose. The capability `photo-durabili
 those gates. The structured-explanation tests no longer write an energy-density literal (the audit's one P1 at build
 0dbd06b359): their stub is derived from `ENERGY_PER_LB`.
 
-1,862 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,862 self-tests.
 
