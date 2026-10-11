@@ -4907,6 +4907,18 @@
     "logQuality",
     "qualityTrend"
    ],
+   "58-explanation.js": [
+    "explanationClaim",
+    "heuristicContracts",
+    "explainDecision",
+    "compileExplanation",
+    "reversalCondition",
+    "reversalAll",
+    "reversalAny",
+    "renderReversal",
+    "findingClaim",
+    "claimRegistry"
+   ],
    "58-goals.js": [
     "marginalReturn",
     "goalConflicts",
@@ -5542,6 +5554,9 @@
     "runIdentity",
     "bayesianLabelAudit"
    ],
+   "96-recall.js": [
+    "whyShown"
+   ],
    "97-causal-universe.js": [
     "causalCoverage",
     "modelLifecycle",
@@ -5553,7 +5568,9 @@
    "97-copilot.js": [
     "askQuestion",
     "contextPacket",
+    "_packetNumbers",
     "assistantState",
+    "assistantClaimSet",
     "validateAssistantReply",
     "evidenceFor",
     "uncitedClaims",

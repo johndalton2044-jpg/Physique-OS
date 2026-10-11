@@ -4389,3 +4389,4 @@ the screen at Casual and at Developer. It requires the same claims, in the same 
 figure: plain sentences at Casual, and each claim's epistemic class and the rules as policies at Developer. The
 capability `structured-explanation` is rated validated on that workflow.
 
+All 37 gates pass (reproducible included); release 24/24; 1,853 self-tests.
