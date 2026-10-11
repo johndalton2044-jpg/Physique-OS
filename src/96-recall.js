@@ -87,7 +87,8 @@ function whyShown(kind,id){
   }
   if(kind==='decision'){
     var d=(DB.decisions||[]).filter(function(x){return x.id===id;})[0];
-    if(d)return {what:d.verb||d.code,because:(d.why||[]).map(function(w){return typeof w==='string'?w:w.text;}).join('; '),
+    var _X=null;try{_X=d&&d.explanation?compileExplanation(d.explanation,'simple'):null;}catch(e){_X=null;}
+    if(d)return {what:d.verb||d.code,because:_X?_X.grounds.map(function(g){return g.text;}).join('; '):(d.why||[]).map(function(w){return typeof w==='string'?w:w.text;}).join('; '),
       ifIgnored:'The recommendation stays open; it is rechecked'+(d.recheckDays?(' after '+d.recheckDays+' days'):' on the next review')+'.',
       todo:'Inspect the evidence behind it',act:'obs.inspectDecision',arg:d.id};
   }

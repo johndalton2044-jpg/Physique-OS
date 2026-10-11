@@ -1,8 +1,8 @@
 # Governance report
 
-Build d0e36650b6 · generated 2026-10-10T21:17:05.592Z
+Build 0dbd06b359 · generated 2026-10-11T19:43:50.062Z
 
-**0 hard** (fail the build) · **0 soft** (tracked) · **29 passing**
+**0 hard** (fail the build) · **0 soft** (tracked) · **32 passing**
 
 ## Passing
 
@@ -22,6 +22,9 @@ Build d0e36650b6 · generated 2026-10-10T21:17:05.592Z
 - **audit-never-run** — 49 audit functions, every one invoked
 - **registry-id-unique** — every registry id is unique in the running app (21 registries)
 - **registry-key-twice** — no keyed registry is given a key twice in the source (14 registries)
+- **heuristic-contracts** — every threshold and curve behind a decision or goal has a complete contract (18)
+- **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (24)
+- **decision-grounds** — every decision code has declared grounds (15 codes)
 - **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 27 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned

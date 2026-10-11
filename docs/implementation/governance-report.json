@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-10T21:17:05.592Z",
-  "build": "d0e36650b6",
+  "generatedAt": "2026-10-11T19:43:50.062Z",
+  "build": "0dbd06b359",
   "counts": {
     "hard": {},
     "soft": {}
@@ -71,6 +71,18 @@
     {
       "cat": "registry-key-twice",
       "msg": "no keyed registry is given a key twice in the source (14 registries)"
+    },
+    {
+      "cat": "heuristic-contracts",
+      "msg": "every threshold and curve behind a decision or goal has a complete contract (18)"
+    },
+    {
+      "cat": "claim-registry",
+      "msg": "every evidence entry carries a claim with grade, population, limitations and review date (24)"
+    },
+    {
+      "cat": "decision-grounds",
+      "msg": "every decision code has declared grounds (15 codes)"
     },
     {
       "cat": "catalogue",

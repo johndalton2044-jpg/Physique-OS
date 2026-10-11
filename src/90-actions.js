@@ -1035,6 +1035,7 @@ registerAction('why.shown',function(arg){
   var p=String(arg).split('|');var w=whyShown(p[0],p[1]);
   if(!w){toast('No explanation is recorded for that');return;}
   openSheet('edit',{form:'whyShown',title:'Why am I seeing this?',desc:'',buf:{w:w}});});
+registerAction('why.level',function(k){if(!_SHEET||!_SHEET.buf||!EXPLANATION_LEVELS[k])return;_SHEET.buf.level=k;renderSheet();});
 registerAction('copy.decision',function(arg){
   var txt=decisionReport(arg);
   if(!txt){toast('No decision to copy');return;}
@@ -2645,9 +2646,17 @@ SHEETS.obsInspect=function(b){var o=b.o;var t=OBS_TYPES[o.type]||{};var mq=measu
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'+(o.retracted?'':'<button class="btn btn-danger" data-act="obs.retract" data-arg="'+o.id+'">Retract</button>')};};
 function openDecisionInspect(id){var d=(DB.decisions||[]).filter(function(x){return x.id===id;})[0];if(!d)return;openSheet('edit',{form:'decisionInspect',title:d.verb||d.code,desc:'',buf:{d:d}});}
 SHEETS.decisionInspect=function(b){var d=b.d;var li=function(w){return '<li>'+esc(typeof w==='string'?w:(w.text||''))+'</li>';};
+  /* a decision recorded with its explanation is shown from it, at the level chosen here (doc 2, P1.3): the same claims at every level */
+  var lv=b.level||currentExplanationLevel(),X=null;try{X=d.explanation?compileExplanation(d.explanation,lv):null;}catch(e){_q(e,'P2');}
+  var cl=function(g){return '<li data-claim="'+attrEsc(g.claimId)+'">'+esc(g.text)+'</li>';};
+  var levels=X?'<div class="chips" role="group" aria-label="Explanation level">'+Object.keys(EXPLANATION_LEVELS).map(function(k){return '<button type="button" class="chip sm'+(k===lv?' active':'')+'" data-act="why.level" data-arg="'+k+'" aria-pressed="'+(k===lv)+'">'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</button>';}).join('')+'</div>':'';
   var body=uiRow('Decided',longDate(d.date),{sub:esc(d.code)+' \u00b7 confidence '+esc(d.confidence||'\u2014')+' \u00b7 '+esc(d.source||'system')})+
-    (d.lede?'<div class="lead" style="font-size:14px;margin:8px 0">'+esc(d.lede)+'</div>':'')+
-    (d.why&&d.why.length?'<div class="d-block"><div class="d-block-title">WHY</div><ul>'+d.why.map(li).join('')+'</ul></div>':'')+
+    (d.lede?'<div class="lead" style="font-size:14px;margin:8px 0">'+esc(d.lede)+'</div>':'')+levels+
+    (X?'<div class="d-block" data-block="why"><div class="d-block-title">WHY</div><ul>'+X.grounds.map(cl).join('')+'</ul></div>'+
+      (X.rules.length?'<div class="d-block" data-block="rules"><div class="d-block-title">THE RULES APPLIED</div><ul>'+X.rules.map(cl).join('')+'</ul></div>':'')+
+      (X.evidence.length?'<div class="d-block" data-block="evidence"><div class="d-block-title">EVIDENCE BEHIND THE RULES</div><ul>'+X.evidence.map(cl).join('')+'</ul><div class="hint">Published findings support these rules; the rules themselves are this system\u2019s and are not validated as models.</div></div>':'')+
+      (X.provenance?'<div class="prov">'+esc(X.provenance.join(' \u00b7 '))+'</div>':''):
+    (d.why&&d.why.length?'<div class="d-block"><div class="d-block-title">WHY</div><ul>'+d.why.map(li).join('')+'</ul></div>':''))+
     (d.action&&d.action.length?'<div class="d-block"><div class="d-block-title">DO</div><ul>'+d.action.map(li).join('')+'</ul></div>':'')+
     (d.reverseIf&&d.reverseIf.length?'<div class="d-block"><div class="d-block-title">WHAT WOULD CHANGE IT</div><ul>'+d.reverseIf.map(function(w){return '<li class="attention">'+esc(w)+'</li>';}).join('')+'</ul></div>':'')+
     (d.uncertainty?'<div class="d-block"><div class="d-block-title">HOW SURE THE NUMBERS WERE</div><div class="muted">'+esc(d.uncertainty.text||'')+'</div></div>':'')+

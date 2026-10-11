@@ -599,10 +599,10 @@
    ],
    "writers": {
     "recordDecision": [
-     "50-decision.js:252"
+     "50-decision.js:293"
     ],
     "recordUserDecision": [
-     "50-decision.js:254"
+     "50-decision.js:295"
     ]
    }
   },
@@ -615,7 +615,7 @@
    ],
    "writers": {
     "createExperiment": [
-     "50-decision.js:336"
+     "50-decision.js:377"
     ]
    }
   },
@@ -633,7 +633,7 @@
      "30-observations.js:210"
     ],
     "createExperiment": [
-     "50-decision.js:338"
+     "50-decision.js:379"
     ]
    }
   },
@@ -646,7 +646,7 @@
    ],
    "writers": {
     "addNegative": [
-     "50-decision.js:424"
+     "50-decision.js:465"
     ]
    }
   },
@@ -685,8 +685,8 @@
    ],
    "writers": {
     "stampPredictions": [
-     "50-decision.js:268",
-     "50-decision.js:286"
+     "50-decision.js:309",
+     "50-decision.js:327"
     ]
    }
   },
@@ -699,8 +699,8 @@
    ],
    "writers": {
     "captureSnapshot": [
-     "50-decision.js:510",
-     "50-decision.js:511"
+     "50-decision.js:551",
+     "50-decision.js:552"
     ]
    }
   },
@@ -714,10 +714,10 @@
    ],
    "writers": {
     "evaluateExperiment": [
-     "50-decision.js:405"
+     "50-decision.js:446"
     ],
     "archivePhase": [
-     "50-decision.js:523"
+     "50-decision.js:564"
     ]
    }
   }

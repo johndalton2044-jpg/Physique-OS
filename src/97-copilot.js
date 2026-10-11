@@ -249,6 +249,9 @@ function contextPacket(opts){
     var d=decide();
     if(d)pack.decision={code:d.code,verb:d.verb,confidence:d.confidence,
       why:(d.why||[]).map(function(w){return typeof w==='string'?w:(w.text||'');}).slice(0,6)};
+    /* the decision's structured explanation (catalogue doc 2, P1.6): the assistant realises these claims in words; it
+       does not add to them. The reply is checked against this claim set, not against a list of words. */
+    if(d&&d.explanation)pack.explanation=assistantClaimSet(d.explanation);
     pack.domains=domainSummary().map(function(x){return {id:x.id,status:x.status,headline:x.headline};});
     pack.knowledge=personalKnowledge().items.slice(0,12).map(function(k){
       return {kind:k.kind,subject:k.subject,statement:k.statement,
@@ -285,7 +288,7 @@ function _packetNumbers(pack){
   /* The goal, model, provenance and evidence context added in step 17 must be citable too. Without these, an
      assistant correctly quoting the goal weight or a model's track record would have its reply rejected as
      containing figures not in the context. */
-  walk(pack.goal);walk(pack.models);walk(pack.evidence);
+  walk(pack.goal);walk(pack.models);walk(pack.evidence);walk(pack.explanation);
   return Object.keys(out);
 }
 function _numKey(n){return String(round(n,1));}
@@ -316,6 +319,31 @@ function assistantState(){
     note:_assistantAdapter?'An adapter is attached. Every reply is still validated against the context before display.':
       'No model is attached. Questions are answered from the record by the deterministic layer, which is what answers most of them anyway.'};
 }
+/* THE ALLOWED CLAIM SET (catalogue doc 2, P1.6): an explanation reduced to what an assistant may say. Each claim keeps its
+   subject, predicate, object, class, confidence and applicability; the levers the decision moves are the only changes it
+   may mention; relations are the quantitative links the record holds (unit to unit), and nothing else may be stated as
+   one. */
+var _CLAIM_SUBJECT_RE={'weight trend':/\b(weight|trend|scale|losing|loss)\b/i,'recovery':/\brecover/i,'strength':/\b(strength|stronger|weaker|lifts?)\b/i,
+  'protein target':/\bprotein/i,'logging':/\blog(ging|ged)?\b/i,'calorie target':/\b(calorie|kcal|intake)/i,'data trust':/\b(trust|data quality)\b/i,
+  'waist':/\bwaist/i,'appetite burden':/\b(appetite|hunger|hungry)\b/i,'maintenance intake':/\b(maintenance|tdee)\b/i,'steps':/\bsteps?\b/i,
+  'resistance training':/\b(training|workouts?|sessions?)\b/i,'experiment':/\bexperiment/i,'weight':/\b(weight|plateau|flat)\b/i};
+var _LEVER_RE={calories:/\b(calorie|kcal|intake|eat (more|less))/i,steps:/\b(steps?|walk(ing)?)\b/i,cardio:/\b(cardio|running|cycling|conditioning)\b/i,
+  training:/\b(training|sets|volume|deload|lifting|workouts?)\b/i,protein:/\bprotein\b/i,sleep:/\bsleep\b/i,
+  supplements:/\b(creatine|supplement|caffeine|fat burner)/i,diet:/\b(carbs?|keto|fasting|intermittent)\b/i};
+var _UNIT_FAMILY={kcal:/\b(kcal|calories?)\b/i,mass:/\b(lb|lbs|kg|pounds?|kilos?)\b/i,grams:/\d\s?g\b|\bgrams?\b/i,steps:/\bsteps\b/i,minutes:/\b(minutes?|min)\b/i,sets:/\bsets\b/i};
+function _unitFamilies(u){return Object.keys(_UNIT_FAMILY).filter(function(k){return _UNIT_FAMILY[k].test(String(u||''));});}
+function assistantClaimSet(E){if(!E)return null;
+  var claims=E.claims.map(function(c){return {id:c.id,type:c.type,subject:c.proposition.subject,predicate:c.proposition.predicate,object:c.proposition.object,
+    epistemicClass:c.epistemicClass,confidence:c.confidence,applicability:c.applicability,population:c.population};});
+  var levers={};(E.action.levers||[]).forEach(function(l){levers[l.key]=1;});if(E.action.intervention)levers[E.action.intervention.variable]=1;
+  var rel=[];try{var dr=energyDensityRef();rel.push({from:'kcal',to:'mass',claim:'tissue energy density',value:dr.kcalPerLb,unit:'kcal per lb'});}catch(e){}
+  E.claims.forEach(function(c){var walk=function(o){if(!o||typeof o!=='object')return;Object.keys(o).forEach(function(k){var v=o[k];
+      if(k==='unit'&&/[\/]|\bper\b/.test(String(v))){var f=_unitFamilies(String(v).replace(/g\/kg/,'grams kg'));if(f.length>=2)rel.push({from:f[0],to:f[1],claim:c.proposition.subject,unit:v});}
+      else if(typeof v==='object')walk(v);});};walk(c.proposition.object);});
+  return {id:E.id,claims:claims,levers:Object.keys(levers),changes:(E.action.levers||[]).map(function(l){return l.text;}),relations:rel,phaseType:E.applicability.phaseType,
+    action:E.action.verb,expectedOutcome:E.expectedOutcome,reversal:E.reversalConditions.map(renderReversal),
+    prohibited:['a cause stronger than a variable\u2019s epistemic class','a figure not in these claims','a change to a lever the decision does not move',
+      'certainty beyond a claim\u2019s confidence','a medical interpretation','a quantitative relation the record does not hold','a claim about a phase the record\u2019s claims do not apply to']};}
 /* Validation is the part that makes attaching a model defensible. */
 function validateAssistantReply(reply,pack){
   var issues=[];
@@ -352,6 +380,28 @@ function validateAssistantReply(reply,pack){
     Object.keys(claims).forEach(function(v){if(!new RegExp('\\b'+v.replace(/\s+/g,'\\s+'),'i').test(sent))return;
       var a=acceptClaim('causal statement',claims[v].cls);
       if(!a.accepted)issues.push('states a cause about '+v+', whose evidence here is '+String(claims[v].cls).toLowerCase().replace(/_/g,' ')+' ('+claims[v].grade+')');});});
+  /* Against the allowed claim set (doc 2, P1.6), sentence by sentence. */
+  var X=pack&&pack.explanation;
+  if(X)text.split(/(?<=[.!?])\s+/).forEach(function(sent){
+    var about=X.claims.filter(function(c){var re=_CLAIM_SUBJECT_RE[c.subject];return re&&re.test(sent);});
+    /* certainty beyond the evidence: a claim that is not high-confidence, or that is only an association or a forecast, may not be stated as certain */
+    if(/\b(definitely|certainly|for sure|without (a )?doubt|guarantee[sd]?|will (definitely|certainly|surely)|always works|is certain)\b/i.test(sent))
+      about.forEach(function(c){if(c.confidence!=='high'||c.epistemicClass==='ASSOCIATED'||c.epistemicClass==='PREDICTIVE')
+        issues.push('states '+c.subject+' with more certainty than its evidence ('+(c.confidence?'confidence '+c.confidence:'no confidence stated')+', '+String(c.epistemicClass||'policy').toLowerCase()+')');});
+    /* a new intervention: a change to a lever the decision does not move */
+    if(/\b(should|try|you could|consider|increase|raise|cut|reduce|add|drop|lower|start|stop|switch|eat more|eat less|take)\b/i.test(sent))
+      Object.keys(_LEVER_RE).forEach(function(k){if(_LEVER_RE[k].test(sent)&&X.levers.indexOf(k)<0)issues.push('proposes a change to '+k+', which the decision does not make');});
+    /* a quantitative relationship the record does not hold */
+    if(/\b(per|for every|each|every)\b/i.test(sent)&&/\d/.test(sent)){var fam=_unitFamilies(sent);
+      if(fam.length>=2){var held=X.relations.some(function(r){return fam.indexOf(r.from)>=0&&fam.indexOf(r.to)>=0;});
+        if(!held)issues.push('states a relation between '+fam.join(' and ')+' that the record does not hold');}}
+    /* outside the claims' applicability: a different phase */
+    if(X.phaseType==='cut'&&/\b(bulk|bulking|surplus|lean gain|gaining phase)\b/i.test(sent))issues.push('speaks to a gaining phase; the record\u2019s claims apply to a cut');
+    if(X.phaseType&&X.phaseType!=='cut'&&/\b(cutting|deficit|fat[- ]loss phase)\b/i.test(sent))issues.push('speaks to a cut; the record\u2019s claims apply to a '+X.phaseType+' phase');});
+  /* a medical interpretation, beyond the injury words above */
+  if(/\b(diabet|thyroid|insulin resistan|eating disorder|anorexi|bulimi|depress|hormon(e|al) imbalance|metabolic damage|pcos|medication)/i.test(text))
+    issues.push('reads as a medical interpretation');
+  var seenI={};issues=issues.filter(function(i){if(seenI[i])return false;seenI[i]=1;return true;});
   return {ok:issues.length===0,issues:issues,
     note:issues.length?'Rejected rather than corrected. A plausible wrong number is worse than no answer.':'Reply is consistent with the context it was given.'};
 }
@@ -381,32 +431,31 @@ function assistantAsk(question,opts){
    them. */
 function evidenceFor(topic){
   var t=String(topic||'').toLowerCase();
+  /* matched on the claim's domains and topic: the tags this once matched on were never defined, so only summaries matched */
   var hits=(typeof REF_EVIDENCE!=='undefined'?REF_EVIDENCE:[]).filter(function(e){
-    return (e.tags||[]).some(function(g){return t.indexOf(String(g).toLowerCase())>=0||String(g).toLowerCase().indexOf(t)>=0;})||
-      String(e.summary||'').toLowerCase().indexOf(t)>=0;});
+    var keys=[e.topic].concat(e.claim?e.claim.domains:[]).map(function(g){return String(g||'').toLowerCase();});
+    return t&&(keys.some(function(g){return g&&(t.indexOf(g)>=0||g.indexOf(t)>=0);})||String(e.summary||'').toLowerCase().indexOf(t)>=0);});
   return {topic:topic,citations:hits.map(function(e){
-      return {summary:e.summary,citation:e.citation,unverified:!!e.verify,id:e.id};}),
+      return {summary:e.summary,citation:e.citation,unverified:!!e.verify,id:e.id,grade:e.claim?e.claim.grade:null,status:claimStatus(e)};}),
     count:hits.length,
     note:hits.length?'From the citation registry shipped with the build. Nothing is fetched.':
       'Nothing in the shipped registry covers that. The app does not search the literature and does not pretend to.'};
 }
+/* From the decision's explanation, not by matching words in its sentences: a claim about this record needs no citation;
+   a policy built on a physiological judgement does (a design rule, such as one variable at a time, does not), and a
+   finding past its review date is listed too. */
 function uncitedClaims(){
   var out=[];
   try{
-    var d=decide();
-    if(d)(d.why||[]).forEach(function(w){
-      var text=typeof w==='string'?w:(w.text||'');
-      if(!text)return;
-      var cited=(typeof REF_EVIDENCE!=='undefined'?REF_EVIDENCE:[]).some(function(e){
-        return (e.tags||[]).some(function(g){return text.toLowerCase().indexOf(String(g).toLowerCase())>=0;});});
-      /* A claim about THIS person's record needs no citation; a general claim does. */
-      var general=/\b(should|typically|generally|research|studies|known to)\b/i.test(text);
-      if(general&&!cited)out.push({claim:text,where:'current decision'});
-    });
+    var d=decide(),E=d&&d.explanation;
+    if(E)E.claims.forEach(function(c){
+      var design=c.validation&&/design rule|your own choice/.test(String(c.validation.validation||'')+String(c.validation.parameterSource||''));
+      if(c.type==='policy'&&!c.sourceIds.length&&!design)out.push({claim:c.statement||c.proposition.subject,where:'current decision',kind:'a rule with no published evidence registered',id:c.id});
+      if(c.type==='finding'&&c.reviewDate&&asOf()>c.reviewDate)out.push({claim:c.statement,where:'current decision',kind:'a finding past its review date',id:c.id});});
   }catch(e){_q(e,'P3');}
   return {claims:out,
-    note:out.length?'General claims with nothing in the registry behind them. Claims about your own record need no citation; these are not those.':
-      'Every general claim in the current decision is backed by the shipped registry.'};
+    note:out.length?'Rules with nothing in the registry behind them, and findings due for review. Claims about your own record need no citation; these are not those.':
+      'Every rule in the current decision rests on registered evidence or is a design rule, and no finding behind it is past review.'};
 }
 
 /* ============================================================================

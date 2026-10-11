@@ -39,7 +39,7 @@ var AI_TOOLS={
   explain_adaptation:{description:'The adaptations the app currently proposes, each with its reason and expected effect.',schema:{type:'object',properties:{}},
     run:function(){var A=adaptationProposals();return {proposals:(A.proposals||[]).slice(0,5).map(function(x){return {id:x.id,title:x.title,why:x.why||null,expected:x.expected||null};})};}},
   get_evidence:{description:'The published evidence the app cites on a topic.',schema:{type:'object',properties:{topic:{type:'string',maxLength:60}},required:['topic']},
-    run:function(a){return {topic:a.topic,evidence:(evidenceFor(a.topic)||[]).slice(0,5)};}},
+    run:function(a){var f=evidenceFor(a.topic);return {topic:a.topic,evidence:((f&&f.citations)||[]).slice(0,5)};}},
   find_food:{description:'Search the food database and the person\u2019s own foods.',schema:{type:'object',properties:{query:{type:'string',maxLength:60}},required:['query']},
     run:function(a){return {results:foodSearchLocal(a.query,6).map(function(f){var n=normalizeFood(f);return {ref:(n.kind||'user')+'|'+n.id,name:n.name,per100:n.per100&&{kcal:n.per100.kcal,protein:n.per100.protein},basis:n.basis};})};}},
   list_exercises:{description:'Exercises in the person\u2019s library, optionally for one muscle.',schema:{type:'object',properties:{muscle:{type:'string',maxLength:30}}},

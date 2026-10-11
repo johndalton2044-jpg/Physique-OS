@@ -574,6 +574,9 @@
     "valueOfInformationFormal",
     "predictionContext"
    ],
+   "58-explanation.js": [
+    "explainDecision"
+   ],
    "58-plan.js": [
     "notePlanChange"
    ],
@@ -894,6 +897,45 @@
    ]
   }
  },
+ "58-explanation.js": {
+  "layer": "engine",
+  "calls": {
+   "10-core.js": [
+    "_q",
+    "addDays",
+    "daysBetween",
+    "round",
+    "fmtNum",
+    "fmtSigned",
+    "fmtWeight",
+    "fmtRate",
+    "fmtRateRange",
+    "fmtKcal"
+   ],
+   "30-observations.js": [
+    "asOf",
+    "obsOf"
+   ],
+   "40-models.js": [
+    "epistemicClassOf",
+    "modelById",
+    "getCurrentState"
+   ],
+   "50-decision.js": [
+    "diagnose"
+   ],
+   "58-response-entity.js": [
+    "_expectedWeightChange",
+    "_deepFreeze"
+   ],
+   "94-navigation.js": [
+    "detailLevel"
+   ],
+   "96-bayes-engine.js": [
+    "_hash"
+   ]
+  }
+ },
  "58-goals.js": {
   "layer": "engine",
   "calls": {
@@ -901,6 +943,7 @@
     "_registryTaken",
     "todayISO",
     "round",
+    "fmtNum",
     "mean"
    ],
    "20-schema-storage.js": [
@@ -912,6 +955,9 @@
    ],
    "40-models.js": [
     "canonicalGoal"
+   ],
+   "58-explanation.js": [
+    "claimById"
    ],
    "58-schedule.js": [
     "scheduleModel"
@@ -2376,6 +2422,10 @@
     "exerciseResponse",
     "counterfactual"
    ],
+   "58-explanation.js": [
+    "currentExplanationLevel",
+    "compileExplanation"
+   ],
    "58-phase-criteria.js": [
     "phaseCriteriaStatus"
    ],
@@ -2600,6 +2650,9 @@
     "personalResponse",
     "valueOfInformationFormal",
     "calibrationByContext"
+   ],
+   "58-explanation.js": [
+    "claimRegistry"
    ],
    "58-response-entity.js": [
     "recordResponses"
@@ -3397,6 +3450,10 @@
     "skillFamilies",
     "skillLimiter",
     "composeSession"
+   ],
+   "58-explanation.js": [
+    "currentExplanationLevel",
+    "compileExplanation"
    ],
    "58-plan.js": [
     "notePlanChange",
@@ -5588,6 +5645,9 @@
    "54-scenarios.js": [
     "interruptedTimeSeries"
    ],
+   "58-explanation.js": [
+    "compileExplanation"
+   ],
    "58-trace.js": [
     "traceValue"
    ],
@@ -5702,6 +5762,7 @@
     "emitEvent"
    ],
    "30-observations.js": [
+    "asOf",
     "activePhase",
     "obsOf",
     "seriesWindow"
@@ -5752,6 +5813,9 @@
    "56-knowledge.js": [
     "personalKnowledge"
    ],
+   "58-explanation.js": [
+    "claimStatus"
+   ],
    "58-plan.js": [
     "explainPlanChange"
    ],
@@ -5762,6 +5826,9 @@
    ],
    "73-twin.js": [
     "optimisePlans"
+   ],
+   "79-rigour.js": [
+    "energyDensityRef"
    ],
    "90-actions.js": [
     "dispatchAct"

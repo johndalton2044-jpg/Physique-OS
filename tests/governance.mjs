@@ -204,6 +204,18 @@ w.runVerification();
   const dk=keyedRegistryDuplicates(plain,w.REGISTRY_ID_SOURCES.keyed);
   dk.length?hard('registry-key-twice','keyed registries given one key more than once in the source — the later silently replaces the earlier',dk.map(d=>d.registry+'.'+d.key+' ('+d.locations.join(', ')+')'))
     :pass('registry-key-twice','no keyed registry is given a key twice in the source ('+w.REGISTRY_ID_SOURCES.keyed.length+' registries)');}
+/* S2j — STRUCTURED EXPLANATIONS (catalogue doc 2, P1.1 to P1.7). Every heuristic contract is complete and names only
+   registered evidence; every evidence entry carries a claim; and every decision the engine can make (each code it
+   assigns, read from the source) has declared grounds, so a new decision cannot ship without a structured explanation. */
+{const H=w.heuristicContracts(),CR=w.claimRegistry();
+  H.ok?pass('heuristic-contracts','every threshold and curve behind a decision or goal has a complete contract ('+H.contracts.length+')')
+    :hard('heuristic-contracts','heuristic contracts incomplete, or naming evidence that is not registered',H.issues);
+  CR.ok?pass('claim-registry','every evidence entry carries a claim with grade, population, limitations and review date ('+CR.claims.length+')')
+    :hard('claim-registry','evidence entries without a complete claim',CR.issues);
+  const dsrc=fs.readFileSync(path.join(SRC,'50-decision.js'),'utf8'),codes=[...new Set([...dsrc.matchAll(/\bcode:(?:useSteps\?'([A-Z_]+)':'([A-Z_]+)'|'([A-Z_]+)')/g)].flatMap(m=>[m[1],m[2],m[3]]).filter(Boolean))];
+  const bare=codes.filter(c=>!w.DECISION_GROUNDS[c]);
+  bare.length?hard('decision-grounds','decision codes with no declared grounds: their explanation would rest on nothing',bare)
+    :pass('decision-grounds','every decision code has declared grounds ('+codes.length+' codes)');}
 /* S2e \u2014 THE CATALOGUE, GENERATED (H0, MK W32). Hand-written catalogues drifted: a module header called four implemented
    domains absent for several builds. This catalogue is produced from the running registries on every run, so it cannot
    disagree with the code, and the drift against the previous run is written beside it for review. */

@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-010). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-015). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -191,6 +191,29 @@ await run('V-012 automation approval',async ui=>{
   ui.d.querySelector('#editBackdrop [data-act="auto.approve"]').click();await wait(300);
   line(ui.w.DB.plans.length===plans0+1,'V-012 approving it changed the plan, through one new plan version (second witness)');
   const s2=sheet();line(/What automation did/.test(s2)&&/applied[^]{0,120}plan version/.test(s2)&&/approved/.test(s2)&&/held/.test(s2),'V-012 the automation log on screen shows it held, approved and applied',s2.slice(-400));});
+
+/* V-015 EXPLANATION LEVELS (catalogue doc 2, P1.3): one explanation, three renderings. On the demo record, the reasons for
+   Today's decision are read off the screen at Casual and again at Developer. What is expected is only what must hold
+   between the two readings (the same claims, in the same order, with the same figure for the weight trend) and what each
+   level is defined to show: plain sentences with no method notes at Casual; at Developer, each reason's epistemic class
+   and the rules applied, as policies. Nothing is computed by calling the app. */
+await run('V-015 explanation levels',async ui=>{
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.observations.length>0,'the demo record to load');
+  const read=async()=>{ui.tab('today');await ui.until('details[data-fold="today-why"] summary');ui.expand('today-why');
+    await ui.waitFor(()=>ui.d.querySelectorAll('#decisionZone [data-block="why"] li[data-claim]').length>1,'the decision’s reasons to show');
+    const items=[...ui.d.querySelectorAll('#decisionZone [data-block="why"] li[data-claim]')].map(li=>({id:li.getAttribute('data-claim'),text:li.textContent}));
+    return {items,rules:ui.d.querySelectorAll('#decisionZone [data-block="rules"] li').length,ruleText:ui.text('#decisionZone [data-block="rules"]')};};
+  const trendOf=r=>{const t=r.items.find(i=>/weight trend is/i.test(i.text));const m=t&&t.text.match(/([−+-]?\d+(?:\.\d+)?) (lb|kg)\/wk/);return m?m[1]:null;};
+  const casual=await read();
+  line(casual.items.length>1&&casual.rules===0&&casual.items.every(i=>!/OBSERVED|ASSOCIATED|PREDICTIVE|POLICY|\[/.test(i.text)),'V-015 at Casual the reasons are plain sentences: no method notes and no rules block',JSON.stringify(casual).slice(0,200));
+  await useLevel(ui,'developer');
+  const dev=await read();
+  line(JSON.stringify(dev.items.map(i=>i.id))===JSON.stringify(casual.items.map(i=>i.id)),'V-015 Developer shows exactly the same claims, by id and in the same order',dev.items.map(i=>i.id).join(',')+' / '+casual.items.map(i=>i.id).join(','));
+  line(trendOf(casual)!=null&&trendOf(casual)===trendOf(dev),'V-015 with the same figure for the weight trend at both levels',trendOf(casual)+' / '+trendOf(dev));
+  line(dev.items.every(i=>/\[(OBSERVED|ASSOCIATED|RESPONSIVE|CAUSALLY_SUPPORTED|PREDICTIVE)/.test(i.text)),'V-015 at Developer each reason names its epistemic class',dev.items.map(i=>i.text.slice(-60)).join(' | ').slice(0,240));
+  line(dev.rules>0&&/POLICY/.test(dev.ruleText),'V-015 at Developer the rules applied are shown as policies, apart from the evidence',dev.ruleText.slice(0,200));
+});
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

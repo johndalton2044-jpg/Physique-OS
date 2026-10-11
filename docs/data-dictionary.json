@@ -2024,6 +2024,9 @@
     "experimentId": [
      "string"
     ],
+    "explanation": [
+     "object"
+    ],
     "id": [
      "string"
     ],
@@ -2042,6 +2045,9 @@
     ],
     "recheckDays": [
      "number"
+    ],
+    "reversal": [
+     "array"
     ],
     "reverseIf": [
      "array"
