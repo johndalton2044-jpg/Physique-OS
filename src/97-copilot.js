@@ -226,6 +226,7 @@ function contextPacket(opts){
     state:{},
     classes:CLASSES,
     claimClasses:EPISTEMIC_CLASSES,   /* what each epistemic class may claim (W-010); pack.claims gives each variable's */
+    confidenceMeans:CONFIDENCE_SEMANTICS,   /* "high" is a rating unless a claim's confidenceBasis says calibrated (doc 2, P2) */
     uncertainty:null,
     decision:null,
     domains:[],
@@ -255,7 +256,7 @@ function contextPacket(opts){
     pack.domains=domainSummary().map(function(x){return {id:x.id,status:x.status,headline:x.headline};});
     pack.knowledge=personalKnowledge().items.slice(0,12).map(function(k){
       return {kind:k.kind,subject:k.subject,statement:k.statement,
-        confidence:k.decayedConfidence,freshness:k.freshness,context:k.context};});
+        confidence:k.decayedConfidence,freshness:k.freshness,context:k.context,state:k.state};});
     pack.gaps=domainGaps().slice(0,8).map(function(g){return {question:g.question,limits:g.limits};});
     /* The ONLY things a model may propose, and every one of them must be DISPATCHABLE. The register also
        contains palette entries that carry their own closure rather than a registered action; offering those
@@ -334,7 +335,7 @@ var _UNIT_FAMILY={kcal:/\b(kcal|calories?)\b/i,mass:/\b(lb|lbs|kg|pounds?|kilos?
 function _unitFamilies(u){return Object.keys(_UNIT_FAMILY).filter(function(k){return _UNIT_FAMILY[k].test(String(u||''));});}
 function assistantClaimSet(E){if(!E)return null;
   var claims=E.claims.map(function(c){return {id:c.id,type:c.type,subject:c.proposition.subject,predicate:c.proposition.predicate,object:c.proposition.object,
-    epistemicClass:c.epistemicClass,confidence:c.confidence,applicability:c.applicability,population:c.population};});
+    epistemicClass:c.epistemicClass,confidence:c.confidence,confidenceBasis:c.confidenceBasis?c.confidenceBasis.kind:null,applicability:c.applicability,population:c.population};});
   var levers={};(E.action.levers||[]).forEach(function(l){levers[l.key]=1;});if(E.action.intervention)levers[E.action.intervention.variable]=1;
   var rel=[];try{var dr=energyDensityRef();rel.push({from:'kcal',to:'mass',claim:'tissue energy density',value:dr.kcalPerLb,unit:'kcal per lb'});}catch(e){}
   E.claims.forEach(function(c){var walk=function(o){if(!o||typeof o!=='object')return;Object.keys(o).forEach(function(k){var v=o[k];

@@ -4491,3 +4491,62 @@ Tests:
   syncs on either device do not bring it back.
 
 All 37 gates pass (reproducible included); release 24/24; 1,867 self-tests.
+
+## The later phases: confidence, knowledge states, N-of-1 protocols, scored execution, why, current state (build 0dc41f684f)
+
+The remaining items of both catalogues that the record can honestly support now. Each was built on what exists and adds
+no registry.
+- **What a confidence label means** (doc 2, P2: "do not call arbitrary scores confidence").
+  - "High", "medium" and "low" are ratings a model gives from its own conditions (data, noise, failing conditions), not
+    probabilities. `confidenceBasis()` says so for each model.
+  - A model whose 80% intervals are scored against what happened (`INTERVAL_MODELS`) is called calibrated only when its
+    corrected interval held on newer predictions, and the label says how often it held.
+  - Every claim carries its basis. The scientific explanation and the decision's uncertainty say "a rating, not a
+    probability" or give the coverage, and the assistant receives what each kind means.
+- **The state of each finding** (doc 2, P2: personal knowledge; doc 1 W-041). Each finding is decided in order:
+  contradicted, needs testing, established (high confidence in more than one context), established in context,
+  probable, or unknown. The knowledge sheet shows each finding's state and the counts. `knowledgeClaims()` gives each
+  finding as a claim in the one claim structure, with its state, so personal knowledge is not a second system.
+- **N-of-1 protocols** (doc 2, P2; doc 1 W-043). `experimentProtocol()` gives each experiment its hypothesis, change,
+  comparator (the 14 days before), outcome and predicted range, window, confounders (watched and found), measurement
+  plan, stopping rule, result and applicability.
+  - The inference is bounded by the design: an A-B design shows at most a response, an A-B-A or a crossover can support
+    a causal claim when repeated, and a confounder found in the window brings it down to an association.
+  - The timeline and search pointed at `exp.open`, which was never registered, so tapping an experiment did nothing.
+    It now opens the experiment with its protocol.
+- **Execution probability, scored** (doc 1, W-021). It is checked in two ways, neither against itself:
+  - a backtest: fitted on the older half of the recorded days, scored on the newer half, with each item's Brier score
+    beside the base rate's and reliability bins;
+  - a prospective record: each day's planned items are stamped with their probability before the day and scored
+    against the day's record after it.
+  The friction card shows both. Execution predictions sit in the prediction ledger but are kept out of everything that
+  reads a prediction as a weight forecast.
+- **"Why am I seeing this?"** (doc 1, W-045). A decision now answers the catalogue's eight questions from its stored
+  explanation, ending with what doing nothing means:
+  - what changed (against the previous decision) and why it matters (the rules and the expected change);
+  - what supports it (claims and findings) and what is missing (grounds the rule reads that the record lacks, and the
+    conditions counting against a claim);
+  - the uncertainty, the alternatives weighed and the action proposed.
+  It shows a trace from the screen through the decision and its models to the observations it rests on.
+- **A generated current-state document** (doc 1, W-030). The governance gate writes `docs/CURRENT_STATE.md` from the
+  running registries on every run: live counts, every capability with its maturity, and the known limitations.
+
+Tests:
+- 22 self-tests, each made to fail once on purpose:
+  - confidence bases on scored predictions written here;
+  - the six states and their order;
+  - the protocol fields and each design's bound;
+  - the eight questions with a missing ground named;
+  - Brier and bins on predictions written here (0.255), and a day stamped and scored on the demo, worked out from the
+    day's record.
+- Black-box workflow V-017: a decision opened from the timeline answers the eight questions in the catalogue's order,
+  and its trace's count of observations matches the stored explanation, counted from the record.
+
+What stays open, and why:
+- Prospective validation and calibration of the scientific models need months of real use. The execution record is
+  now accumulating.
+- Running one self-test suite alone needs each block to build its own fixture.
+- W-015 to W-020 and W-044 are deferred by the catalogue's own order.
+
+1,889 self-tests pass; the full release record is in progress.
+

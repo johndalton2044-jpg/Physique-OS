@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-11T20:44:27.718Z",
-  "build": "38097babc5",
+  "generatedAt": "2026-10-11T21:01:37.658Z",
+  "build": "0dc41f684f",
   "counts": {
     "hard": {},
     "soft": {}
@@ -85,8 +85,12 @@
       "msg": "every decision code has declared grounds (15 codes)"
     },
     {
+      "cat": "current-state",
+      "msg": "docs/CURRENT_STATE.md generated from the running registries (96 lines)"
+    },
+    {
       "cat": "catalogue",
-      "msg": "catalogue generated from the running registries — 0 change(s) since the previous run"
+      "msg": "catalogue generated from the running registries — 2 change(s) since the previous run"
     },
     {
       "cat": "entity-contracts",

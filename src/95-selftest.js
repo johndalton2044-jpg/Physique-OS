@@ -5014,6 +5014,76 @@ function runSelfTest(opts){
       ok('and B is told that one of its changes was undone on another device, and by which',!!r.told&&r.told.count===1&&r.told.by.join()==='dev-A');
       ok('a merge that brought a whole record another device restored keeps that record, and the undo says so',!!r.snap&&r.snap.merge===true&&r.snap.keptSnapshot===1&&r.snap.revoked===0,JSON.stringify(r.snap));
     })();
+    _stSuite('models');
+    /* WHAT A CONFIDENCE LABEL MEANS (catalogue doc 2, P2). The weight forecast's scored predictions are set here: five (too
+       few), then twenty whose errors are all 0.3 of a standard deviation (inside any 80% interval), then ten at 0.3 followed
+       by ten at 3.0 (the newer half far outside it). */
+    (function(){var keep=INTERVAL_MODELS.weight_forecast.scored,r={},mk=function(list){return function(){return list.map(function(x,i){return {at:'2026-01-'+String(10+i).padStart(2,'0'),ratio:x};});};};
+      try{INTERVAL_MODELS.weight_forecast.scored=mk([0.3,0.3,0.3,0.3,0.3]);r.few=confidenceBasis('weight_forecast');
+        INTERVAL_MODELS.weight_forecast.scored=mk(Array(20).fill(0.3));r.good=confidenceBasis('weight_forecast');
+        INTERVAL_MODELS.weight_forecast.scored=mk(Array(10).fill(0.3).concat(Array(10).fill(3.0)));r.bad=confidenceBasis('weight_forecast');}
+      finally{INTERVAL_MODELS.weight_forecast.scored=keep;}
+      ok('a model whose intervals are never scored gives a rating, not a probability',confidenceBasis('weight_trend').kind==='rating'&&/a rating, not a probability/.test(confidenceBasisText(confidenceBasis('weight_trend'))));
+      ok('so does one with fewer than ten scored predictions, and it says how many it has',r.few.kind==='rating'&&r.few.scored===5&&r.few.need===10,JSON.stringify(r.few));
+      ok('twenty scored predictions all inside the interval: calibrated, held on all the newer ones',r.good.kind==='calibrated'&&r.good.heldOnNewer===1&&r.good.n===20,JSON.stringify(r.good));
+      ok('the newer half all outside it: scored but not calibrated, and it says it held on none',r.bad.kind==='uncalibrated'&&r.bad.heldOnNewer===0,JSON.stringify(r.bad));
+      var S={phase:{type:'cut',startDate:addDays(asOf(),-30)},trend:{status:'ok',slopePerWeek:-1.2,lo:-1.5,hi:-0.9,n:12,span:14,cls:'DERIVED',confidence:'high'},targetRate:null,recovery:{status:'none'},training:{strength:{status:'none'}},appetite:{status:'none'},adherence:{},trust:{overall:{level:'high',pct:90}}};
+      var E=explainDecision({code:'INSUFFICIENT',verb:'Insufficient data',date:asOf(),confidence:'low',action:[],reversal:[]},S),sci=compileExplanation(E,'scientific'),an=compileExplanation(E,'analytical');
+      ok('the scientific rendering says a model’s “high” is a rating, and the decision’s confidence says so too',sci.grounds.some(function(g){return /confidence high \(a rating, not a probability\)/.test(g.text);})&&/confidence low \(a rating, not a probability\)/.test(an.uncertainty),an.uncertainty);
+    })();
+    _stSuite('decisions');
+    /* THE STATE OF A FINDING (catalogue doc 2, P2: personal knowledge), from hand-written findings: each state, and which
+       wins when two would apply. */
+    (function(){var st=function(o){return knowledgeState(Object.assign({conflicts:0,freshness:'current',decayedConfidence:'medium',contexts:1},o));};
+      ok('six states, decided in order: contradicted, then needs testing, then by confidence and contexts',
+        st({conflicts:1})==='contradicted'&&st({freshness:'stale'})==='needs testing'&&st({decayedConfidence:'high',contexts:2})==='established'
+          &&st({decayedConfidence:'high'})==='established in context'&&st({})==='probable'&&st({decayedConfidence:'low'})==='unknown'&&st({decayedConfidence:'insufficient'})==='unknown');
+      ok('a contradiction outranks staleness, and staleness outranks high confidence',st({conflicts:2,freshness:'stale',decayedConfidence:'high'})==='contradicted'&&st({freshness:'stale',decayedConfidence:'high',contexts:3})==='needs testing');
+      var K=null,C=null;withFixture('normal_loss',function(){K=personalKnowledge();C=knowledgeClaims();});
+      ok('every finding carries its state and what it means, and the counts add up',K.items.length>0&&K.items.every(function(i){return !!KNOWLEDGE_STATES[i.state]&&i.stateMeans===KNOWLEDGE_STATES[i.state];})
+        &&Object.keys(K.byState).reduce(function(a,s){return a+K.byState[s];},0)===K.items.length);
+      ok('and each is a claim in the one claim structure, with its state: not a second knowledge system',C.length===K.items.length&&C.every(function(c,i){return Object.isFrozen(c.claim)&&c.state===K.items[i].state&&!!c.claim.epistemicClass;}));
+    })();
+    /* THE N-OF-1 PROTOCOL (catalogue doc 2, P2; doc 1 W-043), on experiments written here: what each design can show. */
+    (function(){var base={id:'x-n1',variable:'steps',baselineValue:8000,interventionValue:10000,hypothesis:'more steps speed the loss',metric:'weight trend (lb/week)',
+        startDate:'2026-05-15',recheckDate:'2026-05-29',durationDays:14,predLo:-0.4,predHi:-0.1,status:'active'};
+      var ab=experimentProtocol(base),aba=experimentProtocol(Object.assign({},base,{design:{kind:'A-B-A (return to baseline)'}})),conf=experimentProtocol(Object.assign({},base,{confounders:['another variable changed: calories on May 20']}));
+      var F=['hypothesis','intervention','comparator','outcome','exposureWindow','confounders','measurementPlan','stoppingRule','result','inference','applicability'];
+      ok('every field a single-person experiment needs is there',F.every(function(f){return f in ab;})&&ab.comparator.from==='2026-05-01'&&ab.comparator.to==='2026-05-14'&&ab.exposureWindow.days===14&&ab.stoppingRule.scheduled==='2026-05-29'&&ab.outcome.predicted.lo===-0.4);
+      ok('an A-B design can show at most a response; a return to baseline can support a causal claim',ab.design==='A-B'&&ab.inference.identifiability==='weak'&&ab.inference.allowedClaim==='RESPONSIVE'&&aba.design==='A-B-A'&&aba.inference.allowedClaim==='CAUSALLY_SUPPORTED');
+      ok('a confounder found in the window brings it down to an association',conf.inference.confounded===true&&conf.inference.allowedClaim==='ASSOCIATED');
+      var keepE=DB.experiments;try{DB.experiments=[base];var sh=SHEETS.experimentDetail({id:'x-n1'});}finally{DB.experiments=keepE;}
+      ok('an experiment opens from the timeline and search (exp.open was never registered), and shows what its design can show',typeof ACTIONS['exp.open']==='function'&&/weak identifiability: at most responsive/.test(sh.body)&&/Compared with/.test(sh.body));
+    })();
+    /* WHY AM I SEEING THIS (catalogue doc 1, W-045): the eight questions, from a decision written here whose state has no
+       recovery ratings, so the missing evidence must name them. */
+    (function(){var S={phase:{type:'cut',startDate:addDays(asOf(),-30)},trend:{status:'ok',slopePerWeek:-2.8,lo:-3.1,hi:-2.5,n:12,span:14,cls:'DERIVED',confidence:'high'},targetRate:{lo:-2,hi:-1,source:'user target'},
+        recovery:{status:'none'},training:{strength:{status:'ok',overall:'declining',declining:2,tracked:4,cls:'DERIVED',confidence:'medium'}},appetite:{status:'none'},adherence:{},trust:{overall:{level:'high',pct:90}}};
+      var dec={id:'dec-w045',code:'REDUCE_DEFICIT',verb:'Reduce the deficit',date:asOf(),at:nowISO(),confidence:'medium',recheckDays:14,phaseType:'cut',action:[{key:'calories',text:'raise intake by 200 kcal/day'}],
+        intervention:{variable:'calories',from:2000,to:2200,recheckDays:14},alternatives:['both calories up and cardio down (not recommended: two variables)'],reversal:[]};
+      dec.explanation=JSON.parse(JSON.stringify(explainDecision(dec,S)));var Q=decisionQuestions(dec),by={};Q.rows.forEach(function(r){by[r.id]=r.a;});
+      ok('a decision answers the eight questions, in order',JSON.stringify(Q.rows.map(function(r){return r.id;}))==='["changed","matters","evidence","missing","uncertainty","alternatives","action","nothing"]');
+      ok('the missing evidence names what its rule reads and the record lacks: no recovery ratings',by.missing.indexOf('no recovery in the record')>=0,JSON.stringify(by.missing));
+      ok('the alternative it weighed, the action it proposes, and what doing nothing means',by.alternatives[0]===dec.alternatives[0]&&by.action[0]==='raise intake by 200 kcal/day'&&/expected effect does not happen/.test(by.nothing[0])&&/rechecked after 14 days/.test(by.nothing[0]));
+      ok('and the trace runs from the screen to the observations',Q.trace.length===5&&/decision REDUCE_DEFICIT/.test(Q.trace[1])&&/weight_trend/.test(Q.trace[2])&&/observations? in the record$/.test(Q.trace[4]),JSON.stringify(Q.trace));
+    })();
+    _stSuite('adaptive-plan');
+    /* EXECUTION PROBABILITY, SCORED (catalogue doc 1, W-021). The Brier score and bins of four predictions written here:
+       0.9 done, 0.9 missed, 0.2 missed, 0.6 done, so (0.01 + 0.81 + 0.04 + 0.16) / 4 = 0.255. Then, on the demo record (it
+       has a plan and the days it was carried out), yesterday is stamped and scored, and the score is worked out here from
+       the day's record. */
+    (function(){var rows=[{p:0.9,y:1},{p:0.9,y:0},{p:0.2,y:0},{p:0.6,y:1}],b=_reliabilityBins(rows);
+      ok('the Brier score is the mean squared distance between probability and outcome: 0.255',Math.abs(_brier(rows)-0.255)<1e-12);
+      ok('and the bins set each band’s mean prediction beside what was actually done',b.length===3&&b[0].n===1&&b[0].predicted===0.2&&b[0].observed===0&&b[1].n===1&&b[1].observed===1&&b[2].n===2&&b[2].predicted===0.9&&b[2].observed===0.5,JSON.stringify(b));
+      var r={},keepDB=DB;try{DB=emptyDB();loadDemo();_memoInvalidate();(function(){var y=addDays(todayISO(),-1);DB.predictions=(DB.predictions||[]).filter(function(p){return p.model!=='execution_probability';});
+        var p=stampExecutionPredictions(y);r.p=p&&JSON.parse(JSON.stringify(p));var e=executionFor(y);r.rows=e&&e.rows;
+        scorePredictions();var q=DB.predictions.filter(function(x){return p&&x.id===p.id;})[0];r.q=q&&JSON.parse(JSON.stringify(q));r.T=executionTrackRecord();r.again=stampExecutionPredictions(y);})();}finally{DB=keepDB;_memoInvalidate();}
+      var want=null;if(r.p&&r.rows){var sq=[];r.rows.forEach(function(x){if(r.p.items[x.item]==null)return;if(x.status==='done'||x.status==='partial'||x.status==='skipped')sq.push(Math.pow(r.p.items[x.item]-(x.status==='done'?1:0),2));});
+        want=sq.length?Math.round(1000*sq.reduce(function(a,b){return a+b;},0)/sq.length)/1000:null;}
+      ok('yesterday’s planned items are stamped with their probability, once',!!r.p&&Object.keys(r.p.items).length>0&&r.again===null,JSON.stringify(r.p&&r.p.items));
+      ok('and scored against the day’s record, not a weigh-in: its Brier score is the one worked out from the record',!!r.q&&r.q.status==='scored'&&r.q.actual===undefined&&want!=null&&r.q.brier===want,JSON.stringify({q:r.q&&r.q.brier,want:want}));
+      ok('the track record counts every scored item',r.T.status==='ok'&&r.T.n===Object.keys(r.q.outcomes).length,JSON.stringify(r.T));
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

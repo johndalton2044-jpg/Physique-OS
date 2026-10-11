@@ -32,7 +32,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Unified optimiser | surfaced | heuristic | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Marginal returns: the next unit of each dose | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | real data path | population | surfaced | local | internal | — | gate engine |
-| Structured explanations: claims, rules and evidence at three levels | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-015, gate engine, gate governance |
+| Structured explanations: claims, rules and evidence at three levels | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-015, workflow V-017, gate engine, gate governance |
 | Body composition: fat and lean trajectories | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | measured | gate engine |
 | Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | gate engine, workflow V-014 |

@@ -7,8 +7,8 @@ Produced from the running registries on every governance run. Do not edit by han
 | models | 50 |
 | capabilities | 22 |
 | entity contracts | 29 |
-| commands | 541 |
-| sheets | 120 |
+| commands | 542 |
+| sheets | 121 |
 | event types | 57 |
 | observation types | 39 |
 | exercises | 159 |
@@ -76,4 +76,5 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- none
+- added command: exp.open
+- added sheet: experimentDetail

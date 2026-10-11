@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-016). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-017). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -256,6 +256,25 @@ await run('V-016 photo durability',async ui=>{
   await ui.waitFor(()=>photoOnScreen()===URL_EXPECTED,'the restored image to show',15000);
   line(photoOnScreen()===URL_EXPECTED,'V-016 after restoring the encrypted backup, the photo shows with exactly its image');
 },{webcrypto:true});
+
+/* V-017 WHY AM I SEEING THIS (catalogue doc 1, W-045). On the demo record, a decision is opened from the timeline and asked
+   why it is shown. Expected, from the catalogue itself: its eight questions, in its order, each answered, and a trace from
+   the screen to the observations. Second witness: the number of observations the trace names is the number the stored
+   decision's explanation rests on, counted here from the record. */
+await run('V-017 why am I seeing this',async ui=>{
+  const EIGHT=['What changed?','Why does it matter?','What evidence supports this?','What evidence is missing?','What uncertainty exists?','What alternatives were considered?','What action is being proposed?','What happens if I do nothing?'];
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.decisions.length>0,'the demo’s decisions');
+  ui.tab('tools');await ui.until('details[data-fold="tools-navigation"] summary');ui.expand('tools-navigation');(await ui.until('[data-act="nav.timeline"]')).click();
+  const row=await ui.until('#editBackdrop .tl-row[data-act="obs.inspectDecision"]');const decId=row.getAttribute('data-arg');row.click();
+  const why=await ui.until('#editBackdrop [data-act="why.shown"]');why.click();await ui.until('#editBackdrop [data-question]');
+  const qs=[...ui.d.querySelectorAll('#editBackdrop [data-question]')].map(x=>({title:x.querySelector('.d-block-title').textContent,items:[...x.querySelectorAll('li')].map(l=>l.textContent.trim())}));
+  line(JSON.stringify(qs.map(q=>q.title))===JSON.stringify(EIGHT.map(q=>q.toUpperCase())),'V-017 the decision answers the catalogue’s eight questions, in its order',qs.map(q=>q.title).join(' | '));
+  line(qs.length===8&&qs.every(q=>q.items.length>0&&q.items.every(t=>t&&t!=='nothing recorded')),'V-017 each question has an answer',JSON.stringify(qs.map(q=>q.items.length)));
+  const tr=ui.text('#editBackdrop [data-trace]'),n=+((tr.match(/(\d+) observations? in the record/)||[])[1]);
+  const rec=ui.w.DB.decisions.find(d=>d.id===decId),want=rec&&rec.explanation?rec.explanation.claims.filter(c=>c.type!=='policy'&&c.type!=='finding').reduce((a,c)=>a+(c.evidenceIds||[]).length,0):null;
+  line(/the screen/.test(tr)&&/decision [A-Z_]+/.test(tr)&&n===want,'V-017 the trace runs from the screen through the decision and its models to the observations it rests on',tr+' / counted from the record: '+want);
+});
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

@@ -53,7 +53,7 @@ function knowledgeGraph(opts){
       link('decision:'+d.id,ik,'produced');
     });
     (DB.predictions||[]).filter(function(p){
-      return p.madeAt&&localDateOf(p.madeAt)===iv.date;}).forEach(function(p){
+      return p.madeAt&&p.model!=='execution_probability'&&localDateOf(p.madeAt)===iv.date;}).forEach(function(p){
       var pk=add('hypothesis',p.id,(p.subject||'forecast')+' '+fmtNum(p.point,1),{date:iv.date});
       link(ik,pk,'predicted');
       if(p.status==='scored'){

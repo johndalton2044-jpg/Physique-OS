@@ -27,6 +27,22 @@ var EXPLANATION_LEVELS={
 function explanationLevelFor(detail){var k=Object.keys(EXPLANATION_LEVELS).filter(function(l){return EXPLANATION_LEVELS[l].detail===detail;})[0];return k||'analytical';}
 function currentExplanationLevel(){var d='insightful';try{d=typeof detailLevel==='function'?detailLevel():d;}catch(e){}return explanationLevelFor(d);}
 
+/* ---- what a confidence label means (catalogue doc 2, P2: calibration) ----
+   "high", "medium" and "low" are ratings a model gives from its own conditions (how much data, how noisy, which failure
+   conditions hold): not probabilities, and not calibrated. A model whose 80% intervals are scored against what happened
+   (INTERVAL_MODELS, 58-model-competition) is said to be calibrated only when its corrected interval held on newer
+   predictions; until then its label is a rating too. */
+var CONFIDENCE_SEMANTICS={rating:'a rating from the model\u2019s own conditions (data, noise, failing conditions): not a probability, and not calibrated',
+  calibrated:'its 80% interval is scored against what happened and corrected; on newer predictions it held',
+  uncalibrated:'its 80% interval is scored against what happened, but does not yet hold its stated rate'};
+var CONFIDENCE_INTERVAL_MODEL={weight_forecast:'weight_forecast',goal_traj:'weight_forecast',cardio_fitness_latent:'aerobic_capacity',personal_response:'personal_response',intervention_response:'personal_response'};
+function confidenceBasis(modelId){var k=CONFIDENCE_INTERVAL_MODEL[modelId];if(!k||typeof INTERVAL_MODELS==='undefined'||!INTERVAL_MODELS[k])return {kind:'rating'};
+  var c=null;try{c=intervalCalibration(INTERVAL_MODELS[k].scored());}catch(e){return {kind:'rating'};}
+  if(!c||c.n<CALIBRATION_MIN_N)return {kind:'rating',scored:c?c.n:0,need:CALIBRATION_MIN_N};
+  return {kind:c.calibrated?'calibrated':'uncalibrated',interval:0.8,heldOnNewer:c.calibratedCoverage!=null?round(c.calibratedCoverage,2):null,n:c.n};}
+function confidenceBasisText(b){if(!b)return '';if(b.kind==='rating')return 'a rating, not a probability';
+  return (b.kind==='calibrated'?'calibrated':'not yet calibrated')+': its 80% interval held '+Math.round(100*(b.heldOnNewer||0))+'% of newer predictions ('+b.n+' scored)';}
+
 /* ---- the claim (P1.1) ---- */
 function explanationClaim(o){
   if(!o||!o.proposition||!o.proposition.subject||!o.proposition.predicate)throw new Error('a claim needs a proposition {subject, predicate, object}');
@@ -45,7 +61,8 @@ function explanationClaim(o){
     evidenceIds:(o.evidenceIds||[]).slice(),basedOn:(o.basedOn||[]).slice(),
     assumptions:(o.assumptions||[]).slice(),counterIndicators:(o.counterIndicators||[]).slice(),limitations:(o.limitations||[]).slice(),
     reviewDate:o.reviewDate||null,sourceIds:(o.sourceIds||[]).slice(),
-    model:o.model||null,modelVersion:o.modelVersion||null,validation:o.validation||null,statement:o.statement||null};
+    model:o.model||null,modelVersion:o.modelVersion||null,validation:o.validation||null,statement:o.statement||null,
+    confidenceBasis:o.confidence?(o.confidenceBasis||{kind:'rating'}):null};
   return _deepFreeze(c);
 }
 
@@ -53,7 +70,7 @@ function explanationClaim(o){
 function _exObsIds(type,from,to){try{return obsOf(type).filter(function(x){return (!from||x.date>=from)&&(!to||x.date<=to);}).map(function(x){return x.id;}).filter(Boolean);}catch(e){return [];}}
 function _modelClaim(modelId,res,prop,extra){var m=modelById(modelId)||{};
   return explanationClaim(Object.assign({type:'inference',proposition:prop,epistemicClass:epistemicClassOf(res&&res.cls?res:{cls:m.cls})||'OBSERVED',
-    confidence:res&&res.confidence||null,model:modelId,modelVersion:m.version||null,assumptions:m.assumes||[],limitations:m.failsWhen||[],
+    confidence:res&&res.confidence||null,confidenceBasis:confidenceBasis(modelId),model:modelId,modelVersion:m.version||null,assumptions:m.assumes||[],limitations:m.failsWhen||[],
     counterIndicators:(res&&res.failing)||[]},extra||{}));}
 function _bandPosition(v,band){return v<band.lo?'below':(v>band.hi?'above':'within');}
 /* each ground: (S, dec, add) -> a claim, a list of claims, or null when the record does not have it */
@@ -172,7 +189,7 @@ function explainDecision(dec,S){
     subject:{kind:'decision',code:dec.code,verb:dec.verb||null,date:dec.date||null,priority:dec.priority||null},
     question:{asks:'why',about:'decision',code:dec.code},
     claims:claims,observations:ids('observation'),evidence:ids('finding'),inferences:ids('inference'),policies:ids('policy'),
-    uncertainty:{confidence:dec.confidence||null,ceiling:dec.uncertainty?dec.uncertainty.ceiling:null,balance:dec.uncertainty&&dec.uncertainty.balance?{lo:dec.uncertainty.balance.lo,hi:dec.uncertainty.balance.hi,unit:'kcal/day'}:null},
+    uncertainty:{confidence:dec.confidence||null,confidenceBasis:{kind:'rating',of:'the decision rule\u2019s conditions'},ceiling:dec.uncertainty?dec.uncertainty.ceiling:null,balance:dec.uncertainty&&dec.uncertainty.balance?{lo:dec.uncertainty.balance.lo,hi:dec.uncertainty.balance.hi,unit:'kcal/day'}:null},
     alternatives:(dec.alternatives||[]).map(function(a){return {statement:String(a),chosen:false};}),
     action:{code:dec.code,verb:dec.verb||null,levers:(dec.action||[]).map(function(a){return {key:a.key,text:a.text};}),
       intervention:dec.intervention?{variable:dec.intervention.variable,from:dec.intervention.from!=null?dec.intervention.from:null,to:dec.intervention.to!=null?dec.intervention.to:null}:null},
@@ -218,7 +235,7 @@ function _claimLine(c,level){var p=c.proposition,o=p.object||{},S=_exSubj(p.subj
   if(c.type==='finding')out=(level==='scientific'?'Finding: ':'Evidence: ')+(c.statement||p.subject);
   if(level==='scientific'){var tags=[];
     if(c.type==='policy')tags.push('POLICY — '+(c.validation&&c.validation.validation||HEURISTIC_NOT_VALIDATED)+(c.sourceIds.length?'; supported findings: '+c.sourceIds.join(', '):'; no published evidence registered'));
-    else tags.push(c.epistemicClass+(c.confidence?', confidence '+c.confidence:''));
+    else tags.push(c.epistemicClass+(c.confidence?', confidence '+c.confidence+' ('+confidenceBasisText(c.confidenceBasis)+')':''));
     if(c.model)tags.push(c.model+(c.modelVersion?' v'+c.modelVersion:''));
     if(c.type==='finding'){var r=claimById(c.sourceIds[0]);if(r){tags.push(r.citation);tags.push('grade '+r.claim.grade+' ('+EVIDENCE_GRADES[r.claim.grade]+')');tags.push('population: '+r.claim.population);
       tags.push('applied to you it is an association, not a measured effect');tags.push('review by '+r.claim.reviewDate+(claimStatus(r)==='review due'?' (review due)':''));}}
@@ -236,10 +253,39 @@ function compileExplanation(E,level){if(!E)return null;level=EXPLANATION_LEVELS[
     rules:level==='simple'?[]:pol.map(line),evidence:level==='simple'?[]:fin.map(line),
     action:E.action.levers.map(function(a){return a.text;}),
     reversal:E.reversalConditions.map(function(r){return renderReversal(r);}),
-    uncertainty:E.uncertainty.confidence?('confidence '+E.uncertainty.confidence+(level!=='simple'&&E.uncertainty.ceiling?'; the energy numbers carry '+E.uncertainty.ceiling+' confidence':'')):null};
+    uncertainty:E.uncertainty.confidence?('confidence '+E.uncertainty.confidence+(level!=='simple'?' ('+confidenceBasisText(E.uncertainty.confidenceBasis||{kind:'rating'})+')':'')+(level!=='simple'&&E.uncertainty.ceiling?'; the energy numbers carry '+E.uncertainty.ceiling+' confidence':'')):null};
   out.claimIds=G.map(function(c){return c.id;});
   if(level==='scientific')out.provenance=E.provenance.map(function(p){return p.model?(p.model+' v'+(p.version||'?')):(p.rules+' v'+(p.version||'?'));});
   return out;}
+
+/* ---- "why am I seeing this?" (catalogue doc 1, W-045) ----
+   The eight questions every recommendation answers, from the decision's stored explanation, and the trace from the screen
+   to the observations: what changed, why it matters, what supports it, what is missing, how uncertain it is, what else
+   was weighed, what is proposed, and what happens if the person does nothing. */
+var _GROUND_SUBJECT={trend:'weight trend',trendBand:'weight trend',band:'rate band',recovery:'recovery',strength:'strength',protein:'protein target',logging:'logging',
+  calorieAdherence:'calorie target',trust:'data trust',waist:'waist',appetite:'appetite burden',tdee:'maintenance intake',phaseDay:'phase',steps:'steps',training:'resistance training',
+  experiment:'experiment',flat:'weight',goalReached:'7-day average weight',phase:'phase'};
+function decisionQuestions(d){var E=d&&d.explanation;if(!E)return null;var L=compileExplanation(E,'analytical'),tx=function(x){return x.text;};
+  var prev=(DB.decisions||[]).filter(function(x){return x.source==='system'&&x.id!==d.id&&x.date<=d.date&&(x.at||'')<(d.at||'~');}).slice(-1)[0];
+  var have={};E.claims.forEach(function(c){have[c.proposition.subject]=1;});
+  var missing=(DECISION_GROUNDS[E.subject.code]||[]).filter(function(g){var sj=_GROUND_SUBJECT[g];return sj&&!have[sj];}).map(function(g){return 'no '+_GROUND_SUBJECT[g]+' in the record';});
+  var seen={};missing=missing.filter(function(m){if(seen[m])return false;seen[m]=1;return true;});
+  E.claims.forEach(function(c){(c.counterIndicators||[]).forEach(function(ci){var m='counting against '+c.proposition.subject+': '+ci;if(!seen[m]){seen[m]=1;missing.push(m);}});});
+  var trendC=E.claims.filter(function(c){return c.proposition.subject==='weight trend'&&c.proposition.predicate==='estimated';})[0];
+  var ifNothing=(E.action.intervention?'the change is not made, so its expected effect does not happen'+(trendC?'; the trend stays near '+fmtRate(trendC.proposition.object.value):''):'nothing in the plan changes')+
+    (d.recheckDays?'; the decision is rechecked after '+d.recheckDays+' days':'');
+  var obsN=0,models=[];E.claims.forEach(function(c){if(c.type!=='policy'&&c.type!=='finding')obsN+=(c.evidenceIds||[]).length;if(c.model&&models.indexOf(c.model)<0)models.push(c.model);});
+  var rows=[
+    {id:'changed',q:'What changed?',a:prev?(prev.code!==d.code?['the decision moved from \u201c'+(prev.verb||prev.code)+'\u201d ('+shortDate(prev.date)+') to \u201c'+(d.verb||d.code)+'\u201d']:['the same decision as on '+shortDate(prev.date)+'; the record behind it is below']):['the first decision in this record']},
+    {id:'matters',q:'Why does it matter?',a:L.rules.map(tx).concat(E.expectedOutcome&&E.expectedOutcome.change?['expected: '+fmtRate(E.expectedOutcome.change.lo)+' to '+fmtRate(E.expectedOutcome.change.hi)+' change in the trend'+(E.expectedOutcome.withinDays?', judged after '+E.expectedOutcome.withinDays+' days':'')]:[])},
+    {id:'evidence',q:'What evidence supports this?',a:L.grounds.map(tx).concat(L.evidence.map(tx))},
+    {id:'missing',q:'What evidence is missing?',a:missing.length?missing:['nothing this decision reads is missing from the record']},
+    {id:'uncertainty',q:'What uncertainty exists?',a:L.uncertainty?[L.uncertainty]:[]},
+    {id:'alternatives',q:'What alternatives were considered?',a:E.alternatives.length?E.alternatives.map(function(a){return a.statement;}):['this rule weighs no other action']},
+    {id:'action',q:'What action is being proposed?',a:L.action},
+    {id:'nothing',q:'What happens if I do nothing?',a:[ifNothing]}];
+  return {rows:rows,ifNothing:ifNothing,trace:['the screen: \u201c'+(d.verb||d.code)+'\u201d','decision '+E.subject.code+' (rules v'+((E.provenance.filter(function(p){return p.rules;})[0]||{}).version||'?')+')',
+    models.length?'models '+models.join(', '):'no model',E.evidence.length+' published finding'+(E.evidence.length===1?'':'s'),obsN+' observation'+(obsN===1?'':'s')+' in the record']};}
 
 /* ---- reversal conditions (P1.2): what would overturn a decision, as values; reverseIf is their rendering ---- */
 function reversalCondition(subject,predicate,object,withinDays,then){return {subject:subject,predicate:predicate,object:object||{},withinDays:withinDays||null,then:then||null};}

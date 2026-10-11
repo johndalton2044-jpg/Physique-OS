@@ -229,6 +229,19 @@ SHEETS.expPicker=function(){
   return {body:'<div class="hint">Each of these is one change, sized to your own day-to-day noise so it runs long enough to answer its question.</div>'+rows+
     '<div class="btn-row" style="margin-top:10px">'+uiBtn('Design my own','exp.custom',null,'btn-sm btn-ghost')+'</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('exp.save',function(){saveExperiment();});
+registerAction('exp.open',function(id){var e=(DB.experiments||[]).filter(function(x){return x.id===id;})[0];if(!e){toast('That experiment is not in the record');return;}
+  openSheet('edit',{form:'experimentDetail',title:e.intervention||('Experiment: '+e.variable),desc:'',buf:{id:id}});});
+SHEETS.experimentDetail=function(b){var e=(DB.experiments||[]).filter(function(x){return x.id===b.id;})[0];if(!e)return {body:'',foot:''};var P=experimentProtocol(e);
+  var row=function(l,v,s){return uiRow(esc(l),esc(v),{sub:esc(s||'')});};
+  return {body:row('Hypothesis',P.hypothesis||'\u2014')+row('Change',P.intervention.variable+': '+(P.intervention.from!=null?P.intervention.from:'current')+' \u2192 '+(P.intervention.to!=null?P.intervention.to:'changed'))+
+    row('Compared with',P.comparator.kind,shortDate(P.comparator.from)+' to '+shortDate(P.comparator.to))+row('Outcome',P.outcome.metric,P.outcome.predicted?('predicted '+P.outcome.predicted.lo+' to '+P.outcome.predicted.hi):'')+
+    row('Window',P.exposureWindow.days+' days',shortDate(P.exposureWindow.from)+' to '+shortDate(P.exposureWindow.to))+
+    row('Measured by',P.measurementPlan.outcome,P.measurementPlan.exposure+'; '+P.measurementPlan.checks)+
+    row('Stops',shortDate(P.stoppingRule.scheduled),'or earlier if '+P.stoppingRule.early.join(', or '))+
+    row('Confounders',P.confounders.found.length?P.confounders.found.join('; '):'none found',P.confounders.found.length?'':'watched: '+P.confounders.watched.join('; '))+
+    row('Result',P.result?String(P.result.conclusion):'not yet: '+e.status)+
+    '<div class="d-block" data-protocol-inference><div class="d-block-title">WHAT IT CAN SHOW</div><div class="lead" style="font-size:13px">'+esc(P.design+' design, '+P.inference.identifiability+' identifiability: at most '+P.inference.allowedClaim.toLowerCase().replace(/_/g,' ')+'. '+P.inference.why+(P.inference.confounded?' A confounder was found, so it shows an association only.':''))+'</div></div>',
+    foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('exp.evaluate',function(id){var e=DB.experiments.filter(function(x){return x.id===id;})[0];if(!e)return;var early=e.recheckDate>todayISO();return confirmDialog({title:early?'Evaluate early?':'Evaluate experiment',msg:(early?'The recheck date is '+shortDate(e.recheckDate)+'. Evaluating now uses fewer days and lowers confidence.<br><br>':'')+'The outcome is scored against the stamped prediction. An unsupported result is written to negative knowledge. The experiment is archived. Undo is available.',okLabel:'Evaluate'}).then(function(ok){if(!ok)return;var r=evaluateExperiment(id,{asOf:todayISO()});_memoInvalidate();renderAll();toast('Result: '+r.conclusion,{undo:true});});});
 registerAction('exp.abandon',function(id){return confirmDialog({title:'Abandon experiment?',msg:'It is marked abandoned, not deleted; the intervention stays in the log. Undo is available.',okLabel:'Abandon',danger:true}).then(function(ok){if(!ok)return;var e=DB.experiments.filter(function(x){return x.id===id;})[0];pushUndo('abandon experiment');e.status='abandoned';e.abandonedAt=nowISO();e.completedAt=nowISO();var iv=DB.interventions.filter(function(i){return i.id===e.interventionId;})[0];if(iv)iv.status='abandoned';save('experiment:abandon');_memoInvalidate();renderAll();toast('Abandoned',{undo:true});});});
 registerAction('neg.new',function(){openSheet('edit',{form:'negative',title:'Record negative knowledge',desc:'What did not work is as useful as what did \u2014 if it is written down with its conditions.',buf:{variable:'calories',confidence:'low'}});});
@@ -1455,7 +1468,10 @@ SHEETS.since=function(){
       return uiRow(esc(x.label),esc(x.kind),{sub:esc(String(x.detail||'').slice(0,110))});}).join('')):'')+
     '<div class="prov">'+esc(c.note)+'</div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
-SHEETS.whyShown=function(b){var w=b.w;
+SHEETS.whyShown=function(b){var w=b.w,Q=w.questions;
+  if(Q)return {body:uiRow('What',esc(w.what),{})+Q.rows.map(function(r){return '<div class="d-block" data-question="'+esc(r.id)+'"><div class="d-block-title">'+esc(r.q.toUpperCase())+'</div><ul>'+(r.a.length?r.a:['nothing recorded']).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';}).join('')+
+      '<div class="prov" data-trace>'+esc('Traced: '+Q.trace.join(' \u2192 '))+'</div><div class="btn-row">'+uiBtn(w.todo||'Open',w.act||'edit.close',w.arg||'','btn-sm btn-primary')+'</div>',
+    foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   return {body:uiRow('What',esc(w.what),{})+uiRow('Why it is here',esc(w.because),{})+
     uiRow('If you ignore it',esc(w.ifIgnored),{})+
     '<div class="btn-row">'+uiBtn(w.todo||'Open','' + (w.act||'edit.close'),w.arg||'','btn-sm btn-primary')+'</div>',
@@ -2503,9 +2519,10 @@ SHEETS.sync=function(){var st=syncState();var es=eventStats();var cf=syncConflic
 function openKnowledge(){openSheet('edit',{form:'knowledge',title:'What this record knows about you',desc:'Confidence decays with age, because a finding from a different body weight and a different phase is a different finding.',buf:{}});}
 SHEETS.knowledge=function(){var k=personalKnowledge();var g=knowledgeGaps();
   return {body:uiRow('Established',k.count+' items',{sub:k.current+' current \u00b7 '+k.stale+' stale \u00b7 half-life '+k.halfLifeDays+' days'})+
+    '<div class="hint" data-knowledge-states>'+esc(Object.keys(KNOWLEDGE_STATES).filter(function(s){return k.byState[s];}).map(function(s){return k.byState[s]+' '+s;}).join(' \u00b7 '))+'</div>'+
     ((k.conflicts||[]).length?'<div class="card-title" style="margin-top:8px">Findings that disagree</div>'+k.conflicts.map(function(c){
       return uiRow(esc(String(c.subject)),esc(c.text),{sub:esc('older counts '+Math.round(c.older.weight*100)+'%, newer '+Math.round(c.newer.weight*100)+'% \u00b7 '+c.settle),tone:'attention'});}).join(''):'')+
-    k.items.map(function(i){return uiRow(esc(String(i.subject)),esc(i.statement),{sub:esc(i.kind)+' \u00b7 '+esc(i.evidence)+' \u00b7 context '+esc(i.context)+(i.transfers?(' \u00b7 '+esc(i.transfers)):''),rsub:i.freshness+' / '+i.decayedConfidence,tone:i.freshness==='stale'?'attention':''})+
+    k.items.map(function(i){return uiRow(esc(String(i.subject)),esc(i.statement),{sub:'<b data-state="'+esc(i.state)+'">'+esc(i.state)+'</b> \u00b7 '+esc(i.kind)+' \u00b7 '+esc(i.evidence)+' \u00b7 context '+esc(i.context)+(i.transfers?(' \u00b7 '+esc(i.transfers)):''),rsub:i.freshness+' / '+i.decayedConfidence,tone:i.state==='contradicted'||i.state==='needs testing'?'attention':''})+
       '<div class="hint" style="margin:-4px 0 4px 0">Would change if: '+esc(i.wouldChange)+'.</div>'+
       (i.testable?'<div class="btn-row" style="margin:-2px 0 8px 0">'+uiBtn('Test it','exp.design',i.subject,'btn-sm btn-secondary')+'</div>':'')+
       (i.revalidate?'<div class="prov" style="margin:-4px 0 8px 0">'+esc(i.revalidate)+'</div>':'');}).join('')+

@@ -220,7 +220,8 @@
     "predictions"
    ],
    "owners": [
-    "stampPredictions"
+    "stampPredictions",
+    "stampExecutionPredictions"
    ],
    "readModel": "pendingPredictions",
    "events": [
@@ -458,7 +459,7 @@
      "24-events.js:588"
     ],
     "action:data.restoreApply": [
-     "90-actions.js:670"
+     "90-actions.js:683"
     ]
    }
   },
@@ -649,7 +650,7 @@
    ],
    "writers": {
     "createExperiment": [
-     "50-decision.js:377"
+     "50-decision.js:405"
     ]
    }
   },
@@ -667,7 +668,7 @@
      "30-observations.js:210"
     ],
     "createExperiment": [
-     "50-decision.js:379"
+     "50-decision.js:407"
     ]
    }
   },
@@ -680,7 +681,7 @@
    ],
    "writers": {
     "addNegative": [
-     "50-decision.js:465"
+     "50-decision.js:493"
     ]
    }
   },
@@ -715,12 +716,16 @@
     "Prediction"
    ],
    "owners": [
-    "stampPredictions"
+    "stampPredictions",
+    "stampExecutionPredictions"
    ],
    "writers": {
     "stampPredictions": [
      "50-decision.js:309",
      "50-decision.js:327"
+    ],
+    "stampExecutionPredictions": [
+     "59-friction.js:93"
     ]
    }
   },
@@ -733,8 +738,8 @@
    ],
    "writers": {
     "captureSnapshot": [
-     "50-decision.js:551",
-     "50-decision.js:552"
+     "50-decision.js:579",
+     "50-decision.js:580"
     ]
    }
   },
@@ -748,10 +753,10 @@
    ],
    "writers": {
     "evaluateExperiment": [
-     "50-decision.js:446"
+     "50-decision.js:474"
     ],
     "archivePhase": [
-     "50-decision.js:564"
+     "50-decision.js:592"
     ]
    }
   },

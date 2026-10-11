@@ -108,6 +108,22 @@ function episodeAt(date){
    maintenance, and knowledge that has not been revalidated in a year should not be presented as current. */
 var KNOWLEDGE_HALFLIFE_DAYS=270;
 function _decay(ageDays){return Math.pow(0.5,ageDays/KNOWLEDGE_HALFLIFE_DAYS);}
+/* THE STATE OF EACH FINDING (catalogue doc 2, P2: personal knowledge). One of six, from the finding's own confidence (after
+   decay), freshness, contexts and conflicts, in this order: a finding another one disagrees with is contradicted; one not
+   tested for so long that it may no longer hold needs testing; then by confidence: high and seen in more than one context
+   is established, high in one context is established in that context, medium is probable, anything less is unknown. */
+var KNOWLEDGE_STATES={established:'held at high confidence, and seen in more than one context','established in context':'held at high confidence in the context it was learned in',
+  probable:'medium confidence: more likely than not, not yet established',unknown:'too little or too weak evidence to say','needs testing':'not tested for so long that it may no longer hold',
+  contradicted:'another finding about the same lever disagrees with it'};
+function knowledgeState(i){if(!i)return 'unknown';if(i.conflicts>0)return 'contradicted';if(i.freshness==='stale')return 'needs testing';
+  var c=i.decayedConfidence;if(c==='high')return (i.contexts||1)>1?'established':'established in context';if(c==='medium')return 'probable';return 'unknown';}
+/* each finding as a claim, in the one claim structure (58-explanation.js), with its state: not a second knowledge system */
+var _KNOWLEDGE_CLASS={measurement:'OBSERVED',training:'OBSERVED',negative:'OBSERVED',energy:'ASSOCIATED'};
+function knowledgeClaims(){return personalKnowledge().items.map(function(i){
+  var cls=i.kind==='response'?(function(){try{return variableEpistemicClass(i.subject).cls;}catch(e){return 'ASSOCIATED';}})():(_KNOWLEDGE_CLASS[i.kind]||'ASSOCIATED');
+  var c=explanationClaim({type:i.kind==='measurement'?'observation':'inference',proposition:{subject:String(i.subject),predicate:i.kind==='negative'?'did not produce the expected effect':(i.kind==='response'?'responds at':'is'),object:i.value||{statement:i.statement}},
+    epistemicClass:cls,confidence:i.decayedConfidence||null,applicability:{context:i.context,transfers:i.transfers||null},limitations:[i.wouldChange],statement:i.statement});
+  return {claim:c,state:i.state,stateMeans:i.stateMeans,kind:i.kind,freshness:i.freshness};});}
 function personalKnowledge(){
   return memo('knowledge:'+asOf(),function(){
     var items=[];
@@ -133,7 +149,7 @@ function personalKnowledge(){
         var last=r.samples.map(function(s){return s.date;}).sort().slice(-1)[0]||null;
         var ctx=r.samples.map(function(s){return s.phase+' / '+(s.weightZone||'?');});
         var seen={};ctx=ctx.filter(function(c){if(seen[c])return false;seen[c]=1;return true;});
-        add({kind:'response',subject:r.variable,
+        add({kind:'response',subject:r.variable,contexts:ctx.length,value:{effect:round(r.effect,3),unit:'lb/week per '+r.unit,n:r.n},
           statement:fmtSigned(r.effect,2)+' lb/week per '+r.unit,
           confidence:r.confidence,evidence:r.n+' observation'+(r.n===1?'':'s')+(r.clean<r.n?(', '+(r.n-r.clean)+' confounded'):''),
           context:ctx.join('; ')||'unspecified',lastValidated:last,
@@ -186,8 +202,10 @@ function personalKnowledge(){
     }catch(e){_q(e);}
     var byKind={};items.forEach(function(i){(byKind[i.kind]=byKind[i.kind]||[]).push(i);});
     var conflicts=[];try{conflicts=knowledgeConflicts();}catch(e){_q(e);}
-    items.forEach(function(i){i.conflicts=conflicts.filter(function(c){return c.subject===i.subject||c.subject.split('\u2192')[0]===i.subject;}).length;});
-    return {items:items,byKind:byKind,count:items.length,conflicts:conflicts,
+    items.forEach(function(i){i.conflicts=conflicts.filter(function(c){return c.subject===i.subject||c.subject.split('\u2192')[0]===i.subject;}).length;
+      i.state=knowledgeState(i);i.stateMeans=KNOWLEDGE_STATES[i.state];});
+    var byState={};Object.keys(KNOWLEDGE_STATES).forEach(function(s){byState[s]=items.filter(function(i){return i.state===s;}).length;});
+    return {items:items,byKind:byKind,byState:byState,count:items.length,conflicts:conflicts,
       current:items.filter(function(i){return i.freshness==='current';}).length,
       stale:items.filter(function(i){return i.freshness==='stale';}).length,
       halfLifeDays:KNOWLEDGE_HALFLIFE_DAYS,cls:'EMPIRICAL',

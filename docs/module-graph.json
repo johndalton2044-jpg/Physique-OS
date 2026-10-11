@@ -589,6 +589,8 @@
     "scheduledPlan"
    ],
    "59-friction.js": [
+    "stampExecutionPredictions",
+    "scoreExecutionPredictions",
     "rankLevers"
    ],
    "67-program-edit.js": [
@@ -834,6 +836,7 @@
     "sessionsOf"
    ],
    "40-models.js": [
+    "variableEpistemicClass",
     "tdeeEstimate",
     "bodyComp"
    ],
@@ -851,6 +854,9 @@
    ],
    "54-scenarios.js": [
     "designExperiment"
+   ],
+   "58-explanation.js": [
+    "explanationClaim"
    ],
    "58-response-model.js": [
     "RESPONSE_PRIORS",
@@ -909,6 +915,7 @@
     "_q",
     "addDays",
     "daysBetween",
+    "shortDate",
     "round",
     "fmtNum",
     "fmtSigned",
@@ -928,6 +935,9 @@
    ],
    "50-decision.js": [
     "diagnose"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "58-response-entity.js": [
     "_expectedWeightChange",
@@ -1392,12 +1402,20 @@
   "calls": {
    "10-core.js": [
     "_registryTaken",
+    "uid",
     "todayISO",
+    "nowISO",
     "addDays",
-    "round"
+    "daysBetween",
+    "round",
+    "mean"
    ],
    "20-schema-storage.js": [
+    "save",
     "memo"
+   ],
+   "24-events.js": [
+    "emitEvent"
    ],
    "30-observations.js": [
     "obsOf"
@@ -3448,6 +3466,7 @@
     "decide",
     "recordUserDecision",
     "scorePredictions",
+    "experimentProtocol",
     "applyDecisionIntervention",
     "evaluateExperiment",
     "addNegative",
@@ -4146,6 +4165,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_q",
     "shortDate",
     "round",
     "fmtNum",
@@ -4169,7 +4189,9 @@
     "personalResponseModel"
    ],
    "59-friction.js": [
-    "frictionModel"
+    "frictionModel",
+    "executionCalibration",
+    "executionTrackRecord"
    ],
    "80-ui.js": [
     "uiRow",
@@ -4880,6 +4902,7 @@
     "stampPredictions",
     "scorePredictions",
     "forecastAccuracy",
+    "experimentProtocol",
     "createExperiment",
     "applyDecisionIntervention",
     "evaluateExperiment",
@@ -4952,6 +4975,8 @@
    ],
    "56-knowledge.js": [
     "detectEpisodes",
+    "knowledgeState",
+    "knowledgeClaims",
     "personalKnowledge",
     "knowledgeConflicts",
     "knowledgeGaps",
@@ -4965,10 +4990,13 @@
     "qualityTrend"
    ],
    "58-explanation.js": [
+    "confidenceBasis",
+    "confidenceBasisText",
     "explanationClaim",
     "heuristicContracts",
     "explainDecision",
     "compileExplanation",
+    "decisionQuestions",
     "reversalCondition",
     "reversalAll",
     "reversalAny",
@@ -5070,6 +5098,10 @@
    ],
    "59-friction.js": [
     "_logitRidge",
+    "_brier",
+    "_reliabilityBins",
+    "stampExecutionPredictions",
+    "executionTrackRecord",
     "interventionAdherence",
     "rankLevers"
    ],
@@ -5731,7 +5763,8 @@
     "interruptedTimeSeries"
    ],
    "58-explanation.js": [
-    "compileExplanation"
+    "compileExplanation",
+    "decisionQuestions"
    ],
    "58-trace.js": [
     "traceValue"

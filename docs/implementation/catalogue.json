@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "38097babc5",
+ "build": "0dc41f684f",
  "models": [
   {
    "id": "adherence",
@@ -1039,6 +1039,10 @@
   },
   {
    "id": "exp.new",
+   "level": "insightful"
+  },
+  {
+   "id": "exp.open",
    "level": "insightful"
   },
   {
@@ -2802,6 +2806,7 @@
   "expPicker",
   "expTemplate",
   "experiment",
+  "experimentDetail",
   "exports",
   "features",
   "foodAdd",
