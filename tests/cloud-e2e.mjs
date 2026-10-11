@@ -150,6 +150,22 @@ console.log('--- progress photos: encrypted here, copied encrypted to the vault,
   expect('with too little storage left, a new image is refused and says how much is free and needed',/not enough storage/.test(qe||'')&&/KB free/.test(qe||''),qe);
   A.deletePhoto(r2.id);A.deletePhoto(r3.id);await new Promise(r=>setTimeout(r,50));await A.cloudSync();}
 
+console.log('--- undoing a merge of another device’s change holds, on every device (TRANSITION §7) ---');
+/* B logs 6.1 h of sleep; A merges it and undoes the merge. Expected, of that one value: gone on A at once, after a restart
+   and after further syncs; gone on B at its next sync, and B says one of its changes was undone elsewhere. */
+{B.addObservation({type:'sleep',date:B.todayISO(),value:6.1,source:'manual'},{silent:true,noSave:true});
+  await B.cloudSync();await A.cloudSync();
+  const onA=()=>A.obsOf('sleep').some(o=>o.value===6.1),onB=()=>B.obsOf('sleep').some(o=>o.value===6.1);
+  expect('A merged B’s 6.1 h of sleep',onA());
+  const label=A.undoLabel();A.dispatchAct('undo.last');
+  expect('A’s undo of the merge removes it at once',/^merge/.test(label||'')&&!onA(),label);
+  await A.cloudSync();A.adoptMergedEvents(A.mergeEvents([],A._EVENTS.slice()));
+  expect('after a sync and a restart it stays undone on A',!onA());
+  const bs=await B.cloudSync();
+  expect('B, which made it, removes it too at its next sync, and is told',!onB()&&bs.undoneElsewhere===1&&(B.DB.settings.cloud.undoneElsewhere||{}).count===1,JSON.stringify({onB:onB(),told:bs.undoneElsewhere}));
+  await A.cloudSync();await B.cloudSync();
+  expect('further syncs on either device do not bring it back',!onA()&&!onB());}
+
 console.log('--- a large record (a restored backup, the demo, a compaction) syncs in parts ---');
 /* The restore restarts the log from one snapshot event holding the whole record, larger than the server takes for one
    event, so before parts it failed every sync. A server that moves a part cannot make it decrypt in its new place. */

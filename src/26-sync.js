@@ -53,7 +53,7 @@ function mergeEnvelope(env,opts){
   var merged=mergeEvents(_EVENTS,env.events);
   var newOnes=merged.events.filter(function(e){return !beforeIds[e.id];});
   if(!opts.dryRun){
-    pushUndo('merge '+newOnes.length+' change'+(newOnes.length===1?'':'s')+' from '+(env.device||'another device'));
+    pushUndo('merge '+newOnes.length+' change'+(newOnes.length===1?'':'s')+' from '+(env.device||'another device'),{merged:newOnes.map(function(e){return e.id;})});
     var adopted=adoptMergedEvents(merged);
     if(!adopted.ok){_syncState.status='merge failed';return {ok:false,reason:'the merged log did not project'};}
     _syncState.merges++;_syncState.received+=newOnes.length;

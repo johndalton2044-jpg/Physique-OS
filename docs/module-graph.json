@@ -141,6 +141,7 @@
    ],
    "24-events.js": [
     "deviceId",
+    "undoneElsewhere",
     "mergeEvents",
     "adoptMergedEvents"
    ],
@@ -4741,6 +4742,7 @@
     "eventArchiveState",
     "compactEvents",
     "deviceId",
+    "undoneElsewhere",
     "emitEvent",
     "resetEventLog",
     "eventStats",
@@ -4752,6 +4754,7 @@
     "adoptMergedEvents"
    ],
    "26-sync.js": [
+    "buildEnvelope",
     "validateEnvelope",
     "mergeEnvelope"
    ],

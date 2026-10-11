@@ -301,16 +301,18 @@ var _undoStack=[],UNDO_MAX=30;
    entries inside it do not record their own — undo used to remove them one at a time, each a full snapshot */
 var _UNDO_BATCH=0;
 function undoBatch(label,fn){pushUndo(label);_UNDO_BATCH++;try{return fn();}finally{_UNDO_BATCH--;}}
-function pushUndo(label){if(_UNDO_BATCH>0)return;try{_undoStack.push({label:label||'change',at:nowISO(),snap:serializeDB(),mark:(typeof undoMark==='function')?undoMark():null});if(_undoStack.length>UNDO_MAX)_undoStack.shift();}catch(e){_q(e);}}
+function pushUndo(label,extra){if(_UNDO_BATCH>0)return;try{_undoStack.push({label:label||'change',at:nowISO(),snap:serializeDB(),mark:(typeof undoMark==='function')?Object.assign(undoMark(),extra||{}):null});if(_undoStack.length>UNDO_MAX)_undoStack.shift();}catch(e){_q(e);}}
 function canUndo(){return _undoStack.length>0;}
 function undoLabel(){return _undoStack.length?_undoStack[_undoStack.length-1].label:null;}
 function undo(){
   var u=_undoStack.pop();if(!u)return null;
   try{var obj=JSON.parse(u.snap);var m=migrate(obj);if(!m.ok)throw new Error('undo snapshot rejected: '+m.reason);var keepRev=DB.revision;DB=m.db;DB.revision=keepRev;
-    if(typeof undoInLog==='function')undoInLog(u.mark,u.label);   /* the undo is recorded in the log, or a restart brings the change back */
+    _LAST_UNDO=typeof undoInLog==='function'?undoInLog(u.mark,u.label):null;   /* the undo is recorded in the log, or a restart brings the change back */
     save('undo');return u.label;}catch(e){_q(e);return null;}
 }
 function clearUndo(){_undoStack=[];}
+/* what the last undo recorded in the log (how many events it revoked, and whether it kept a restored record), for the screen */
+var _LAST_UNDO=null;function lastUndoResult(){return _LAST_UNDO;}
 
 /* memo cache for derived state: invalidated on every save or "today" change */
 var _MEMO={};function _memoInvalidate(){_MEMO={};}

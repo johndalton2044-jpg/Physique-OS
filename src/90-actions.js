@@ -162,7 +162,9 @@ registerAction('ui.fold',function(id,ev,el){setTimeout(function(){
   if(d.open&&wasEmpty){try{if(_SHEET)renderSheet();else renderAll();}catch(e){_q(e,'P2');}}
 },0);});
 registerAction('ui.openAbout',function(){openSheet('edit',{form:'about',title:'About Physique OS',desc:'',buf:{}});});
-registerAction('undo.last',function(){var label=undoLabel();if(!label)return;if(undo()){_memoInvalidate();renderAll();toast('Undid: '+esc(label));}});
+registerAction('undo.last',function(){var label=undoLabel();if(!label)return;if(undo()){_memoInvalidate();renderAll();var r=lastUndoResult();
+  /* undoing a merge removes the other device's changes everywhere, and says so; a restored record it brought is kept */
+  toast('Undid: '+esc(label)+(r&&r.merge&&r.revoked?' \u00b7 '+r.revoked+' change'+(r.revoked===1?'':'s')+' from another device removed on every device at the next sync':'')+(r&&r.keptSnapshot?' \u00b7 a whole record another device restored is kept: restore your own backup to replace it':''),{ms:r&&r.merge?9000:undefined});}});
 /* ---- log sheet ---- */
 registerAction('log.open',function(arg){openLog(arg||'weight');});
 registerAction('log.close',function(){closeSheet();});
@@ -1306,6 +1308,7 @@ SHEETS.cloud=function(){var c=cloudState();
   return {body:uiRow('Status',esc(c.status),{sub:c.configured?('vault '+esc(String(c.vaultId).slice(0,10))+'\u2026'):'no vault on this device'})+
     uiRow('Server',esc(c.url),{sub:'run server/server.mjs, or point this at your own \u2014 it holds ciphertext only'})+
     uiRow('Local events',fmtNum(c.localEvents,0),{sub:c.pushedCount+' already uploaded \u00b7 last sync '+(c.lastSyncAt?ageLabel(localDateOf(c.lastSyncAt)):'never')})+
+    (function(){var u=(DB.settings.cloud||{}).undoneElsewhere;return u&&u.count?'<div class="hint attention" data-undone-elsewhere>'+esc(u.count+' of this device\u2019s change'+(u.count===1?' was':'s were')+' undone on another device ('+(u.by||[]).join(', ')+') '+ageLabel(localDateOf(u.at))+', and removed here too.')+'</div>':'';})()+
     '<div class="btn-row">'+
       (c.configured?uiBtn('Sync now','cloud.sync',null,'btn-sm btn-primary'):uiBtn('Create a vault','cloud.create',null,'btn-sm btn-primary'))+
       uiBtn('Unlock an existing vault','cloud.unlock',null,'btn-sm btn-secondary')+

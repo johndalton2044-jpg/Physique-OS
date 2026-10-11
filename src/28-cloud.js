@@ -254,7 +254,7 @@ function cloudSync(opts){
   if(_cloud.busy)return Promise.resolve({skipped:'a sync is already running'});
   _cloud.busy=true;_cloud.lastError=null;
   var c=cloudConfig(),stored=DB.settings.cloud||{};
-  var pushed={},sent=0,received=0,conflicts=0,reset=false,since=c.lastPullSeq||0;
+  var pushed={},sent=0,received=0,conflicts=0,reset=false,since=c.lastPullSeq||0,undone=null;
   (c.pushedIds||[]).forEach(function(id){pushed[id]=1;});
   var waking=setTimeout(function(){if(_cloud.busy){_cloud.status='waking';if(typeof renderAll==='function')try{renderAll();}catch(e){}}},8000);
   return cloudAuthenticate().then(function(){return _pullAll(since);}).then(function(page){
@@ -273,7 +273,10 @@ function cloudSync(opts){
       var maxSeq=page.events.reduce(function(a,r){return Math.max(a,r.serverSeq||0);},reset?0:(c.lastPullSeq||0));
       if(asm.waitFrom!=null)maxSeq=Math.min(maxSeq,asm.waitFrom-1);   /* read the waiting parts again next time */
       if(good.length){var merged=mergeEvents(_EVENTS,good);conflicts=merged.conflicts.length;
-        if(merged.events.length>_EVENTS.length){pushUndo('merge '+(merged.events.length-_EVENTS.length)+' change(s) from the cloud');adoptMergedEvents(merged);}
+        if(merged.events.length>_EVENTS.length){var had={};_EVENTS.forEach(function(e){had[e.id]=1;});var newIds=merged.events.filter(function(e){return !had[e.id];}).map(function(e){return e.id;});
+          /* the undo step names the events this merge adopts, so undoing it revokes them everywhere (24-events.js) */
+          pushUndo('merge '+newIds.length+' change(s) from the cloud',{merged:newIds});adoptMergedEvents(merged);
+          var ue=undoneElsewhere(good);if(ue.count){undone=ue;DB.settings.cloud=Object.assign({},DB.settings.cloud||{},{undoneElsewhere:{at:nowISO(),count:ue.count,by:ue.by}});}}
         (merged.conflicts||[]).forEach(function(x){_syncState.conflicts.push(x);});}
       return {maxSeq:maxSeq,events:good};});
   }).then(function(pull){
@@ -300,7 +303,7 @@ function cloudSync(opts){
       lastReset:reset?{at:nowISO(),resent:sent}:((DB.settings.cloud||{}).lastReset||null)});
     save('cloud:sync');_cloud.status='synced';_cloud.busy=false;
     if(typeof auditAppend==='function')auditAppend('cloud.sync',{sent:sent,received:received,conflicts:conflicts,serverReset:reset});
-    var out={ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq,serverReset:reset};
+    var out={ok:true,sent:sent,received:received,conflicts:conflicts,serverSeq:res.pull.maxSeq,serverReset:reset,undoneElsewhere:undone?undone.count:0};
     /* then the photo images (W-004 option B): uploaded, retried, deleted or fetched in their own channel, after the events */
     return (typeof cloudSyncAttachments==='function'?cloudSyncAttachments():Promise.resolve(null)).then(function(a){if(a)out.attachments=a;return out;},
       function(e){_q(e,'P2');out.attachments={error:String(e&&e.message||e)};return out;});

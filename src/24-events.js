@@ -271,12 +271,23 @@ var EVENT_TYPES={
    undone is treated as never having happened, as the record the undo put back treats it). A revocation is never itself
    revoked, so a deeper undo revokes everything since its step and nothing earlier comes back. If the log was restarted
    or compacted since the step, the events may sit inside a snapshot where they cannot be left out, so the log restarts
-   from the record the undo put back, as a restore does. Undoing a merge of another device's changes revokes nothing:
-   those are that device's facts, and revoking them would remove them on every device. */
+   from the record the undo put back, as a restore does.
+   UNDOING A MERGE of another device's changes revokes the events that merge adopted (the undo step names them), so the
+   undo holds: a restart leaves them out, the next sync does not bring them back, and every device of the vault, the one
+   that made them included, removes them too. That is the person's choice, and the device that made them says so when it
+   learns of it. Two kinds of merged event are not revoked: a revocation (never itself revoked), and a whole record another
+   device restored (a snapshot), whose revocation could empty that device's record; the undo says it kept it. */
 var _LOCAL_EMITTED=[],_EMIT_N=0,LOCAL_EMITTED_MAX=20000;
 function _latestSnapshotId(){var s=null;_EVENTS.forEach(function(e){if(e.type==='record.snapshot'&&(!s||_eventOrder(s,e)<0))s=e;});return s?s.id:null;}
 function undoMark(){return {n:_EMIT_N,snapshot:_latestSnapshotId()};}
 function undoInLog(mark,label){
+  if(mark&&Array.isArray(mark.merged)&&/^merge\b/i.test(String(label||''))){
+    var byId={};_EVENTS.forEach(function(e){byId[e.id]=e;});
+    var rev=mark.merged.filter(function(id){var e=byId[id];return e&&e.type!=='events.revoked'&&e.type!=='record.snapshot';});
+    var kept=mark.merged.filter(function(id){var e=byId[id];return e&&e.type==='record.snapshot';}).length;
+    var devices=[];rev.forEach(function(id){var d=byId[id].device;if(d&&devices.indexOf(d)<0)devices.push(d);});
+    if(rev.length)emitEvent('events.revoked',{ids:rev,reason:'undo: '+label,merge:true,devices:devices});
+    return {revoked:rev.length,merge:true,keptSnapshot:kept,devices:devices};}
   if(!mark||/^merge\b/i.test(String(label||'')))return {revoked:0};
   var inLog={};_EVENTS.forEach(function(e){inLog[e.id]=1;});
   var ids=_LOCAL_EMITTED.filter(function(x){return x.n>mark.n&&x.type!=='events.revoked'&&inLog[x.id];}).map(function(x){return x.id;});
@@ -286,6 +297,11 @@ function undoInLog(mark,label){
   return {revoked:ids.length};
 }
 /* The ids every revocation in these events names, or null when there is none (the common case costs nothing). */
+/* this device's own events that another device's merge undo revoked, among newly merged events: what to tell the person */
+function undoneElsewhere(newEvents){var me=deviceId(),mine={};_EVENTS.forEach(function(e){if(e.device===me)mine[e.id]=1;});
+  var out={count:0,by:[],reasons:[]};(newEvents||[]).forEach(function(e){if(e&&e.type==='events.revoked'&&e.data&&e.data.merge&&e.device!==me){
+    var n=(e.data.ids||[]).filter(function(id){return mine[id];}).length;if(n){out.count+=n;if(out.by.indexOf(e.device)<0)out.by.push(e.device);out.reasons.push(e.data.reason);}}});
+  return out;}
 function _revokedIds(events){
   var out=null;(events||[]).forEach(function(e){if(e&&e.type==='events.revoked'&&e.data&&Array.isArray(e.data.ids)){out=out||{};e.data.ids.forEach(function(id){out[id]=1;});}});
   return out;

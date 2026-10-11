@@ -4458,3 +4458,36 @@ those gates. The structured-explanation tests no longer write an energy-density 
 
 All 37 gates pass (reproducible included); release 24/24; 1,862 self-tests.
 
+## Undoing a sync merge holds, on every device (build 38097babc5)
+
+TRANSITION §7 left a decision open. Undo after a sync merge put the earlier record back on this device, but it revoked
+nothing, so the merged changes came back at the next start or sync. Making it hold means revoking the other device's
+events, which removes them on every device. The person chose that.
+- **The undo step names what the merge adopted.** Each merge, from the cloud or from a sync file, now records in its
+  undo step the ids of the events it brought in. `pushUndo(label, extra)` carries them.
+- **Undoing the merge revokes them.** `undoInLog()` records one `events.revoked` event, marked as a merge undo, naming
+  those events and the devices that made them. This is the same mechanism that already makes local undo hold:
+  - a restart rebuilds the record without them;
+  - a later sync cannot bring them back, because they are still in the log and a projection leaves them out;
+  - every device that merges the revocation, the device that made them included, removes them too.
+- **Two kinds of merged event are not revoked.** A revocation is never itself revoked. A whole record that another
+  device restored (a snapshot) is kept, because revoking it could empty that device's record. The undo says it kept it
+  and suggests restoring a backup instead.
+- **The other device is told.** When a device merges a revocation of its own events from another device,
+  `undoneElsewhere()` counts them. The sync result carries the count, and the Encrypted sync sheet shows how many of
+  this device's changes were undone elsewhere, by which device and when.
+- **The undo says what it did.** Its message says how many changes from another device will be removed on every
+  device at the next sync.
+
+Tests:
+- Five self-tests with two simulated devices sharing a log, each made to fail once on purpose. B's weigh-in of 212 lb is
+  merged into A and the merge is undone:
+  - it is gone at once and after a restart, and A's own weigh-in stays;
+  - the same envelope merged again does not bring it back;
+  - B, merging A's log, loses its 212 lb too, and is told by which device;
+  - a merge that brought a whole restored record keeps it, and says so.
+- `cloud:e2e`, the same through the real server: B logs 6.1 h of sleep and A undoes the merge from the screen's undo
+  action. It stays undone on A after a sync and a restart, it is removed on B at B's next sync (B is told), and further
+  syncs on either device do not bring it back.
+
+1,867 self-tests pass; the full release record is in progress.

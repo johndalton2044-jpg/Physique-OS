@@ -4981,6 +4981,39 @@ function runSelfTest(opts){
       ok('a merge restore brings back photos by id, not only the collections',merged.byCollection.photos===1&&merged.photos==='ph-a,ph-b',JSON.stringify(merged));
       ok('the manifest is a persisted collection of the record',PERSIST_COLLECTIONS.indexOf('attachments')>=0&&Array.isArray(emptyDB().attachments));
     })();
+    _stSuite('events');
+    /* UNDOING A SYNC MERGE HOLDS (TRANSITION §7's open decision, now taken: the undo revokes what the merge brought).
+       Devices A and B share a log holding A's weigh-in of 210 lb; B adds one of 212 lb and sends its envelope; A merges it,
+       then undoes the merge. Every expectation is one of those two weigh-ins. */
+    (function(){
+      var savedDB=DB,savedEvents=_EVENTS.slice(),savedSeq=_EVENT_SEQ,savedStack=_undoStack.slice(),T=todayISO(),r={};
+      var has=function(v,db){return (db||DB).observations.some(function(o){return o.type==='weight'&&o.value===v&&!o.retracted;});};
+      var restart=function(){var stored=_EVENTS.slice();_EVENTS.length=0;adoptMergedEvents(mergeEvents([],stored));};
+      try{DB=emptyDB();_EVENTS.length=0;_EVENT_SEQ=0;clearUndo();DB.settings.deviceId='dev-A';resetEventLog('merge undo test');_memoInvalidate();
+        addObservation({type:'weight',date:addDays(T,-3),value:210,source:'manual'},{noSave:true});
+        var shared=_EVENTS.slice(),aDB=JSON.parse(JSON.stringify(DB));
+        DB.settings.deviceId='dev-B';addObservation({type:'weight',date:addDays(T,-1),value:212,source:'manual'},{noSave:true});
+        var envB=buildEnvelope(),bLog=_EVENTS.slice();
+        DB=JSON.parse(JSON.stringify(aDB));DB.settings.deviceId='dev-A';_EVENTS=shared.slice();_memoInvalidate();
+        r.merge=mergeEnvelope(envB);r.afterMerge=has(212);
+        undo();r.result=lastUndoResult();r.afterUndo=has(212);
+        restart();r.afterRestart={b:has(212),a:has(210)};
+        mergeEnvelope(envB);r.afterResync=has(212);
+        var aLog=_EVENTS.slice(),inB={};bLog.forEach(function(e){inB[e.id]=1;});
+        r.onB=(function(){var P=projectEvents(mergeEvents(bLog,aLog).events).db;return {b:has(212,P),a:has(210,P)};})();
+        DB.settings.deviceId='dev-B';_EVENTS=bLog.slice();r.told=undoneElsewhere(aLog.filter(function(e){return !inB[e.id];}));
+        /* a merge that brings a whole record B restored keeps it, and says so */
+        DB=JSON.parse(JSON.stringify(aDB));DB.settings.deviceId='dev-B';_EVENTS=shared.slice();resetEventLog('record restored from a backup');var envSnap=buildEnvelope();
+        DB=JSON.parse(JSON.stringify(aDB));DB.settings.deviceId='dev-A';_EVENTS=shared.slice();clearUndo();_memoInvalidate();
+        mergeEnvelope(envSnap);undo();r.snap=lastUndoResult();}
+      finally{DB=savedDB;_EVENTS=savedEvents;_EVENT_SEQ=savedSeq;_undoStack=savedStack;_memoInvalidate();}
+      ok('undoing a merge revokes what it brought: B’s 212 lb is gone at once and after a restart, and A’s own 210 lb stays',
+        !!r.merge&&r.merge.ok&&r.afterMerge&&!r.afterUndo&&!!r.result&&r.result.merge===true&&r.result.revoked===1&&!r.afterRestart.b&&r.afterRestart.a,JSON.stringify(r));
+      ok('the same envelope merged again does not bring it back',r.afterResync===false);
+      ok('device B, merging A’s log, removes its own 212 lb too, and keeps 210: one record on every device',!!r.onB&&!r.onB.b&&r.onB.a);
+      ok('and B is told that one of its changes was undone on another device, and by which',!!r.told&&r.told.count===1&&r.told.by.join()==='dev-A');
+      ok('a merge that brought a whole record another device restored keeps that record, and the undo says so',!!r.snap&&r.snap.merge===true&&r.snap.keptSnapshot===1&&r.snap.revoked===0,JSON.stringify(r.snap));
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');
