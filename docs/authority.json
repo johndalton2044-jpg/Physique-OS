@@ -490,7 +490,7 @@
      "30-observations.js:78"
     ],
     "syncNutritionObservations": [
-     "62-food.js:246"
+     "62-food.js:264"
     ],
     "importObservations": [
      "65-import.js:270"
@@ -566,13 +566,13 @@
    ],
    "writers": {
     "logFood": [
-     "62-food.js:181"
+     "62-food.js:199"
     ],
     "updateFoodLog": [
-     "62-food.js:226"
+     "62-food.js:244"
     ],
     "copyFoodLog": [
-     "62-food.js:259"
+     "62-food.js:277"
     ]
    }
   },
@@ -694,7 +694,7 @@
    ],
    "writers": {
     "saveRecipe": [
-     "62-food.js:162"
+     "62-food.js:180"
     ]
    }
   },
@@ -707,7 +707,7 @@
    ],
    "writers": {
     "saveUserFood": [
-     "62-food.js:163"
+     "62-food.js:181"
     ]
    }
   },

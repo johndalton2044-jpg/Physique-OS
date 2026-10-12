@@ -4388,6 +4388,10 @@
     "dietDigestibility",
     "exerciseLearningCurve"
    ],
+   "62-food.js": [
+    "ownFoodForBarcode",
+    "foodSourceArbitration"
+   ],
    "62-supplements.js": [
     "resolveSupplement",
     "supplementStack",
@@ -5205,6 +5209,7 @@
     "portionResolve",
     "portionGrams",
     "nutrientsFor",
+    "macroConsistency",
     "recipeTotals",
     "recipeAsFood",
     "saveUserFood",
@@ -5222,6 +5227,8 @@
     "foodIdentity",
     "sameFood",
     "foodDuplicates",
+    "ownFoodForBarcode",
+    "foodSourceArbitration",
     "markSameFood",
     "markDifferentFood"
    ],

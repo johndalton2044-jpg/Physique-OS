@@ -5231,6 +5231,32 @@ function runSelfTest(opts){
       var H=heuristicContractById('stall_causes');
       ok('the thresholds are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.sameTopSet.value===3&&heuristicContracts().ok);
     })();
+    _stSuite('nutrition');
+    /* TWO RECORDS OF ONE FOOD THAT DISAGREE (catalogue doc 1, W-018), on records written here. Expected by hand from
+       4/4/9: 10 g protein, 4 g carbohydrate and 5 g fat are 101 kcal, so a record declaring 130 disagrees with itself (29
+       over the 25 kcal floor) and one declaring 100 agrees; 15 g carbohydrate is 60 kcal. */
+    (function(){var mine=function(per,extra){return Object.assign({kind:'custom',id:'food-st-a',name:'My yogurt',basis:'g',per100:per},extra||{});};
+      var br=function(per){return {kind:'branded',id:'fdc-st-1',name:'Yogurt',basis:'g',per100:per,source:'FDC_BRANDED'};};
+      var off=function(per){return {kind:'branded',id:'off-st',name:'Yogurt',basis:'g',per100:per,source:'OPEN_FOOD_FACTS'};};
+      var A=foodSourceArbitration(mine({kcal:100,protein:10,carbs:4,fat:5}),br({kcal:130,protein:10,carbs:4,fat:5}));
+      ok('a record that disagrees with its own macros loses: 130 kcal declared against 101 from its macros',A.status==='conflict'&&A.chosen.origin==='own'&&A.conflicts.length===1&&A.conflicts[0].nutrient==='kcal'
+        &&/130 kcal declared, 101 from its macros/.test(A.text),A.text);
+      var B=foodSourceArbitration(br({kcal:122,protein:12,carbs:5,fat:6}),mine({kcal:100,protein:10,carbs:4,fat:5}));
+      ok('when both agree with themselves, the first in the declared order is used: your own entry, whichever side it is on',B.status==='conflict'&&B.chosen.origin==='own'&&B.setAside.origin==='FDC_BRANDED'&&/both agree with their own macros/.test(B.text)&&!B.flagged,B.text);
+      var C=foodSourceArbitration(mine({kcal:100,protein:10}),off({kcal:60,protein:0,carbs:15,fat:0}));
+      ok('an entry without the macros to check it gives way to a record that can be checked',C.chosen.origin==='OPEN_FOOD_FACTS'&&/lacks the macros to check it/.test(C.text),C.text);
+      var D=foodSourceArbitration(mine({kcal:200,protein:10,carbs:4,fat:5}),br({kcal:140,protein:10,carbs:4,fat:5}));
+      ok('when neither agrees with itself, the first in the order is used and flagged',D.chosen.origin==='own'&&D.flagged===true&&/should be checked against the package/.test(D.text),D.text);
+      ok('records within 10% of each other agree, and nothing is settled',foodSourceArbitration(mine({kcal:100,protein:10,carbs:4,fat:5}),br({kcal:105,protein:10.5,carbs:4,fat:5})).status==='agree');
+      var mc=function(k){return macroConsistency({kind:'custom',id:'x',name:'x',basis:'g',per100:{kcal:k,protein:25,carbs:0,fat:0}});};
+      ok('the food sheet’s own check reads the same thresholds: 24 kcal off is rounding, 26 is not (100 kcal from 25 g protein)',mc(124).consistent===true&&mc(126).consistent===false);
+      var keepF=DB.foods,got=null;try{DB.foods=[{id:'food-st-b',kind:'custom',name:'Cola',gtin:'049000028911',basis:'ml',per100:{kcal:42}}];got=ownFoodForBarcode('0049000028911');}finally{DB.foods=keepF;}
+      ok('your own entry is found by its barcode however many leading zeros it was written with',!!got&&got.id==='food-st-b');
+      var keepS=_FOODSHEET,keepSh=_SHEET,body='';try{_SHEET={buf:{amount:1,unit:'g'}};_FOODSHEET={q:'',local:[],branded:[],state:'idle',picked:A.chosen.food,arbitration:A};body=SHEETS.foodAdd(_SHEET.buf).body;}finally{_FOODSHEET=keepS;_SHEET=keepSh;}
+      ok('the food sheet says which record is used and why, and what the other says',/data-food-arbitration/.test(body)&&body.indexOf(esc(A.text))>=0);
+      var H=heuristicContractById('food_source_rank');
+      ok('the order and thresholds are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.order.value[0]==='own'&&heuristicContracts().ok);
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

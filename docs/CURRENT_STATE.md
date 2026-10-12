@@ -13,7 +13,7 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Event types | 57 |
 | Entity contracts | 29 |
 | Persisted collections | 22 |
-| Heuristic contracts | 20 (none validated as a model) |
+| Heuristic contracts | 21 (none validated as a model) |
 | Evidence claims | 26 (no claim yet for: hydration) |
 | Capabilities | 40 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 16 surfaced, 14 validated) |
 | Release gates | 37 |
@@ -95,5 +95,5 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 - Prospectively validated cannot be claimed yet: no prospective validation exists.
 - Real data at scale cannot be claimed yet.
 - Real-world cannot be claimed yet.
-- The 20 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
+- The 21 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
 - No published evidence is registered for: hydration.

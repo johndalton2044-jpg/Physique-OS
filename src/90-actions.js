@@ -261,8 +261,8 @@ registerAction('food.search',function(arg,ev,el){_FOOD_Q=el.value;if(_FOOD_Q.len
 registerAction('food.add',function(arg){openFoodAdd(arg||_FOOD_DAY||todayISO());});
 registerAction('food.pick',function(arg){var parts=arg.split('|');var f=foodByRef(parts[0]+'|'+parts[1]);if(!f){toast('Food not available offline',{tone:'negative'});return;}openFoodAdd(parts[2]||_FOOD_DAY||todayISO(),f);});
 registerAction('foodsheet.search',function(arg,ev,el){_FOODSHEET.q=el.value;if(_FOODSHEET.q.length<2){_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';var r=document.getElementById('fs_results');if(r)r.innerHTML=renderFoodSheetResults();return;}runFoodSearch(_FOODSHEET.q,_FOODSHEET);});
-registerAction('foodsheet.pick',function(arg){var f=foodByRef(arg);if(!f)return;_FOODSHEET.picked=f;prepPortion(f);});
-registerAction('foodsheet.back',function(){_FOODSHEET.picked=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q)q.focus();},30);});
+registerAction('foodsheet.pick',function(arg){var f=foodByRef(arg);if(!f)return;_FOODSHEET.picked=f;_FOODSHEET.arbitration=null;prepPortion(f);});
+registerAction('foodsheet.back',function(){_FOODSHEET.picked=null;_FOODSHEET.arbitration=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q)q.focus();},30);});
 registerAction('foodsheet.save',function(){saveFoodSheet();});
 registerAction('food.fav',function(arg){var f=_FOODSHEET.picked||foodByRef(arg);if(!f)return;var added=toggleFavorite(f);renderSheet();toast(added?'Added to favorites':'Removed from favorites');});
 registerAction('food.edit',function(id){var l=DB.foodLogs.filter(function(x){return x.id===id;})[0];if(!l)return;var basis=l.basis||'g',pt=l.portion||{amount:l.quantity!=null?l.quantity:l.grams,unit:basis==='ml'?'ml':(basis==='serving'?'serving':'g')};
@@ -270,7 +270,7 @@ registerAction('food.edit',function(id){var l=DB.foodLogs.filter(function(x){ret
 registerAction('food.editSave',function(){var b=_SHEET.buf,f=_foodForEdit(b.log),res=portionResolve(f,b.amount,b.unit);if(!res||!res.qty){toast('That amount does not resolve for this food',{tone:'negative'});return;}
   var lab=(b.unit.indexOf('portion:')===0||b.unit==='serving')?((num(b.amount)===1?'':fmtNum(num(b.amount),num(b.amount)%1?2:0)+' \u00d7 ')+(b.unit.indexOf('portion:')===0?b.unit.slice(8):'serving')+' ('+_qtyLabel(res.qty,res.basis)+')'):res.label;
   updateFoodLog(b.log.id,res.qty,b.meal,{amount:num(b.amount),unit:b.unit,label:lab});_memoInvalidate();closeSheet();renderAll();toast('Updated',{undo:true});});
-registerAction('foodsheet.clear',function(){_FOODSHEET.q='';_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';_FOODSHEET.picked=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q){q.value='';q.focus();}},30);});
+registerAction('foodsheet.clear',function(){_FOODSHEET.q='';_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';_FOODSHEET.picked=null;_FOODSHEET.arbitration=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q){q.value='';q.focus();}},30);});
 registerAction('foodsheet.saveAnother',function(){saveFoodSheet({another:true});});
 registerAction('food.remove',function(id){removeFoodLog(id);_memoInvalidate();closeSheet();renderAll();toast('Removed',{undo:true});});
 registerAction('food.repeatDay',function(arg){var p=arg.split('|');var n=repeatDay(p[0],p[1]);_memoInvalidate();renderAll();toast('Repeated '+n+' items',{undo:true});});

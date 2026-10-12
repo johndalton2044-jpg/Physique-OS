@@ -154,7 +154,11 @@ function scanFound(code){
   _stopScan();_SCAN.code=code;_SCAN.status='looking up';renderSheet();
   /* Bundled database first; Open Food Facts only when it has no such barcode (integration spec \u00a721). */
   return lookupProductByBarcode(code).then(function(r){
-    if(r&&r.status==='ok'){var f=r.food;_SCAN.status='found';closeSheet();openFoodAdd(_FOOD_DAY||todayISO(),f);
+    if(r&&r.status==='ok'){var f=r.food;_SCAN.status='found';closeSheet();
+      /* W-018: the person's own entry for this barcode and the record found are settled by the declared rule when they
+         disagree: the one used is offered for logging, and the sheet says why and what the other says */
+      var own=ownFoodForBarcode(code),A=own?foodSourceArbitration(own,f):null;
+      openFoodAdd(_FOOD_DAY||todayISO(),A&&A.status==='conflict'?A.chosen.food:f);if(A&&A.status==='conflict'){_FOODSHEET.arbitration=A;renderSheet();}
       toast('Found: '+f.name+(r.source==='open-food-facts'?' \u00b7 from Open Food Facts'+(f.provenance&&f.provenance.missing.length?(' (no '+f.provenance.missing.join(', ')+' listed)'):''):''));return f;}
     _SCAN.status='not found';_SCAN.offNote=r&&r.error&&r.error.category!=='unsupported_record'?r.error.text:null;renderSheet();return null;
   }).catch(function(e){_q(e,'P2');_SCAN.status='not found';renderSheet();return null;});
