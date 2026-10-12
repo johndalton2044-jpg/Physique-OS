@@ -4663,4 +4663,4 @@ What stays open, and why:
   reported but not yet recommended on.
 - Prospective validation still needs months of real use.
 
-1,921 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,921 self-tests.

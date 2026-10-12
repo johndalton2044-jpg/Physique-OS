@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-11T21:20:10.127Z",
-  "buildId": "0dc41f684f",
+  "generatedAt": "2026-10-12T01:29:40.642Z",
+  "buildId": "abd4ef4b01",
   "nodes": 111,
-  "edges": 305,
+  "edges": 306,
   "contractDerived": 99,
   "dependencies": [
     {
@@ -1083,6 +1083,11 @@
     {
       "sourceId": "met_energy",
       "targetId": "steps",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "met_energy",
+      "targetId": "energy_availability",
       "dependencyType": "model"
     },
     {
