@@ -36,7 +36,7 @@
       ]
     },
     {
-      "source": "/data/(.*)",
+      "source": "/data/((?!food/manifest\\.json).*)",
       "headers": [
         {
           "key": "Cache-Control",

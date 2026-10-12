@@ -1,0 +1,139 @@
+{
+ "build": "9a9661b252",
+ "at": "2026-10-12T03:43:23.014Z",
+ "buildMs": 2637,
+ "inventory": {
+  "outputDirectory": "dist",
+  "buildCommand": "npm run build",
+  "files": 1145,
+  "bytes": 102546636,
+  "br": 25165044,
+  "gzip": 27795603,
+  "groups": {
+   "documents": {
+    "files": 16,
+    "bytes": 537360,
+    "br": 199280,
+    "gzip": 208841
+   },
+   "app shell": {
+    "files": 17,
+    "bytes": 3992650,
+    "br": 1411054,
+    "gzip": 1532854
+   },
+   "food corpus": {
+    "files": 1109,
+    "bytes": 97791506,
+    "br": 23521898,
+    "gzip": 26018135
+   },
+   "reference data": {
+    "files": 3,
+    "bytes": 225120,
+    "br": 32812,
+    "gzip": 35773
+   }
+  },
+  "largest": [
+   {
+    "path": "/index.html",
+    "bytes": 3959343,
+    "br": 1384467
+   },
+   {
+    "path": "/data/food/branded/recs-046.json",
+    "bytes": 834490,
+    "br": 193672
+   },
+   {
+    "path": "/data/food/branded/recs-047.json",
+    "bytes": 771699,
+    "br": 182124
+   },
+   {
+    "path": "/data/food/branded/recs-058.json",
+    "bytes": 747496,
+    "br": 162587
+   },
+   {
+    "path": "/data/food/branded/recs-081.json",
+    "bytes": 738138,
+    "br": 164642
+   },
+   {
+    "path": "/data/food/branded/recs-062.json",
+    "bytes": 732031,
+    "br": 141329
+   },
+   {
+    "path": "/data/food/branded/recs-056.json",
+    "bytes": 730457,
+    "br": 157001
+   },
+   {
+    "path": "/data/food/branded/recs-057.json",
+    "bytes": 723969,
+    "br": 156166
+   }
+  ],
+  "ambiguous": [],
+  "cache": {
+   "/index.html": "no-cache",
+   "/sw.js": "no-cache",
+   "/version.json": "no-cache",
+   "/data/food/manifest.json": "no-cache",
+   "/data/food/foundation.json": "public, max-age=86400, must-revalidate",
+   "/icons/icon.svg": "(platform default)"
+  }
+ },
+ "load": {
+  "firstVisit": {
+   "requests": 15,
+   "bytes": 1481900,
+   "revalidated": 1,
+   "paths": [
+    "/index.html 200 1384467",
+    "/sw.js 200 1375",
+    "/data/food/manifest.json 200 54074",
+    "/manifest.webmanifest 200 463",
+    "/icons/icon.svg 200 225",
+    "/index.html 304 0",
+    "/icons/favicon.svg 200 225",
+    "/icons/favicon-32.png 200 452",
+    "/version.json 200 1220",
+    "/icons/favicon-16.png 200 272",
+    "/icons/icon-192.png 200 2525",
+    "/icons/icon-512.png 200 7007",
+    "/icons/maskable-512.png 200 5096",
+    "/icons/apple-touch-icon.png 200 2354",
+    "/data/reference/compendium-2024.json 200 22145"
+   ],
+   "readyMs": 1491,
+   "foodShards": 0
+  },
+  "firstSearch": {
+   "requests": 3,
+   "bytes": 298716,
+   "revalidated": 0,
+   "paths": [
+    "/data/food/branded/idx-ch.json 200 114819",
+    "/data/food/branded/idx-br.json 200 59992",
+    "/data/food/branded/recs-017.json 200 123905"
+   ],
+   "searched": true,
+   "foodShards": 3
+  },
+  "returnVisit": {
+   "requests": 2,
+   "bytes": 0,
+   "revalidated": 2,
+   "paths": [
+    "/index.html 304 0",
+    "/data/food/manifest.json 304 0"
+   ],
+   "readyMs": 1178
+  },
+  "compression": "brotli quality 5 (gzip level 6 for clients without brotli)"
+ }
+}

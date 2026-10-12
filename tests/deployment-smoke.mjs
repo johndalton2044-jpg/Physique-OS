@@ -49,6 +49,14 @@ async function local(){
   {const vj=JSON.parse(fs.readFileSync('vercel.json','utf8'));
     line(vj.outputDirectory==='dist'&&/\bnpm run build\b|\bnode build\.mjs\b/.test(vj.buildCommand||''),'vercel.json tells the host to run the build and serve dist',JSON.stringify({buildCommand:vj.buildCommand,outputDirectory:vj.outputDirectory}));
     line(fs.existsSync('dist/index.html'),'the build put the app in dist');}
+  /* the deployment footprint (catalogue W-033): what a browser actually transfers from a host serving dist with
+     vercel.json's headers, held to budgets, and cache rules with one value per path (scripts/deploy-footprint.mjs) */
+  {const F=await import('../scripts/deploy-footprint.mjs'),B=F.FOOTPRINT_BUDGETS,c=F.cacheReport(),L=await F.measureFirstLoad({port:18890});
+    const docs=L.firstVisit.paths.filter(x=>/^\/index\.html 200 /.test(x)).length;
+    line(L.firstVisit.bytes<=B.firstVisitBytes&&docs===1&&L.firstVisit.foodShards===0,'a first visit transfers '+(L.firstVisit.bytes/1048576).toFixed(2)+' MB (budget '+(B.firstVisitBytes/1048576).toFixed(2)+'): the page once, and none of the food corpus',JSON.stringify({bytes:L.firstVisit.bytes,pageDownloads:docs,shards:L.firstVisit.foodShards,paths:L.firstVisit.paths}).slice(0,400));
+    line(L.returnVisit.bytes<=B.returnVisitBytes,'a return visit transfers '+(L.returnVisit.bytes/1024).toFixed(1)+' KB (budget '+(B.returnVisitBytes/1024).toFixed(0)+' KB): the page is revalidated, not downloaded again',JSON.stringify(L.returnVisit.paths));
+    line(L.firstSearch.searched&&L.firstSearch.foodShards>0&&L.firstSearch.bytes<=B.firstSearchBytes,'a first food search fetches only the shards it needs: '+L.firstSearch.foodShards+', '+(L.firstSearch.bytes/1048576).toFixed(2)+' MB',JSON.stringify(L.firstSearch.paths));
+    line(!c.ambiguous.length&&c.index==='no-cache'&&c.sw==='no-cache'&&c.manifest==='no-cache'&&/max-age=86400/.test(c.shard||''),'vercel.json gives every path one Cache-Control: the page, worker and food manifest revalidate, food shards are kept a day',JSON.stringify(c).slice(0,300));}
   const {chromium}=await import('playwright-core');const {findBrowser}=await import('./_browser-path.mjs');
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pos-deploy-'));const API=18801,wait=ms=>new Promise(r=>setTimeout(r,ms));
   const api=spawn(process.execPath,['server/server.mjs'],{env:Object.assign({},process.env,{PORT:String(API),HOST:'127.0.0.1',DATA_DIR:tmp,TRUST_PROXY:'1',METRICS_TOKEN:'met',PHYSIQUE_EXT_FIXTURES:path.resolve('tests/fixtures/ext')}),stdio:'ignore'});
