@@ -4876,7 +4876,7 @@ next round), and W-019's question for a real person.
 
 All 37 gates pass (reproducible included); release 24/24; 2,008 self-tests.
 
-## Protein quality from amino acids, the food matrix, glycaemic load, visual calibration (build 21dda51c45)
+## Protein quality from amino acids, the food matrix, glycaemic load, visual calibration (build 7df2f090bc)
 
 The four remaining nutrition and body-composition items, each with a cited source registered as a finding.
 - **Protein quality from amino acids** (doc 1, W-018). The day's protein was scored only by food-group values.
@@ -4916,6 +4916,8 @@ Tests:
 - 22 self-tests, each made to fail once on purpose.
 - The claim registry checks each grade against the design its entry states. Five of the six new entries were first
   written with designs that did not say what their grade needs, and the gate caught each one.
+- The first release run stopped at the inputs gate. The custom food's amino acid fields were read under computed names,
+  which it cannot see, so they are now read by name.
 - Black-box workflows:
   - V-029: two protein isolates saved with their amino acids, logged, scored; a partial profile refused.
   - V-030: whole almonds and cooked rice saved and logged, the energy held back and the glycaemic load.

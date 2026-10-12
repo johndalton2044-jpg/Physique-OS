@@ -120,7 +120,7 @@ its own list of high-value work:
   checked against its own macros, the first of your own entry, USDA laboratory analysis, the branded label and Open
   Food Facts that agrees with itself, the other kept visible. A barcode scan meeting your own entry uses it (external
   gate). Entity resolution was already in place. At 847a6961b4: protein across meals is judged at 0.4 g/kg per meal
-  once the day reaches 1.6 g/kg, a heuristic contract citing a registered finding, the daily total first. At 21dda51c45:
+  once the day reaches 1.6 g/kg, a heuristic contract citing a registered finding, the daily total first. At 7df2f090bc:
   - protein quality from the amino acids of the foods eaten, as one mix, against the FAO 2013 pattern (workflow V-029);
     the shipped corpus carries no amino acids until its next build;
   - whole almonds, walnuts and cashews counted at the energy feeding studies measured (workflow V-030);
@@ -132,7 +132,7 @@ its own list of high-value work:
   with, saying what the tape cannot separate (workflow V-021). At 847a6961b4: photos are compared only in matching
   conditions. Each keeps when it was taken and, optionally, its fed state, and the latest pairs with the earliest in
   matching conditions. This fixed a check that graded every pair "too little was recorded" and a Body tab that never
-  showed a comparison (workflow V-022). At 21dda51c45: a body fat estimated by eye is read through the person's own bias
+  showed a comparison (workflow V-022). At 7df2f090bc: a body fat estimated by eye is read through the person's own bias
   against their measured readings (workflow V-031).
 
 Mobility, conditioning and power responses (TRANSITION item 4) were done before this round.
