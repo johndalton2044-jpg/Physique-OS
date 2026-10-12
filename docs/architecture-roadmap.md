@@ -4737,4 +4737,4 @@ What stays open, and why:
   substitution equivalence, protein quality, meal timing and glycaemic response, and photo-condition normalisation.
   These were chosen as the parts a test can hold now.
 
-1,950 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,950 self-tests.

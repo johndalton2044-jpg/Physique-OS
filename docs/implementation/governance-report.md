@@ -1,6 +1,6 @@
 # Governance report
 
-Build e82ecf3367 · generated 2026-10-12T04:40:05.508Z
+Build e82ecf3367 · generated 2026-10-12T04:47:47.801Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **34 passing**
 
