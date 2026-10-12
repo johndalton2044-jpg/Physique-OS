@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-12T17:22:14.097Z",
-  "buildId": "fd6e597ef7",
-  "nodes": 116,
-  "edges": 329,
-  "contractDerived": 104,
+  "generatedAt": "2026-10-12T18:44:58.504Z",
+  "buildId": "7df2f090bc",
+  "nodes": 119,
+  "edges": 335,
+  "contractDerived": 107,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -468,6 +468,11 @@
     {
       "sourceId": "carbs",
       "targetId": "water_noise",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "carbs",
+      "targetId": "glycaemic_load",
       "dependencyType": "data"
     },
     {
@@ -1547,6 +1552,11 @@
     },
     {
       "sourceId": "bodyfat",
+      "targetId": "visual_calibration",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "bodyfat",
       "targetId": "physique_regions",
       "dependencyType": "data"
     },
@@ -1563,6 +1573,21 @@
     {
       "sourceId": "diet_digestibility",
       "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "diet_digestibility",
+      "targetId": "foodDayCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "fiber",
+      "targetId": "glycaemic_load",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "glycaemic_load",
+      "targetId": "foodDayCard",
       "dependencyType": "model"
     },
     {
@@ -1593,6 +1618,11 @@
     {
       "sourceId": "body_composition_state",
       "targetId": "stateVector",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "visual_calibration",
+      "targetId": "bodyCompositionByMethod",
       "dependencyType": "model"
     },
     {

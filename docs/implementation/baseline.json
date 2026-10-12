@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-12T17:22:14.097Z",
-  "sourceBuildId": "fd6e597ef7",
-  "releaseId": "c878f490292d",
+  "generatedAt": "2026-10-12T18:44:58.504Z",
+  "sourceBuildId": "7df2f090bc",
+  "releaseId": "9e68bc1158a9",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -86,7 +86,7 @@
   "registries": {
     "quantities": 41,
     "quantitySingleSource": true,
-    "models": 54,
+    "models": 56,
     "actions": 503,
     "capabilities": 22
   },

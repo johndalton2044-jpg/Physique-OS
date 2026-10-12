@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build fd6e597ef7. Every status is derived from evidence the build can check; none is assigned by hand.
+Build 7df2f090bc. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -76,11 +76,13 @@ Build fd6e597ef7. Every status is derived from evidence the build can check; non
 | supplement_efficacy | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | energy_availability | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | diet_digestibility | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
+| glycaemic_load | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | recovery_allocation | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |
 | personal_sleep_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | micronutrient_coverage | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | supplement_adherence | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | body_composition_state | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| visual_calibration | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | physique_regions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | unified_optimiser | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | tissue_energy_density | 1.0 | INFRASTRUCTURE_GRADE | graded by rule |

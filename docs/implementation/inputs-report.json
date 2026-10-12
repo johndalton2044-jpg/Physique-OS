@@ -1313,6 +1313,94 @@
    "freeText": false
   },
   {
+   "sheet": "customFood",
+   "field": "aa_his",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_ile",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_leu",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_lys",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_met",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_cys",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_phe",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_tyr",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_thr",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_trp",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
+   "sheet": "customFood",
+   "field": "aa_val",
+   "act": "sheet.field",
+   "type": "text",
+   "status": "saved",
+   "freeText": false
+  },
+  {
    "sheet": "exlibrary",
    "field": "libSearch",
    "act": "lib.search",
