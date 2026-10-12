@@ -5202,6 +5202,35 @@ function runSelfTest(opts){
       finally{DB.settings.weatherLocation=keepL;DB.settings.weatherSync=keepW;DB.environment=keepE;_memoInvalidate();}
       ok('the weather screen says why the last refresh failed at the top, with the connection check',/data-weather-problem/.test(body)&&body.indexOf('data-weather-problem')<body.indexOf('Where this comes from')&&body.indexOf(esc(EXT_NO_SERVER_TEXT))>=0&&/diag\.server/.test(body));
     })();
+    _stSuite('training');
+    /* WHY A LIFT STALLED (catalogue doc 1, W-015), on lifts written here: six weekly exposures each. Expected by hand: the
+       same top set every week is an unapplied progression; sets at 5 reps in reserve are far from failure; twice the sets
+       in the last three weeks is a volume rise; ratings well below the person's normal are low recovery; a cut losing
+       faster than its band (the excessive-loss fixture: about 3.4 lb a week against a band to 2.5) is energy. */
+    (function(){var a=asOf(),keepS=DB.sessions,keepO=DB.observations;
+      var mk=function(k,tops,nSets,rir){return [35,28,21,14,7,0].map(function(d,i){var day=addDays(a,-d),t=tops[i%tops.length],n=typeof nSets==='function'?nSets(d):nSets,sets=[];
+        for(var j=0;j<n;j++)sets.push({exercise:'Test bench',load:t[0],reps:t[1],rir:rir});return {id:'st-st'+k+i,date:day,createdAt:day+'T08:00:00.000Z',sets:sets};});};
+      var run=function(sess,obs,fn){var r=null;try{DB.sessions=sess;DB.observations=obs||[];_memoInvalidate();r=fn();}finally{DB.sessions=keepS;DB.observations=keepO;_memoInvalidate();}return r;};
+      var vary=[[100,5],[102.5,5],[100,6],[105,4],[102.5,6],[100,5]];
+      var A=run(mk('a',[[100,5]],3,2),[],function(){var p=progressionPlan(),row=p.rows.filter(function(r){return r.exercise==='test bench';})[0];
+        return {c:stallCauses('Test bench'),row:row?{direction:row.direction,stall:!!row.stall}:null,sheet:SHEETS.progression().body};});
+      ok('the same top set six weeks running is an unapplied progression, named first',A.c.causes.length===1&&A.c.causes[0].id==='notApplied'&&/100(\.0)? × 5, 3 times running/.test(A.c.causes[0].evidence),JSON.stringify(A.c.causes));
+      ok('and the flat lift says so where the plan is shown: why it may have stalled, what to do, what would settle it',!!A.row&&A.row.direction==='flat'&&A.row.stall&&/data-stall-causes/.test(A.sheet)&&/the progression was not applied/.test(A.sheet)&&/whether the lift moves within two exposures/.test(A.sheet),JSON.stringify(A.row));
+      var B=run(mk('b',vary,3,5),[],function(){return stallCauses('Test bench');});
+      ok('sets at 5 reps in reserve are far from failure; varied top sets are not an unapplied progression',B.causes.length===1&&B.causes[0].id==='effort'&&B.causes[0].value===5,JSON.stringify(B.causes));
+      var C=run(mk('c',vary,function(d){return d<=14?4:2;},2),[],function(){return stallCauses('Test bench');});
+      ok('twice the sets in the last three weeks (12 against 6) is a volume rise',C.causes.length===1&&C.causes[0].id==='volumeRose'&&C.causes[0].value===2,JSON.stringify(C.causes));
+      var rat=[];for(var d=24;d>=0;d--){var v=d<=4?9:4,day=addDays(a,-d);['fatigue','soreness'].forEach(function(t){rat.push({id:'obs-st-st-'+t+d,type:t,date:day,at:day+'T07:00:00.000Z',createdAt:day+'T07:00:00.000Z',value:v,unit:'/10',source:'manual',meta:{},flags:[],retracted:false});});}
+      var D=run(mk('d',[[100,5]],3,2),rat,function(){return stallCauses('Test bench');});
+      ok('fatigue and soreness at 9 against a normal of 4 are recovery below normal, after the unapplied progression',D.causes.map(function(c){return c.id;}).join()==='notApplied,recovery'&&D.causes[1].value<=-0.5,JSON.stringify(D.causes.map(function(c){return [c.id,c.value];})));
+      var N=run(mk('n',vary,3,2),[],function(){return stallCauses('Test bench');});
+      ok('a lift with none of the causes says the record shows none, rather than inventing one',N.causes.length===0&&/none of the usual causes/.test(N.text));
+      var E=null;withFixture('excessive',function(){var r=exerciseResponse().rows.slice().sort(function(x,y){return y.exposures-x.exposures;})[0];E=stallCauses(r.exercise);});
+      var en=E&&E.causes.filter(function(c){return c.id==='energy';})[0];
+      ok('a cut losing about 3.4 lb a week against a band to 2.5 is energy',!!en&&Math.abs(en.value+3.4)<0.3&&en.band===-2.5,JSON.stringify(en));
+      var H=heuristicContractById('stall_causes');
+      ok('the thresholds are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.sameTopSet.value===3&&heuristicContracts().ok);
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

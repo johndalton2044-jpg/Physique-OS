@@ -788,14 +788,18 @@
     "round",
     "fmtNum",
     "fmtSigned",
+    "mean",
     "fmtKcal"
    ],
    "30-observations.js": [
     "asOf",
-    "activePhase"
+    "activePhase",
+    "sessionsOf"
    ],
    "40-models.js": [
-    "adherenceState"
+    "normExercise",
+    "adherenceState",
+    "getCurrentState"
    ],
    "47-sleep-injury.js": [
     "activeInjuries"
@@ -5013,6 +5017,7 @@
    "55-generate.js": [
     "trainingExperience",
     "generatePrograms",
+    "stallCauses",
     "progressionPlan",
     "planDay",
     "groceryList",

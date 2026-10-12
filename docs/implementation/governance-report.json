@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-12T01:17:44.809Z",
-  "build": "abd4ef4b01",
+  "generatedAt": "2026-10-12T04:02:04.340Z",
+  "build": "6f399e96e5",
   "counts": {
     "hard": {},
     "soft": {}
@@ -74,7 +74,7 @@
     },
     {
       "cat": "heuristic-contracts",
-      "msg": "every threshold and curve behind a decision or goal has a complete contract (19)"
+      "msg": "every threshold and curve behind a decision or goal has a complete contract (20)"
     },
     {
       "cat": "claim-registry",

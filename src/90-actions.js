@@ -2340,7 +2340,10 @@ SHEETS.progression=function(){
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   return {body:(p.brake?'<div class="hint warn">Everything is held: '+esc(p.brake)+'</div>':'')+
     p.rows.map(function(r){return uiRow(esc(r.exercise),esc(r.action),
-      {sub:esc(r.why),rsub:esc(String(r.direction)),tone:r.action==='hold'?'':(r.action==='reduce volume'?'attention':'good')});}).join('')+
+      {sub:esc(r.why),rsub:esc(String(r.direction)),tone:r.action==='hold'?'':(r.action==='reduce volume'?'attention':'good')})+
+      /* W-015: why a flat or falling lift may have stalled, each cause with its evidence, what to do and what would settle it */
+      (r.stall?'<div class="hint" data-stall-causes="'+attrEsc(r.exercise)+'">Why it may have stalled: '+esc(r.stall.text)+'.'+
+        (r.stall.causes.length?' '+esc(r.stall.causes[0].action.charAt(0).toUpperCase()+r.stall.causes[0].action.slice(1))+'; then check '+esc(r.stall.causes[0].check)+'.':'')+'</div>':'');}).join('')+
     '<div class="prov">'+esc(p.note)+'</div><div class="hint">'+esc(p.caveat)+'</div>'+
     '<div class="btn-row">'+uiBtn('Edit the plan','nav.planEdit',null,'btn-sm btn-secondary')+'</div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};

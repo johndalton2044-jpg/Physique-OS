@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-019). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-020). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -339,6 +339,25 @@ await run('V-019 mobility recommendation',async ui=>{const KTW=7,REF=10,WEEKLY=3
   line(new RegExp(WEEKLY+' minutes a week').test(part('intervention'))&&new RegExp('retest on '+due+' or later, after at least '+Math.round(0.8*WEEKLY)+' minutes a week').test(part('retest')),
     'V-019 30 minutes a week, retested four weeks on after at least 24 a week',part('intervention')+' / '+part('retest')+' / expected '+due);
   line(/nothing to compare yet/.test(part('observedResponse'))&&/cannot separate/.test(part('uncertainty')),'V-019 one reading leaves nothing to compare, and the uncertainty says what one retest can show',part('observedResponse')+' / '+part('uncertainty').slice(0,120));
+});
+
+/* V-020 WHY A LIFT STALLED (catalogue doc 1, W-015). The same bench set, 100 × 5 at 2 reps in reserve, is logged through
+   the session sheet once a week for six weeks (the clock moved back for each), then "What to change next week" is opened
+   from search. Expected, from this test's own record: the lift is flat, and the screen names the unapplied progression
+   with the set as entered, three times running, what to do and what would settle it. */
+await run('V-020 why a lift stalled',async ui=>{const LOAD=100,REPS=5;
+  for(const daysAgo of [35,28,21,14,7,0]){ui.setClock(daysAgo);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+    ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),'Bench press');ui.type('ss-0-load',LOAD);ui.type('ss-0-reps',REPS);ui.type('ss-0-rir',2);
+    const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+    await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the session for '+daysAgo+' days ago to be saved');}
+  if(new Set(ui.w.DB.sessions.map(s=>s.date)).size!==6)throw new Error('the six sessions did not land on six different days');
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What to change next week');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What to change next week/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the progression screen in search');pick().click();
+  await ui.until('#editBackdrop [data-stall-causes]');
+  const why=ui.text('#editBackdrop [data-stall-causes]');
+  line(new RegExp('the progression was not applied \\(the same top set, '+LOAD+'(\\.0)? × '+REPS+', 3 times running\\)').test(why),'V-020 the flat lift is read as an unapplied progression, with the set as entered',why);
+  line(/add the smallest load step, or one rep, next session/i.test(why)&&/whether the lift moves within two exposures/.test(why),'V-020 and it says what to do and what would settle it',why);
 });
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
