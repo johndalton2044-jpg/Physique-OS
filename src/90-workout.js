@@ -195,10 +195,11 @@ function openWeather(){openSheet('edit',{form:'weather',title:'Weather',desc:'',
 registerAction('weather.open',function(){openWeather();});
 registerAction('weather.q',function(a,ev,el){if(_SHEET&&_SHEET.buf)_SHEET.buf.q=el?el.value:'';});
 registerAction('weather.search',function(){var q=(_SHEET.buf.q||'').trim();if(q.length<2){toast('Type at least two letters of a place');return;}
-  searchPlaces(q).then(function(r){if(r.status!=='ok'){_SHEET.buf.searchError=r.error.text;_SHEET.buf.searchDetail=r.error.category+(r.error.stage?' at the '+r.error.stage+' stage':'')+': '+r.error.detail;_SHEET.buf.places=null;}
+  searchPlaces(q,{onRetry:function(){toast(WEATHER_WAKING_TEXT);}}).then(function(r){if(r.status!=='ok'){_SHEET.buf.searchError=r.error.text;_SHEET.buf.searchDetail=r.error.category+(r.error.stage?' at the '+r.error.stage+' stage':'')+': '+r.error.detail;_SHEET.buf.places=null;}
     else{_SHEET.buf.places=r.places;_SHEET.buf.searchError=r.places.length?null:'No places found';_SHEET.buf.searchDetail=null;}renderSheet();});});
 registerAction('weather.pick',function(i){var p=(_SHEET.buf.places||[])[+i];if(!p)return;setWeatherLocation(p);_SHEET.buf.places=null;renderSheet();toast('Weather place set to '+p.label);dispatchAct('weather.refresh');});
-registerAction('weather.refresh',function(){toast('Fetching the weather\u2026');refreshEnvironment().then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();
+var WEATHER_WAKING_TEXT='The server is waking up; trying once more\u2026';
+registerAction('weather.refresh',function(){toast('Fetching the weather\u2026');refreshEnvironment({onRetry:function(){toast(WEATHER_WAKING_TEXT);}}).then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();
   toast(r.status==='ok'?'Weather updated':((r.error&&r.error.text)||'The weather could not be fetched'),r.status==='ok'?null:{tone:'attention'});});});
 registerAction('weather.history',function(){var end=addDays(todayISO(),-6),start=addDays(end,-29);   /* reanalysis lags about five days */
   fetchHistoricalWeather(start,end).then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();toast(r.status==='ok'?'History loaded: '+shortDate(start)+' \u2013 '+shortDate(end):((r.error&&r.error.text)||'History could not be fetched'),r.status==='ok'?null:{tone:'attention'});});});

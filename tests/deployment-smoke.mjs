@@ -54,13 +54,19 @@ async function local(){
   const api=spawn(process.execPath,['server/server.mjs'],{env:Object.assign({},process.env,{PORT:String(API),HOST:'127.0.0.1',DATA_DIR:tmp,TRUST_PROXY:'1',METRICS_TOKEN:'met',PHYSIQUE_EXT_FIXTURES:path.resolve('tests/fixtures/ext')}),stdio:'ignore'});
   await wait(900);
   /* a static host: files from dist, and for anything missing its own HTML 404 page (as Vercel serves) */
-  const site=(port,rewriteTo)=>new Promise(res=>{const s=http.createServer((q,r)=>{const u=decodeURIComponent(q.url.split('?')[0]);
-    if(rewriteTo!==undefined&&u.startsWith('/api/sync/')){const pr=http.request({host:'127.0.0.1',port:rewriteTo,path:q.url.replace('/api/sync',''),method:q.method,headers:Object.assign({},q.headers,{'x-forwarded-for':'203.0.113.7'})},p=>{r.writeHead(p.statusCode,p.headers);p.pipe(r);});
-      pr.on('error',()=>{r.writeHead(502,{'content-type':'text/html'});r.end('<html><body>502: DNS_HOSTNAME_RESOLVED_PRIVATE / bad gateway</body></html>');});q.pipe(pr);return;}
+  /* wakeMs: a server asleep on a free host; the first requests are held until it has woken, as the host holds them */
+  const site=(port,rewriteTo,wakeMs)=>new Promise(res=>{let wakeAt=0;const s=http.createServer((q,r)=>{const u=decodeURIComponent(q.url.split('?')[0]);
+    if(rewriteTo!==undefined&&u.startsWith('/api/sync/')){
+      const go=held=>{if(held&&(r.destroyed||r.writableEnded||(q.socket&&q.socket.destroyed)))return;
+        const pr=http.request({host:'127.0.0.1',port:rewriteTo,path:q.url.replace('/api/sync',''),method:q.method,headers:Object.assign({},q.headers,{'x-forwarded-for':'203.0.113.7'})},p=>{r.on('error',()=>{});r.writeHead(p.statusCode,p.headers);p.pipe(r);});
+        pr.on('error',()=>{if(r.headersSent)return;r.writeHead(502,{'content-type':'text/html'});r.end('<html><body>502: DNS_HOSTNAME_RESOLVED_PRIVATE / bad gateway</body></html>');});
+        if(held)pr.end();else q.pipe(pr);};
+      if(wakeMs){const now=Date.now();if(!wakeAt)wakeAt=now+wakeMs;if(now<wakeAt){setTimeout(()=>go(true),wakeAt-now);return;}}
+      go(false);return;}
     const f=path.join('dist',u==='/'?'index.html':u);fs.readFile(f,(e,d)=>{if(e){r.writeHead(404,{'content-type':'text/html'});r.end('<!doctype html><title>404: NOT_FOUND</title><h1>404</h1>');return;}
       r.writeHead(200,{'Content-Type':/\.js$/.test(f)?'text/javascript':/\.json$/.test(f)?'application/json':/\.html$/.test(f)?'text/html':'application/octet-stream'});r.end(d);});});
     s.listen(port,'127.0.0.1',()=>res(s));});
-  const staticOnly=await site(18802),proxied=await site(18803,API),deadProxy=await site(18804,18899);
+  const staticOnly=await site(18802),proxied=await site(18803,API),deadProxy=await site(18804,18899),sleepy=await site(18805,API,2500);
   const browser=await chromium.launch({executablePath:findBrowser(),args:['--no-sandbox','--disable-dev-shm-usage']});
   const run=async(port,fn)=>{const ctx=await browser.newContext({viewport:{width:393,height:852}});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
     await p.goto('http://127.0.0.1:'+port+'/index.html');await p.waitForTimeout(1400);await p.evaluate(()=>window.dispatchAct('welcome.skip'));const r=await fn(p);await ctx.close();return {r,errs};};
@@ -74,7 +80,7 @@ async function local(){
   /* refreshing the weather with no server: the message names the missing server (it read only "The weather could not be
      fetched"), and so does the top of the weather screen */
   const refreshAndRead=async p=>{await p.evaluate(()=>{window.setWeatherLocation({lat:52.63,lon:1.3,label:'Norwich'});document.getElementById('toast').textContent='';window.dispatchAct('weather.refresh');});
-    await p.waitForFunction(()=>{const t=document.getElementById('toast').textContent;return t&&!/Fetching/.test(t);},null,{timeout:30000}).catch(()=>{});
+    await p.waitForFunction(()=>{const t=document.getElementById('toast').textContent;return t&&!/Fetching|waking up/.test(t);},null,{timeout:30000}).catch(()=>{});
     const toast=await p.evaluate(()=>document.getElementById('toast').textContent);await p.evaluate(()=>window.dispatchAct('weather.open'));await p.waitForTimeout(250);
     return {toast,banner:await p.evaluate(()=>{const b=document.querySelector('#editBackdrop [data-weather-problem]');return b?b.textContent:'';})};};
   o=await run(18802,refreshAndRead);
@@ -89,6 +95,12 @@ async function local(){
   line(o.r.d.code==='OK','with the rewrite and server, the connection check passes every layer',JSON.stringify(o.r.d).slice(0,200));
   line(o.r.e.includes('forecast')&&o.r.e.includes('air-quality'),'picking a place loads the forecast and air quality',JSON.stringify(o.r.e));
   { const cert=await certify('http://127.0.0.1:18803',{metricsToken:'met'});line(cert.passed,'the certificate passes for a correct deployment',JSON.stringify(cert.layers.filter(l=>!l.ok)));}
+  /* 4. a server asleep on a free host: the first requests time out while it wakes. The app says so, tries once more,
+     and the weather arrives (the app's 25 s wait is shortened here, the host's wake to 2.5 s) */
+  const sl=await run(18805,async p=>{await p.evaluate(()=>{window.EXT_TIMEOUT_MS=1500;window.__toasts=[];const t=document.getElementById('toast');
+      new MutationObserver(()=>window.__toasts.push(t.textContent)).observe(t,{childList:true,characterData:true,subtree:true});});
+    const x=await refreshAndRead(p);return Object.assign(x,{toasts:await p.evaluate(()=>window.__toasts.slice()),env:await p.evaluate(()=>(window.DB.environment||[]).map(b=>b.dataset))});});
+  line(sl.r.toasts.some(t=>/waking up/.test(t))&&/Weather updated/.test(sl.r.toast)&&sl.r.env.includes('forecast')&&!sl.r.banner,'a sleeping server is woken: the first request times out, the app says the server is waking, tries once more and the weather arrives',JSON.stringify(sl.r).slice(0,300));
   api.kill('SIGKILL');await wait(400);
   const again2=await (async()=>{const ctx=await browser.newContext();const p=await ctx.newPage();await p.goto('http://127.0.0.1:18803/index.html');await p.waitForTimeout(1200);
     const s=await p.evaluate(()=>fetch('/api/sync/v1/ext/sources').then(r=>r.status).catch(()=>0));await ctx.close();return s;})();
@@ -98,8 +110,8 @@ async function local(){
   o=await run(18804,async p=>p.evaluate(()=>window.testExternalServer({probeProvider:true})));
   line(o.r.code==='C','a rewrite to a stopped server is named as the server not answering',JSON.stringify(o.r).slice(0,200));
   o=await run(18804,refreshAndRead);
-  line(/not answering/.test(o.r.toast)&&!/could not be fetched/.test(o.r.toast)&&/not answering/.test(o.r.banner),'with the server stopped, refreshing the weather says the server is not answering',JSON.stringify(o.r).slice(0,240));
-  await browser.close();[staticOnly,proxied,deadProxy].forEach(s=>s.close());fs.rmSync(tmp,{recursive:true,force:true});
+  line(/did not answer, twice: it may be stopped/.test(o.r.toast)&&!/could not be fetched/.test(o.r.toast)&&/may be stopped/.test(o.r.banner),'with the server stopped, refreshing the weather tries once more, then says the server did not answer twice and may be stopped',JSON.stringify(o.r).slice(0,240));
+  await browser.close();[staticOnly,proxied,deadProxy,sleepy].forEach(s=>s.close());fs.rmSync(tmp,{recursive:true,force:true});
 }
 if(args.includes('--local'))await local();
 else{const app=arg('--app');if(!app){console.error('usage: node tests/deployment-smoke.mjs --app https://YOUR-APP [--sync https://YOUR-SERVER]  |  --local');process.exit(2);}
