@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-025). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-028). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -458,6 +458,80 @@ await run('V-024 each lift’s next session',async ui=>{const AGO=[42,35,28,21,1
   const day=new Date(Date.now()+7*86400000),when=day.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   line(t.indexOf('Next session (about '+when+')')>=0,'V-024 for a week after the last session, '+when,t);
   line(t.indexOf('held '+held+' of 3 past sessions')>=0&&/a rating, not a probability: 3 of 10 scored sessions/.test(t),'V-024 three past sessions scored, '+held+' inside their ranges: too few to calibrate, so a rating',t);
+});
+
+/* V-026 SKILL OR STRENGTH (catalogue doc 1, W-015: skill-versus-strength limitation). Seven weeks of squat singles at 200
+   and leg press singles rising 5 a week (300 to 330) are logged through the session sheet, a week apart (the clock moved
+   back). Expected, from this test's constants: the squat is flat and stalled; the leg press, a simpler lift for the same
+   muscles, rises 5.0 a week (5 every 7 days), so the squat reads as limited by skill, not strength, the leg press named. */
+await run('V-026 skill or strength',async ui=>{const AGO=[42,35,28,21,14,7,0],SQ=200,LP0=300,STEP=5;
+  const save=async(daysAgo,name,load)=>{ui.setClock(daysAgo);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+    ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),name);ui.type('ss-0-load',load);ui.type('ss-0-reps',1);ui.type('ss-0-rir',2);
+    const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+    await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the '+name+' session for '+daysAgo+' days ago to be saved');};
+  for(let i=0;i<AGO.length;i++){await save(AGO[i],'Squat',SQ);await save(AGO[i],'Leg press',LP0+STEP*i);}
+  ui.setClock(0);ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What to change next week');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What to change next week/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the progression screen in search');pick().click();
+  await ui.until('#editBackdrop [data-skill-limit="squat"]');
+  const t=ui.text('#editBackdrop [data-skill-limit="squat"]'),metric=ui.w.unitPref()==='metric',perWeek=(STEP*7/7).toFixed(1)+' '+(metric?'kg':'lb');
+  line(t.indexOf('Skill or strength: likely skill, not strength: leg press, on the same muscles, is rising '+perWeek+' a week while squat is not')>=0,'V-026 the flat squat reads as skill-limited: the leg press, on the same muscles, rises '+perWeek+' a week',t);
+  line(/Practise it more often below your limit/.test(t)&&/whether squat starts to follow the leg press/.test(t),'V-026 and it says what to do and what would settle it',t);
+});
+
+/* V-027 WHAT EACH LIFT HAS COST YOU, AND THE NEAT RESPONSE'S RANGES (catalogue doc 1, W-019), on the demo record. Expected,
+   worked out from the screen alone: on "Where training lands", each lift's cost a training day is its cost a set times
+   its sets a day; each interval is centred on its estimate; and how much is the person's own record is one less the
+   interval's variance (its width over 3.92, squared) over the prior's (the sd stated on the screen, squared). Then the
+   NEAT response's ranges: the physiology screen says how many of its weeks were scored and held, and the calibration
+   report on Learn shows the same count and that share held. */
+await run('V-027 recovery cost and NEAT ranges',async ui=>{
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await ui.until('#confirmOk');ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.sessions.length>0,'the demo’s sessions');
+  await useLevel(ui,'insightful');
+  const open=async(label)=>{ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput',label);
+    const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>x.textContent.trim().indexOf(label)===0);await ui.waitFor(pick,label+' in search');pick().click();};
+  await open('Where training lands');await ui.until('#editBackdrop [data-personal-recovery-cost] [data-recovery-cost]',30000);
+  const prov=ui.text('#editBackdrop [data-personal-recovery-cost] .prov'),prior=+((prov.match(/sd ([\d.]+) a set/)||[])[1]);
+  const num=s=>+String(s).replace('−','-').replace('+','');
+  const rows=[...ui.d.querySelectorAll('#editBackdrop [data-recovery-cost]')].map(el=>{const sub=(el.querySelector('small')||{}).textContent||'',val=el.querySelector('.r').textContent;
+    const m=sub.match(/([+−\-]?[\d.]+) a set \(([+−\-]?[\d.]+) to ([+−\-]?[\d.]+)\) · ([\d.]+) sets on (\d+) days · (\d+)% your own record/)||[],v=val.match(/^([+−\-]?[\d.]+) /)||[];
+    return {id:el.getAttribute('data-recovery-cost'),perSet:num(m[1]),lo:num(m[2]),hi:num(m[3]),sets:+m[4],own:+m[6],perDay:num(v[1])};});
+  const okRow=r=>isFinite(r.perSet)&&isFinite(r.perDay)&&Math.abs(r.perDay-r.perSet*r.sets)<=0.03&&r.lo<=r.perSet&&r.perSet<=r.hi&&Math.abs((r.hi-r.perSet)-(r.perSet-r.lo))<=0.011&&
+    Math.abs(r.own-100*Math.max(0,1-Math.pow((r.hi-r.lo)/3.92,2)/(prior*prior)))<=4;
+  line(prior>0&&rows.length>=2&&rows.every(okRow),'V-027 each lift’s cost a day is its cost a set times its sets, its interval centred, its own share from the prior of sd '+prior+' a set',JSON.stringify(rows.filter(r=>!okRow(r)).concat(rows.length<2?[{rows:rows.length}]:[])));
+  ui.press('edit.close',null,'#editBackdrop');await ui.waitFor(()=>!ui.d.querySelector('#editBackdrop.show'),'the sheet to close');
+  await open('Physiology models');await ui.until('#editBackdrop .card-title');
+  const ph=ui.text('#editBackdrop'),pm=ph.match(/its 80% ranges held (\d+) of (\d+) weeks/)||[];
+  ui.press('edit.close',null,'#editBackdrop');await ui.waitFor(()=>!ui.d.querySelector('#editBackdrop.show'),'the sheet to close');
+  ui.tab('learn');await ui.until('details[data-fold="learn-competition"] summary',30000);ui.expand('learn-competition');await ui.until('details[data-fold="learn-competition"] .row');
+  const row=[...ui.d.querySelectorAll('details[data-fold="learn-competition"] .row')].find(r=>/^Everyday movement in a deficit/.test(r.textContent.trim()));
+  const rt=row?row.textContent.replace(/\s+/g,' '):'',held=+pm[1],n=+pm[2],pct=rt.match(/(\d+)% held/),cnt=rt.match(/(\d+) scored against each week’s steps/);
+  line(pm.length===3&&!!pct&&!!cnt&&+cnt[1]===n&&+pct[1]===Math.round(100*held/n),'V-027 the NEAT response’s '+n+' scored weeks, '+held+' held, are the same on the calibration report',rt+' / physiology: '+(pm[0]||'none'));
+});
+
+/* V-028 YOUR OWN SLEEP NEED (catalogue doc 1, W-019: individual sleep debt). Twenty-one nights of sleep, cycling 5.5 to
+   8.5 h, each with that day's fatigue (4, plus 2 for every hour short of 7), are logged through the quick log and the
+   recovery check-in, one a day (the clock moved back). Expected, from this test's own arithmetic: the fatigue stops
+   improving at exactly 7 h, a fit no other candidate comes near, so the need is 7.0 h and wholly the person's own; the
+   last 14 nights (two cycles) fall short of it by 2 × (1.5 + 1 + 0.5) = 6.0 h. */
+await run('V-028 your own sleep need',async ui=>{const NX=[5.5,6,6.5,7,7.5,8,8.5],N=21,NEED=7;
+  await useLevel(ui,'insightful');
+  for(let i=0;i<N;i++){const daysAgo=N-1-i,x=NX[i%7],y=4+2*Math.max(0,NEED-x);ui.setClock(daysAgo);
+    const ns=ui.w.DB.observations.filter(o=>o.type==='sleep').length;ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="sleep"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="sleep"]').click();await ui.until('#logBackdrop #f_value');ui.type('f_value',x);ui.press('log.save',null,'#logBackdrop');
+    await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='sleep').length===ns+1,'the night '+daysAgo+' days ago');
+    const nf=ui.w.DB.observations.filter(o=>o.type==='fatigue').length;ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="recovery"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="recovery"]').click();await ui.until('#logBackdrop [data-act="sheet.scale"][data-arg="fatigue|'+y+'"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.scale"][data-arg="fatigue|'+y+'"]').click();ui.press('log.save',null,'#logBackdrop');
+    await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='fatigue').length===nf+1,'the fatigue rating '+daysAgo+' days ago');}
+  ui.setClock(0);const debt=NX.concat(NX).reduce((t,x)=>t+Math.max(0,NEED-x),0);
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What the system tracks');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What the system tracks/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the domains screen in search');pick().click();await ui.until('#editBackdrop .row');
+  const t=ui.text('#editBackdrop');
+  line(t.indexOf(debt.toFixed(1)+' h short of your own sleep need of '+NEED.toFixed(1)+' h over 14 nights')>=0,'V-028 the last 14 nights fall '+debt.toFixed(1)+' h short of a need of '+NEED.toFixed(1)+' h',t.slice(Math.max(0,t.indexOf('sleep need')-80),t.indexOf('sleep need')+260));
+  line(/your fatigue stops improving at about 7\.00 h \(7\.00 to 7\.00\), rising 2\.0 points an hour short of it/.test(t)&&/a need of 7\.0 h, 100% your own record/.test(t),'V-028 found where the fatigue stops improving, rising 2 points an hour short of it, wholly the person’s own',t.slice(Math.max(0,t.indexOf('stops improving')-40),t.indexOf('stops improving')+220));
 });
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');

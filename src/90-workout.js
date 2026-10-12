@@ -315,7 +315,7 @@ function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=e
     {icon:'fork',label:'Protein quality today',r:D,v:D.status==='ok'?D.digestibleProteinG+' g digestible':null,sub:D.status==='ok'?('of '+D.proteinG+' g \u00b7 quality '+D.proteinQuality+(D.unclassifiedFoods?' \u00b7 '+D.unclassifiedFoods+' foods unclassified':'')):(D.need||[]).join('; ')},
     {icon:'brain',label:'Learning'+(L&&L.exercise?' ('+L.exercise+')':''),r:L||{status:'insufficient'},v:L&&L.status==='ok'?L.stage:null,sub:L&&L.status==='ok'?('recent gain '+L.recentGain+'% \u00b7 '+L.sessions+' sessions'):(L&&L.need||['lifting sessions']).join('; ')},
     {icon:'walk',label:'Everyday movement in a deficit',r:N,v:N.status==='ok'?((N.perTenPct>0?'+':'')+N.perTenPct.toLocaleString()+' steps a day per 10% deficit'):null,
-      sub:N.status==='ok'?(N.interval[0].toLocaleString()+' to '+N.interval[1].toLocaleString()+' \u00b7 '+Math.round(N.personalWeight*100)+'% your own data \u00b7 '+N.reading):N.need},
+      sub:N.status==='ok'?(N.interval[0].toLocaleString()+' to '+N.interval[1].toLocaleString()+' \u00b7 '+Math.round(N.personalWeight*100)+'% your own data \u00b7 '+N.reading+(N.calibration?' \u00b7 '+N.calibration.text:'')):N.need},
     /* field tests (Stage D, item 4) */
     {icon:'spark',label:'Mobility',r:Mo,v:[_testLine(_testRow(Mo,0)),_testLine(_testRow(Mo,1))].filter(Boolean).join(' \u00b7 ')||null,sub:[_testSub(_testRow(Mo,0)),_testSub(_testRow(Mo,1))].join(' \u00b7 ')},
     {icon:'lungs',label:'Conditioning',r:Co,v:_testLine(_testRow(Co,0)),sub:_testSub(_testRow(Co,0))+(_testRow(Co,0).latest&&_testRow(Co,0).latest.value<=12?' \u00b7 a recovery of 12 bpm or less in a minute marks low fitness':'')},

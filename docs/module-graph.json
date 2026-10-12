@@ -338,6 +338,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "localDateOf",
     "uid",
@@ -354,7 +355,8 @@
    ],
    "20-schema-storage.js": [
     "save",
-    "pushUndo"
+    "pushUndo",
+    "memo"
    ],
    "24-events.js": [
     "emitEvent"
@@ -363,6 +365,8 @@
     "asOf",
     "_knownBy",
     "activePhase",
+    "obsOf",
+    "dailySeries",
     "seriesWindow",
     "sessionsOf"
    ],
@@ -419,6 +423,7 @@
     "withAsOf",
     "activePhase",
     "obsOf",
+    "dailySeries",
     "seriesWindow",
     "sessionsOf"
    ],
@@ -436,6 +441,9 @@
    ],
    "50-decision.js": [
     "trainingProgram"
+   ],
+   "59-friction.js": [
+    "_matInv"
    ],
    "61-conditioning.js": [
     "cardioSessions",
@@ -847,7 +855,8 @@
     "foodIdentity"
    ],
    "64-exercise.js": [
-    "resolveExercise"
+    "resolveExercise",
+    "skillOrStrength"
    ],
    "67-program-edit.js": [
     "equipPossible"
@@ -1134,6 +1143,9 @@
    ],
    "61-physiology.js": [
     "cardioFitnessModel"
+   ],
+   "85-latent.js": [
+    "neatResponseScored"
    ]
   }
  },
@@ -1727,11 +1739,14 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "addDays",
     "daysBetween",
     "shortDate",
     "round",
     "fmtNum",
+    "median",
+    "fmtWeight",
     "fmtG"
    ],
    "30-observations.js": [
@@ -1741,6 +1756,10 @@
    "40-models.js": [
     "normExercise",
     "getCurrentState"
+   ],
+   "52-response.js": [
+    "exerciseResponse",
+    "liftForecasts"
    ]
   }
  },
@@ -2664,6 +2683,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "addDays",
     "daysBetween",
     "num",
@@ -2673,6 +2693,12 @@
    "30-observations.js": [
     "asOf",
     "sessionsOf"
+   ],
+   "40-models.js": [
+    "normExercise"
+   ],
+   "48-domains-more.js": [
+    "personalRecoveryCost"
    ],
    "51-resistance.js": [
     "exerciseBiomechanics",
@@ -2927,6 +2953,7 @@
     "addDays",
     "daysBetween",
     "round",
+    "fmtNum",
     "mean",
     "sd",
     "theilSen"
@@ -2961,6 +2988,12 @@
    "51-resistance.js": [
     "setKind",
     "e1rmFrom"
+   ],
+   "58-explanation.js": [
+    "confidenceBasisText"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "61-conditioning.js": [
     "conditioningState",
@@ -4946,6 +4979,7 @@
     "domainContractIssues"
    ],
    "47-sleep-injury.js": [
+    "individualSleepNeed",
     "sleepState",
     "sleepLagEffect",
     "recordInjury",
@@ -4959,6 +4993,7 @@
     "_validityVerdict",
     "readinessValidity",
     "readinessTransitions",
+    "personalRecoveryCost",
     "cardioState",
     "compositionState",
     "costState",
@@ -5285,7 +5320,8 @@
    "64-exercise.js": [
     "resolveExercise",
     "substitutesFor",
-    "substitutionStart"
+    "substitutionStart",
+    "skillOrStrength"
    ],
    "64-mobility.js": [
     "warmUpFor",
@@ -5542,7 +5578,10 @@
     "waterGlycogenState",
     "adaptiveThermogenesis",
     "neatCompensation",
+    "kcalPerStep",
     "personalNeatResponse",
+    "neatResponseScored",
+    "neatOffset",
     "distributedLag",
     "absorptionContext",
     "_dailyLoad",

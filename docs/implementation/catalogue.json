@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "e0ce259ce6",
+ "build": "fd6e597ef7",
  "models": [
   {
    "id": "adherence",
@@ -158,6 +158,11 @@
    "fn": "personalPowerResponse"
   },
   {
+   "id": "personal_recovery_cost",
+   "cls": "EMPIRICAL",
+   "fn": "personalRecoveryCost"
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "fn": "personalResponseModel"
@@ -201,6 +206,11 @@
    "id": "response_matrix",
    "cls": "EMPIRICAL",
    "fn": "personalResponse"
+  },
+  {
+   "id": "sleep_need",
+   "cls": "EMPIRICAL",
+   "fn": "individualSleepNeed"
   },
   {
    "id": "strength_trend",

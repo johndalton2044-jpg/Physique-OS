@@ -14,6 +14,52 @@
    The honest difficulty is that this is observational: nobody randomises their own sleep, so a correlation
    here is a correlation. Every output says so. */
 var SLEEP_DEBT_WINDOW=14;
+/* W-019: THE PERSON'S OWN SLEEP NEED (individual sleep debt). Debt needs a requirement, and a population figure is a
+   requirement for nobody in particular. The record can show one: the night length beyond which the person's fatigue
+   that day stops improving. Each night (dated the morning it ended) is paired with that day's fatigue, over 120 days.
+   For each candidate need h, from the fifth-shortest to the fifth-longest night in quarter hours, fatigue is fitted as
+   a level plus a rise per hour short of h; the bend is shown when its best fit beats a straight line by the
+   likelihood-ratio criterion (n ln(SSE line / SSE bend) of 3.84 or more), and its interval is every h whose fit is
+   within 3.84 of the best. The need starts from 7.5 h (sd 0.75), inside the 7 or more the consensus recommends: each
+   candidate is weighed by its fit (the profile likelihood) and by that prior, and the need is their weighted mean; the
+   share that is the person's own is one less its variance over the prior's. With no bend shown, nothing personal is
+   claimed. */
+var SLEEP_NEED_CONTRACT={id:'sleep_need',subject:'a person’s own sleep need',predicate:'is read as the night length beyond which their fatigue that day stops improving',
+  parameters:{prior:{value:7.5,unit:'hours',meaning:'the starting need, inside the 7 or more recommended for adults'},priorSd:{value:0.75,unit:'hours',meaning:'how far the starting need may be from a person’s own'},
+    minNights:{value:21,unit:'nights',meaning:'nights with fatigue rated the same day'},minSide:{value:5,unit:'nights',meaning:'on each side of a candidate need'},
+    criterion:{value:3.84,unit:'likelihood ratio',meaning:'how much better than a straight line the bend must fit, and the width of its interval'},lookback:{value:120,unit:'days',meaning:'the nights read'}},
+  statement:function(v){return 'your sleep need is read as the night length beyond which your fatigue stops improving, from '+v.minNights+' nights or more, starting from '+v.prior+' h (sd '+v.priorSd+')';},
+  rationale:'debt needs a requirement; the person’s own record can show where more sleep stops helping them',
+  evidenceBasis:['watson2015sleep'],parameterSource:'the starting need is chosen inside the consensus range; the criterion is a standard likelihood-ratio cut, applied as a heuristic to a bend',
+  parameterVersion:'1.0',calibrationStatus:'fitted to the person’s own nights when the bend is shown',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults rating fatigue and logging sleep'},
+  failureConditions:['nights that hardly vary','a common cause of short nights and tired days (a busy week)','fatigue rated before a night is logged'],outcomes:['sleep debt']};
+function individualSleepNeed(){
+  return memo('sleepNeed:'+asOf(),function(){
+    var P=SLEEP_NEED_CONTRACT.parameters,from=addDays(asOf(),-P.lookback.value),f={},pairs=[];
+    obsOf('fatigue',{from:from}).forEach(function(o){(f[o.date]=f[o.date]||[]).push(o.value);});
+    dailySeries('sleep',asOf(),P.lookback.value+1).forEach(function(d){if(f[d.date])pairs.push({x:d.value,y:mean(f[d.date])});});
+    var base={status:'insufficient',prior:P.prior.value,need:P.prior.value,personalWeight:0,n:pairs.length,policy:SLEEP_NEED_CONTRACT.id};
+    if(pairs.length<P.minNights.value)return Object.assign(base,{needs:[(P.minNights.value-pairs.length)+' more nights with fatigue rated the same day']});
+    var n=pairs.length,fit=function(z){var mz=mean(z),my=mean(pairs.map(function(p){return p.y;})),szz=0,szy=0;z.forEach(function(v,i){szz+=(v-mz)*(v-mz);szy+=(v-mz)*(pairs[i].y-my);});
+        var b=szz>0?szy/szz:0,sse=pairs.reduce(function(a,p,i){return a+Math.pow(p.y-my-b*(z[i]-mz),2);},0);return {b:b,sse:sse};};
+    var xs=pairs.map(function(p){return p.x;}).sort(function(a,b){return a-b;}),lo=xs[P.minSide.value-1],hi=xs[n-P.minSide.value];
+    var line=fit(pairs.map(function(p){return p.x;})),grid=[];
+    for(var h=Math.ceil(lo*4)/4;h<=hi+1e-9;h+=0.25){var r=fit(pairs.map(function(p){return Math.max(0,h-p.x);}));if(r.b>0)grid.push({h:round(h,2),sse:r.sse,rise:r.b});}
+    if(!grid.length||!(line.sse>0))return Object.assign(base,{status:'ok',bend:false,text:'your fatigue does not rise on shorter nights in this record'});
+    var best=grid.slice().sort(function(a,b){return a.sse-b.sse;})[0],lr=n*Math.log(line.sse/Math.max(1e-12,best.sse));
+    if(!(lr>=P.criterion.value))return Object.assign(base,{status:'ok',bend:false,lr:round(lr,2),
+      text:'your record does not show where more sleep stops helping (a bend fits no better than a straight line), so nothing personal is claimed'});
+    var inside=grid.filter(function(g){return n*Math.log(g.sse/Math.max(1e-12,best.sse))<=P.criterion.value;}).map(function(g){return g.h;}),ilo=Math.min.apply(null,inside),ihi=Math.max.apply(null,inside);
+    /* the need: each candidate weighed by its fit (the profile likelihood, SSE to the power -n/2) and by the prior */
+    var pv=P.priorSd.value*P.priorSd.value,lw=grid.map(function(g){return -n/2*Math.log(Math.max(1e-12,g.sse))-Math.pow(g.h-P.prior.value,2)/(2*pv);}),mx=Math.max.apply(null,lw),
+      wt=lw.map(function(v){return Math.exp(v-mx);}),sw=wt.reduce(function(a,v){return a+v;},0),need=grid.reduce(function(a,g,i){return a+wt[i]*g.h;},0)/sw,
+      post=grid.reduce(function(a,g,i){return a+wt[i]*Math.pow(g.h-need,2);},0)/sw;
+    return {status:'ok',bend:true,n:n,own:best.h,interval:[ilo,ihi],risePerHour:round(best.rise,2),lr:round(lr,2),need:round(need,2),sd:round(Math.sqrt(post),2),
+      personalWeight:round(Math.max(0,Math.min(1,1-post/pv)),2),prior:P.prior.value,policy:SLEEP_NEED_CONTRACT.id,cls:'EMPIRICAL',
+      text:'your fatigue stops improving at about '+fmtNum(best.h,2)+' h ('+fmtNum(ilo,2)+' to '+fmtNum(ihi,2)+'), rising '+fmtNum(best.rise,1)+' points an hour short of it; with the '+P.prior.value+' h starting point, a need of '+fmtNum(need,1)+' h, '+Math.round(100*Math.max(0,Math.min(1,1-post/pv)))+'% your own record'};
+  });
+}
 function sleepState(){
   var s=seriesWindow('sleep',SLEEP_DEBT_WINDOW);
   if(s.length<5)return {status:'insufficient',need:[(5-s.length)+' more nights logged'],
@@ -33,11 +79,15 @@ function sleepState(){
   var debt=vals.reduce(function(a,v){return a+Math.max(0,ref-v);},0);
   var pb=null;try{pb=personalBaselines().streams.sleep;}catch(e){}
   var short=vals.filter(function(v){return v<ref-1;}).length;
+  /* W-019: debt against the person's own need, where the record shows one (a stated target still governs the advice) */
+  var nd=null;try{nd=individualSleepNeed();}catch(e){_q(e,'P2');}
+  var own=nd&&nd.status==='ok'&&nd.bend?{need:nd.need,interval:nd.interval,personalWeight:nd.personalWeight,n:nd.n,
+    debtHours:round(vals.reduce(function(a,v){return a+Math.max(0,nd.need-v);},0),1),text:nd.text}:null;
   return {status:'ok',cls:'EMPIRICAL',
     nights:s.length,mean:round(avg,2),sd:round(sdv,2),
     target:target,basis:basis,hasTarget:hasTarget,
     shortfallLabel:hasTarget?'sleep debt':'shortfall against your own average',
-    debtHours:round(debt,1),
+    debtHours:round(debt,1),individual:own,sleepNeed:nd,
     consistency:sdv<=0.6?'steady':(sdv<=1.2?'variable':'erratic'),
     shortNights:short,
     baseline:pb&&pb.status==='ok'?round(pb.baseline,2):null,
@@ -93,6 +143,9 @@ registerDomain({
     if(st.debtHours>=7&&st.hasTarget)out.push({text:fmtNum(st.debtHours,0)+' h of accumulated sleep debt against '+st.basis,
       cls:'EMPIRICAL',confidence:st.confidence,severity:'attention',
       basis:st.nights+' nights',act:'log.type',arg:'sleep'});
+    /* W-019: against the person's own need, where the record shows one */
+    if(st.individual)out.push({text:fmtNum(st.individual.debtHours,1)+' h short of your own sleep need of '+fmtNum(st.individual.need,1)+' h over '+st.nights+' nights; '+st.individual.text,
+      cls:'EMPIRICAL',confidence:st.individual.personalWeight>=0.5?'medium':'low',severity:st.individual.debtHours>=7?'attention':'info',basis:st.individual.n+' nights with fatigue rated'});
     if(st.consistency==='erratic')out.push({text:'bedtimes and wake times vary enough that one night says little about the next ('+fmtNum(st.sd,1)+' h spread)',
       cls:'EMPIRICAL',confidence:st.confidence,severity:'info',basis:st.nights+' nights'});
     ['fatigue','hunger'].forEach(function(t){
@@ -317,3 +370,9 @@ registerDomain({
     });
   }
 });
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','sleep_need'))return;
+  MODELS.push({id:'sleep_need',name:'Your own sleep need',cls:'EMPIRICAL',version:'1.0',inputs:['sleep','fatigue'],minN:21,
+    assumes:['a night’s sleep acts on that day’s fatigue','beyond some length more sleep stops helping','the bend is the same across the period'],
+    failsWhen:['nights that hardly vary','a common cause of short nights and tired days','fewer than 21 nights with fatigue rated'],
+    output:'the night length beyond which the person’s fatigue stops improving, with its interval, weighed against 7.5 h, and the debt against it',
+    consumers:['sleepState'],freshnessDays:14,uncertainty:{kind:'likelihood-ratio interval on the bend, combined with the prior'},fn:'individualSleepNeed'});})();

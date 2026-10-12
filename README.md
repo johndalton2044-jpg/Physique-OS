@@ -45,6 +45,10 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | What to start a substitute exercise at | validated | heuristic | real data path | early personal | workflow-tested | local | independent | — | workflow V-023, gate engine |
 | Each lift’s next session, its range checked on its own record | validated | backtested | real data path | early personal | workflow-tested | local | independent | measured | workflow V-024, gate engine |
 | How readiness moves from day to day | validated | backtested | real data path | early personal | workflow-tested | local | independent | — | workflow V-025, gate engine |
+| Whether a stalled lift is limited by skill or by strength | validated | heuristic | real data path | early personal | workflow-tested | local | independent | — | workflow V-026, gate engine |
+| What each lift has cost the person the next day | validated | heuristic | real data path | early personal | workflow-tested | local | independent | — | workflow V-027, gate engine |
+| The person’s own sleep need, and the debt against it | validated | population evidence | real data path | early personal | workflow-tested | local | independent | — | workflow V-028, gate engine |
+| The NEAT response’s ranges checked against each week’s steps | validated | backtested | real data path | early personal | workflow-tested | local | independent | measured | workflow V-027, gate engine |
 | Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty | validated | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | workflow V-019, gate engine |
 | Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference | validated | population evidence | real data path | population | workflow-tested | local | independent | insufficient | workflow V-018, gate engine |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |

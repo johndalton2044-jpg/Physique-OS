@@ -173,10 +173,13 @@ function recoveryCostRanking(days){
   var names={};
   sessionsOf({from:addDays(asOf(),-(days||56))}).forEach(function(s){
     (s.sets||[]).forEach(function(st){if(st.exercise)names[st.exercise]=1;});});
-  var rows=Object.keys(names).map(function(n){return exerciseRecoveryCost(n,days);})
+  /* W-019: beside each index, what the lift has cost this person the next day (personalRecoveryCost, 48-domains-more) */
+  var P=null;try{P=personalRecoveryCost();}catch(e){_q(e,'P2');}
+  var seen=function(t,n){var o=P&&P.outcomes&&P.outcomes[t];return o&&o.status==='ok'?(o.rows.filter(function(x){return x.exercise===normExercise(n);})[0]||null):null;};
+  var rows=Object.keys(names).map(function(n){var r=exerciseRecoveryCost(n,days);if(r.status==='ok')r.observed={soreness:seen('soreness',n),fatigue:seen('fatigue',n)};return r;})
     .filter(function(r){return r.status==='ok';})
     .sort(function(a,b){return (b.ratio||0)-(a.ratio||0);});
-  return {rows:rows,
+  return {rows:rows,personal:P,
     best:rows[0]||null,worst:rows[rows.length-1]||null,
     cls:'HEURISTIC',
     note:'Your lifts ranked by stimulus against recovery cost, as you actually perform them. A lift low in this list is not a bad exercise \u2014 it is one you are currently taking more out of than you are putting in.'};

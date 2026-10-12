@@ -4827,3 +4827,51 @@ response, visual calibration, and W-019's exercise-specific recovery cost, indiv
 calibration.
 
 All 37 gates pass (reproducible included); release 24/24; 1,983 self-tests.
+
+## Skill or strength, what each lift costs, your own sleep need, the NEAT response checked (build fd6e597ef7)
+
+The four remaining training and recovery items, each extending the model that already held its subject.
+- **Skill or strength** (doc 1, W-015: skill-versus-strength limitation). A flat or falling lift is read against the
+  other lifts for the same muscles (the same pattern or a shared primary muscle, from the exercise library).
+  - It reads as skill-limited when a simpler lift for those muscles is rising, or when it scatters around its trend 1.5
+    times the person's other lifts or more. It reads as strength-limited when every lift for those muscles is flat
+    too. Otherwise it is not yet known, and a simpler lift to log is named.
+  - It is a stall cause on "What to change next week", after an unapplied progression and sets far from failure, with
+    what to do (practise below the limit, film a set) and what would settle it. A lift that is progressing is not
+    read for a limit. A heuristic contract (`skill_limit`), not validated.
+- **What each lift has cost you the next day** (doc 1, W-019: exercise-specific recovery cost). The ontology already
+  indexed what each lift should cost, the same for everyone (`exerciseRecoveryCost`).
+  - Its other half is now built: the next day's soreness and fatigue against each lift's sets the day before, over 120
+    days. Each cost per set starts from no cost (sd 0.15 a set) and says how much is the person's own record.
+  - Lifts almost always trained together are named, since their costs cannot be told apart. It is shown beside the
+    index on "Where training lands", and the index's rows carry it.
+  - On the demo record few days were rated, so every cost leans on the prior.
+- **Your own sleep need** (doc 1, W-019: individual sleep debt). Debt needs a requirement. The record can show one: the
+  night length beyond which the person's fatigue that day stops improving.
+  - Each candidate need is fitted as a level plus a rise per hour short of it. The bend is shown only when it beats a
+    straight line by the likelihood-ratio criterion. The need weighs each candidate by its fit and by a 7.5 h prior,
+    inside the 7 or more the consensus recommends (Watson et al. 2015).
+  - The last 14 nights' shortfall against it is a sleep finding and part of the assistant's sleep answer. A stated
+    target still governs the advice, and with no bend nothing personal is claimed.
+  - On the demo record, a need of 7.0 h, 57% the person's own.
+- **The NEAT response checked against each week's steps** (doc 1, W-019: NEAT compensation calibration).
+  - The response is replayed week by week from the seventh, each week's steps predicted from the weeks before it, and
+    each miss scored against the prediction's sd.
+  - The scores go through the one calibration rule. With ten or more, the factor widens or narrows the energy the
+    compensation carries into the energy balance and the optimiser.
+  - It is a row of "Are the intervals honest?" and is on the physiology screen. On the demo record, 3 weeks scored, so
+    it is a rating.
+
+Tests:
+- 25 self-tests, each made to fail once on purpose. The first sleep-need data were so sharp that the prior and the need
+  made no difference, so two checks could not fail. The NEAT data had no miss between 1.0 and 1.28, so how many
+  ranges held could not fail either. Both were rewritten until each check failed when its code was broken.
+- Black-box workflows:
+  - V-026: squat and leg press logged through the session sheet.
+  - V-027: on the demo record, the costs and the NEAT ranges, worked out from the screen.
+  - V-028: 21 nights and fatigue ratings through the quick log, the need and the debt from the test's own arithmetic.
+
+What stays open: protein quality from amino acids, the food matrix, glycaemic response and visual calibration (the
+next round), and W-019's question for a real person.
+
+2,008 self-tests pass; the full release record is in progress.

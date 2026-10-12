@@ -69,6 +69,49 @@ function substitutionStart(fromName,toName){var P=SUBSTITUTION_CONTRACT.paramete
   var weeks=Math.floor(daysBetween(last.date,asOf())/7),gap=weeks>=P.gapWeeks.value,load=gap?Math.round(last.load*P.gapFactor.value/2.5)*2.5:last.load;
   return {status:'own',exercise:to.name,policy:SUBSTITUTION_CONTRACT.id,last:last,weeksAgo:weeks,start:{load:load,reps:last.reps},
     text:'your last '+to.name.toLowerCase()+' was '+fmtNum(last.load,1)+' × '+last.reps+' on '+shortDate(last.date)+(gap?': after '+weeks+' weeks, start at about '+fmtNum(load,1)+' × '+last.reps:': start there')};}
+/* W-015: SKILL OR STRENGTH. A lift that needs coordination can stall while the muscles behind it are still getting
+   stronger, and then more load is the wrong remedy. The record can tell the two apart only through the other lifts
+   that train the same muscles (the same movement pattern or a shared primary muscle, from the library above): when a
+   simpler one is rising while this one is not, or this one scatters from session to session far more than the
+   person's other lifts, skill is the likelier limit; when every lift for those muscles is flat too, strength is. A
+   reading, not a diagnosis: it cannot see the bar path. */
+var SKILL_LIMIT_CONTRACT={id:'skill_limit',subject:'a lift that is flat or falling',predicate:'is read as limited by skill or by strength, from the lifts that train the same muscles',
+  parameters:{scatter:{value:1.5,unit:'times the median of your other lifts',meaning:'session-to-session scatter around the trend this far above your other lifts reads as inconsistency'},
+    minOthers:{value:2,unit:'lifts',meaning:'the fewest other lifts the scatter is compared with'}},
+  statement:function(v){return 'a flat or falling lift of moderate or high skill reads as skill-limited when a simpler lift for the same muscles is rising, or when it scatters '+v.scatter+' times your other lifts\u2019 median or more (from '+v.minOthers+' other lifts); as strength-limited when every lift for those muscles is flat or falling';},
+  rationale:'a lift that needs coordination can stall while the muscles behind it still get stronger; a simpler lift for the same muscles shows whether they do',
+  evidenceBasis:[],parameterSource:'chosen by this system; not derived from a study',parameterVersion:'1.0',calibrationStatus:'not calibrated to this person',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults lifting with logged loads and reps'},
+  failureConditions:['a related lift recently started, which rises from novelty','an injury that limits one lift and not the other','a related lift trained far more often'],
+  outcomes:['strength progression']};
+function skillOrStrength(exercise){var P=SKILL_LIMIT_CONTRACT.parameters,me=resolveExercise(exercise),key=normExercise(exercise);
+  var R=null;try{R=exerciseResponse();}catch(e){_q(e,'P2');}var rows=(R&&R.rows||[]).filter(function(r){return r.status==='ok';});
+  var own=rows.filter(function(r){return r.exercise===key;})[0];
+  if(!me||!own)return {status:'unknown',exercise:key,policy:SKILL_LIMIT_CONTRACT.id,
+    text:me?'too few recent sessions of it to set against related lifts':'not in the exercise library, so no related lift is known'};
+  if(own.direction==='progressing')return {status:'not stalled',exercise:key,policy:SKILL_LIMIT_CONTRACT.id,text:'it is progressing, so nothing limits it yet'};
+  var related=rows.filter(function(r){var x=resolveExercise(r.exercise);return r.exercise!==key&&x&&x.id!==me.id&&(x.pattern===me.pattern||x.primary.some(function(m){return me.primary.indexOf(m)>=0;}));})
+    .map(function(r){var x=resolveExercise(r.exercise);return {exercise:r.exercise,name:x.name,skill:x.skill,simpler:SKILL_RANK[x.skill]<SKILL_RANK[me.skill],direction:r.direction,slopePerWeek:r.slopePerWeek!=null?round(r.slopePerWeek,1):null};});
+  /* the scatter around each lift's trend, as a share of its level (the fit behind its forecast, 52-response) */
+  var F=null;try{F=liftForecasts();}catch(e){_q(e,'P2');}
+  var rel=function(f){return f&&f.status==='ok'&&f.next&&f.next.mean>0?f.next.sd/f.next.mean:null;},fr=F&&F.rows||[];
+  var mine=rel(fr.filter(function(f){return f.exercise===key;})[0]),others=fr.filter(function(f){return f.exercise!==key;}).map(rel).filter(function(v){return v!=null;});
+  var medOther=others.length>=P.minOthers.value?median(others):null,scattered=mine!=null&&medOther>0&&mine>=P.scatter.value*medOther;
+  var rising=related.filter(function(r){return r.simpler&&r.direction==='progressing';}),skilled=SKILL_RANK[me.skill]>=1,nm=me.name.toLowerCase(),ev=[],verdict;
+  if(skilled&&(rising.length||scattered)){verdict='skill';
+    if(rising.length)ev.push(rising.map(function(r){return r.name.toLowerCase()+', on the same muscles, is rising '+fmtWeight(r.slopePerWeek)+' a week';}).join('; ')+' while '+nm+' is not');
+    if(scattered)ev.push(nm+' scatters '+fmtNum(mine*100,1)+'% around its trend, against a median of '+fmtNum(medOther*100,1)+'% for your other lifts');}
+  else if(related.length&&related.every(function(r){return r.direction!=='progressing';})){verdict='strength';
+    ev.push('every lift you train for the same muscles ('+related.map(function(r){return r.name.toLowerCase();}).join(', ')+') is flat or falling too');}
+  else{verdict='unclear';ev.push(!related.length?'no other lift for the same muscles is logged to compare with':(skilled?'the related lifts move differently, for reasons the record cannot separate':nm+' needs little skill, so a rising related lift does not point to technique'));}
+  var simple=EXERCISES.filter(function(x){return x.id!==me.id&&x.skill==='low'&&(x.pattern===me.pattern||x.primary.some(function(m){return me.primary.indexOf(m)>=0;}));})[0];
+  var act={skill:'practise it more often below your limit: two or three extra sets a week, 2\u20133 reps short of failure, and film a set',
+    strength:'treat it as a strength stall: the causes above, and the volume and recovery of those muscles',
+    unclear:simple&&!related.length?('log a simpler lift for the same muscles, such as the '+simple.name.toLowerCase()+', to tell skill from strength'):'keep both going; the next weeks may separate them'}[verdict];
+  var chk={skill:rising.length?('whether '+nm+' starts to follow the '+rising[0].name.toLowerCase()):('whether its scatter falls'),strength:'whether the related lifts and this one move together',unclear:'the related lifts against this one'}[verdict];
+  return {status:'ok',exercise:key,name:me.name,skill:me.skill,verdict:verdict,evidence:ev,related:related,scatter:{own:mine!=null?round(mine,4):null,median:medOther!=null?round(medOther,4):null},
+    action:act,check:chk,policy:SKILL_LIMIT_CONTRACT.id,cls:'HEURISTIC',
+    text:(verdict==='skill'?'likely skill, not strength':(verdict==='strength'?'likely strength, not skill':'cannot tell skill from strength yet'))+': '+ev.join('; ')};}
 function weeklyMuscleSets(days){days=days||7;var sess=sessionsOf({from:addDays(asOf(),-(days-1))});var out={};sess.forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e)return;e.primary.forEach(function(m){out[m]=(out[m]||0)+1;});e.secondary.forEach(function(m){out[m]=(out[m]||0)+0.5;});});});return Object.keys(out).map(function(m){return {muscle:MUSCLE_GROUPS[m]||m,sets:round(out[m],1)};}).sort(function(a,b){return b.sets-a.sets;});}
 function movementCoverage(days){var sess=sessionsOf({from:addDays(asOf(),-(days||7)+1)});var pats={};sess.forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(e)pats[e.pattern]=(pats[e.pattern]||0)+1;});});var core=['squat','hinge','horizontal push','vertical push','horizontal pull','vertical pull'];return core.map(function(p){return {pattern:p,sets:pats[p]||0,covered:!!pats[p]};});}
 /* ---- supplements: decision tree, not a stack ---- */

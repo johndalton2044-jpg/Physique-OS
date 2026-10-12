@@ -8,16 +8,16 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 
 | What | Count |
 |---|---|
-| Models | 52 (15 derived, 22 empirical, 8 heuristic, 1 policy, 3 predictive, 3 prior) |
+| Models | 54 (15 derived, 24 empirical, 8 heuristic, 1 policy, 3 predictive, 3 prior) |
 | Observation types | 39 |
 | Event types | 57 |
 | Entity contracts | 29 |
 | Persisted collections | 22 |
-| Heuristic contracts | 25 (none validated as a model) |
+| Heuristic contracts | 27 (none validated as a model) |
 | Evidence claims | 27 (no claim yet for: hydration) |
-| Capabilities | 48 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 18 surfaced, 20 validated) |
+| Capabilities | 52 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 18 surfaced, 24 validated) |
 | Release gates | 37 |
-| Black-box workflows | 20 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018/V-025, V-019, V-020, V-021, V-022, V-023, V-024) |
+| Black-box workflows | 23 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018/V-025, V-019, V-020, V-021, V-022, V-023, V-024, V-026, V-027, V-028) |
 
 ## Capabilities and their maturity
 
@@ -55,6 +55,10 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | What to start a substitute exercise at | validated | heuristic | independent |
 | Each lift’s next session, its range checked on its own record | validated | backtested | independent |
 | How readiness moves from day to day | validated | backtested | independent |
+| Whether a stalled lift is limited by skill or by strength | validated | heuristic | independent |
+| What each lift has cost the person the next day | validated | heuristic | independent |
+| The person’s own sleep need, and the debt against it | validated | population evidence | independent |
+| The NEAT response’s ranges checked against each week’s steps | validated | backtested | independent |
 | Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty | validated | population evidence | independent |
 | Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference | validated | population evidence | independent |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | internal |
@@ -105,5 +109,5 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 - Prospectively validated cannot be claimed yet: no prospective validation exists.
 - Real data at scale cannot be claimed yet.
 - Real-world cannot be claimed yet.
-- The 25 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
+- The 27 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
 - No published evidence is registered for: hydration.

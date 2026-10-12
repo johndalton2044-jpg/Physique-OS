@@ -280,3 +280,10 @@ Never start an item before what it depends on is in place.
 - Each lift's next session is forecast with a range checked on its own record. How readiness moves from day to day is
   counted from the person's rated days and checked one day ahead (see the roadmap entry for this build).
 - Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.
+
+## 13. State at fd6e597ef7
+
+- 37 gates, all pass; release 24/24; 2,008 in-app self-tests, 400 interface tests, 23 black-box workflows.
+- Skill or strength, what each lift costs, the person's own sleep need and the NEAT response's calibration are built
+  (see the roadmap entry for this build). The nutrition and body items follow.
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.

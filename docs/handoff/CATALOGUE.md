@@ -83,11 +83,15 @@ incremental value over simple baselines. The measurement is built: `readinessVal
 scores as the record stood the evening before each session. It scores them out of sample against the session, beside
 sleep alone, fatigue alone and no information. On the demo record all three predict the sessions but none beats fatigue
 alone, and that is the verdict shown (both recovery sheets, the assistant's answer, black-box workflow V-018). Whether a
-score adds value for a real person is for their own record to show. Exercise-specific recovery cost, individual sleep
-debt and NEAT compensation calibration are not built. At e0ce259ce6: how readiness moves from day to day. Each rated day's
+score adds value for a real person is for their own record to show. At e0ce259ce6: how readiness moves from day to day. Each rated day's
 state, as the record stood that day, gives the chance a day below normal is followed by another (each row weighed
 against no carry-over), back to normal within two days, and spells of known length. Walking forward, it is checked
 whether today's state forecast tomorrow better than the base rate (both recovery sheets, the assistant, workflow V-025).
+At fd6e597ef7, the rest of its list:
+- what each lift has cost the person the next day, beside the ontology's index (workflow V-027);
+- the person's own sleep need and the debt against it, where the record shows where more sleep stops helping
+  (workflow V-028);
+- the NEAT response's weekly predictions scored and calibrated (workflow V-027).
 
 W-017 (cardio): **done**, abd4ef4b01. Dose, capacity, expenditure, recovery cost and strength interference each have
 their own measure and unit (`CARDIO_CONCEPTS`). A cardio change is evaluated on all five over a period before and after
@@ -110,7 +114,8 @@ its own list of high-value work:
   turns computed stimulus into predicted growth. At 847a6961b4: a substitute exercise starts from the person's own last
   top set of it, and with no record no load is invented (workflow V-023). At e0ce259ce6: each lift's next session is
   forecast with an 80% range checked on the lift's own past sessions, calibrated by its own factor once ten are scored
-  and by all its lifts' before that (workflow V-024). Not built: skill-versus-strength limitation.
+  and by all its lifts' before that (workflow V-024). At fd6e597ef7: whether a stalled lift is limited by skill or by
+  strength, from the other lifts for the same muscles (workflow V-026).
 - W-018 (nutrition): **done**, e82ecf3367. Two records of one food that disagree are settled by a declared rule: each
   checked against its own macros, the first of your own entry, USDA laboratory analysis, the branded label and Open
   Food Facts that agrees with itself, the other kept visible. A barcode scan meeting your own entry uses it (external

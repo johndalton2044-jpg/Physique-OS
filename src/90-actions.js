@@ -1545,7 +1545,19 @@ SHEETS.propagation=function(){
            tone:r.ratio>=1.2?'good':(r.ratio<0.8?'attention':'')});}).join('')+
       '<div class="prov">'+esc(rk.note)+'</div><div class="hint">'+esc(rk.rows[0].caveat)+'</div>';
   }
+  body+=personalRecoveryBlock(rk.personal);
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+/* W-019: what each lift has cost this person the next day, beside the ontology's index of what it should */
+function personalRecoveryBlock(P){if(!P)return '';var C=EXERCISE_RECOVERY,sg=function(v){return fmtSigned(v,2);};
+  var part=function(t){var o=P.outcomes&&P.outcomes[t],lab=((OBS_TYPES[t]||{}).label||t).toLowerCase();
+    if(!o||o.status!=='ok')return uiRow(esc((OBS_TYPES[t]||{}).label||t),'not yet',{sub:esc(o&&o.need?o.need.join(', '):(P.need||[]).join(', '))});
+    return o.rows.slice(0,5).map(function(r){return '<div data-recovery-cost="'+attrEsc(t+'|'+r.exercise)+'">'+uiRow(esc(r.exercise),esc(sg(r.perDay)+' '+lab+' a training day'),
+      {sub:esc(sg(r.perSet)+' a set ('+sg(r.lo)+' to '+sg(r.hi)+') \u00b7 '+fmtNum(r.setsPerDay,1)+' sets on '+r.days+' days \u00b7 '+Math.round(r.personalWeight*100)+'% your own record'+
+        (r.library?' \u00b7 the library rates it '+r.library+' fatigue':'')+(r.together.length?' \u00b7 trained with '+r.together.join(', ')+', so not told apart':''))})+'</div>';}).join('')+
+      '<div class="hint">Next-day '+esc(lab)+' on a day without these lifts: '+fmtNum(o.intercept,1)+', from '+o.n+' days.</div>';};
+  return '<div class="d-block" data-personal-recovery-cost><div class="d-block-title">WHAT EACH LIFT HAS COST YOU THE NEXT DAY</div>'+
+    (P.status!=='ok'?uiRow('Not yet','',{sub:esc((P.need||[]).join(', '))}):part('soreness')+part('fatigue'))+
+    '<div class="prov">The next day\u2019s rating against each lift\u2019s sets the day before, over '+C.lookbackDays+' days, each cost starting from none (sd '+C.priorSd+' a set). '+esc(P.limits||'')+'</div></div>';}
 function openResistance(){openSheet('edit',{form:'resistance',title:'Resistance',
   desc:'Volume, fatigue and progression from the sets you logged. Almost everything here is derived from three numbers you typed, so each carries the class that reflects that.',buf:{}});}
 SHEETS.resistance=function(){
@@ -2356,7 +2368,9 @@ SHEETS.progression=function(){
       {sub:esc(r.why),rsub:esc(String(r.direction)),tone:r.action==='hold'?'':(r.action==='reduce volume'?'attention':'good')})+
       /* W-015: why a flat or falling lift may have stalled, each cause with its evidence, what to do and what would settle it */
       (r.stall?'<div class="hint" data-stall-causes="'+attrEsc(r.exercise)+'">Why it may have stalled: '+esc(r.stall.text)+'.'+
-        (r.stall.causes.length?' '+esc(r.stall.causes[0].action.charAt(0).toUpperCase()+r.stall.causes[0].action.slice(1))+'; then check '+esc(r.stall.causes[0].check)+'.':'')+'</div>':'')+
+        (r.stall.causes.length?' '+esc(r.stall.causes[0].action.charAt(0).toUpperCase()+r.stall.causes[0].action.slice(1))+'; then check '+esc(r.stall.causes[0].check)+'.':'')+'</div>'+
+        /* W-015: skill or strength, from the lifts that train the same muscles */
+        (r.stall.limitation?'<div class="hint" data-skill-limit="'+attrEsc(r.exercise)+'">Skill or strength: '+esc(r.stall.limitation.text)+'. '+esc(r.stall.limitation.action.charAt(0).toUpperCase()+r.stall.limitation.action.slice(1))+'; then check '+esc(r.stall.limitation.check)+'.</div>':''):'')+
       /* W-015: the lift's next session, with its range checked against its own past sessions */
       (r.forecast?'<div class="hint" data-lift-forecast="'+attrEsc(r.exercise)+'">Next session (about '+esc(shortDate(r.forecast.next.date))+'): estimated 1RM about '+esc(fmtWeight(r.forecast.next.mean))+
         ' ('+esc(fmtWeight(r.forecast.next.lo,{bare:true}))+'\u2013'+esc(fmtWeight(r.forecast.next.hi))+'), an 80% range; '+esc(r.forecast.text)+'.</div>':'');}).join('')+

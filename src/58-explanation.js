@@ -153,6 +153,8 @@ function heuristicContracts(){
   try{take(PROTEIN_MEAL_CONTRACT,'63-food-ext');}catch(e){}
   try{take(SUBSTITUTION_CONTRACT,'64-exercise');}catch(e){}
   try{take(LIFT_FORECAST_CONTRACT,'52-response');}catch(e){}
+  try{take(SKILL_LIMIT_CONTRACT,'64-exercise');}catch(e){}
+  try{take(SLEEP_NEED_CONTRACT,'47-sleep-injury');}catch(e){}
   var seen={},refs={};(typeof REF_EVIDENCE!=='undefined'?REF_EVIDENCE:[]).forEach(function(r){refs[r.id]=1;});
   out.forEach(function(c){HEURISTIC_REQUIRED.forEach(function(f){if(c[f]==null)issues.push(c.id+': no '+f);});
     if(seen[c.id])issues.push(c.id+': held twice');seen[c.id]=1;

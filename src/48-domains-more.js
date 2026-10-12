@@ -184,6 +184,56 @@ function readinessTransitions(){
     failsWhen:['fewer than 20 pairs of rated days next to each other','ratings entered in batches after the fact','an illness or travel that changes what the ratings mean'],
     output:'how likely a day below normal is to be followed by another, how long such spells last, how likely today’s state is to be back to normal within two days, and whether today forecasts tomorrow better than the base rate',
     consumers:['readinessTransitionsBlock','askQuestion|the assistant’s readiness answer'],freshnessDays:7,uncertainty:{kind:'each row weighed against a no-carry-over prior, with its personal weight; one-day-ahead Brier score against the base rate'},fn:'readinessTransitions'});})();
+/* ---------------- W-019: WHAT EACH LIFT COSTS THE NEXT DAY (exercise-specific recovery cost) ----------------
+   exerciseRecoveryCost (83-propagation) indexes what a lift should cost from the exercise ontology, the same for
+   everyone; what it has cost this person is in their own record, and this is that half. Each
+   day before a rated day is a row: the next day's soreness (and, separately, fatigue) against the number of sets of
+   each lift that day, for the lifts trained on six days or more (the eight most trained), with an intercept for a
+   day without them. Each lift's cost per set starts from no cost at all (a prior with sd 0.15 points a set), so a lift
+   seen a few times leans on "no cost" and says how much of its figure is its own. The scatter is taken from the
+   residuals of the previous fit, twice, starting from the outcome's own variance, and never below 0.1. Lifts trained
+   almost always together (their set counts correlated 0.9 or more) are named, since their costs cannot be told apart.
+   An association within one person, not a measured cost: a hard day elsewhere in life counts against whatever lift
+   was trained that day. */
+var EXERCISE_RECOVERY={lookbackDays:120,minDays:20,minSessions:6,maxLifts:8,priorSd:0.15,interceptSd:5,sigmaFloor:0.1,together:0.9,outcomes:['soreness','fatigue']};
+function _ridgeFit(rows,p,C,sigma2){var k=p+1,A=[],b=[],i,j;for(i=0;i<k;i++){A.push(new Array(k).fill(0));b.push(0);}
+  rows.forEach(function(r){var x=[1].concat(r.x);for(i=0;i<k;i++){b[i]+=x[i]*r.y;for(j=0;j<k;j++)A[i][j]+=x[i]*x[j];}});
+  for(i=0;i<k;i++)A[i][i]+=sigma2/Math.pow(i===0?C.interceptSd:C.priorSd,2);
+  var inv=_matInv(A);if(!inv)return null;var mu=inv.map(function(row){return row.reduce(function(a,v,j2){return a+v*b[j2];},0);});
+  var sse=rows.reduce(function(a,r){var x=[1].concat(r.x),f=x.reduce(function(t,v,j2){return t+v*mu[j2];},0);return a+Math.pow(r.y-f,2);},0);
+  return {mu:mu,cov:inv.map(function(row){return row.map(function(v){return v*sigma2;});}),sse:sse};}
+function personalRecoveryCost(){
+  return memo('personalRecoveryCost:'+asOf(),function(){
+    var C=EXERCISE_RECOVERY,now=asOf(),from=addDays(now,-C.lookbackDays),sets={},days={};
+    sessionsOf({from:from}).forEach(function(s){(s.sets||[]).forEach(function(x){var k=normExercise(x.exercise);if(!k)return;var d=sets[s.date]=sets[s.date]||{};d[k]=(d[k]||0)+1;});});
+    Object.keys(sets).forEach(function(d){Object.keys(sets[d]).forEach(function(k){days[k]=(days[k]||0)+1;});});
+    var lifts=Object.keys(days).filter(function(k){return days[k]>=C.minSessions;}).sort(function(a,b){return days[b]-days[a]||(a<b?-1:1);}).slice(0,C.maxLifts);
+    if(!lifts.length)return {status:'insufficient',need:['a lift trained on '+C.minSessions+' days or more in the last '+C.lookbackDays+' days'],outcomes:{}};
+    var out={status:'ok',cls:'EMPIRICAL',lifts:lifts,outcomes:{},limits:'An association within one person, not a measured cost: a hard day elsewhere in life counts against whatever lift was trained that day.'};
+    C.outcomes.forEach(function(t){var by={};dailySeries(t,now,C.lookbackDays+1).forEach(function(r){by[r.date]=r.value;});
+      var rows=[];for(var d=from;d<now;d=addDays(d,1)){var y=by[addDays(d,1)];if(y==null)continue;var day=sets[d]||{};rows.push({date:d,y:y,x:lifts.map(function(k){return day[k]||0;})});}
+      if(rows.length<C.minDays){out.outcomes[t]={status:'insufficient',n:rows.length,need:[(C.minDays-rows.length)+' more days with '+((OBS_TYPES[t]||{}).label||t).toLowerCase()+' rated the day after']};return;}
+      var ys=rows.map(function(r){return r.y;}),s2=Math.max(C.sigmaFloor,Math.pow(sd(ys)||0,2)),F=null;
+      for(var it=0;it<2;it++){F=_ridgeFit(rows,lifts.length,C,s2);if(!F)break;s2=Math.max(C.sigmaFloor,F.sse/Math.max(1,rows.length-lifts.length-1));}
+      F=F&&_ridgeFit(rows,lifts.length,C,s2);
+      if(!F){out.outcomes[t]={status:'insufficient',n:rows.length,need:['set counts that vary between days']};return;}
+      var col=function(j){return rows.map(function(r){return r.x[j];});};
+      var list=lifts.map(function(k,j){var sdj=Math.sqrt(Math.max(0,F.cov[j+1][j+1])),m=F.mu[j+1],trained=rows.filter(function(r){return r.x[j]>0;});
+        var spd=trained.length?mean(trained.map(function(r){return r.x[j];})):null,lib=(typeof resolveExercise==='function')?resolveExercise(k):null;
+        var together=lifts.filter(function(k2,j2){if(j2===j)return false;var c=correlation(col(j),col(j2));return c.r!=null&&c.r>=C.together;});
+        return {exercise:k,days:trained.length,setsPerDay:spd!=null?round(spd,1):null,perSet:round(m,3),lo:round(m-1.96*sdj,3),hi:round(m+1.96*sdj,3),
+          perDay:spd!=null?round(m*spd,2):null,personalWeight:round(Math.max(0,1-sdj*sdj/(C.priorSd*C.priorSd)),2),together:together,library:lib?lib.fatigue:null};});
+      list.sort(function(a,b){return (b.perDay||0)-(a.perDay||0);});
+      out.outcomes[t]={status:'ok',n:rows.length,intercept:round(F.mu[0],2),sigma:round(Math.sqrt(s2),2),rows:list,label:((OBS_TYPES[t]||{}).label||t).toLowerCase()};});
+    return out;
+  });
+}
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_recovery_cost'))return;
+  MODELS.push({id:'personal_recovery_cost',name:'What each lift costs the next day',cls:'EMPIRICAL',version:'1.0',inputs:['session.sets|sets per exercise','session.date|session dates','soreness','fatigue'],minN:20,
+    assumes:['the next day’s soreness and fatigue respond to the sets of the day before','each set of a lift costs about the same','the costs of lifts trained on one day add up'],
+    failsWhen:['lifts almost always trained together','fewer than 20 days rated the day after','a hard day elsewhere in life that coincides with training'],
+    output:'per lift, the next day’s extra soreness and fatigue per set and per training day, with its interval, how much is the person’s own record, and which lifts cannot be told apart',
+    consumers:['recoveryCostRanking','openPropagation|Where training lands'],freshnessDays:14,uncertainty:{kind:'posterior interval per lift, against a prior of no cost'},fn:'personalRecoveryCost'});})();
 registerDomain({
   id:'recovery',label:'Recovery and readiness',priority:20,ontology:'RECOVERY_INPUTS',derives:true,actions:['nav.recovery2','log.type'],
   observes:['fatigue','soreness','stress','motivation','sleep'],

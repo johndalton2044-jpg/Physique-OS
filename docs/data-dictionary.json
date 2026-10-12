@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "ede1c345fce3",
+ "ontologyVersion": "8fd5836b2531",
  "observationTypes": [
   {
    "id": "adherence",
@@ -2471,6 +2471,18 @@
    ]
   },
   {
+   "id": "personal_recovery_cost",
+   "cls": "EMPIRICAL",
+   "output": "per lift, the next day’s extra soreness and fatigue per set and per training day, with its interval, how much is the person’s own record, and which lifts cannot be told apart",
+   "uncertainty": "posterior interval per lift, against a prior of no cost",
+   "inputs": [
+    "session.sets|sets per exercise",
+    "session.date|session dates",
+    "soreness",
+    "fatigue"
+   ]
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "output": "the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data",
@@ -2574,6 +2586,16 @@
     "weight_trend|weight trend before/after",
     "record.phases|phase",
     "rate_band|weight zone"
+   ]
+  },
+  {
+   "id": "sleep_need",
+   "cls": "EMPIRICAL",
+   "output": "the night length beyond which the person’s fatigue stops improving, with its interval, weighed against 7.5 h, and the debt against it",
+   "uncertainty": "likelihood-ratio interval on the bend, combined with the prior",
+   "inputs": [
+    "sleep",
+    "fatigue"
    ]
   },
   {
@@ -2926,6 +2948,7 @@
    "personal_mobility_response",
    "personal_neat_response",
    "personal_power_response",
+   "personal_recovery_cost",
    "personal_response",
    "personal_sleep_response",
    "personal_speed_response",
@@ -2935,6 +2958,7 @@
    "recovery",
    "recovery_allocation",
    "response_matrix",
+   "sleep_need",
    "strength_trend",
    "supplement_adherence",
    "supplement_efficacy",

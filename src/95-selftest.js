@@ -5421,6 +5421,132 @@ function runSelfTest(opts){
       var Bq=run('NNBBNNNBNN',function(){return readinessTransitions();});
       ok('with fewer than 20 pairs it says how many more it needs',Bq.status==='insufficient'&&Bq.transitions===9&&/11 more pairs/.test(Bq.need[0]),JSON.stringify(Bq));
     })();
+    _stSuite('training');
+    /* SKILL OR STRENGTH (catalogue doc 1, W-015: skill-versus-strength limitation), on singles written here a week apart,
+       so each session's estimated 1RM is its load. Expected by hand: a squat flat at 200 while the leg press, a simpler
+       lift for the same muscles, rises 5 a week reads as skill (the leg press's +5.0 a week named); with the leg press
+       flat too, as strength; with no related lift, as not yet known, with a simpler lift to log named; a flat leg press,
+       which needs little skill, is not read as skill-limited; a squat scattering around its trend far more than two
+       other lifts (each at the 1% floor) reads as skill on that ground alone, its scatter worked out by this test's own
+       Theil–Sen fit. */
+    (function(){var a=asOf(),keepS=DB.sessions,mk=function(name,d,load){var day=addDays(a,-d);return {id:'st-sk-'+name+'-'+d,date:day,createdAt:day+'T08:00:00.000Z',sets:[{exercise:name,load:load,reps:1,rir:2}]};};
+      var AGO=[42,35,28,21,14,7,0],flat=function(n,v){return AGO.map(function(d){return mk(n,d,v);});},rise=function(n,v0,step){return AGO.map(function(d,i){return mk(n,d,v0+step*i);});};
+      var run=function(list,fn){var r=null;try{DB.sessions=list;_memoInvalidate();r=fn();}finally{DB.sessions=keepS;_memoInvalidate();}return r;};
+      var A=run(flat('Squat',200).concat(rise('Leg press',300,5)),function(){return {k:skillOrStrength('Squat'),st:stallCauses('Squat'),lp:skillOrStrength('Leg press'),sheet:SHEETS.progression().body};});
+      ok('a flat squat while the leg press, a simpler lift for the same muscles, rises 5 a week reads as skill, not strength',A.k.status==='ok'&&A.k.verdict==='skill'&&A.k.text.indexOf('leg press, on the same muscles, is rising '+fmtWeight(5)+' a week while squat is not')>=0,A.k.text);
+      var ids=A.st.causes.map(function(c){return c.id;});
+      ok('and it is a stall cause, after an unapplied progression',ids[0]==='notApplied'&&ids.indexOf('skill')>0&&/practise it more often below your limit/.test(A.st.causes[ids.indexOf('skill')].action),JSON.stringify(ids));
+      ok('the progression sheet says so under the squat, with what to do and what would settle it',A.sheet.indexOf('data-skill-limit="squat"')>=0&&/Skill or strength: likely skill, not strength/.test(A.sheet)&&/whether squat starts to follow the leg press/.test(A.sheet));
+      ok('a lift that is progressing is not read for a limit at all',A.lp.status==='not stalled',A.lp.status);
+      var B=run(flat('Squat',200).concat(flat('Leg press',300)),function(){return skillOrStrength('Squat');});
+      ok('with the leg press flat too, it reads as strength',B.verdict==='strength'&&/every lift you train for the same muscles \(leg press\) is flat or falling too/.test(B.text),B.text);
+      var C=run(flat('Squat',200),function(){return skillOrStrength('Squat');});
+      ok('with no related lift logged it cannot tell, and names a simpler lift to log',C.verdict==='unclear'&&/no other lift for the same muscles is logged/.test(C.text)&&/such as the leg press/.test(C.action),JSON.stringify([C.text,C.action]));
+      var D=run(flat('Leg press',300).concat(rise('Hack squat',200,5)),function(){return skillOrStrength('Leg press');});
+      ok('a lift that needs little skill is not read as skill-limited, even beside a rising one',D.verdict==='unclear'&&/needs little skill/.test(D.text),D.text);
+      /* the scatter: the test's own Theil–Sen fit of the squat, forecast a week after its last session */
+      var NZ=[0,6,-6,4,-5,7,-3],sq=AGO.map(function(d,i){return mk('Squat',d,200+NZ[i]);});
+      var med=function(v){v=v.slice().sort(function(x,y){return x-y;});var m=v.length>>1;return v.length%2?v[m]:(v[m-1]+v[m])/2;};
+      var P=AGO.map(function(d,i){return [42-d,200+NZ[i]];}),sl=[];for(var i=0;i<P.length;i++)for(var j=i+1;j<P.length;j++)sl.push((P[j][1]-P[i][1])/(P[j][0]-P[i][0]));
+      var b=med(sl),c=med(P.map(function(p){return p[1]-b*p[0];})),res=P.map(function(p){return p[1]-c-b*p[0];}),mu=res.reduce(function(s,r){return s+r;},0)/res.length;
+      var s=Math.sqrt(res.reduce(function(t,r){return t+(r-mu)*(r-mu);},0)/(res.length-1)),m=c+b*49,rel=Math.max(s,0.01*m)/m;
+      var E=run(sq.concat(rise('Bench press',100,2.5),rise('Seated cable row',80,2)),function(){return skillOrStrength('Squat');});
+      ok('a squat scattering '+(rel*100).toFixed(1)+'% around its trend, against 1.0% for the other lifts, reads as skill on that ground',rel>=0.015&&E.verdict==='skill'&&Math.abs(E.scatter.own-rel)<0.0001&&E.scatter.median===0.01&&/scatters [\d.]+% around its trend, against a median of 1\.0% for your other lifts/.test(E.text),JSON.stringify({got:E.scatter,want:rel,text:E.text}));
+      var H=heuristicContractById('skill_limit');
+      ok('the scatter rule is a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.scatter.value===1.5&&heuristicContracts().ok);
+    })();
+    _stSuite('recovery');
+    /* WHAT EACH LIFT COSTS THE NEXT DAY (catalogue doc 1, W-019: exercise-specific recovery cost). Sixty days written here:
+       a deadlift of 4 sets every seven days, a bench press of 3 sets three days after each, and soreness rated every day:
+       3, or 5 the day after a deadlift, 4 the day after a bench press. Expected from this test's own solution of the stated
+       model (an intercept and a cost per set for each lift, each cost against a prior of sd 0.15, the scatter from the
+       residuals twice from the outcome's variance, at least 0.1), not from the code under test. */
+    (function(){var a=asOf(),keepS=DB.sessions,keepO=DB.observations,C=EXERCISE_RECOVERY;
+      var sess=function(name,d,n){var day=addDays(a,-d),sets=[];for(var i=0;i<n;i++)sets.push({exercise:name,load:100,reps:5,rir:2});return {id:'st-rc-'+name+'-'+d,date:day,createdAt:day+'T08:00:00.000Z',sets:sets};};
+      var DL=[56,49,42,35,28,21,14,7],BP=DL.map(function(d){return d-3;}),S=[];DL.forEach(function(d){S.push(sess('Deadlift',d,4));});BP.forEach(function(d){S.push(sess('Bench press',d,3));});
+      var sore=function(dAgo){return DL.indexOf(dAgo+1)>=0?5:(BP.indexOf(dAgo+1)>=0?4:3);},O=[];for(var d=59;d>=0;d--)O.push(makeObservation({type:'soreness',date:addDays(a,-d),value:sore(d),source:'manual',createdAt:addDays(a,-d)+'T08:00:00.000Z'}));
+      var run=function(ss,oo,fn){var r=null;try{DB.sessions=ss;DB.observations=oo;_memoInvalidate();r=fn();}finally{DB.sessions=keepS;DB.observations=keepO;_memoInvalidate();}return r;};
+      /* the test's own fit: columns [1, bench press sets, deadlift sets] (equal days, so in name order), on the 60 days before a rated day */
+      var X=[],Y=[];for(d=60;d>=1;d--){X.push([1,BP.indexOf(d)>=0?3:0,DL.indexOf(d)>=0?4:0]);Y.push(sore(d-1));}
+      var solve=function(A,v){var n=A.length,M=A.map(function(r,i){return r.concat([v[i]]);});for(var c=0;c<n;c++){var p=c;for(var r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;var t=M[c];M[c]=M[p];M[p]=t;
+          for(r=0;r<n;r++){if(r===c)continue;var f=M[r][c]/M[c][c];for(var k=c;k<=n;k++)M[r][k]-=f*M[c][k];}}return M.map(function(r,i){return r[n]/r[i];});};
+      var fitT=function(s2){var A=[[0,0,0],[0,0,0],[0,0,0]],v=[0,0,0];X.forEach(function(x,i){for(var p=0;p<3;p++){v[p]+=x[p]*Y[i];for(var q=0;q<3;q++)A[p][q]+=x[p]*x[q];}});
+        var pr=[1/25,1/0.0225,1/0.0225];for(var p=0;p<3;p++)A[p][p]+=s2*pr[p];var mu=solve(A,v),sse=X.reduce(function(t,x,i){return t+Math.pow(Y[i]-x[0]*mu[0]-x[1]*mu[1]-x[2]*mu[2],2);},0);
+        var e2=solve(A,[0,0,1]),e1=solve(A,[0,1,0]);return {mu:mu,sse:sse,vDL:s2*e2[2],vBP:s2*e1[1]};};
+      var my=Y.reduce(function(t,y){return t+y;},0)/Y.length,s2=Math.max(0.1,Y.reduce(function(t,y){return t+(y-my)*(y-my);},0)/(Y.length-1)),Ft;
+      for(var it=0;it<2;it++){Ft=fitT(s2);s2=Math.max(0.1,Ft.sse/(Y.length-3));}Ft=fitT(s2);
+      var A=run(S,O,function(){var P=personalRecoveryCost(),rk=recoveryCostRanking(56);return {P:P,rk:rk,sheet:SHEETS.propagation().body};});
+      var so=A.P.outcomes.soreness,dl=so&&so.rows&&so.rows.filter(function(r){return r.exercise==='deadlift';})[0],bp=so&&so.rows&&so.rows.filter(function(r){return r.exercise==='bench press';})[0];
+      ok('sixty days before a rated day, each lift’s cost per set as this test’s own fit has it: deadlift '+Ft.mu[2].toFixed(3)+', bench press '+Ft.mu[1].toFixed(3),
+        A.P.status==='ok'&&so.status==='ok'&&so.n===60&&!!dl&&!!bp&&Math.abs(dl.perSet-Ft.mu[2])<0.0006&&Math.abs(bp.perSet-Ft.mu[1])<0.0006,JSON.stringify({got:dl&&[dl.perSet,bp.perSet],want:[Ft.mu[2],Ft.mu[1]]}));
+      ok('each with its interval and how much is its own record, against the prior of no cost',!!dl&&Math.abs(dl.lo-(Ft.mu[2]-1.96*Math.sqrt(Ft.vDL)))<0.0006&&Math.abs(dl.hi-(Ft.mu[2]+1.96*Math.sqrt(Ft.vDL)))<0.0006&&
+        dl.personalWeight===round(1-Ft.vDL/0.0225,2),JSON.stringify(dl));
+      ok('a deadlift day costs its four sets, and the costlier lift comes first',!!dl&&dl.setsPerDay===4&&Math.abs(dl.perDay-round(dl.perSet*4,2))<0.006&&so.rows[0].exercise==='deadlift',JSON.stringify(so&&so.rows.map(function(r){return [r.exercise,r.perDay];})));
+      ok('fatigue, never rated, says how many days it needs',A.P.outcomes.fatigue.status==='insufficient'&&/20 more days with fatigue rated the day after/.test(A.P.outcomes.fatigue.need[0]),JSON.stringify(A.P.outcomes.fatigue));
+      var rkd=A.rk.rows.filter(function(r){return normExercise(r.exercise)==='deadlift';})[0];
+      ok('the ontology’s index carries what the lift has cost you, and Where training lands shows it',!!rkd&&rkd.observed&&rkd.observed.soreness&&rkd.observed.soreness.perSet===dl.perSet&&A.sheet.indexOf('data-recovery-cost="soreness|deadlift"')>=0&&/WHAT EACH LIFT HAS COST YOU THE NEXT DAY/.test(A.sheet));
+      var B=run(S.concat(DL.map(function(d){var x=sess('Squat',d,4);x.id='st-rc-sq-'+d;return x;})),O,function(){return personalRecoveryCost().outcomes.soreness;});
+      var bd=B.rows.filter(function(r){return r.exercise==='deadlift';})[0];
+      ok('a squat always trained beside the deadlift is named: their costs cannot be told apart',!!bd&&bd.together.indexOf('squat')>=0,JSON.stringify(bd&&bd.together));
+    })();
+    /* YOUR OWN SLEEP NEED (catalogue doc 1, W-019: individual sleep debt). Thirty-five nights written here, cycling through
+       5.5 to 8.5 h, each with that day's fatigue: 4 plus 1 for every hour short of 7, plus a fixed scatter of up to 0.9, so
+       the bend is clear but not so sharp that the prior has no say. Expected
+       from this test's own run of the stated method (each candidate need fitted as a level and a rise per hour short of
+       it, the bend against a straight line by n ln of their errors at 3.84, the need weighed by fit and by the prior of
+       7.5 h, sd 0.75), not from the code under test. And a straight line with no bend claims nothing personal. */
+    (function(){var a=asOf(),keepO=DB.observations,NX=[5.5,6,6.5,7,7.5,8,8.5],NZ=[0.9,-0.9,0.6,-0.6,0.3];
+      var build=function(n,fy){var O=[],pts=[];for(var i=0;i<n;i++){var day=addDays(a,-(n-1-i)),x=NX[i%7],y=fy(x)+NZ[i%5],at=day+'T08:00:00.000Z';
+          O.push(makeObservation({type:'sleep',date:day,value:x,source:'manual',createdAt:at}));O.push(makeObservation({type:'fatigue',date:day,value:y,source:'manual',createdAt:at}));pts.push([x,y]);}return {O:O,pts:pts};};
+      var run=function(O,fn){var r=null;try{DB.observations=O;_memoInvalidate();r=fn();}finally{DB.observations=keepO;_memoInvalidate();}return r;};
+      var ols=function(pts,z){var n=pts.length,mz=0,my=0;z.forEach(function(v,i){mz+=v/n;my+=pts[i][1]/n;});var szz=0,szy=0;z.forEach(function(v,i){szz+=(v-mz)*(v-mz);szy+=(v-mz)*(pts[i][1]-my);});
+        var b=szz>0?szy/szz:0;return {b:b,sse:pts.reduce(function(t,p,i){return t+Math.pow(p[1]-my-b*(z[i]-mz),2);},0)};};
+      var method=function(pts){var n=pts.length,xs=pts.map(function(p){return p[0];}).sort(function(x,y){return x-y;}),grid=[];
+        for(var h=Math.ceil(xs[4]*4)/4;h<=xs[n-5]+1e-9;h+=0.25){var r=ols(pts,pts.map(function(p){return Math.max(0,h-p[0]);}));if(r.b>0)grid.push({h:Math.round(h*100)/100,sse:r.sse});}
+        var line=ols(pts,pts.map(function(p){return p[0];})),best=grid.slice().sort(function(x,y){return x.sse-y.sse;})[0],lr=n*Math.log(line.sse/Math.max(1e-12,best.sse));
+        var lw=grid.map(function(g){return -n/2*Math.log(Math.max(1e-12,g.sse))-Math.pow(g.h-7.5,2)/(2*0.5625);}),mx=Math.max.apply(null,lw),w=lw.map(function(v){return Math.exp(v-mx);}),sw=w.reduce(function(t,v){return t+v;},0);
+        var need=grid.reduce(function(t,g,i){return t+w[i]*g.h;},0)/sw,v=grid.reduce(function(t,g,i){return t+w[i]*Math.pow(g.h-need,2);},0)/sw;
+        return {lr:lr,best:best.h,need:need,pw:Math.max(0,Math.min(1,1-v/0.5625)),inside:grid.filter(function(g){return n*Math.log(g.sse/Math.max(1e-12,best.sse))<=3.84;}).map(function(g){return g.h;})};};
+      var Bd=build(35,function(x){return 4+Math.max(0,7-x);}),T=method(Bd.pts);
+      var A=run(Bd.O,function(){return {N:individualSleepNeed(),S:sleepState(),f:DOMAINS.sleep.findings(sleepState()).map(function(x){return x.text;}),ans:askQuestion('how did I sleep')};});
+      ok('a bend at 7 h is found where this test finds it, inside its interval, and clears a straight line ('+T.lr.toFixed(1)+' against 3.84)',T.best===7&&T.lr>=3.84&&A.N.status==='ok'&&A.N.bend===true&&A.N.own===7&&
+        A.N.interval[0]===Math.min.apply(null,T.inside)&&A.N.interval[1]===Math.max.apply(null,T.inside),JSON.stringify({got:[A.N.own,A.N.interval,A.N.lr],want:[T.best,T.inside,T.lr]}));
+      ok('the need is each candidate weighed by its fit and by the 7.5 h prior, and says how much is the person’s own',Math.abs(A.N.need-T.need)<0.006&&A.N.personalWeight===Math.round(T.pw*100)/100,JSON.stringify({got:[A.N.need,A.N.personalWeight],want:[T.need,T.pw]}));
+      var last14=Bd.pts.slice(-14),debt=last14.reduce(function(t,p){return t+Math.max(0,A.N.need-p[0]);},0);
+      ok('the debt is the last 14 nights’ shortfall against that need ('+debt.toFixed(1)+' h), on the sleep domain and in the assistant’s answer',!!A.S.individual&&Math.abs(A.S.individual.debtHours-debt)<0.051&&
+        A.f.some(function(t){return /h short of your own sleep need of \d\.\d h over 14 nights/.test(t);})&&/your own sleep need reads \d\.\d h \(\d+% your own record\)/.test(String(A.ans&&A.ans.basis)),JSON.stringify({got:A.S.individual&&A.S.individual.debtHours,want:debt,ans:A.ans&&A.ans.basis}));
+      var Ln=build(35,function(x){return 4+0.5*(8-x);}),TL=method(Ln.pts),L=run(Ln.O,function(){return {N:individualSleepNeed(),S:sleepState()};});
+      ok('a straight line with no bend ('+TL.lr.toFixed(2)+' against 3.84) claims nothing personal',TL.lr<3.84&&L.N.status==='ok'&&L.N.bend===false&&L.N.personalWeight===0&&L.S.individual===null,JSON.stringify(L.N));
+      var Sh=run(build(10,function(x){return 4+2*Math.max(0,7-x);}).O,function(){return individualSleepNeed();});
+      ok('ten nights are too few, and it says how many more it needs',Sh.status==='insufficient'&&/11 more nights with fatigue rated the same day/.test(Sh.needs[0]),JSON.stringify(Sh));
+      var H=heuristicContractById('sleep_need');
+      ok('the prior and the criterion are a heuristic contract citing the sleep consensus, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.prior.value===7.5&&H.evidenceBasis.indexOf('watson2015sleep')>=0&&heuristicContracts().ok);
+    })();
+    /* NEAT COMPENSATION, CALIBRATED (catalogue doc 1, W-019: NEAT compensation calibration). Sixteen weeks written here (the
+       weeks the response reads are set by this test): steps 9,000 less 250 for each 10% deficit, with a fixed scatter.
+       Expected from this test's own replay: each week from the seventh forecast from the weeks before it (the posterior
+       slope, the prior of -250 sd 400), its miss over the prediction's sd scored; ten scored, so the factor that would
+       have made the 80% range hold is applied to what the compensation carries into the energy balance. */
+    (function(){var keepW=_neatWeeks,keepT=tdeeEstimate,a=asOf();
+      var DEF=[5,15,10,20,8,18,12,25,6,22,14,9,19,11,24,7],NZ=[300,-200,150,-380,220,-100,80,-280,180,-250,350,-150,30,-320,120,-230];
+      var W=DEF.map(function(d,i){return {week:addDays(a,-7*(15-i)),steps:9000-250*d/10+NZ[i],deficitPct:d};});
+      var fit=function(ws){var xs=ws.map(function(w){return w.deficitPct/10;}),ys=ws.map(function(w){return w.steps;}),n=xs.length,mx=xs.reduce(function(t,v){return t+v;},0)/n,my=ys.reduce(function(t,v){return t+v;},0)/n,sxx=0,sxy=0;
+        xs.forEach(function(x,i){sxx+=(x-mx)*(x-mx);sxy+=(x-mx)*(ys[i]-my);});var b=sxy/sxx,res=xs.reduce(function(t,x,i){return t+Math.pow(ys[i]-my-b*(x-mx),2);},0),se=Math.sqrt(res/(n-2)/sxx);
+        var vp=1/(1/160000+1/(se*se)),mp=vp*(-250/160000+b/(se*se));return {per:Math.round(mp),sd:Math.round(Math.sqrt(vp)),mx:mx,my:my,xs:xs,ys:ys};};
+      var ratios=[];for(var k=6;k<16;k++){var F=fit(W.slice(0,k)),s2=F.xs.reduce(function(t,x,i){return t+Math.pow(F.ys[i]-F.my-F.per*(x-F.mx),2);},0)/(k-2),x=W[k].deficitPct/10,pred=F.my+F.per*(x-F.mx);
+        ratios.push(Math.abs(W[k].steps-pred)/Math.sqrt(s2+s2/k+Math.pow(x-F.mx,2)*F.sd*F.sd));}
+      var srt=ratios.slice().sort(function(p,q){return p-q;}),kk=Math.max(0.25,srt[8]/1.2816),held=ratios.filter(function(r){return r<=1.2816;}).length,Fall=fit(W);
+      var A=null;try{_neatWeeks=function(){return W;};tdeeEstimate=function(){return {status:'ok',value:3000};};_memoInvalidate();
+        A={S:neatResponseScored(),R:personalNeatResponse(),o:neatOffset(500),cal:selfCalibration().rows.filter(function(r){return r.id==='neat_response';})[0],
+          ph:physiologySummary().filter(function(x){return x.label==='Everyday movement in a deficit';})[0]};}
+      finally{_neatWeeks=keepW;tdeeEstimate=keepT;_memoInvalidate();}
+      ok('each week from the seventh is forecast from the weeks before it and scored as this test’s own replay has it (10 weeks)',A.S.length===10&&A.S.every(function(e,i){return Math.abs(e.ratio-ratios[i])<1e-9;}),JSON.stringify({got:A.S.map(function(e){return round(e.ratio,3);}),want:ratios.map(function(r){return round(r,3);})}));
+      ok('with ten scored, the factor that would have held ('+kk.toFixed(2)+') is in use, and how many ranges held is said ('+held+' of 10)',A.R.calibration&&A.R.calibration.inUse&&Math.abs(A.R.calibration.scale-kk)<0.0006&&A.R.calibration.held===held&&
+        new RegExp('its 80% ranges held '+held+' of 10 weeks').test(A.R.calibration.text),JSON.stringify(A.R.calibration));
+      var units=100*500/3000/10,want=Math.round(Math.abs(Fall.sd*units*kcalPerStep()*A.R.calibration.scale));
+      ok('the energy the compensation carries into the energy balance is widened or narrowed by it',!!A.o&&A.o.calibrationScale===A.R.calibration.scale&&A.o.sdKcal===want,JSON.stringify({got:A.o,want:want}));
+      ok('it is a row of the calibration report, and the physiology screen says how its ranges held',!!A.cal&&A.cal.n===10&&A.cal.inUse===true&&!!A.ph&&/its 80% ranges held \d+ of 10 weeks/.test(A.ph.sub),JSON.stringify({cal:A.cal,sub:A.ph&&A.ph.sub}));
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

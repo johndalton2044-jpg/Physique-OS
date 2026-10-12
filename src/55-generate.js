@@ -205,7 +205,7 @@ var STALL_CONTRACT={id:'stall_causes',subject:'a lift that is flat or falling',p
   parameterVersion:'1.0',calibrationStatus:'not calibrated to this person',validationStatus:HEURISTIC_NOT_VALIDATED,
   applicability:{phases:['any'],population:'adults lifting with logged loads and reps'},failureConditions:['lifts logged without loads','a changed exercise variation counted as the same lift'],
   outcomes:['strength progression']};
-var STALL_ORDER=['notApplied','effort','recovery','energy','volumeRose'];
+var STALL_ORDER=['notApplied','effort','skill','recovery','energy','volumeRose'];
 function stallCauses(exercise){var P=STALL_CONTRACT.parameters,key=normExercise(exercise),W=P.window.value,now=asOf(),ex=[];
   sessionsOf({from:addDays(now,-84)}).forEach(function(s){var top=null,rir=[],sets=0;
     (s.sets||[]).forEach(function(x){if(normExercise(x.exercise)!==key||x.load==null||x.reps==null)return;sets++;if(x.rir!=null)rir.push(+x.rir);
@@ -230,8 +230,12 @@ function stallCauses(exercise){var P=STALL_CONTRACT.parameters,key=normExercise(
   var recent=setsIn(addDays(now,-(W-1)),now),before=setsIn(addDays(now,-(2*W-1)),addDays(now,-W));
   if(before>0&&recent>=P.volumeRise.value*before)out.push({id:'volumeRose',label:'volume rose',evidence:recent+' sets in the last '+W+' days against '+before+' in the '+W+' before',
     threshold:'up '+Math.round((P.volumeRise.value-1)*100)+'% or more',value:round(recent/before,2),action:'return to the earlier volume for two weeks',check:'whether the lift recovers at the lower volume'});
+  /* skill or strength (64-exercise): a simpler lift for the same muscles rising, or a scatter far above the other lifts */
+  var sk=null;try{sk=skillOrStrength(exercise);}catch(e){_q(e,'P2');}
+  if(sk&&sk.status==='ok'&&sk.verdict==='skill')out.push({id:'skill',label:'skill rather than strength',evidence:sk.evidence.join('; '),
+    threshold:'a simpler lift for the same muscles rising, or scatter '+SKILL_LIMIT_CONTRACT.parameters.scatter.value+'\u00d7 your other lifts\u2019',action:sk.action,check:sk.check});
   out.sort(function(a,b){return STALL_ORDER.indexOf(a.id)-STALL_ORDER.indexOf(b.id);});
-  return {exercise:key,exposures:ex.length,causes:out,policy:STALL_CONTRACT.id,
+  return {exercise:key,exposures:ex.length,causes:out,policy:STALL_CONTRACT.id,limitation:sk&&sk.status==='ok'?sk:null,
     text:out.length?('most likely: '+out[0].label+' ('+out[0].evidence+')'+(out.length>1?'; also '+out.slice(1).map(function(c){return c.label;}).join(', '):'')):
       'the record shows none of the usual causes; a planned lighter week, or a change of variation, is the usual next step'};}
 function progressionPlan(opts){

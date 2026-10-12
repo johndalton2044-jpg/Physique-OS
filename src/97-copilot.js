@@ -162,7 +162,9 @@ var QUESTION_PATTERNS=[
      var s=sleepState();
      if(s.status!=='ok')return {status:'unknown',need:s.need||['nights logged']};
      return {value:fmtNum(s.mean,1)+' h, '+s.consistency,cls:'EMPIRICAL',
-       basis:s.nights+' nights'+(s.debtHours>3?(', '+fmtNum(s.debtHours,0)+' h short against '+s.basis):''),
+       basis:s.nights+' nights'+(s.debtHours>3?(', '+fmtNum(s.debtHours,0)+' h short against '+s.basis):'')+
+         /* W-019: the person's own need, where the record shows one */
+         (s.individual?('; your own sleep need reads '+fmtNum(s.individual.need,1)+' h ('+Math.round(s.individual.personalWeight*100)+'% your own record), '+fmtNum(s.individual.debtHours,1)+' h short of it'):''),
        act:'nav.domains'};}},
   {id:'readiness',re:/\b(readiness|recovered|recovery|how am i)\b/i,
    answer:function(){

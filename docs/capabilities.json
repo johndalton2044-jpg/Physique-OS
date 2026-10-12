@@ -734,6 +734,103 @@
    }
   },
   {
+   "id": "skill-limit",
+   "label": "Whether a stalled lift is limited by skill or by strength",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-026"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a flat or falling lift of moderate or high skill reads as skill-limited when a simpler lift for the same muscles (same pattern or a shared primary muscle, from the exercise library) is rising, or when it scatters around its trend 1.5 times the median of the person’s other lifts or more; as strength-limited when every lift for those muscles is flat or falling too; otherwise not yet known, with a simpler lift to log named. A stall cause on “What to change next week”. A heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "personal-recovery-cost",
+   "label": "What each lift has cost the person the next day",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-027"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the next day’s soreness and fatigue against each lift’s sets the day before, over 120 days, with an intercept for a day without them; each cost per set starts from no cost (sd 0.15 a set) and reports how much is the person’s own record; lifts almost always trained together are named, since their costs cannot be told apart. Beside the ontology’s index of what each lift should cost, on “Where training lands”. On the demo record few days were rated, so every cost leans on the prior",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "sleep-need",
+   "label": "The person’s own sleep need, and the debt against it",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-028"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the night length beyond which the person’s fatigue that day stops improving: a level plus a rise per hour short of each candidate need, shown only when it beats a straight line by the likelihood-ratio criterion; the need weighs each candidate by its fit and by a 7.5 h prior (sd 0.75), inside the 7 or more the consensus recommends, and reports how much is the person’s own. The last 14 nights’ shortfall against it is a sleep finding and part of the assistant’s sleep answer; a stated target still governs the advice",
+   "source": "7 or more hours a night for adults (Watson et al. 2015, AASM and SRS consensus)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "neat-calibration",
+   "label": "The NEAT response’s ranges checked against each week’s steps",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-027"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the NEAT response is replayed week by week from the seventh, each week’s steps predicted from the weeks before it, and each miss scored against the prediction’s sd; the scores go through the one calibration rule, and with ten or more the factor widens or narrows the energy the compensation carries into the energy balance and the optimiser. On the physiology screen and in the calibration report; on the demo record, 3 weeks scored, so a rating",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "measured"
+   }
+  },
+  {
    "id": "mobility-recommendation",
    "label": "Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty",
    "maturity": "validated",

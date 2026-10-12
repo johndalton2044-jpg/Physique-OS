@@ -111,7 +111,9 @@ var INTERVAL_MODELS={
   personal_response:{label:'Personal response predictions',scored:function(){return (DB.responses||[]).filter(function(r){var e=r.expected;return r.stage==='final'&&r.primary&&e&&e.source==='personal_response'&&e.hi>e.lo;})
       .map(function(r){var e=r.expected,mid=e.mean!=null?e.mean:(e.lo+e.hi)/2;return {at:r.start,ratio:Math.abs(r.primary.effect-mid)/((e.hi-e.lo)/4)};});},applied:'the expected effect of a change (predictResponse)',against:'the effect each change then had'},
   /* W-015: every lift's own forecasts together; each lift is also corrected by its own (liftForecasts, 52-response) */
-  lift_forecast:{label:'Each lift\u2019s next session',scored:function(){return liftForecasts().scored;},applied:'each lift\u2019s 80% range on \u201cWhat to change next week\u201d (liftForecasts)',against:'the estimated 1RM of each session it forecast'}};
+  lift_forecast:{label:'Each lift\u2019s next session',scored:function(){return liftForecasts().scored;},applied:'each lift\u2019s 80% range on \u201cWhat to change next week\u201d (liftForecasts)',against:'the estimated 1RM of each session it forecast'},
+  /* W-019: the NEAT response's weekly predictions (neatResponseScored, 85-latent) */
+  neat_response:{label:'Everyday movement in a deficit',scored:function(){return neatResponseScored().map(function(e){return {at:e.at,ratio:e.ratio};});},applied:'the energy the NEAT response carries into the energy balance and the optimiser (neatOffset)',against:'each week\u2019s steps'}};
 function calibrationScale(id){var M=INTERVAL_MODELS[id];if(!M)return 1;var c=intervalCalibration(M.scored());return c.n>=CALIBRATION_MIN_N?c.scale:1;}
 function selfCalibration(){return {status:'ok',cls:'CALIBRATED',rows:Object.keys(INTERVAL_MODELS).map(function(id){var M=INTERVAL_MODELS[id],c=null;try{c=intervalCalibration(M.scored());}catch(e){_q(e,'P2');c=intervalCalibration([]);}
     return {id:id,label:M.label,n:c.n,coverage:c.coverage!=null?round(c.coverage,2):null,scale:round(c.scale,2),calibratedCoverage:c.calibratedCoverage!=null?round(c.calibratedCoverage,2):null,applied:M.applied,against:M.against,
