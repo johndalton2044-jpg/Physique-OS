@@ -1,6 +1,6 @@
 # Capability maturity
 
-Build e0ce259ce6. Every status is derived from evidence the build can check; none is assigned by hand.
+Build fd6e597ef7. Every status is derived from evidence the build can check; none is assigned by hand.
 
 | Capability | Domain | Status | Maturity |
 |---|---|---|---|
@@ -56,7 +56,9 @@ Build e0ce259ce6. Every status is derived from evidence the build can check; non
 | response_matrix | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | exercise_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | uncertainty_chain | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| sleep_need | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | readiness_transitions | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
+| personal_recovery_cost | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | lift_forecast | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | personal_dose_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |
 | personal_frequency_response | 1.0 | OPERATIONAL_ANALYTICAL | graded by rule |

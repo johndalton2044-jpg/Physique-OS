@@ -4874,4 +4874,4 @@ Tests:
 What stays open: protein quality from amino acids, the food matrix, glycaemic response and visual calibration (the
 next round), and W-019's question for a real person.
 
-2,008 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 2,008 self-tests.

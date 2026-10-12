@@ -1,14 +1,14 @@
 {
- "build": "e0ce259ce6",
+ "build": "fd6e597ef7",
  "gates": {
   "build": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 3,
+   "seconds": 4,
    "ceiling": 180,
-   "summary": "food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"e0ce259ce6\",\"release\":\"d5568775af07\",\"inputs\":184,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3929,\"scriptLines\":34662,\"sources\":101,\"files\":35,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}",
-   "at": "2026-10-12T12:11:46.590Z"
+   "summary": "food data verified: fdc-2026-04-30, 1107 files · {\"build\":\"fd6e597ef7\",\"release\":\"c878f490292d\",\"inputs\":184,\"version\":\"1.0.0\",\"schema\":2,\"indexKB\":3965,\"scriptLines\":34921,\"sources\":101,\"files\":35,\"verified\":true,\"food\":455381,\"fndds\":\"none\",\"dsld\":\"none\"}",
+   "at": "2026-10-12T17:04:54.951Z"
   },
   "authority": {
    "ok": true,
@@ -17,106 +17,106 @@
    "seconds": 0.7,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:11:47.248Z"
+   "at": "2026-10-12T17:04:55.616Z"
   },
   "layers": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 6,
+   "seconds": 5.8,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:11:53.254Z"
+   "at": "2026-10-12T17:05:01.401Z"
   },
   "maturity": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:11:53.576Z"
+   "at": "2026-10-12T17:05:01.639Z"
   },
   "dictionary": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 5.6,
+   "seconds": 5.2,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:11:59.132Z"
+   "at": "2026-10-12T17:05:06.796Z"
   },
   "engine": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 132.4,
+   "seconds": 127.7,
    "ceiling": 240,
-   "summary": "67 passed, 0 failed  (1983 in-app self-test checks)",
-   "at": "2026-10-12T12:14:11.555Z"
+   "summary": "67 passed, 0 failed  (2008 in-app self-test checks)",
+   "at": "2026-10-12T17:07:14.464Z"
   },
   "test": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 120.3,
+   "seconds": 127.2,
    "ceiling": 240,
    "summary": "pass  with no layout measurement it falls back to the document end rather than failing · 400 passed, 0 failed",
-   "at": "2026-10-12T12:16:11.879Z"
+   "at": "2026-10-12T17:09:21.629Z"
   },
   "adversarial": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 8.3,
+   "seconds": 8.4,
    "ceiling": 60,
    "summary": "62 passed, 0 failed",
-   "at": "2026-10-12T12:16:20.175Z"
+   "at": "2026-10-12T17:09:30.073Z"
   },
   "audit": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 47.8,
+   "seconds": 47.4,
    "ceiling": 120,
    "summary": "125 passed, 0 finding(s): 0 P0, 0 P1, 0 P2",
-   "at": "2026-10-12T12:17:07.979Z"
+   "at": "2026-10-12T17:10:17.495Z"
   },
   "conformance": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 4.6,
+   "seconds": 4.5,
    "ceiling": 60,
    "summary": "0 finding(s): 0 P1, 0 P2",
-   "at": "2026-10-12T12:17:12.619Z"
+   "at": "2026-10-12T17:10:22.007Z"
   },
   "governance": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 21.2,
+   "seconds": 21,
    "ceiling": 60,
    "summary": "34 passing, 0 tracked, 0 failing — report written to docs/implementation/governance-report.{json,md}",
-   "at": "2026-10-12T12:17:33.796Z"
+   "at": "2026-10-12T17:10:42.996Z"
   },
   "shipped": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 53,
+   "seconds": 57.1,
    "ceiling": 120,
-   "summary": "pass  a second run in the same page passes too (1990 passed, 0 failed) · all passed",
-   "at": "2026-10-12T12:18:26.844Z"
+   "summary": "pass  a second run in the same page passes too (2015 passed, 0 failed) · all passed",
+   "at": "2026-10-12T17:11:40.060Z"
   },
   "browser": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 216.7,
+   "seconds": 212.9,
    "ceiling": 420,
    "summary": "6 viewports × 12 tabs measured in Chromium · 0 finding(s): 0 P0, 0 P1",
-   "at": "2026-10-12T12:22:03.576Z"
+   "at": "2026-10-12T17:15:12.960Z"
   },
   "visual": {
    "ok": true,
@@ -125,61 +125,61 @@
    "seconds": 10,
    "ceiling": 120,
    "summary": "all passed",
-   "at": "2026-10-12T12:22:13.576Z"
+   "at": "2026-10-12T17:15:22.962Z"
   },
   "persistence": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 75.2,
+   "seconds": 77.9,
    "ceiling": 180,
    "summary": "all passed · all passed",
-   "at": "2026-10-12T12:23:28.813Z"
+   "at": "2026-10-12T17:16:40.906Z"
   },
   "spine": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 11.4,
+   "seconds": 11.5,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:23:40.195Z"
+   "at": "2026-10-12T17:16:52.406Z"
   },
   "parity": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 16.1,
+   "seconds": 16.5,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:23:56.318Z"
+   "at": "2026-10-12T17:17:08.911Z"
   },
   "adapt": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 11.7,
+   "seconds": 12.2,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:24:07.984Z"
+   "at": "2026-10-12T17:17:21.097Z"
   },
   "integration": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 8.4,
+   "seconds": 8.3,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:24:16.369Z"
+   "at": "2026-10-12T17:17:29.415Z"
   },
   "intelligence": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 7.9,
+   "seconds": 8.2,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:24:24.257Z"
+   "at": "2026-10-12T17:17:37.646Z"
   },
   "external": {
    "ok": true,
@@ -188,7 +188,7 @@
    "seconds": 26.5,
    "ceiling": 90,
    "summary": "all passed",
-   "at": "2026-10-12T12:24:50.728Z"
+   "at": "2026-10-12T17:18:04.156Z"
   },
   "deploy": {
    "ok": true,
@@ -197,25 +197,25 @@
    "seconds": 27.5,
    "ceiling": 240,
    "summary": "all passed",
-   "at": "2026-10-12T12:25:18.194Z"
+   "at": "2026-10-12T17:18:31.660Z"
   },
   "voice": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 13.3,
+   "seconds": 13.4,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:25:31.521Z"
+   "at": "2026-10-12T17:18:45.094Z"
   },
   "direction": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 5.1,
+   "seconds": 5,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:25:36.588Z"
+   "at": "2026-10-12T17:18:50.100Z"
   },
   "server": {
    "ok": true,
@@ -224,16 +224,16 @@
    "seconds": 1.7,
    "ceiling": 120,
    "summary": "pass  health has no backup complaint after a verified backup · all passed",
-   "at": "2026-10-12T12:25:38.325Z"
+   "at": "2026-10-12T17:18:51.800Z"
   },
   "timezones": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 75,
+   "seconds": 74.9,
    "ceiling": 180,
    "summary": "all passed",
-   "at": "2026-10-12T12:26:53.292Z"
+   "at": "2026-10-12T17:20:06.687Z"
   },
   "connect": {
    "ok": true,
@@ -242,88 +242,88 @@
    "seconds": 6.9,
    "ceiling": 60,
    "summary": "all passed · all passed",
-   "at": "2026-10-12T12:27:00.162Z"
+   "at": "2026-10-12T17:20:13.576Z"
   },
   "inputs": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 12.4,
+   "seconds": 13,
    "ceiling": 60,
    "summary": "all passed",
-   "at": "2026-10-12T12:27:12.595Z"
+   "at": "2026-10-12T17:20:26.592Z"
   },
   "blackbox": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 45.1,
+   "seconds": 57.9,
    "ceiling": 90,
    "summary": "all passed",
-   "at": "2026-10-12T12:27:57.723Z"
+   "at": "2026-10-12T17:21:24.530Z"
   },
   "ai": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 5.5,
+   "seconds": 5.7,
    "ceiling": 60,
    "summary": "all passed · all passed",
-   "at": "2026-10-12T12:28:03.191Z"
+   "at": "2026-10-12T17:21:30.194Z"
   },
   "independent": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 4.9,
+   "seconds": 5.1,
    "ceiling": 150,
    "summary": "all passed",
-   "at": "2026-10-12T12:28:08.077Z"
+   "at": "2026-10-12T17:21:35.250Z"
   },
   "reproducible": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 15.1,
+   "seconds": 13.2,
    "ceiling": 600,
    "summary": "food corpus fetched from its locked archive and verified",
-   "at": "2026-10-12T12:28:23.177Z"
+   "at": "2026-10-12T17:21:48.423Z"
   },
   "perf": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 9.4,
+   "seconds": 10.1,
    "ceiling": 120,
    "summary": "all operations within budget",
-   "at": "2026-10-12T12:28:32.593Z"
+   "at": "2026-10-12T17:21:58.527Z"
   },
   "cloud:e2e": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 9.5,
+   "seconds": 9.9,
    "ceiling": 120,
    "summary": "log lines: 24",
-   "at": "2026-10-12T12:28:42.089Z"
+   "at": "2026-10-12T17:22:08.390Z"
   },
   "yields:gate": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 0.2,
+   "seconds": 0.4,
    "ceiling": 60,
    "summary": "yields gate: 537 rows, all satisfy yield+loss≈100",
-   "at": "2026-10-12T12:28:42.328Z"
+   "at": "2026-10-12T17:22:08.749Z"
   },
   "baseline": {
    "ok": true,
    "skipped": false,
    "timedOut": false,
-   "seconds": 8.7,
+   "seconds": 9.5,
    "ceiling": 60,
-   "summary": "baseline written: build e0ce259ce6, 41 quantities, 22 capabilities (0 production-ready), 114-node dependency map",
-   "at": "2026-10-12T12:28:51.048Z"
+   "summary": "baseline written: build fd6e597ef7, 41 quantities, 22 capabilities (0 production-ready), 116-node dependency map",
+   "at": "2026-10-12T17:22:18.240Z"
   },
   "verify": {
    "ok": true,
@@ -332,7 +332,7 @@
    "seconds": 0.4,
    "ceiling": 60,
    "summary": "data/reference: 2 files verified · dist verified.",
-   "at": "2026-10-12T12:28:51.492Z"
+   "at": "2026-10-12T17:22:18.683Z"
   }
  }
 }

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-12T12:28:47.000Z",
-  "buildId": "e0ce259ce6",
-  "nodes": 114,
-  "edges": 320,
-  "contractDerived": 102,
+  "generatedAt": "2026-10-12T17:22:14.097Z",
+  "buildId": "fd6e597ef7",
+  "nodes": 116,
+  "edges": 329,
+  "contractDerived": 104,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -152,7 +152,17 @@
     },
     {
       "sourceId": "fatigue",
+      "targetId": "sleep_need",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
       "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "personal_recovery_cost",
       "dependencyType": "data"
     },
     {
@@ -842,6 +852,11 @@
     },
     {
       "sourceId": "sleep",
+      "targetId": "sleep_need",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
       "targetId": "readiness_transitions",
       "dependencyType": "data"
     },
@@ -883,6 +898,11 @@
     {
       "sourceId": "soreness",
       "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "soreness",
+      "targetId": "personal_recovery_cost",
       "dependencyType": "data"
     },
     {
@@ -1237,6 +1257,11 @@
     },
     {
       "sourceId": "session.sets",
+      "targetId": "personal_recovery_cost",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.sets",
       "targetId": "personal_power_response",
       "dependencyType": "model"
     },
@@ -1276,6 +1301,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "sleep_need",
+      "targetId": "sleepState",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "motivation",
       "targetId": "readiness_transitions",
       "dependencyType": "data"
@@ -1297,7 +1327,22 @@
     },
     {
       "sourceId": "session.date",
+      "targetId": "personal_recovery_cost",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.date",
       "targetId": "lift_forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_recovery_cost",
+      "targetId": "recoveryCostRanking",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_recovery_cost",
+      "targetId": "openPropagation",
       "dependencyType": "model"
     },
     {
