@@ -2611,16 +2611,17 @@ function openPhotos(){setTimeout(hydratePhotoThumbs,0);if(typeof _attState==='fu
    The gallery and comparisons existed, and addPhoto() existed, but nothing ever called it: there was no way to add a
    photo at all. Taking one (the camera, on a phone) and choosing one from the library both land here, with the
    view and lighting recorded so photos can be compared fairly. */
-var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',note:''};
+var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',fed:null,note:''};
 SHEETS.photos=function(){
   var _todaySwitch=livePhotos().length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
-  var pairs=photoPosePairs();
+  var pairs=photoPairs().pairs;
   var chips=function(reg,cur,act){return '<div class="btn-row" style="margin-top:4px">'+Object.keys(reg).map(function(k){
     return uiBtn(reg[k].label,act,k,'btn-sm '+(cur===k?'btn-primary':'btn-secondary'));}).join('')+'</div>';};
   var v=PHOTO_VIEWS[_PHOTO_FORM.view]||PHOTO_VIEWS.front,l=LIGHTING_KINDS[_PHOTO_FORM.lighting]||LIGHTING_KINDS.mixed;
   var add='<div class="card-title">Add a photo</div>'+
     uiRow('View','',{sub:chips(PHOTO_VIEWS,_PHOTO_FORM.view,'photo.view')+'<div class="hint">'+esc(v.cue)+'</div>'})+
     uiRow('Lighting','',{sub:chips(LIGHTING_KINDS,_PHOTO_FORM.lighting,'photo.light')+'<div class="hint">consistency: '+esc(l.consistency)+'</div>'})+
+    uiRow('Before or after food','',{sub:chips(PHOTO_FED,_PHOTO_FORM.fed,'photo.fed')+'<div class="hint">optional: food and water change the look of the midsection</div>'})+
     '<label class="fld"><span>Note (optional)</span><input id="photoNote" type="text" maxlength="200" value="'+esc(_PHOTO_FORM.note)+'" aria-label="photo note"></label>'+
     '<div class="btn-row">'+uiBtn('Take photo','photo.pick','camera','btn-sm btn-primary')+uiBtn('Choose from library','photo.pick','library','btn-sm btn-secondary')+'</div>'+
     '<input id="photoCam" class="visually-hidden" aria-label="Take a photo" type="file" accept="image/*" capture="environment" data-act="photo.file" data-arg="camera" data-ev="change" tabindex="-1" aria-hidden="true">'+
@@ -2634,9 +2635,11 @@ SHEETS.photos=function(){
       '<span class="hint" data-durability="'+esc(p.id)+'">'+esc(!p.attachmentId?'this device only, not encrypted':(function(){var s=attachmentRemoteState(p.attachmentId).state;return s==='uploaded'?'encrypted \u00b7 in your vault':(s==='failed'?'encrypted \u00b7 upload failed, retrying':'encrypted \u00b7 this device');})())+'</span>'+
       uiBtn('Delete','photo.delete',p.id,'btn-sm btn-ghost')+'</figcaption></figure>';}).join('')+'</div>'):
     uiEmpty('No photos yet','Add one above. A photo every two to four weeks, same view and light, shows change that the scale cannot.','');
-  var comps=pairs.length?('<div class="card-title" style="margin-top:10px">Comparisons</div>'+pairs.map(function(p){return uiRow(esc(p.label),p.days+' days apart',
-    {sub:(p.weightChange!=null?(fmtSigned(p.weightChange,1)+' lb between them'):'')});}).join('')+
-    '<div class="prov">Same view, furthest apart in time \u2014 an honest comparison rather than a flattering one.</div>'):'';
+  /* W-020: one pairing for the vault and the Body tab: the latest photo against the earliest in matching conditions */
+  var comps=pairs.length?('<div class="card-title" style="margin-top:10px">Comparisons</div>'+pairs.map(function(p){var c=p.comparability;return '<div data-photo-pair="'+esc(p.view)+'">'+uiRow(esc(p.label),p.days+' days apart',
+    {sub:esc(c.grade)+' \u00b7 '+esc(c.verdict)+(c.issues.length?' ('+esc(c.issues.map(function(i){return i.field+': '+i.why;}).join('; '))+')':'')+(p.setAside?' \u00b7 '+p.setAside+' earlier photo'+(p.setAside===1?'':'s')+' set aside for '+(p.setAside===1?'its':'their')+' conditions':'')+
+      (p.weightChange!=null?' \u00b7 '+fmtSigned(p.weightChange,1)+' lb between them':''),tone:c.grade==='comparable'?'good':(c.grade==='roughly comparable'?'':'attention')})+'</div>';}).join('')+
+    '<div class="prov">Within each view, the latest photo against the earliest taken in matching conditions. '+esc(pairs[0].comparability.advice)+'</div>'):'';
   return {body:_todaySwitch+add+gallery+comps,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 /* Thumbnails come from IndexedDB, asynchronously, after the sheet has rendered. */
 function hydratePhotoThumbs(){
@@ -2648,14 +2651,15 @@ function hydratePhotoThumbs(){
 function _photoRerender(){renderSheet();setTimeout(hydratePhotoThumbs,0);}
 registerAction('photo.view',function(k){if(PHOTO_VIEWS[k]){_PHOTO_FORM.view=k;_photoRerender();}});
 registerAction('photo.light',function(k){if(LIGHTING_KINDS[k]){_PHOTO_FORM.lighting=k;_photoRerender();}});
+registerAction('photo.fed',function(k){_PHOTO_FORM.fed=PHOTO_FED[k]&&_PHOTO_FORM.fed!==k?k:null;_photoRerender();});
 registerAction('photo.pick',function(which){var n=document.getElementById('photoNote');if(n)_PHOTO_FORM.note=n.value;
   var el=document.getElementById(which==='camera'?'photoCam':'photoLib');if(el){el.value='';el.click();}});
 registerAction('photo.file',function(which,ev,el){
   var f=el&&el.files&&el.files[0];if(!f)return;
   var n=document.getElementById('photoNote');if(n)_PHOTO_FORM.note=n.value;
   toast('Saving photo\u2026');
-  addPhoto(f,{view:_PHOTO_FORM.view,lighting:_PHOTO_FORM.lighting,note:_PHOTO_FORM.note,source:which}).then(function(r){
-    _PHOTO_FORM.note='';_photoRerender();
+  addPhoto(f,{view:_PHOTO_FORM.view,lighting:_PHOTO_FORM.lighting,fed:_PHOTO_FORM.fed,note:_PHOTO_FORM.note,source:which}).then(function(r){
+    _PHOTO_FORM.note='';_PHOTO_FORM.fed=null;_photoRerender();   /* view and light carry over (keeping them is the point); food is this occasion's */
     toast('Photo saved'+(r.scaled?(' \u00b7 '+fmtNum(r.bytes/1024,0)+' KB'):''));
   }).catch(function(e){toast(String(e&&e.message||e),{tone:'negative'});});});
 registerAction('photo.delete',function(id){deletePhoto(id);_photoRerender();toast('Photo deleted');});

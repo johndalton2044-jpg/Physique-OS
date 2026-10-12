@@ -303,18 +303,6 @@ function exerciseLearningCurve(exercise){
     method:'power law of practice (log-log fit of e1RM gain on session number) and early vs late variability',limits:'Load lifted stands in for skill; technique itself is not measured.'};
 }
 
-/* ---------- VISUAL PROGRESS: comparisons are only as good as their conditions ----------
-   Two photos are comparable when the view, lighting and framing match. Computer-vision diagnosis (body fat or shape from
-   an image) is not done: no validated model runs within this app's privacy design, where images never leave the device,
-   and an unvalidated estimate would be worse than none. */
-function photoComparisonValidity(a,b){
-  if(!a||!b)return {status:'insufficient',need:['two photos']};var issues=[];
-  if(a.view!==b.view)issues.push('different views ('+a.view+' vs '+b.view+')');
-  if(a.lighting&&b.lighting&&a.lighting!==b.lighting)issues.push('different lighting');
-  var ta=String(a.at||'').slice(11,13),tb=String(b.at||'').slice(11,13);if(ta&&tb&&Math.abs(+ta-+tb)>4)issues.push('taken at different times of day (hydration and food change the look)');
-  return {status:'ok',comparable:!issues.length,issues:issues,note:issues.length?'Differences may come from conditions, not change.':'Same view and conditions: a fair visual comparison.',
-    limits:'Visual comparison only. No body-fat or shape estimate is made from images.'};
-}
 
 /* ---- registration in the canonical model registry (each inherits contracts, infer(), provenance, the gate) ---- */
 (function(){if(typeof MODELS==='undefined')return;[

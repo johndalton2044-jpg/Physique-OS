@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-021). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-022). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -374,6 +374,29 @@ await run('V-021 a tape change, read',async ui=>{const metric=ui.w.unitPref()===
   line(t.indexOf('−'+want+' over 8 weeks')>=0,'V-021 the Body tab shows the arm '+want+' smaller over 8 weeks, as entered',t);
   line(/the tape cannot say what was lost/.test(t),'V-021 and, with no weight trend or training logged, says the tape alone cannot say what was lost',t);
 });
+
+/* V-022 PHOTO CONDITIONS (catalogue doc 1, W-020). Two front photos are added through the photo vault: one thirty days
+   ago at 07:30, marked "before food", and one today at 19:00 (the times are the files' own, as a phone library keeps
+   them). Expected, from this test's own record: the pair is shown, in the vault and on the Body tab (which never showed
+   one), as poorly comparable, naming both times; and the food choice is stored with the photo. */
+await run('V-022 photo conditions',async ui=>{
+  const img=tag=>new Uint8Array([0xFF,0xD8,0xFF,0xE0].concat(Array.from(('v022-'+tag+'-').repeat(120),ch=>ch.charCodeAt(0)),[0xFF,0xD9]));
+  const at=(daysAgo,h,m)=>{const d=new Date();d.setDate(d.getDate()-daysAgo);d.setHours(h,m,0,0);return d.getTime();};
+  const add=async(daysAgo,h,m,tag,fed)=>{ui.setClock(daysAgo);ui.tab('body');await ui.until('[data-act="nav.photos"]');ui.press('nav.photos');await ui.until('#photoLib');
+    if(fed){ui.press('photo.fed',fed,'#editBackdrop');await ui.until('#editBackdrop [data-act="photo.fed"][data-arg="'+fed+'"].btn-primary');}
+    const n=(ui.w.DB.settings.photos||[]).length,inp=ui.d.getElementById('photoLib');
+    Object.defineProperty(inp,'files',{value:[new ui.w.File([img(tag)],tag+'.jpg',{type:'image/jpeg',lastModified:at(daysAgo,h,m)})],configurable:true});inp.dispatchEvent(new ui.w.Event('change',{bubbles:true}));
+    await ui.waitFor(()=>(ui.w.DB.settings.photos||[]).length===n+1,'the photo from '+daysAgo+' days ago to be stored');ui.press('edit.close',null,'#editBackdrop');await wait(60);};
+  await add(30,7,30,'early','fasted');await add(0,19,0,'late',null);
+  const P=ui.w.DB.settings.photos.slice().sort((a,b)=>a.date<b.date?-1:1);
+  line(P[0].fed==='fasted'&&!P[1].fed,'V-022 the food choice is stored with the photo it was made for, and only that one',JSON.stringify(P.map(p=>p.fed)));
+  ui.setClock(0);ui.tab('body');await ui.until('[data-act="nav.photos"]');
+  const bodyPair=ui.text('#view-body [data-photo-pair="front"]');
+  line(/poorly comparable/.test(bodyPair)&&/30 days apart/.test(bodyPair),'V-022 the Body tab shows the pair, 30 days apart and poorly comparable',bodyPair);
+  ui.press('nav.photos');await ui.until('#editBackdrop [data-photo-pair="front"]');
+  const vaultPair=ui.text('#editBackdrop [data-photo-pair="front"]');
+  line(/taken at 07:30 and 19:00/.test(vaultPair),'V-022 the vault says why: taken at 07:30 and 19:00, as the files were',vaultPair);
+},{webcrypto:true});
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

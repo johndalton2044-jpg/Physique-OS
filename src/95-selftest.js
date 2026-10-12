@@ -1862,9 +1862,10 @@ function runSelfTest(opts){
     /* ---- gap closure (§17 power, §24 photos, §35 templates, §55, §65, §73, §100) ---- */
     withFixture('successful_cut',function(){
       /* §24: the system judges the COMPARISON, never the body. */
-      var base={date:addDays(todayISO(),-60),view:'front',lighting:'daylightIndirect',
-        timeOfDay:'morning',distance:'2m',clothing:'shorts',fed:'fasted'};
-      var same=Object.assign({},base,{date:todayISO()});
+      /* photo records as the app stores them: view, lighting, when each was taken, fed state (the fields this used before,
+         time-of-day labels, distance and clothing, were never recorded, so the check passed where real photos could not) */
+      var base={date:addDays(todayISO(),-60),view:'front',lighting:'daylightIndirect',takenAt:addDays(todayISO(),-60)+'T07:30:00',fed:'fasted'};
+      var same=Object.assign({},base,{date:todayISO(),takenAt:todayISO()+'T07:50:00'});
       ok('matched capture conditions read as comparable',photoComparability(base,same).grade==='comparable');
       ok('a change of lighting is called out as more powerful than the change being looked for',
         /changes the picture more than/.test(photoComparability(base,Object.assign({},same,{lighting:'daylightDirect'})).verdict));
@@ -5281,6 +5282,26 @@ function runSelfTest(opts){
       ok('the Body tab shows each site’s change with what it can mean',/data-tape-site="arm"/.test(html)&&/most likely fat or water/.test(html),html.length);
       var H=heuristicContractById('tape_change');
       ok('the working error and the threshold are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.selfTapeError.value===0.4&&heuristicContracts().ok);
+    })();
+    _stSuite('body-composition');
+    /* PHOTO CONDITIONS (catalogue doc 1, W-020: photo-condition normalisation), on photo records as the app stores them.
+       Expected by hand: photos at 07:30 and 07:50 in the same view and light are comparable without a fed note (every pair
+       read "too little was recorded" before); 07:30 against 19:00 is more than four hours apart; fasted against after food
+       is a moderate difference; the latest photo pairs with the earliest one in matching conditions, not the first. */
+    (function(){var t=todayISO(),ph=function(id,d,time,light,fed){var day=addDays(t,-d);return {id:'photo-st-'+id,date:day,view:'front',pose:'front',lighting:light||'diffuseIndoor',takenAt:day+'T'+time+':00',fed:fed||null,weight:200-d/10,addedAt:day+'T'+time+':00'};};
+      var a=ph('a',40,'07:30'),b=ph('b',0,'07:50');
+      ok('two photos in the same view, light and time of day are comparable without a note about food',photoComparability(a,b).grade==='comparable'&&photoComparability(a,b).notNoted.length===1);
+      var c=photoComparability(a,ph('c',0,'19:00'));
+      ok('07:30 against 19:00 is more than four hours apart, and says when each was taken',c.grade==='poorly comparable'&&c.issues.some(function(i){return i.field==='time of day'&&/07:30 and 19:00/.test(i.why);}),JSON.stringify(c.issues));
+      ok('before food against after food is a moderate difference, named',photoComparability(ph('d',40,'07:30',null,'fasted'),ph('e',0,'07:40',null,'fed')).grade==='roughly comparable');
+      ok('a photo with no time it was taken cannot be judged fair or not',photoComparability(Object.assign({},a,{takenAt:null,at:null}),b).grade==='unknown');
+      var keepP=DB.settings.photos,P=null,vault='',body='';
+      try{DB.settings.photos=[ph('f',60,'19:00','daylightDirect'),ph('g',40,'07:20'),ph('h',0,'07:40')];_memoInvalidate();P=photoPairs();
+        vault=SHEETS.photos().body;var keep=setHTML,cap='';setHTML=function(id,h){if(id==='bodyZone')cap=h;};try{RENDERERS.body();}finally{setHTML=keep;}body=cap;}
+      finally{DB.settings.photos=keepP;_memoInvalidate();}
+      var pr=P&&P.pairs[0];
+      ok('the latest photo pairs with the earliest taken in matching conditions, and the one set aside is counted',!!pr&&pr.earlier.id==='photo-st-g'&&pr.later.id==='photo-st-h'&&pr.setAside===1&&pr.comparability.grade==='comparable'&&pr.days===40,JSON.stringify(pr&&{e:pr.earlier.id,aside:pr.setAside,g:pr.comparability.grade}));
+      ok('the photo vault and the Body tab both show it, from the one pairing (the Body tab never showed one)',/data-photo-pair="front"/.test(vault)&&/1 earlier photo set aside for its conditions/.test(vault)&&/data-photo-pair="front"/.test(body)&&/comparable/.test(body));
     })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);

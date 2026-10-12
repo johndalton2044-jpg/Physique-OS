@@ -43,50 +43,57 @@ function photoProtocol(){
     cls:'POLICY',
     note:'A comparison is only worth making if the conditions match. Two photographs differ from lighting, posture, time of day, hydration and camera distance long before anything about you has changed.'};
 }
-/* §24.2 comparability: the question the system CAN answer. */
+/* §24.2 comparability: the question the system CAN answer.
+   W-020: judged on the conditions the app records: the view, the light, the time of day (from when the photo was taken)
+   and, when the person says, before or after food. It also checked camera distance, clothing, time of day and fed state
+   as fields no photo ever had, so four of six were always "not recorded" and every pair read "too little was recorded".
+   What the app does not record is named as advice, not counted against the comparison. */
+var PHOTO_FED={fasted:{label:'before food'},fed:{label:'after food'}};
+var PHOTO_HOURS_APART=4;   /* more than this apart in the day, and food, water and light change the look */
+function _photoHour(p){var t=p&&(p.takenAt||p.at);if(!t)return null;var d=new Date(t);return isNaN(d.getTime())?null:d.getHours()+d.getMinutes()/60;}
 function photoComparability(a,b){
   if(!a||!b)return {status:'insufficient',need:['two photos to compare']};
-  var issues=[],matched=[];
-  var check=function(field,label,severity){
-    var av=a[field],bv=b[field];
-    if(av==null||bv==null){issues.push({field:label,why:'not recorded for '+(av==null?'the earlier':'the later')+' photo',severity:'unknown'});return;}
-    if(av===bv)matched.push(label);
-    else issues.push({field:label,why:'changed from '+av+' to '+bv,severity:severity});
-  };
-  check('view','view','blocking');
-  check('lighting','lighting','major');
-  check('timeOfDay','time of day','major');
-  check('distance','camera distance','moderate');
-  check('clothing','clothing','moderate');
-  check('fed','fed state','moderate');
-  var blocking=issues.filter(function(i){return i.severity==='blocking';});
-  var major=issues.filter(function(i){return i.severity==='major';});
-  var unknown=issues.filter(function(i){return i.severity==='unknown';});
-  var grade=blocking.length?'not comparable':
-    (major.length?'poorly comparable':(unknown.length>2?'unknown':(issues.length?'roughly comparable':'comparable')));
-  return {status:'ok',cls:'MEASURED',grade:grade,matched:matched,issues:issues,
+  var issues=[],matched=[],notNoted=[];
+  var va=a.view||a.pose,vb=b.view||b.pose;
+  if(va===vb)matched.push('view');else issues.push({field:'view',why:'changed from '+va+' to '+vb,severity:'blocking'});
+  if((a.lighting||'mixed')===(b.lighting||'mixed'))matched.push('lighting');else issues.push({field:'lighting',why:'changed from '+(a.lighting||'mixed')+' to '+(b.lighting||'mixed'),severity:'major'});
+  var ha=_photoHour(a),hb=_photoHour(b),hh=function(h){var m=Math.round(h*60);return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2);};
+  if(ha==null||hb==null)issues.push({field:'time of day',why:'not known for '+(ha==null?'the earlier':'the later')+' photo',severity:'unknown'});
+  else if(Math.abs(ha-hb)>PHOTO_HOURS_APART)issues.push({field:'time of day',why:'taken at '+hh(ha)+' and '+hh(hb),severity:'major'});else matched.push('time of day');
+  if(a.fed&&b.fed){if(a.fed===b.fed)matched.push('fed state');else issues.push({field:'fed state',why:PHOTO_FED[a.fed].label+', then '+PHOTO_FED[b.fed].label,severity:'moderate'});}
+  else notNoted.push('before or after food');
+  var sev=function(x){return issues.filter(function(i){return i.severity===x;}).length;};
+  var grade=sev('blocking')?'not comparable':(sev('major')?'poorly comparable':(sev('unknown')?'unknown':(sev('moderate')?'roughly comparable':'comparable')));
+  return {status:'ok',cls:'MEASURED',grade:grade,matched:matched,issues:issues,notNoted:notNoted,
     daysApart:(a.date&&b.date)?Math.abs(daysBetween(a.date,b.date)):null,
+    weightChange:(a.weight!=null&&b.weight!=null)?round(b.weight-a.weight,1):null,
     verdict:grade==='not comparable'?'These are different views. Comparing them shows the angle, not you.':
       (grade==='poorly comparable'?'The light or the time of day differs, which changes the picture more than a fortnight of training does.':
-       (grade==='unknown'?'Too little was recorded about how these were taken to say whether the comparison is fair.':
-        'Conditions match well enough that a difference is more likely to be real.')),
+       (grade==='unknown'?'When one of these was taken is not known, so whether the comparison is fair cannot be said.':
+        (grade==='roughly comparable'?'One was before food and one after, which changes the look of the midsection; otherwise the conditions match.':
+         'Conditions match well enough that a difference is more likely to be real.'))),
+    advice:'Camera distance and clothing are not recorded: keep them the same.'+(notNoted.length?' Noting whether each was before or after food makes the comparison fairer.':''),
     note:'This judges the COMPARISON, not the body. Whether you look different is yours to see; whether the two photographs can fairly be set beside each other is the part a system can answer.'};
 }
+/* Within each view: the latest photo against the earliest one taken in conditions that match it, rather than against the
+   first photo whatever its conditions. Earlier photos set aside for their conditions are counted, not hidden. One pairing
+   for the photo vault and the Body tab: the vault had its own (by pose, furthest apart, conditions ignored). */
 function photoPairs(opts){
   opts=opts||{};
-  var all=photoMeta();
-  var byView={};
-  all.forEach(function(p){(byView[p.view||'unspecified']=byView[p.view||'unspecified']||[]).push(p);});
+  var all=photoMeta(),byView={};
+  all.forEach(function(p){var v=p.view||p.pose||'unspecified';(byView[v]=byView[v]||[]).push(p);});
   var out=[];
   Object.keys(byView).forEach(function(v){
-    var rows=byView[v].slice().sort(function(a,b){return a.date<b.date?-1:1;});
+    var rows=byView[v].slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:((a.takenAt||a.at||'')<(b.takenAt||b.at||'')?-1:1));});
     if(rows.length<2)return;
-    var first=rows[0],last=rows[rows.length-1];
-    out.push({view:v,earlier:first,later:last,
-      comparability:photoComparability(first,last),count:rows.length});
+    var last=rows[rows.length-1],earlier=rows.slice(0,-1),fair=null,aside=0;
+    for(var i=0;i<earlier.length;i++){var c=photoComparability(earlier[i],last);if(c.grade==='comparable'||c.grade==='roughly comparable'){fair={photo:earlier[i],c:c};break;}aside++;}
+    var first=fair?fair.photo:earlier[0],comp=fair?fair.c:photoComparability(first,last);
+    out.push({view:v,label:(typeof PHOTO_VIEWS!=='undefined'&&PHOTO_VIEWS[v]?PHOTO_VIEWS[v].label:v),earlier:first,later:last,days:Math.abs(daysBetween(first.date,last.date)),
+      comparability:comp,weightChange:comp.weightChange,setAside:fair?aside:0,count:rows.length});
   });
   return {pairs:out,total:all.length,
-    note:out.length?'Earliest against latest within each view. Comparing across views measures the angle.':
+    note:out.length?'Within each view, the latest photo against the earliest taken in matching conditions. Comparing across views measures the angle.':
       'Not enough photos in any single view to pair.'};
 }
 /* §24.3 change detection, honestly bounded: measured change over the same interval, so the person has

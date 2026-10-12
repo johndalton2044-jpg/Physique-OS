@@ -1,6 +1,6 @@
 # Governance report
 
-Build e82ecf3367 · generated 2026-10-12T04:47:47.801Z
+Build 66de301dfc · generated 2026-10-12T08:09:39.528Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **34 passing**
 
@@ -27,7 +27,7 @@ Build e82ecf3367 · generated 2026-10-12T04:47:47.801Z
 - **decision-grounds** — every decision code has declared grounds (15 codes)
 - **view-requirements** — every view’s declared models and observations are exactly what it reads (12 views)
 - **current-state** — docs/CURRENT_STATE.md generated from the running registries (103 lines)
-- **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
+- **catalogue** — catalogue generated from the running registries — 1 change(s) since the previous run
 - **entity-contracts** — all 29 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned
 - **model-without-provenance** — every model result carries provenance

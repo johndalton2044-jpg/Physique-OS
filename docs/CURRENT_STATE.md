@@ -17,7 +17,7 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Evidence claims | 26 (no claim yet for: hydration) |
 | Capabilities | 43 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 17 surfaced, 16 validated) |
 | Release gates | 37 |
-| Black-box workflows | 17 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018, V-019, V-020, V-021) |
+| Black-box workflows | 18 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018, V-019, V-020, V-021, V-022) |
 
 ## Capabilities and their maturity
 

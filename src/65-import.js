@@ -329,7 +329,10 @@ function addPhoto(file,meta){
       _PHOTO_CACHE[id]=img.dataUrl;
       /* The capture conditions are stored, so two photos can be checked for a fair comparison. */
       var view=meta.view||meta.pose||'front';
-      recordPhoto({id:id,date:meta.date||todayISO(),pose:view,view:view,
+      /* W-020: when it was taken (the file's own time, which a library photo keeps; now, for one just taken) and,
+         when the person says, whether before or after food: two conditions a comparison needs and the record lacked */
+      var takenAt=meta.takenAt||(file.lastModified?new Date(file.lastModified).toISOString():nowISO());
+      recordPhoto({id:id,date:meta.date||todayISO(),pose:view,view:view,takenAt:takenAt,fed:PHOTO_FED[meta.fed]?meta.fed:null,
         lighting:meta.lighting||'mixed',weight:meta.weight!=null?meta.weight:(currentWeight().value),
         bytes:img.bytes,originalBytes:file.size,width:img.width,height:img.height,at:nowISO(),addedAt:nowISO(),
         note:String(meta.note||'').slice(0,200),source:meta.source||'library',
@@ -378,20 +381,6 @@ function deletePhoto(id){
   if(p.attachmentId)removeAttachment(p.attachmentId,'photo removed').catch(function(e){_q(e,'P2');});
   try{idbWrite('photo:'+id,'');}catch(e){_q(e,'P2');}
   save('photo:delete');return true;
-}
-/* Renamed from photoPairs(): the version in 75-gaps.js takes options and adds comparability, and shadowed
-   this one entirely. This one pairs by pose for the gallery, which is a different job and now says so. */
-function photoPosePairs(){
-  /* Same pose, furthest apart in time, for an honest comparison rather than a flattering one. */
-  var by={};photoMeta().forEach(function(p){(by[p.pose]=by[p.pose]||[]).push(p);});
-  return Object.keys(by).map(function(pose){
-    var list=by[pose].slice().sort(function(a,b){return a.date<b.date?-1:1;});
-    if(list.length<2)return null;
-    var first=list[0],last=list[list.length-1];
-    return {pose:pose,label:(PHOTO_POSES.filter(function(x){return x.id===pose;})[0]||{}).label||pose,
-      from:first,to:last,days:daysBetween(first.date,last.date),
-      weightChange:(first.weight!=null&&last.weight!=null)?round(last.weight-first.weight,1):null};
-  }).filter(Boolean);
 }
 /* ---------- local notifications (§11) ----------
    No push server, and none is claimed. What a browser CAN do is show a notification while it is open, and

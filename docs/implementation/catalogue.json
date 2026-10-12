@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "e82ecf3367",
+ "build": "66de301dfc",
  "models": [
   {
    "id": "adherence",
@@ -1851,6 +1851,10 @@
   },
   {
    "id": "photo.delete",
+   "level": "casual"
+  },
+  {
+   "id": "photo.fed",
    "level": "casual"
   },
   {

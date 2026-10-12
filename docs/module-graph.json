@@ -3659,7 +3659,6 @@
     "livePhotos",
     "loadPhoto",
     "deletePhoto",
-    "photoPosePairs",
     "requestNotifications",
     "exportArtifact",
     "importArtifact",
@@ -3705,6 +3704,9 @@
     "optimisePlans",
     "personalStateModel",
     "captureRequest"
+   ],
+   "75-gaps.js": [
+    "photoPairs"
    ],
    "76-visual-complete.js": [
     "bodyMapModel",
@@ -5385,6 +5387,7 @@
    "75-gaps.js": [
     "photoProtocol",
     "photoComparability",
+    "photoPairs",
     "photoChangeContext",
     "loggingHabits",
     "adherenceRisk",
