@@ -149,6 +149,7 @@ function heuristicContracts(){
   try{take(MOBILITY_REFERENCE_CONTRACT,'53-practice');}catch(e){}
   try{take(STALL_CONTRACT,'55-generate');}catch(e){}
   try{take(FOOD_SOURCE_CONTRACT,'62-food');}catch(e){}
+  try{take(TAPE_CONTRACT,'64-physique');}catch(e){}
   var seen={},refs={};(typeof REF_EVIDENCE!=='undefined'?REF_EVIDENCE:[]).forEach(function(r){refs[r.id]=1;});
   out.forEach(function(c){HEURISTIC_REQUIRED.forEach(function(f){if(c[f]==null)issues.push(c.id+': no '+f);});
     if(seen[c.id])issues.push(c.id+': held twice');seen[c.id]=1;

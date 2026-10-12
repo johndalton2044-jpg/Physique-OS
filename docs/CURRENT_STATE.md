@@ -13,11 +13,11 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Event types | 57 |
 | Entity contracts | 29 |
 | Persisted collections | 22 |
-| Heuristic contracts | 21 (none validated as a model) |
+| Heuristic contracts | 22 (none validated as a model) |
 | Evidence claims | 26 (no claim yet for: hydration) |
-| Capabilities | 40 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 16 surfaced, 14 validated) |
+| Capabilities | 43 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 17 surfaced, 16 validated) |
 | Release gates | 37 |
-| Black-box workflows | 16 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018, V-019, V-020) |
+| Black-box workflows | 17 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018, V-019, V-020, V-021) |
 
 ## Capabilities and their maturity
 
@@ -28,6 +28,7 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Progress photos: encrypted on the device, copied encrypted to the vault, carried by encrypted backups | validated | not applicable | independent |
 | Erase everything | validated | not applicable | independent |
 | Food logging with portions | validated | not applicable | independent |
+| Two records of one food that disagree, settled by a declared rule | surfaced | heuristic | internal |
 | Training sessions and sets | validated | not applicable | independent |
 | Corrections and deletions with history | validated | not applicable | independent |
 | Phase targets reaching Today | validated | not applicable | independent |
@@ -45,8 +46,10 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Goal conflicts and arbitration on seven dimensions | surfaced | heuristic | internal |
 | Structured explanations: claims, rules and evidence at three levels | validated | not applicable | independent |
 | Body composition: fat and lean trajectories | surfaced | population evidence | internal |
+| What a circumference change can mean, site by site | validated | heuristic | independent |
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | internal |
 | Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | independent |
+| Why a lift stalled: likely causes named from the record | validated | heuristic | independent |
 | Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty | validated | population evidence | independent |
 | Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference | validated | population evidence | independent |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | internal |
@@ -66,6 +69,7 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 
 ## Known limitations
 
+- **Two records of one food that disagree, settled by a declared rule** (surfaced): the nutrients that differ are named with both values; each record is checked against its own macros (4/4/9, the food sheet’s own check); the first of your own entry, USDA laboratory analysis, the USDA branded label and Open Food Facts that agrees with itself is used, and the other is kept visible. Scanning a barcode you already have an entry for offers the record the rule chooses, and the food sheet says why. The order and thresholds are a heuristic contract, not validated.
 - **One plan authority (every plan change through changePlan, one version each)** (integrated).
 - **Encrypted sync between devices** (integrated): needs a persistent disk; production mode refuses to start without one and without off-host backups.
 - **Verified off-host server backups, restore and health** (integrated): tested against a mock S3 that checks signatures and payload hashes; not yet against a real provider.
@@ -95,5 +99,5 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 - Prospectively validated cannot be claimed yet: no prospective validation exists.
 - Real data at scale cannot be claimed yet.
 - Real-world cannot be claimed yet.
-- The 21 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
+- The 22 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
 - No published evidence is registered for: hydration.

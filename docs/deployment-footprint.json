@@ -1,26 +1,26 @@
 {
- "build": "9a9661b252",
- "at": "2026-10-12T03:43:23.014Z",
- "buildMs": 2637,
+ "build": "e82ecf3367",
+ "at": "2026-10-12T04:40:29.109Z",
+ "buildMs": 2662,
  "inventory": {
   "outputDirectory": "dist",
   "buildCommand": "npm run build",
   "files": 1145,
-  "bytes": 102546636,
-  "br": 25165044,
-  "gzip": 27795603,
+  "bytes": 102579039,
+  "br": 25174544,
+  "gzip": 27806499,
   "groups": {
    "documents": {
     "files": 16,
-    "bytes": 537360,
-    "br": 199280,
-    "gzip": 208841
+    "bytes": 544452,
+    "br": 201569,
+    "gzip": 211332
    },
    "app shell": {
     "files": 17,
-    "bytes": 3992650,
-    "br": 1411054,
-    "gzip": 1532854
+    "bytes": 4017961,
+    "br": 1418265,
+    "gzip": 1541259
    },
    "food corpus": {
     "files": 1109,
@@ -38,8 +38,8 @@
   "largest": [
    {
     "path": "/index.html",
-    "bytes": 3959343,
-    "br": 1384467
+    "bytes": 3984654,
+    "br": 1391681
    },
    {
     "path": "/data/food/branded/recs-046.json",
@@ -90,18 +90,18 @@
  "load": {
   "firstVisit": {
    "requests": 15,
-   "bytes": 1481900,
+   "bytes": 1489111,
    "revalidated": 1,
    "paths": [
-    "/index.html 200 1384467",
-    "/sw.js 200 1375",
+    "/index.html 200 1391681",
+    "/sw.js 200 1374",
     "/data/food/manifest.json 200 54074",
+    "/index.html 304 0",
     "/manifest.webmanifest 200 463",
     "/icons/icon.svg 200 225",
-    "/index.html 304 0",
     "/icons/favicon.svg 200 225",
+    "/version.json 200 1218",
     "/icons/favicon-32.png 200 452",
-    "/version.json 200 1220",
     "/icons/favicon-16.png 200 272",
     "/icons/icon-192.png 200 2525",
     "/icons/icon-512.png 200 7007",
@@ -109,7 +109,7 @@
     "/icons/apple-touch-icon.png 200 2354",
     "/data/reference/compendium-2024.json 200 22145"
    ],
-   "readyMs": 1491,
+   "readyMs": 1440,
    "foodShards": 0
   },
   "firstSearch": {
@@ -132,7 +132,7 @@
     "/index.html 304 0",
     "/data/food/manifest.json 304 0"
    ],
-   "readyMs": 1178
+   "readyMs": 1206
   },
   "compression": "brotli quality 5 (gzip level 6 for clients without brotli)"
  }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-12T04:22:29.409Z",
-  "build": "5a9867b410",
+  "generatedAt": "2026-10-12T04:40:05.508Z",
+  "build": "e82ecf3367",
   "counts": {
     "hard": {},
     "soft": {}
@@ -74,7 +74,7 @@
     },
     {
       "cat": "heuristic-contracts",
-      "msg": "every threshold and curve behind a decision or goal has a complete contract (21)"
+      "msg": "every threshold and curve behind a decision or goal has a complete contract (22)"
     },
     {
       "cat": "claim-registry",
@@ -90,7 +90,7 @@
     },
     {
       "cat": "current-state",
-      "msg": "docs/CURRENT_STATE.md generated from the running registries (99 lines)"
+      "msg": "docs/CURRENT_STATE.md generated from the running registries (103 lines)"
     },
     {
       "cat": "catalogue",

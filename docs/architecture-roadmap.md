@@ -4664,3 +4664,77 @@ What stays open, and why:
 - Prospective validation still needs months of real use.
 
 All 37 gates pass (reproducible included); release 24/24; 1,921 self-tests.
+
+## The weather says why, a sleeping server is woken, the deployment measured, the last refinements (build e82ecf3367)
+
+What the person reported, and the items the catalogue left deferred.
+- **"The weather could not be fetched."**
+  - The refresh dropped its reason. `refreshEnvironment` returned the forecast's status without its error, so every
+    failure read the same: no server, a missing `/api/sync` rewrite, a stopped server, or a provider refusing.
+  - `weatherRefreshOutcome()` now carries the forecast's reason to the message, and gives a reason to a failure that
+    came back without one. A failed refresh is also shown at the top of the weather sheet, with the connection check;
+    it had been a line under the tables.
+  - The deployment forwards `/api/sync` to a server on free hosting, which sleeps when idle and takes up to a minute to
+    wake. The app gave up after 25 s. A timeout, or a 502 to 504 from the forwarder, is now retried once with "The
+    server is waking up; trying once more"; if both fail, the message says the server may be stopped or still waking.
+  - The provider itself could not be checked from the build environment: its network policy blocks Open-Meteo and the
+    sync host. `npm run deploy:smoke -- --app <url>` and the weather sheet's "Check the connection" name the broken
+    layer on a live deployment.
+- **The deployment footprint, measured** (doc 1, W-033). `scripts/deploy-footprint.mjs` (`npm run footprint`) measures
+  what a deployment serves and what a browser receives, and writes `docs/deployment-footprint.md`:
+  - 1,145 files: 97.8 MB raw, 24.0 MB with brotli; 93.3 MB of it is the food corpus;
+  - the cache header `vercel.json` gives each path, and the build time;
+  - from a host applying `vercel.json` with ETags: 1.41 MB on a first visit, 0.28 MB on a first food search (three
+    shards), nothing on a return visit.
+  It found two faults:
+  - the service worker precached the 4 MB page as both `./` and `./index.html`, so a first visit downloaded it twice
+    (2.87 MB, now 1.41 MB);
+  - `/data/food/manifest.json` matched two Cache-Control rules, `no-cache` and a day, so which one applied depended
+    on the host. The data rule now leaves the manifest out.
+  The deploy gate holds the budgets. What only the platform knows (its stored size, edge compression, cold starts)
+  needs the owner's account (`vercel inspect`).
+- **Why a lift stalled** (doc 1, W-015: progression failure classification). A lift the plan reads as flat or falling
+  against its own noise names its likely causes, in a stated order: an unapplied progression (the same top set three
+  times running), sets far from failure, readiness below the person's normal, loss faster than the band in a cut, and
+  volume up 30% or more. Each cause has its evidence, threshold, action and what would settle it, shown on "What to
+  change next week". The thresholds are a heuristic contract (`stall_causes`), not validated. No screen turns computed
+  stimulus into a prediction of growth.
+- **Two records of one food that disagree** (doc 1, W-018: food-source conflict arbitration).
+  - `foodSourceArbitration()` names the nutrients that differ, with both values.
+  - It checks each record against its own macros, with the food sheet's own 4/4/9 check (whose thresholds now come
+    from the contract).
+  - It uses the first of your own entry, USDA laboratory analysis, the USDA branded label and Open Food Facts that
+    agrees with itself, and keeps the other visible.
+  - Scanning a barcode you already have an entry for offers the record the rule chooses, and the food sheet says why.
+    The rule is a heuristic contract (`food_source_rank`), not validated.
+- **What a tape change can mean** (doc 1, W-020: measurement quality and region-specific interpretation).
+  - Each circumference site's change over its recent readings is set against the tape's error: the person's own repeats
+    within two days, or a 1 cm working assumption. It counts only beyond 2√2 errors.
+  - A change that counts is read with the weight trend and the strength trend for what it is consistent with. Every
+    reading says what the tape cannot separate: a tape measures girth, not tissue. It is shown site by site on the Body
+    tab.
+  - The working error and threshold are a heuristic contract (`tape_change`), not validated.
+
+Tests:
+- 29 self-tests, each made to fail once on purpose:
+  - the weather outcome and the sheet's banner;
+  - stall causes on lifts written here and on the excessive-loss fixture;
+  - food records that disagree, with each record's own check and the order;
+  - tape changes against the working error and the person's own repeats.
+- The deployment gate drives the real app, with the original stacks plus a new one (a server that is slow to wake):
+  - no server: the missing server is named;
+  - a stopped server: the app retries once and says it may be stopped;
+  - a sleeping server: the app says it is waking it, retries and gets the weather;
+  - the footprint budgets.
+- The external gate: a refusing provider is named, and a scanned product that disagrees with your own entry is settled
+  on screen.
+- Black-box workflows V-020 (six weeks of the same bench set, logged through the screen) and V-021 (two arm readings,
+  eight weeks apart, through the quick log).
+
+What stays open, and why:
+- W-019's question for a real person, prospective validation, and the provider accounts (item 11) are unchanged.
+- Each of W-015, W-018 and W-020 lists more refinements than were built: exercise-specific response calibration and
+  substitution equivalence, protein quality, meal timing and glycaemic response, and photo-condition normalisation.
+  These were chosen as the parts a test can hold now.
+
+1,950 self-tests pass; the full release record is in progress.

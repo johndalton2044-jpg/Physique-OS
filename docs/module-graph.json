@@ -1769,7 +1769,9 @@
     "prof",
     "weightTrend",
     "navyBodyFat",
-    "muscleRetentionRisk"
+    "strengthTrend",
+    "muscleRetentionRisk",
+    "getCurrentState"
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
@@ -2765,6 +2767,9 @@
    ],
    "63-food-ext.js": [
     "adapterState"
+   ],
+   "64-physique.js": [
+    "tapeChanges"
    ],
    "65-import.js": [
     "photoMeta"
@@ -5271,7 +5276,9 @@
     "exerciseRedundancy",
     "physiqueRate",
     "bodyCompositionState",
-    "bodyCompositionByMethod"
+    "bodyCompositionByMethod",
+    "_tapeReading",
+    "tapeChanges"
    ],
    "65-attachments.js": [
     "_dataUrlBytes",

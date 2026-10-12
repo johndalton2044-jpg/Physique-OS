@@ -245,3 +245,24 @@ Never start an item before what it depends on is in place.
     reference, not a validated threshold;
   - the shoulder and hip assessments have no response model, so the mobility recommendation does not use them;
   - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243.
+
+## 10. State at e82ecf3367 (after the weather report and the last refinements)
+
+- **Gates and tests:** 37 gates, all pass, none skipped; the release check passes 24/24. There are 1,950 in-app
+  self-tests, 400 interface tests and 17 black-box workflows.
+- **What the round did:**
+  - the weather now says why it could not be fetched, and a sleeping server is woken and retried once (see below);
+  - the deployment footprint is measured (`npm run footprint`, `docs/deployment-footprint.md`). A first visit no longer
+    downloads the page twice, and the food manifest has one cache rule;
+  - W-015 (why a lift stalled), W-018 (two records of one food that disagree) and W-020 (what a tape change can mean),
+    each with a definition of done chosen from its catalogue entry.
+- **If the weather still fails on the live app:** the message now names the layer.
+  - "Weather and online food lookups need the Physique OS server" means the deployment has no working `/api/sync`
+    rewrite.
+  - "did not answer, twice" means the server at `https://physique-os.onrender.com` (the rewrite's destination in
+    `vercel.json`) is stopped or not deployed.
+  - "The source refused this server's credentials" or "is limiting requests" comes from the provider.
+  - `npm run deploy:smoke -- --app https://YOUR-APP` checks each layer from outside; the weather sheet's "Check the
+    connection" does the same in the app.
+- **Waiting on the person:** item 11 (provider accounts and a model key), the branch-protection rule on `main`, and a
+  `vercel inspect` of a live deployment for the platform's own footprint record.

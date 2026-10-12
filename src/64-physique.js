@@ -156,3 +156,41 @@ function bodyCompositionByMethod(){var by={};obsOf('bodyfat').forEach(function(o
   MODELS.push({id:'physique_regions',name:'Physique by region',cls:'EMPIRICAL',version:'1.0',inputs:['waist','bodyfat','weight'],minN:4,
     assumes:['strength progress stands in for growth','regions are comparable with each other'],failsWhen:['fewer than three trained regions','too few sessions per exercise','circumference changes that are fat, not muscle'],
     output:'per region: exposure, strength and size trends, status, and where to add or take sets',consumers:['physiqueCard'],freshnessDays:7,uncertainty:{kind:'standard error of each trend'},fn:'physiqueModel'});})();
+/* ---------- W-020: WHAT A TAPE CHANGE CAN MEAN, SITE BY SITE ----------
+   Each circumference site's change over its recent readings is set against the tape's own error, and read with the weight
+   trend and the strength trend for what it is consistent with. A tape measures girth, not tissue: an arm that grows while
+   strength rises is consistent with muscle, and fat or water would move it too. So each reading names what the tape
+   cannot separate, and a change inside the tape's error is said to be one, not a trend. */
+var TAPE_CONTRACT={id:'tape_change',subject:'a change in a circumference',predicate:'is read as a change only beyond',
+  parameters:{selfTapeError:{value:0.4,unit:'in (about 1 cm)',meaning:'the error of one self-measured tape reading, until the person’s own repeats replace it'},
+    beyond:{value:2*Math.SQRT2,unit:'tape errors',meaning:'a difference of two readings must exceed this many single-reading errors (twice the error of a difference) to count'},
+    minSpan:{value:14,unit:'days',meaning:'readings closer together than this are repeats, not a change'},
+    weightSteady:{value:0.2,unit:'lb a week',meaning:'a weight trend within this either way is steady'}},
+  statement:function(v){return 'a circumference change counts only beyond '+round(v.beyond,1)+' times the tape’s error ('+v.selfTapeError+' in until your repeats measure it)';},
+  rationale:'two readings of a self-measured tape differ by their own error even when nothing changed; the threshold keeps that from being read as a trend',
+  evidenceBasis:[],parameterSource:'chosen by this system; the 1 cm working error is not from a study and is replaced by the person’s own repeat readings',
+  parameterVersion:'1.0',calibrationStatus:'calibrated to the person once they repeat a reading within two days twice',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults measuring themselves with a tape'},failureConditions:['readings at different sites on the limb','readings at different times of day or after training'],
+  outcomes:['circumference change']};
+var TAPE_SITES={waist:'trunk',hip:'trunk',neck:'trunk',chest:'muscle',arm:'muscle',thigh:'muscle'};
+function _tapeReading(site,dir,wDir,sDir){var trunk=TAPE_SITES[site]==='trunk';
+  if(trunk)return dir<0?(wDir==='losing'?'consistent with fat loss, with the weight trend falling too; water and gut content also move it':'smaller with the weight not falling: possibly fat lost while something else was gained, or a lighter day')
+    :(wDir==='gaining'?'consistent with fat gain, with the weight trend rising too; bloating on the day moves it as well':'larger with the weight not rising: more likely a fuller day than a trend');
+  if(dir>0)return sDir==='rising'?'consistent with muscle, with strength rising; fat or water would move it too, and the tape cannot tell which'
+    :(wDir==='gaining'?'with the weight rising and strength not rising, more likely fat or water than muscle':'without rising strength, the tape alone cannot say what grew');
+  return sDir==='falling'?'could include muscle: strength is falling too'
+    :(sDir==='unknown'?(wDir==='losing'?'most likely fat or water while losing weight; with no strength record, muscle loss cannot be ruled out':'smaller; with no strength record, the tape cannot say what was lost')
+      :(wDir==='losing'?'most likely fat or water: strength holding argues against muscle loss':'smaller with strength holding: more likely fat or water than muscle'));}
+function tapeChanges(){var P=TAPE_CONTRACT.parameters,S=null,st=null;try{S=getCurrentState();}catch(e){}try{st=strengthTrend();}catch(e){}
+  var w=S&&S.trend&&S.trend.status==='ok'?S.trend.slopePerWeek:null,wDir=w==null?'unknown':(w<-P.weightSteady.value?'losing':(w>P.weightSteady.value?'gaining':'steady'));
+  var sDir=st&&st.status==='ok'?(/improving|rising/.test(st.overall)?'rising':(/declin/.test(st.overall)?'falling':'steady')):'unknown';
+  var rows=Object.keys(TAPE_SITES).map(function(site){var L=obsOf(site).filter(function(o){return !o.retracted&&daysBetween(o.date,asOf())<=120;});
+    if(L.length<2)return null;
+    var d=[];for(var i=1;i<L.length;i++)if(daysBetween(L[i-1].date,L[i].date)<=2)d.push(L[i].value-L[i-1].value);
+    var own=d.length>=2,e=own?round(Math.sqrt(d.reduce(function(a,x){return a+x*x;},0)/d.length)/Math.SQRT2,2):P.selfTapeError.value;
+    var first=L[0],last=L[L.length-1],span=daysBetween(first.date,last.date);if(span<P.minSpan.value)return null;
+    var ch=round(last.value-first.value,2),limit=round(P.beyond.value*e,2),changed=Math.abs(ch)>limit;
+    return {site:site,label:OBS_TYPES[site].label,from:first.value,to:last.value,change:ch,days:span,error:{value:e,own:own,pairs:d.length},limit:limit,changed:changed,
+      reading:changed?_tapeReading(site,ch>0?1:-1,wDir,sDir):'within the tape’s error: not a change yet'};}).filter(Boolean);
+  return {status:rows.length?'ok':'insufficient',cls:'MEASURED',rows:rows,weight:wDir,strength:sDir,policy:TAPE_CONTRACT.id,
+    need:rows.length?null:['two readings of a site at least '+P.minSpan.value+' days apart'],limits:'A tape measures girth, not tissue.'};}

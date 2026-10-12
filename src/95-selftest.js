@@ -5257,6 +5257,31 @@ function runSelfTest(opts){
       var H=heuristicContractById('food_source_rank');
       ok('the order and thresholds are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.order.value[0]==='own'&&heuristicContracts().ok);
     })();
+    _stSuite('body-composition');
+    /* WHAT A TAPE CHANGE CAN MEAN (catalogue doc 1, W-020), on readings written here: weight falling a pound a week, no
+       training record. Expected by hand: an arm from 14.0 to 12.6 in is 1.4 in, beyond 2√2 × 0.4 = 1.13 in, so it counts;
+       14.0 to 13.5 does not; two repeats of +0.2 and −0.2 in make the error 0.2/√2 = 0.14 in. */
+    (function(){var a=asOf(),keepO=DB.observations,keepS=DB.sessions;
+      var o=function(id,d,type,v){var day=addDays(a,-d);return {id:'obs-st-tc-'+id,type:type,date:day,at:day+'T07:00:00.000Z',createdAt:day+'T07:00:00.000Z',value:v,unit:type==='weight'?'lb':'in',source:'manual',meta:{},flags:[],retracted:false};};
+      var wts=[];for(var d=60;d>=0;d--)wts.push(o('w'+d,d,'weight',200-(60-d)/7));
+      var run=function(extra,fn){var r=null;try{DB.observations=wts.concat(extra);DB.sessions=[];_memoInvalidate();r=fn();}finally{DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();}return r;};
+      var row=function(T,site){return (T.rows||[]).filter(function(r){return r.site===site;})[0]||null;};
+      var A=run([o('a1',56,'arm',14.0),o('a2',0,'arm',12.6)],function(){return tapeChanges();}),ra=row(A,'arm');
+      ok('an arm 1.4 in smaller over 8 weeks is beyond the tape’s error (2√2 × 0.4 = 1.13 in)',!!ra&&ra.change===-1.4&&ra.limit===round(2*Math.SQRT2*0.4,2)&&ra.changed===true&&ra.error.own===false,JSON.stringify(ra));
+      ok('and while losing weight with no strength record, it says fat or water most likely, and that muscle loss cannot be ruled out',A.weight==='losing'&&A.strength==='unknown'&&!!ra&&/most likely fat or water/.test(ra.reading)&&/cannot be ruled out/.test(ra.reading),ra&&ra.reading);
+      var B=run([o('b1',56,'arm',14.0),o('b2',0,'arm',13.5)],function(){return tapeChanges();}),rb=row(B,'arm');
+      ok('0.5 in is within the tape’s error, and is said to be',!!rb&&rb.changed===false&&/within the tape’s error/.test(rb.reading));
+      var C=run([o('c1',56,'arm',14.0),o('c2',55,'arm',14.2),o('c3',2,'arm',13.0),o('c4',0,'arm',12.8)],function(){return tapeChanges();}),rc=row(C,'arm');
+      ok('two repeats within two days replace the working error with the person’s own: 0.2/√2 = 0.14 in',!!rc&&rc.error.own===true&&rc.error.pairs===2&&Math.abs(rc.error.value-0.2/Math.SQRT2)<0.006&&rc.changed===true,JSON.stringify(rc&&rc.error));
+      ok('readings closer than two weeks are repeats, not a change',!row(run([o('d1',10,'arm',14.0),o('d2',0,'arm',12.0)],function(){return tapeChanges();}),'arm'));
+      ok('what a change can mean depends on the site and its context, and says what the tape cannot tell apart',
+        /consistent with muscle/.test(_tapeReading('arm',1,'steady','rising'))&&/cannot tell which/.test(_tapeReading('arm',1,'steady','rising'))&&/could include muscle/.test(_tapeReading('thigh',-1,'losing','falling'))
+        &&/consistent with fat loss/.test(_tapeReading('waist',-1,'losing','rising'))&&/more likely fat or water than muscle/.test(_tapeReading('arm',1,'gaining','steady')));
+      var html=run([o('a1',56,'arm',14.0),o('a2',0,'arm',12.6)],function(){var keep=setHTML,cap='';setHTML=function(id,h){if(id==='bodyZone')cap=h;};try{RENDERERS.body();}finally{setHTML=keep;}return cap;});
+      ok('the Body tab shows each site’s change with what it can mean',/data-tape-site="arm"/.test(html)&&/most likely fat or water/.test(html),html.length);
+      var H=heuristicContractById('tape_change');
+      ok('the working error and the threshold are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.selfTapeError.value===0.4&&heuristicContracts().ok);
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

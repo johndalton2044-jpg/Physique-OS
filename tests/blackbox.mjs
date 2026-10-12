@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-020). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-021). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -358,6 +358,21 @@ await run('V-020 why a lift stalled',async ui=>{const LOAD=100,REPS=5;
   const why=ui.text('#editBackdrop [data-stall-causes]');
   line(new RegExp('the progression was not applied \\(the same top set, '+LOAD+'(\\.0)? × '+REPS+', 3 times running\\)').test(why),'V-020 the flat lift is read as an unapplied progression, with the set as entered',why);
   line(/add the smallest load step, or one rep, next session/i.test(why)&&/whether the lift moves within two exposures/.test(why),'V-020 and it says what to do and what would settle it',why);
+});
+
+/* V-021 WHAT A TAPE CHANGE CAN MEAN (catalogue doc 1, W-020). An upper-arm reading is entered in the quick log eight weeks
+   ago (the clock moved back) and another today, 1.4 in (3.6 cm) smaller. Expected, from this test's own arithmetic: the
+   Body tab shows the change, beyond the tape's 1 cm working error, and, with no weight trend or training logged, says the
+   tape alone cannot say what was lost. */
+await run('V-021 a tape change, read',async ui=>{const metric=ui.w.unitPref()==='metric',A=metric?[35.6,32.0]:[14.0,12.6];
+  for(const [daysAgo,v] of [[56,A[0]],[0,A[1]]]){ui.setClock(daysAgo);ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="waist"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="waist"]').click();await ui.until('#logBackdrop #f_arm');
+    const n=ui.w.DB.observations.filter(o=>o.type==='arm').length;ui.type('f_arm',v);ui.press('log.save',null,'#logBackdrop');
+    await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='arm').length===n+1,'the arm reading for '+daysAgo+' days ago');}
+  ui.tab('body');await ui.until('#view-body [data-tape-site="arm"]');
+  const t=ui.text('#view-body [data-tape-site="arm"]'),want=metric?'3.6 cm':'1.4 in';
+  line(t.indexOf('−'+want+' over 8 weeks')>=0,'V-021 the Body tab shows the arm '+want+' smaller over 8 weeks, as entered',t);
+  line(/the tape cannot say what was lost/.test(t),'V-021 and, with no weight trend or training logged, says the tape alone cannot say what was lost',t);
 });
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');

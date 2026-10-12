@@ -124,6 +124,30 @@
    }
   },
   {
+   "id": "food-source-arbitration",
+   "label": "Two records of one food that disagree, settled by a declared rule",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "external"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the nutrients that differ are named with both values; each record is checked against its own macros (4/4/9, the food sheet’s own check); the first of your own entry, USDA laboratory analysis, the USDA branded label and Open Food Facts that agrees with itself is used, and the other is kept visible. Scanning a barcode you already have an entry for offers the record the rule chooses, and the food sheet says why. The order and thresholds are a heuristic contract, not validated",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "training-logging",
    "label": "Training sessions and sets",
    "maturity": "validated",
@@ -495,6 +519,30 @@
    }
   },
   {
+   "id": "tape-change",
+   "label": "What a circumference change can mean, site by site",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-021"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each site’s change over its recent readings is set against the tape’s error (the person’s own repeats within two days, or a 1 cm working assumption) and counts only beyond 2√2 errors; a change that counts is read with the weight and strength trends for what it is consistent with, and says what the tape cannot separate. A tape measures girth, not tissue. The threshold and working error are a heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
    "id": "aerobic-fitness",
    "label": "Aerobic fitness: VO2max level and trend",
    "maturity": "surfaced",
@@ -533,6 +581,30 @@
    "axes": {
     "engineering": "surfaced",
     "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "stall-causes",
+   "label": "Why a lift stalled: likely causes named from the record",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-020"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a lift the plan reads as flat or falling against its own noise names its likely causes in a stated order: an unapplied progression (the same top set three times running), sets far from failure, readiness below the person’s normal, loss faster than the band in a cut, volume up 30% or more; each with its evidence, threshold, what to do and what would settle it, on “What to change next week”. The thresholds are a heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
     "data": "real data path",
     "personalization": "early personal",
     "ux": "workflow-tested",
