@@ -467,15 +467,26 @@ RENDERERS.food=function(){
       if(r.status!=='ok')return uiRow(r.label,'no data',{sub:r.note});
       var tone=r.verdict==='meets'||r.verdict==='within'?'good':(r.verdict==='below'||r.verdict==='above'?'attention':(r.verdict==='info'?'neutral':'negative'));
       return uiRow(r.label,'<strong>'+fmtNum(r.mean,r.mean<10?1:0)+' '+esc(r.unit)+'</strong>'+(r.target!=null?' '+uiPill(r.verdict,tone):''),{sub:(r.target!=null?(r.dir==='min'?'target \u2265':'limit \u2264')+fmtNum(r.target,r.target<10?1:0)+' '+esc(r.unit)+' \u00b7 ':'')+esc(r.ref)+(r.note?' \u00b7 '+esc(r.note):''),rsub:r.coverage<100?(r.coverage+'% coverage'):''});}).join('')+
-    (ad.perMealProtein?'<div class="divider"></div>'+uiRow('Protein per meal','<strong>'+ad.perMealProtein.meals.map(function(m){return m.mean;}).join(' / ')+' g</strong>',{sub:'breakfast / lunch / dinner / snacks \u00b7 \u2265'+ad.perMealProtein.thresholdG+' g per meal \u00b7 '+esc(ad.perMealProtein.note)}):'')+
+    (ad.perMealProtein?'<div class="divider"></div>'+uiRow('Protein per meal','<strong>'+ad.perMealProtein.meals.map(function(m){return m.mean;}).join(' / ')+' g</strong>',{sub:'breakfast / lunch / dinner / snacks \u00b7 \u2265'+ad.perMealProtein.thresholdG+' g per meal \u00b7 <span data-protein-meals>'+esc(ad.perMealProtein.advice)+'</span> \u00b7 '+esc(ad.perMealProtein.note)}):'')+
     (ad.fatFloor?uiRow('Fat floor',fmtG(ad.fatFloor.mean,0)+' / day',{sub:esc(ad.fatFloor.note),rsub:ad.fatFloor.meets?'above floor':'below floor'}):'')+
     (ad.caveat?'<div class="hint warn">'+esc(ad.caveat)+'</div>':'')});
   else out+=uiCard({title:'Adequacy (7-day)',sub:'not enough logged food',body:'<div class="muted">'+esc(ad.need||'log a day of food')+'</div>'});
+  try{out+=foodDayCard();}catch(e){_q(e,'P2');}   /* W-018: today's protein quality from amino acids, the food matrix, glycaemic load */
   out+='<div class="btn-row">'+uiBtn('Intake composition','nav.nutritionviz',null,'btn-sm btn-secondary')+'</div>';
   try{out+=hydrationCard();}catch(e){_q(e,'P2');}   /* drinks, food water, sweat, status */
   try{out+=supplementsCard();}catch(e){_q(e,'P2');}   /* supplements and vitamins, beside the food they add to */
   setHTML('foodZone',out);
 };
+/* W-018: today's food read further, each from its own cited source and with its limits: the amino acid score of the
+   protein whose composition is known, the energy whole nuts do not release, and the glycaemic load */
+function foodDayCard(date){date=date||todayISO();var D=null,G=null;try{D=dietDigestibility(date);}catch(e){_q(e,'P2');}try{G=glycaemicLoad(date);}catch(e){_q(e,'P2');}
+  var rows='';
+  if(D&&D.status==='ok'&&D.amino&&D.amino.status==='ok')rows+='<div data-amino-score>'+uiRow('Protein quality','score '+esc(fmtNum(D.amino.score,2)),{sub:esc(D.amino.text)+'.'})+'</div>';
+  if(D&&D.status==='ok'&&D.matrix&&D.matrix.length)rows+='<div data-matrix-energy>'+uiRow('Energy whole nuts hold back','about '+esc(String(Math.abs(D.matrixAdjustmentKcal)))+' kcal',
+    {sub:esc(D.matrix.map(function(m){return m.food+': '+m.grams+' g counts about '+m.measured+' kcal, not the '+m.logged+' logged ('+m.source+')';}).join('; ')+'. Shown, not taken off your intake: your expenditure is fitted from what you log.')})+'</div>';
+  if(G&&G.status==='ok')rows+='<div data-glycaemic-load>'+uiRow('Glycaemic load',esc(String(G.load)+(G.band?' \u00b7 '+G.band:'')),
+    {sub:esc(G.meals.map(function(m){return m.meal+' '+m.load;}).join(' \u00b7 ')+' \u00b7 '+Math.round(G.coverage*100)+'% of the carbohydrate matched to the international tables. '+G.limits)})+'</div>';
+  return rows?uiCard({title:'Today\u2019s food, read further',sub:'protein quality, the food matrix and glycaemic load',body:rows}):'';}
 function foodItem(f,day,extra){return _foodItemCore(f,day,extra)+(f.lastQuantity!=null?'<div class="fi-again">'+uiBtn('Log again \u00b7 '+(f.lastLabel||(fmtNum(f.lastQuantity,0)+' '+(f.lastBasis||'g'))),'food.again',f.kind+'|'+f.id+'|'+day,'btn-sm btn-ghost')+'</div>':'');}
 function _foodItemCore(f,day,extra){return '<div class="food-item" data-act="food.pick" data-arg="'+attrEsc(f.kind+'|'+f.id+'|'+day)+'" tabindex="0" role="button"><div><div class="fi-name">'+esc(f.name)+(f.brand?' <span class="muted">'+esc(f.brand)+'</span>':'')+'</div><div class="fi-src">'+esc(f.source||'')+(f.category?' \u00b7 '+esc(f.category):'')+(extra?' \u00b7 '+extra:'')+(f.discontinued?' \u00b7 discontinued':'')+'</div></div><div class="fi-kcal">'+foodKcalLabel(f)+'</div></div>';}
 function renderFoodResults(day){

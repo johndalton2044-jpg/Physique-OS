@@ -1030,3 +1030,52 @@ Appended by `node scripts/baseline.mjs`. Each entry is generated from the runnin
 - capabilities: 22 — surfaced 16, validated 5, integrated 1
 - production-ready: 0; implemented but unsurfaced: none
 - dependency graph: 111 nodes, 305 edges
+
+## 2026-10-11T21:20:10.127Z — build 0dc41f684f
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 111 nodes, 305 edges
+
+## 2026-10-12T01:29:40.642Z — build abd4ef4b01
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 111 nodes, 306 edges
+
+## 2026-10-12T04:59:43.162Z — build e82ecf3367
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 111 nodes, 306 edges
+
+## 2026-10-12T09:10:37.152Z — build 847a6961b4
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 111 nodes, 306 edges
+
+## 2026-10-12T12:28:47.000Z — build e0ce259ce6
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 114 nodes, 320 edges
+
+## 2026-10-12T17:22:14.097Z — build fd6e597ef7
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 116 nodes, 329 edges
+
+## 2026-10-12T18:44:58.504Z — build 7df2f090bc
+
+- sources: 101, quantities: 41 (single source: true)
+- capabilities: 22 — surfaced 16, validated 5, integrated 1
+- production-ready: 0; implemented but unsurfaced: none
+- dependency graph: 119 nodes, 335 edges

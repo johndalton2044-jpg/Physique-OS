@@ -154,7 +154,11 @@ function scanFound(code){
   _stopScan();_SCAN.code=code;_SCAN.status='looking up';renderSheet();
   /* Bundled database first; Open Food Facts only when it has no such barcode (integration spec \u00a721). */
   return lookupProductByBarcode(code).then(function(r){
-    if(r&&r.status==='ok'){var f=r.food;_SCAN.status='found';closeSheet();openFoodAdd(_FOOD_DAY||todayISO(),f);
+    if(r&&r.status==='ok'){var f=r.food;_SCAN.status='found';closeSheet();
+      /* W-018: the person's own entry for this barcode and the record found are settled by the declared rule when they
+         disagree: the one used is offered for logging, and the sheet says why and what the other says */
+      var own=ownFoodForBarcode(code),A=own?foodSourceArbitration(own,f):null;
+      openFoodAdd(_FOOD_DAY||todayISO(),A&&A.status==='conflict'?A.chosen.food:f);if(A&&A.status==='conflict'){_FOODSHEET.arbitration=A;renderSheet();}
       toast('Found: '+f.name+(r.source==='open-food-facts'?' \u00b7 from Open Food Facts'+(f.provenance&&f.provenance.missing.length?(' (no '+f.provenance.missing.join(', ')+' listed)'):''):''));return f;}
     _SCAN.status='not found';_SCAN.offNote=r&&r.error&&r.error.category!=='unsupported_record'?r.error.text:null;renderSheet();return null;
   }).catch(function(e){_q(e,'P2');_SCAN.status='not found';renderSheet();return null;});
@@ -195,10 +199,11 @@ function openWeather(){openSheet('edit',{form:'weather',title:'Weather',desc:'',
 registerAction('weather.open',function(){openWeather();});
 registerAction('weather.q',function(a,ev,el){if(_SHEET&&_SHEET.buf)_SHEET.buf.q=el?el.value:'';});
 registerAction('weather.search',function(){var q=(_SHEET.buf.q||'').trim();if(q.length<2){toast('Type at least two letters of a place');return;}
-  searchPlaces(q).then(function(r){if(r.status!=='ok'){_SHEET.buf.searchError=r.error.text;_SHEET.buf.searchDetail=r.error.category+(r.error.stage?' at the '+r.error.stage+' stage':'')+': '+r.error.detail;_SHEET.buf.places=null;}
+  searchPlaces(q,{onRetry:function(){toast(WEATHER_WAKING_TEXT);}}).then(function(r){if(r.status!=='ok'){_SHEET.buf.searchError=r.error.text;_SHEET.buf.searchDetail=r.error.category+(r.error.stage?' at the '+r.error.stage+' stage':'')+': '+r.error.detail;_SHEET.buf.places=null;}
     else{_SHEET.buf.places=r.places;_SHEET.buf.searchError=r.places.length?null:'No places found';_SHEET.buf.searchDetail=null;}renderSheet();});});
 registerAction('weather.pick',function(i){var p=(_SHEET.buf.places||[])[+i];if(!p)return;setWeatherLocation(p);_SHEET.buf.places=null;renderSheet();toast('Weather place set to '+p.label);dispatchAct('weather.refresh');});
-registerAction('weather.refresh',function(){toast('Fetching the weather\u2026');refreshEnvironment().then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();
+var WEATHER_WAKING_TEXT='The server is waking up; trying once more\u2026';
+registerAction('weather.refresh',function(){toast('Fetching the weather\u2026');refreshEnvironment({onRetry:function(){toast(WEATHER_WAKING_TEXT);}}).then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();
   toast(r.status==='ok'?'Weather updated':((r.error&&r.error.text)||'The weather could not be fetched'),r.status==='ok'?null:{tone:'attention'});});});
 registerAction('weather.history',function(){var end=addDays(todayISO(),-6),start=addDays(end,-29);   /* reanalysis lags about five days */
   fetchHistoricalWeather(start,end).then(function(r){renderAll();if(_SHEET&&_SHEET.opts&&_SHEET.opts.form==='weather')renderSheet();toast(r.status==='ok'?'History loaded: '+shortDate(start)+' \u2013 '+shortDate(end):((r.error&&r.error.text)||'History could not be fetched'),r.status==='ok'?null:{tone:'attention'});});});
@@ -211,7 +216,11 @@ SHEETS.weather=function(b){
       (b.searchDetail?'<div class="hint">'+esc(b.searchDetail)+'</div>':''):'')+
     (b.diag?renderServerDiagnosis(b.diag):'');
   if(!L)return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
-  var N=environmentNow();
+  var N=environmentNow(),wf=DB.settings.weatherSync||{};
+  /* a failed refresh says why at the top, with the check that names the broken layer; it was a line under the tables */
+  if(wf.state==='failed'&&wf.error)out+='<div class="banner attention" data-weather-problem><span class="banner-text">'+esc(wf.error.text||wf.error.category)+
+      (N.status==='ok'?' The weather below was retrieved '+esc(String(N.retrievedAt).replace('T',' ').slice(0,16))+' UTC.':'')+'</span>'+uiBtn('Check the connection','diag.server',null,'btn-sm btn-secondary')+'</div>'+
+    '<div class="hint">'+esc(wf.error.category+(wf.error.stage?' at the '+wf.error.stage+' stage':'')+(wf.error.detail?': '+wf.error.detail:''))+'</div>';
   if(N.status==='ok'){out+='<div class="card-title" style="margin-top:12px">Now</div>'+['temperature','apparentTemperature','humidity','vpd','precipitation','cloudCover','windSpeed','windDirection','windGusts','uvIndex','isDay'].map(function(k){
       return uiRow(esc(ENV_VARIABLES[k].label),fmtEnv(k,N.values[k]),N.derived.indexOf(k)>=0?{sub:'derived'}:null);}).join('');
     var aqk=['usAqi','europeanAqi','pm2_5','pm10','ozone','no2','so2','co'].filter(function(k){return N.values[k]!=null;});
@@ -306,7 +315,7 @@ function physiologySummary(){var F=cardioFitnessModel(),H=hydrationBalance(),E=e
     {icon:'fork',label:'Protein quality today',r:D,v:D.status==='ok'?D.digestibleProteinG+' g digestible':null,sub:D.status==='ok'?('of '+D.proteinG+' g \u00b7 quality '+D.proteinQuality+(D.unclassifiedFoods?' \u00b7 '+D.unclassifiedFoods+' foods unclassified':'')):(D.need||[]).join('; ')},
     {icon:'brain',label:'Learning'+(L&&L.exercise?' ('+L.exercise+')':''),r:L||{status:'insufficient'},v:L&&L.status==='ok'?L.stage:null,sub:L&&L.status==='ok'?('recent gain '+L.recentGain+'% \u00b7 '+L.sessions+' sessions'):(L&&L.need||['lifting sessions']).join('; ')},
     {icon:'walk',label:'Everyday movement in a deficit',r:N,v:N.status==='ok'?((N.perTenPct>0?'+':'')+N.perTenPct.toLocaleString()+' steps a day per 10% deficit'):null,
-      sub:N.status==='ok'?(N.interval[0].toLocaleString()+' to '+N.interval[1].toLocaleString()+' \u00b7 '+Math.round(N.personalWeight*100)+'% your own data \u00b7 '+N.reading):N.need},
+      sub:N.status==='ok'?(N.interval[0].toLocaleString()+' to '+N.interval[1].toLocaleString()+' \u00b7 '+Math.round(N.personalWeight*100)+'% your own data \u00b7 '+N.reading+(N.calibration?' \u00b7 '+N.calibration.text:'')):N.need},
     /* field tests (Stage D, item 4) */
     {icon:'spark',label:'Mobility',r:Mo,v:[_testLine(_testRow(Mo,0)),_testLine(_testRow(Mo,1))].filter(Boolean).join(' \u00b7 ')||null,sub:[_testSub(_testRow(Mo,0)),_testSub(_testRow(Mo,1))].join(' \u00b7 ')},
     {icon:'lungs',label:'Conditioning',r:Co,v:_testLine(_testRow(Co,0)),sub:_testSub(_testRow(Co,0))+(_testRow(Co,0).latest&&_testRow(Co,0).latest.value<=12?' \u00b7 a recovery of 12 bpm or less in a minute marks low fitness':'')},

@@ -1,8 +1,8 @@
 # Governance report
 
-Build 38097babc5 · generated 2026-10-11T20:44:27.718Z
+Build 7df2f090bc · generated 2026-10-12T18:33:20.546Z
 
-**0 hard** (fail the build) · **0 soft** (tracked) · **32 passing**
+**0 hard** (fail the build) · **0 soft** (tracked) · **34 passing**
 
 ## Passing
 
@@ -22,12 +22,14 @@ Build 38097babc5 · generated 2026-10-11T20:44:27.718Z
 - **audit-never-run** — 50 audit functions, every one invoked
 - **registry-id-unique** — every registry id is unique in the running app (21 registries)
 - **registry-key-twice** — no keyed registry is given a key twice in the source (14 registries)
-- **heuristic-contracts** — every threshold and curve behind a decision or goal has a complete contract (18)
-- **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (24)
+- **heuristic-contracts** — every threshold and curve behind a decision or goal has a complete contract (30)
+- **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (33)
 - **decision-grounds** — every decision code has declared grounds (15 codes)
+- **view-requirements** — every view’s declared models and observations are exactly what it reads (12 views)
+- **current-state** — docs/CURRENT_STATE.md generated from the running registries (117 lines)
 - **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 29 entity contracts hold, and every store in the record is owned or explained
-- **model-without-version** — 50 models, each versioned
+- **model-without-version** — 56 models, each versioned
 - **model-without-provenance** — every model result carries provenance
 - **model-without-uncertainty** — every model result carries the full uncertainty contract
 - **registered-but-unimplemented** — every registry entry resolves to an implementation

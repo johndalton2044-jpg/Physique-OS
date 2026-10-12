@@ -224,7 +224,7 @@ function attentionQueue(){
     due.forEach(function(e){add({id:'exp:'+e.id,severity:'action',what:'An experiment reached its recheck date',
       why:'An experiment that is never evaluated becomes a belief instead of a result',
       cando:'Evaluate '+(e.intervention||e.variable),act:'exp.evaluate',arg:e.id,tab:'experiments'});});
-    var overdue=(DB.predictions||[]).filter(function(p){return p.status==='pending'&&p.dueDate&&p.dueDate<todayISO();});
+    var overdue=(DB.predictions||[]).filter(function(p){return p.status==='pending'&&p.model!=='execution_probability'&&p.dueDate&&p.dueDate<todayISO();});
     if(overdue.length)add({id:'pred',severity:'action',what:overdue.length+' forecast'+(overdue.length===1?'':'s')+' past due',
       why:'Calibration only improves when forecasts are scored against what happened',
       cando:'Score them now',act:'pred.score',tab:'learn'});
@@ -313,7 +313,7 @@ function timeline(opts){
     if(e.startDate>=from)ev.push({at:e.createdAt||e.startDate+'T12:00:00.000Z',date:e.startDate,kind:'experiment',label:'Experiment started: '+(e.intervention||e.variable),detail:e.prediction||'',id:e.id,act:'exp.open',arg:e.id});
     var done=e.completedAt||e.abandonedAt;
     if(done&&done.slice(0,10)>=from)ev.push({at:done,date:done.slice(0,10),kind:'outcome',label:'Experiment '+(e.conclusion||e.status),detail:e.summary||'',id:e.id,act:'exp.open',arg:e.id});});
-  (DB.predictions||[]).forEach(function(p){if(!p.madeAt)return;
+  (DB.predictions||[]).forEach(function(p){if(!p.madeAt||p.model==='execution_probability')return;
     if(localDateOf(p.madeAt)>=from)ev.push({at:p.madeAt,date:localDateOf(p.madeAt),kind:'prediction',label:'Forecast stamped',detail:p.subject+(p.lo!=null?(' '+fmtWeight(p.lo,{bare:true})+'\u2013'+fmtWeight(p.hi)):''),id:p.id});
     if(p.status==='scored'&&p.scoredAt&&localDateOf(p.scoredAt)>=from)ev.push({at:p.scoredAt,date:localDateOf(p.scoredAt),kind:'calibration',label:'Forecast scored',detail:(p.covered?'inside':'outside')+' the stated range'+(p.error!=null?(', error '+fmtSigned(p.error,2)):''),id:p.id});});
   (DB.phases||[]).forEach(function(p){if(!_knownBy(p,asOf()))return;
@@ -1188,7 +1188,7 @@ var PANEL_LEVEL_RULES=[
   [/^Recovery and deload/,'insightful'],[/^Substitutions/,'insightful'],[/^How each lift is responding/,'insightful'],[/^What the evidence supports/,'insightful'],
   /* food */
   [/^Today \u00b7/,'casual'],[/^Recent, frequent and favorites/,'casual'],[/^Possibly the same food/,'casual'],[/^Recipes and my foods/,'casual'],
-  [/^Against reference/,'insightful'],[/^Adequacy/,'insightful'],[/^What the food record feeds/,'developer'],[/^Data sources/,'developer'],
+  [/^Against reference/,'insightful'],[/^Adequacy/,'insightful'],[/^Today\u2019s food, read further/,'insightful'],[/^What the food record feeds/,'developer'],[/^Data sources/,'developer'],
   /* body */
   [/^Circumferences/,'casual'],[/^Progress photos/,'casual'],[/^Measurement schedule/,'casual'],
   [/^Where training lands/,'insightful'],[/^Reading the scale/,'insightful'],[/^Composition/,'insightful'],[/^Not available yet/,'developer'],

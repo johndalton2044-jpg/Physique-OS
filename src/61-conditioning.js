@@ -314,3 +314,75 @@ function cardioNormalisationAudit(){
   if(sum!==r.totals.metMinutes)issues.push('MET-minute total is not the sum of normalised sessions');
   return {ok:issues.length===0,checked:r.sessions.length,issues:issues};
 }
+/* ---------------- W-017: FIVE CARDIO CONCEPTS, KEPT APART ----------------
+   Minutes of cardio say how much was done. They do not say what it built, what it burned, what it cost or what it
+   took from lifting, and one number had been standing in for several: the cardio experiment asked "is cardio worth
+   its recovery cost for me?" and measured only weight, and the exercise-energy estimate read a field the normaliser
+   does not return, so every session was costed at MET 5 whatever it was. Each concept has its own measure and unit
+   here, and a change to cardio is evaluated on all five side by side, none read in place of another. */
+var CARDIO_CONCEPTS={
+  dose:{label:'Dose',unit:'minutes a week',measure:'cardioSessions',
+    notReadAs:'capacity or expenditure: more minutes are neither more fitness nor a known number of calories'},
+  capacity:{label:'Capacity',unit:'ml/kg/min (VO2max)',measure:'cardioFitnessModel',model:'cardio_fitness_latent',
+    notReadAs:'a dose: fitness has changed only when its estimate leaves its earlier interval'},
+  expenditure:{label:'Expenditure',unit:'kcal a week above rest',measure:'cardioNetKcal',
+    notReadAs:'fat lost: intake and the rest of the day adjust around it'},
+  recoveryCost:{label:'Recovery cost',unit:'relative load a week',measure:'normaliseCardioSession',
+    notReadAs:'minutes: an easy hour can cost less than a hard twenty minutes'},
+  interference:{label:'Strength interference',unit:'% change in best estimated 1RM over the same weeks',measure:'interferenceAnalysis',
+    notReadAs:'an effect of cardio: a change in the same weeks is reported, and graded separately, never assumed'}};
+/* Energy above rest for one session: its MET from the normaliser (power, pace, or the modality table), net of the
+   resting 1 MET, through the one MET-to-kcal service. */
+function cardioNetKcal(r,kg){var n=normaliseCardioSession(r),met=n.absolute?n.absolute.met:null;
+  return met!=null&&kg?metKcal(Math.max(0,met-1),r.minutes||0,kg):null;}
+function _cardioWindow(from,to){
+  var weeks=Math.max(1,daysBetween(from,to)+1)/7;
+  var all=cardioSessions(Math.max(1,daysBetween(from,asOf())+1));
+  var rows=(all.rows||[]).filter(function(r){return r.date>=from&&r.date<=to;});
+  var w=obsOf('weight').filter(function(o){return o.date<=to;}).slice(-1)[0],kg=w?w.value*0.45359237:null;
+  var norm=rows.map(normaliseCardioSession),withRel=norm.filter(function(s){return s.relative.load!=null;});
+  var kcal=kg?rows.reduce(function(a,r){return a+(cardioNetKcal(r,kg)||0);},0):null;
+  return {sessions:rows.length,minutesPerWeek:round(rows.reduce(function(a,r){return a+(r.minutes||0);},0)/weeks,0),
+    relativeSessions:withRel.length,
+    relativeLoadPerWeek:rows.length&&withRel.length===rows.length?round(withRel.reduce(function(a,s){return a+s.relative.load;},0)/weeks,1):null,
+    kcalPerWeek:kcal!=null?round(kcal/weeks,0):null};
+}
+/* A change to cardio, evaluated on each concept over a period before and a period after it. Capacity is read from the
+   fitness model as it stood at the end of each period, so minutes cannot move it; recovery cost needs every session's
+   relative intensity and is refused rather than inferred from minutes; strength over the same weeks is reported, not
+   attributed. */
+function cardioInterventionEvaluation(before,after){
+  if(!before||!after||!before[0]||!after[0])return {status:'insufficient',need:['a period before the change and a period after it']};
+  var A=_cardioWindow(before[0],before[1]),B=_cardioWindow(after[0],after[1]);
+  var diff=function(a,b,dp){return a!=null&&b!=null?round(b-a,dp==null?1:dp):null;};
+  var cap=function(d){try{var m=withAsOf(d,cardioFitnessModel);return m&&m.status==='ok'&&m.headline?m.headline:null;}catch(e){return null;}};
+  var c0=cap(before[1]),c1=cap(after[1]);
+  /* each lift against itself: its best estimated 1RM per session, averaged in each period, as a % change; then the mean
+     over the lifts trained in both. Different lifts are never pooled, or the change would be which lifts were trained. */
+  var by={};sessionsOf().forEach(function(s){var p=s.date>=before[0]&&s.date<=before[1]?0:(s.date>=after[0]&&s.date<=after[1]?1:-1);if(p<0)return;var day={};
+    (s.sets||[]).forEach(function(x){var k=normExercise(x.exercise);if(!k||x.load==null||x.reps==null)return;var e=e1rm(x.load,x.reps);if(e&&(!day[k]||e.value>day[k]))day[k]=e.value;});
+    Object.keys(day).forEach(function(k){(by[k]=by[k]||[[],[]])[p].push(day[k]);});});
+  var lifts=Object.keys(by).filter(function(k){return by[k][0].length&&by[k][1].length;});
+  var liftChange=lifts.length?mean(lifts.map(function(k){var a=mean(by[k][0]);return (mean(by[k][1])-a)/a*100;})):null;
+  var ia=null;try{ia=interferenceAnalysis();}catch(e){}
+  var C=CARDIO_CONCEPTS;
+  var concepts={
+    dose:{label:C.dose.label,unit:C.dose.unit,status:'measured',before:A.minutesPerWeek,after:B.minutesPerWeek,change:diff(A.minutesPerWeek,B.minutesPerWeek,0),
+      sessions:{before:A.sessions,after:B.sessions}},
+    capacity:c0&&c1&&c0.family===c1.family?{label:C.capacity.label,unit:C.capacity.unit,status:'estimated',family:c1.family,before:c0.estimate,after:c1.estimate,
+        change:diff(c0.estimate,c1.estimate),moved:c1.estimate<c0.ci80[0]||c1.estimate>c0.ci80[1],interval:c0.ci80}:
+      {label:C.capacity.label,unit:C.capacity.unit,status:'insufficient',need:['steady sessions with average heart rate and pace or power, before and after the change']},
+    expenditure:A.kcalPerWeek!=null&&B.kcalPerWeek!=null?{label:C.expenditure.label,unit:C.expenditure.unit,status:'estimated',before:A.kcalPerWeek,after:B.kcalPerWeek,
+        change:diff(A.kcalPerWeek,B.kcalPerWeek,0),basis:'each session’s MET net of rest, times body weight and minutes'}:
+      {label:C.expenditure.label,unit:C.expenditure.unit,status:'insufficient',need:['a weigh-in']},
+    recoveryCost:A.relativeLoadPerWeek!=null&&B.relativeLoadPerWeek!=null?{label:C.recoveryCost.label,unit:C.recoveryCost.unit,status:'estimated',
+        before:A.relativeLoadPerWeek,after:B.relativeLoadPerWeek,change:diff(A.relativeLoadPerWeek,B.relativeLoadPerWeek)}:
+      {label:C.recoveryCost.label,unit:C.recoveryCost.unit,status:'insufficient',need:['heart rate, an effort rating or a zone on every cardio session'],
+        note:'minutes alone cannot say how hard a session was'},
+    interference:{label:C.interference.label,unit:C.interference.unit,status:liftChange!=null?'measured':'insufficient',
+      lifts:lifts.length,change:liftChange!=null?round(liftChange,1):null,need:liftChange!=null?null:['a lift trained in both periods'],
+      graded:ia&&ia.status==='ok'?ia.grade:'not separable yet',
+      note:'strength over the same weeks, not attributed to cardio; the graded comparison across your own weeks is '+(ia&&ia.status==='ok'?ia.grade:'not separable yet')}};
+  return {status:'ok',cls:'DERIVED',windows:{before:before,after:after},concepts:concepts,
+    note:'Each is measured on its own: capacity from the fitness model, expenditure from each session’s intensity, recovery cost from relative load, dose from minutes. None is computed from another.'};
+}

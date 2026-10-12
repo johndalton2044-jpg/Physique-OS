@@ -151,8 +151,84 @@ function bodyCompositionByMethod(){var by={};obsOf('bodyfat').forEach(function(o
       note:L.length<3?'too few readings for a trend':'a single reading is \u00b1'+se+' percentage points'};});
   var offsets=[];for(var i=0;i<methods.length;i++)for(var j=i+1;j<methods.length;j++){var a=by[methods[i].method],b=by[methods[j].method],d=[];
     a.forEach(function(x){b.forEach(function(y){if(Math.abs(daysBetween(x.date,y.date))<=7)d.push(x.value-y.value);});});if(d.length)offsets.push({between:[methods[i].method,methods[j].method],offset:round(mean(d),1),pairs:d.length});}
-  return {methods:methods,offsets:offsets,rule:'each method is trended only against itself; methods differ by a steady offset, which is shown, not corrected away',unspecified:!!by.unspecified};}
+  var vc=null;try{vc=visualBodyFatCalibration();}catch(e){_q(e,'P2');}
+  return {methods:methods,offsets:offsets,visual:vc&&vc.status!=='none'?vc:null,rule:'each method is trended only against itself; methods differ by a steady offset, which is shown, not corrected away, except that a visual estimate is read through your own bias against the measured ones',unspecified:!!by.unspecified};}
+/* W-020: VISUAL CALIBRATION. A body fat read by eye (one's own estimate from the mirror or a photo) is the least
+   reliable method (\u00b14 points) and the one a person can make most often. Each visual estimate is paired with the
+   nearest measured reading within a week (DEXA, Bod Pod, hydrostatic, calipers, a BIA scale or a circumference
+   estimate, the same rule the offsets use) and the gaps are read for the person's own bias: it starts from none (sd 4
+   points, the method's stated error) and each pair weighs by its two methods' errors, so a DEXA pair counts for more
+   than a BIA pair, and how much is the person's own is reported. With three pairs or more, the scatter of the gaps
+   about that bias, less the measured method's own error, is the person's visual error. The latest visual estimate is
+   then read through both. Methods are still trended only against themselves: this reads a visual estimate, it does not
+   merge it with the others. */
+var VISUAL_CALIBRATION_CONTRACT={id:'visual_calibration',subject:'a visual body-fat estimate',predicate:'is read through the person\u2019s own bias against their measured readings',
+  parameters:{window:{value:7,unit:'days',meaning:'a visual estimate and a measured reading this close are a pair'},priorSd:{value:4,unit:'percentage points',meaning:'how far a visual estimate may be off, the method\u2019s stated error'},
+    minScatter:{value:3,unit:'pairs',meaning:'the fewest pairs the person\u2019s own visual error is read from'}},
+  statement:function(v){return 'a visual body-fat estimate is read through your bias against measured readings within '+v.window+' days, starting from none (sd '+v.priorSd+' points), your own error from '+v.minScatter+' pairs';},
+  rationale:'an estimate by eye is often off in the same direction for one person; their measured readings show by how much',
+  evidenceBasis:[],parameterSource:'the visual method\u2019s stated error, and a pairing window chosen by this system',parameterVersion:'1.0',
+  calibrationStatus:'calibrated to the person\u2019s own pairs',validationStatus:HEURISTIC_NOT_VALIDATED,applicability:{phases:['any'],population:'adults estimating their own body fat by eye'},
+  failureConditions:['estimates made by different people','a measured method used under different conditions each time','body fat changing fast between the two readings of a pair'],outcomes:['body composition']};
+var VISUAL_REFERENCE_METHODS=['DEXA','Bod Pod','hydrostatic','calipers','BIA scale','circumference'];
+function visualBodyFatCalibration(){var P=VISUAL_CALIBRATION_CONTRACT.parameters,name=function(o){var raw=o.method||(o.meta&&o.meta.method)||'unspecified';return BODYFAT_METHOD_NAME[String(raw).toLowerCase()]||raw;};
+  var all=obsOf('bodyfat'),vis=all.filter(function(o){return name(o)==='visual estimate';}),meas=all.filter(function(o){return VISUAL_REFERENCE_METHODS.indexOf(name(o))>=0;});
+  if(!vis.length)return {status:'none',policy:VISUAL_CALIBRATION_CONTRACT.id};
+  var pairs=[];vis.forEach(function(v){var near=meas.filter(function(m){return Math.abs(daysBetween(v.date,m.date))<=P.window.value;}).sort(function(a,b){return Math.abs(daysBetween(v.date,a.date))-Math.abs(daysBetween(v.date,b.date))||(a.date<b.date?1:-1);})[0];
+    if(near){var se=BODYFAT_METHOD_SE[name(near)]||4;pairs.push({date:v.date,visual:v.value,measured:near.value,method:name(near),gap:v.value-near.value,var:P.priorSd.value*P.priorSd.value+se*se,measuredSe:se});}});
+  var latest=vis.slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);}).pop();
+  if(!pairs.length)return {status:'insufficient',n:0,latest:latest.value,policy:VISUAL_CALIBRATION_CONTRACT.id,need:['a measured reading (DEXA, Bod Pod, calipers or a BIA scale) within '+P.window.value+' days of a visual estimate']};
+  var pv=P.priorSd.value*P.priorSd.value,prec=1/pv+pairs.reduce(function(a,p){return a+1/p.var;},0),bias=pairs.reduce(function(a,p){return a+p.gap/p.var;},0)/prec,bv=1/prec;
+  var own=null;if(pairs.length>=P.minScatter.value){var r=pairs.map(function(p){return p.gap-bias;}),s2=r.reduce(function(a,x){return a+x*x;},0)/(r.length-1),m2=mean(pairs.map(function(p){return p.measuredSe*p.measuredSe;}));own=Math.sqrt(Math.max(0,s2-m2));}
+  var ve=own!=null?own:P.priorSd.value,read=latest.value-bias,half=1.96*Math.sqrt(bv+ve*ve);
+  return {status:'ok',cls:'EMPIRICAL',n:pairs.length,pairs:pairs,bias:round(bias,2),biasSd:round(Math.sqrt(bv),2),personalWeight:round(1-bv/pv,2),visualError:own!=null?round(own,2):null,
+    latest:{date:latest.date,value:latest.value,reads:round(read,1),lo:round(read-half,1),hi:round(read+half,1)},policy:VISUAL_CALIBRATION_CONTRACT.id,
+    text:'against your measured readings ('+pairs.length+' pair'+(pairs.length===1?'':'s')+'), you estimate '+fmtNum(Math.abs(bias),1)+' points '+(bias<0?'low':'high')+' ('+fmtSigned(bias-1.96*Math.sqrt(bv),1)+' to '+fmtSigned(bias+1.96*Math.sqrt(bv),1)+'), '+Math.round(100*(1-bv/pv))+'% your own record'+
+      (own!=null?'; your estimates scatter '+fmtNum(own,1)+' points beyond that':'')+'. Your latest visual '+fmtNum(latest.value,1)+'% reads as about '+fmtNum(read,1)+'% ('+fmtNum(read-half,1)+' to '+fmtNum(read+half,1)+')'};}
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','visual_calibration'))return;
+  MODELS.push({id:'visual_calibration',name:'Visual body-fat estimates, calibrated',cls:'EMPIRICAL',version:'1.0',inputs:['bodyfat'],minN:1,
+    assumes:['a person\u2019s visual estimates are off by a steady amount','a measured reading within a week is the same body fat'],failsWhen:['estimates made by different people','a measured method used under different conditions each time'],
+    output:'the person\u2019s bias in reading their body fat by eye, how much is their own record, their visual error, and the latest visual estimate read through them',
+    consumers:['bodyCompositionByMethod'],freshnessDays:30,uncertainty:{kind:'posterior on the bias, against a prior of none'},fn:'visualBodyFatCalibration'});})();
 (function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','physique_regions'))return;
   MODELS.push({id:'physique_regions',name:'Physique by region',cls:'EMPIRICAL',version:'1.0',inputs:['waist','bodyfat','weight'],minN:4,
     assumes:['strength progress stands in for growth','regions are comparable with each other'],failsWhen:['fewer than three trained regions','too few sessions per exercise','circumference changes that are fat, not muscle'],
     output:'per region: exposure, strength and size trends, status, and where to add or take sets',consumers:['physiqueCard'],freshnessDays:7,uncertainty:{kind:'standard error of each trend'},fn:'physiqueModel'});})();
+/* ---------- W-020: WHAT A TAPE CHANGE CAN MEAN, SITE BY SITE ----------
+   Each circumference site's change over its recent readings is set against the tape's own error, and read with the weight
+   trend and the strength trend for what it is consistent with. A tape measures girth, not tissue: an arm that grows while
+   strength rises is consistent with muscle, and fat or water would move it too. So each reading names what the tape
+   cannot separate, and a change inside the tape's error is said to be one, not a trend. */
+var TAPE_CONTRACT={id:'tape_change',subject:'a change in a circumference',predicate:'is read as a change only beyond',
+  parameters:{selfTapeError:{value:0.4,unit:'in (about 1 cm)',meaning:'the error of one self-measured tape reading, until the person’s own repeats replace it'},
+    beyond:{value:2*Math.SQRT2,unit:'tape errors',meaning:'a difference of two readings must exceed this many single-reading errors (twice the error of a difference) to count'},
+    minSpan:{value:14,unit:'days',meaning:'readings closer together than this are repeats, not a change'},
+    weightSteady:{value:0.2,unit:'lb a week',meaning:'a weight trend within this either way is steady'}},
+  statement:function(v){return 'a circumference change counts only beyond '+round(v.beyond,1)+' times the tape’s error ('+v.selfTapeError+' in until your repeats measure it)';},
+  rationale:'two readings of a self-measured tape differ by their own error even when nothing changed; the threshold keeps that from being read as a trend',
+  evidenceBasis:[],parameterSource:'chosen by this system; the 1 cm working error is not from a study and is replaced by the person’s own repeat readings',
+  parameterVersion:'1.0',calibrationStatus:'calibrated to the person once they repeat a reading within two days twice',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults measuring themselves with a tape'},failureConditions:['readings at different sites on the limb','readings at different times of day or after training'],
+  outcomes:['circumference change']};
+var TAPE_SITES={waist:'trunk',hip:'trunk',neck:'trunk',chest:'muscle',arm:'muscle',thigh:'muscle'};
+function _tapeReading(site,dir,wDir,sDir){var trunk=TAPE_SITES[site]==='trunk';
+  if(trunk)return dir<0?(wDir==='losing'?'consistent with fat loss, with the weight trend falling too; water and gut content also move it':'smaller with the weight not falling: possibly fat lost while something else was gained, or a lighter day')
+    :(wDir==='gaining'?'consistent with fat gain, with the weight trend rising too; bloating on the day moves it as well':'larger with the weight not rising: more likely a fuller day than a trend');
+  if(dir>0)return sDir==='rising'?'consistent with muscle, with strength rising; fat or water would move it too, and the tape cannot tell which'
+    :(wDir==='gaining'?'with the weight rising and strength not rising, more likely fat or water than muscle':'without rising strength, the tape alone cannot say what grew');
+  return sDir==='falling'?'could include muscle: strength is falling too'
+    :(sDir==='unknown'?(wDir==='losing'?'most likely fat or water while losing weight; with no strength record, muscle loss cannot be ruled out':'smaller; with no strength record, the tape cannot say what was lost')
+      :(wDir==='losing'?'most likely fat or water: strength holding argues against muscle loss':'smaller with strength holding: more likely fat or water than muscle'));}
+function tapeChanges(){var P=TAPE_CONTRACT.parameters,S=null,st=null;try{S=getCurrentState();}catch(e){}try{st=strengthTrend();}catch(e){}
+  var w=S&&S.trend&&S.trend.status==='ok'?S.trend.slopePerWeek:null,wDir=w==null?'unknown':(w<-P.weightSteady.value?'losing':(w>P.weightSteady.value?'gaining':'steady'));
+  var sDir=st&&st.status==='ok'?(/improving|rising/.test(st.overall)?'rising':(/declin/.test(st.overall)?'falling':'steady')):'unknown';
+  var rows=Object.keys(TAPE_SITES).map(function(site){var L=obsOf(site).filter(function(o){return !o.retracted&&daysBetween(o.date,asOf())<=120;});
+    if(L.length<2)return null;
+    var d=[];for(var i=1;i<L.length;i++)if(daysBetween(L[i-1].date,L[i].date)<=2)d.push(L[i].value-L[i-1].value);
+    var own=d.length>=2,e=own?round(Math.sqrt(d.reduce(function(a,x){return a+x*x;},0)/d.length)/Math.SQRT2,2):P.selfTapeError.value;
+    var first=L[0],last=L[L.length-1],span=daysBetween(first.date,last.date);if(span<P.minSpan.value)return null;
+    var ch=round(last.value-first.value,2),limit=round(P.beyond.value*e,2),changed=Math.abs(ch)>limit;
+    return {site:site,label:OBS_TYPES[site].label,from:first.value,to:last.value,change:ch,days:span,error:{value:e,own:own,pairs:d.length},limit:limit,changed:changed,
+      reading:changed?_tapeReading(site,ch>0?1:-1,wDir,sDir):'within the tape’s error: not a change yet'};}).filter(Boolean);
+  return {status:rows.length?'ok':'insufficient',cls:'MEASURED',rows:rows,weight:wDir,strength:sDir,policy:TAPE_CONTRACT.id,
+    need:rows.length?null:['two readings of a site at least '+P.minSpan.value+' days apart'],limits:'A tape measures girth, not tissue.'};}

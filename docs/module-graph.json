@@ -338,6 +338,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "_q",
     "localDateOf",
     "uid",
@@ -354,7 +355,8 @@
    ],
    "20-schema-storage.js": [
     "save",
-    "pushUndo"
+    "pushUndo",
+    "memo"
    ],
    "24-events.js": [
     "emitEvent"
@@ -363,6 +365,8 @@
     "asOf",
     "_knownBy",
     "activePhase",
+    "obsOf",
+    "dailySeries",
     "seriesWindow",
     "sessionsOf"
    ],
@@ -388,6 +392,8 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
+    "_q",
     "localDateOf",
     "uid",
     "todayISO",
@@ -399,25 +405,32 @@
     "fmtNum",
     "fmtSigned",
     "mean",
+    "median",
     "sd",
+    "correlation",
     "esc"
    ],
    "20-schema-storage.js": [
     "save",
-    "pushUndo"
+    "pushUndo",
+    "memo"
    ],
    "24-events.js": [
     "emitEvent"
    ],
    "30-observations.js": [
     "asOf",
+    "withAsOf",
     "activePhase",
     "obsOf",
+    "dailySeries",
     "seriesWindow",
     "sessionsOf"
    ],
    "40-models.js": [
     "bodyComp",
+    "e1rm",
+    "normExercise",
     "strengthTrend"
    ],
    "45-baselines.js": [
@@ -428,6 +441,9 @@
    ],
    "50-decision.js": [
     "trainingProgram"
+   ],
+   "59-friction.js": [
+    "_matInv"
    ],
    "61-conditioning.js": [
     "cardioSessions",
@@ -442,12 +458,18 @@
    "67-program-edit.js": [
     "equipPossible"
    ],
+   "71-integration.js": [
+    "unifiedRecovery"
+   ],
    "77-lifecycle.js": [
     "inventoryLifecycle"
    ],
    "81-conformance.js": [
     "costConfidence",
     "inventoryConfidence"
+   ],
+   "85-latent.js": [
+    "recoveryLatentState"
    ]
   }
  },
@@ -589,7 +611,12 @@
     "scheduledPlan"
    ],
    "59-friction.js": [
+    "stampExecutionPredictions",
+    "scoreExecutionPredictions",
     "rankLevers"
+   ],
+   "61-conditioning.js": [
+    "cardioInterventionEvaluation"
    ],
    "67-program-edit.js": [
     "programIsCustom",
@@ -632,6 +659,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "addDays",
     "daysBetween",
     "num",
@@ -673,6 +701,13 @@
    "50-decision.js": [
     "detectConfounders"
    ],
+   "58-explanation.js": [
+    "confidenceBasisText",
+    "heuristicValues"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
+   ],
    "79-rigour.js": [
     "tissueEnergyDensity",
     "kcalToLb"
@@ -684,12 +719,22 @@
   "calls": {
    "10-core.js": [
     "addDays",
+    "daysBetween",
+    "shortDate",
     "num",
     "round",
+    "fmtNum",
     "fmtSigned"
    ],
+   "20-schema-storage.js": [
+    "memo"
+   ],
    "30-observations.js": [
-    "asOf"
+    "asOf",
+    "obsOf"
+   ],
+   "45-baselines.js": [
+    "measurementQuality"
    ],
    "49-movement.js": [
     "movementDose",
@@ -698,6 +743,10 @@
     "logMovement",
     "movementLog",
     "crossModalityEffect"
+   ],
+   "61-physiology.js": [
+    "_doseBefore",
+    "capacityResponse"
    ]
   }
  },
@@ -752,20 +801,25 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "addDays",
     "daysBetween",
     "round",
     "fmtNum",
     "fmtSigned",
+    "mean",
     "fmtKcal"
    ],
    "30-observations.js": [
     "asOf",
-    "activePhase"
+    "activePhase",
+    "sessionsOf"
    ],
    "40-models.js": [
-    "adherenceState"
+    "normExercise",
+    "adherenceState",
+    "getCurrentState"
    ],
    "47-sleep-injury.js": [
     "activeInjuries"
@@ -779,7 +833,8 @@
     "trainingProgram"
    ],
    "52-response.js": [
-    "exerciseResponse"
+    "exerciseResponse",
+    "liftForecasts"
    ],
    "54-scenarios.js": [
     "buildScenario",
@@ -800,7 +855,8 @@
     "foodIdentity"
    ],
    "64-exercise.js": [
-    "resolveExercise"
+    "resolveExercise",
+    "skillOrStrength"
    ],
    "67-program-edit.js": [
     "equipPossible"
@@ -834,6 +890,7 @@
     "sessionsOf"
    ],
    "40-models.js": [
+    "variableEpistemicClass",
     "tdeeEstimate",
     "bodyComp"
    ],
@@ -851,6 +908,9 @@
    ],
    "54-scenarios.js": [
     "designExperiment"
+   ],
+   "58-explanation.js": [
+    "explanationClaim"
    ],
    "58-response-model.js": [
     "RESPONSE_PRIORS",
@@ -909,6 +969,7 @@
     "_q",
     "addDays",
     "daysBetween",
+    "shortDate",
     "round",
     "fmtNum",
     "fmtSigned",
@@ -928,6 +989,9 @@
    ],
    "50-decision.js": [
     "diagnose"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "58-response-entity.js": [
     "_expectedWeightChange",
@@ -1071,11 +1135,17 @@
     "seriesWindow",
     "sessionsOf"
    ],
+   "52-response.js": [
+    "liftForecasts"
+   ],
    "58-response-entity.js": [
     "_slopePerWeek"
    ],
    "61-physiology.js": [
     "cardioFitnessModel"
+   ],
+   "85-latent.js": [
+    "neatResponseScored"
    ]
   }
  },
@@ -1392,12 +1462,20 @@
   "calls": {
    "10-core.js": [
     "_registryTaken",
+    "uid",
     "todayISO",
+    "nowISO",
     "addDays",
-    "round"
+    "daysBetween",
+    "round",
+    "mean"
    ],
    "20-schema-storage.js": [
+    "save",
     "memo"
+   ],
+   "24-events.js": [
+    "emitEvent"
    ],
    "30-observations.js": [
     "obsOf"
@@ -1464,6 +1542,7 @@
    "10-core.js": [
     "localDateOf",
     "addDays",
+    "daysBetween",
     "num",
     "round",
     "fmtSigned",
@@ -1472,12 +1551,15 @@
    ],
    "30-observations.js": [
     "asOf",
+    "withAsOf",
     "activePhase",
     "obsOf",
     "sessionsOf"
    ],
    "40-models.js": [
-    "prof"
+    "prof",
+    "e1rm",
+    "normExercise"
    ],
    "48-domains-more.js": [
     "readinessState"
@@ -1488,6 +1570,9 @@
    ],
    "64-exercise.js": [
     "resolveExercise"
+   ],
+   "66-data-reference.js": [
+    "metKcal"
    ],
    "85-latent.js": [
     "cardioFitnessState"
@@ -1504,6 +1589,7 @@
     "daysBetween",
     "num",
     "round",
+    "fmtNum",
     "mean",
     "sd"
    ],
@@ -1525,7 +1611,8 @@
    ],
    "61-conditioning.js": [
     "cardioSessions",
-    "normaliseCardioSession"
+    "normaliseCardioSession",
+    "cardioNetKcal"
    ],
    "62-food.js": [
     "foodLogsOn",
@@ -1653,8 +1740,14 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "addDays",
+    "daysBetween",
+    "shortDate",
     "round",
+    "fmtNum",
+    "median",
+    "fmtWeight",
     "fmtG"
    ],
    "30-observations.js": [
@@ -1664,6 +1757,10 @@
    "40-models.js": [
     "normExercise",
     "getCurrentState"
+   ],
+   "52-response.js": [
+    "exerciseResponse",
+    "liftForecasts"
    ]
   }
  },
@@ -1691,11 +1788,14 @@
   "calls": {
    "10-core.js": [
     "_registryTaken",
+    "_q",
     "todayISO",
     "addDays",
     "daysBetween",
     "clamp",
     "round",
+    "fmtNum",
+    "fmtSigned",
     "mean",
     "_medianOf"
    ],
@@ -1711,7 +1811,9 @@
     "prof",
     "weightTrend",
     "navyBodyFat",
-    "muscleRetentionRisk"
+    "strengthTrend",
+    "muscleRetentionRisk",
+    "getCurrentState"
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
@@ -2489,6 +2591,10 @@
     "scheduleModel",
     "scheduleAhead"
    ],
+   "61-physiology.js": [
+    "dietDigestibility",
+    "glycaemicLoad"
+   ],
    "62-food.js": [
     "normalizeFood",
     "foodBasisLabel",
@@ -2585,6 +2691,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "addDays",
     "daysBetween",
     "num",
@@ -2594,6 +2701,12 @@
    "30-observations.js": [
     "asOf",
     "sessionsOf"
+   ],
+   "40-models.js": [
+    "normExercise"
+   ],
+   "48-domains-more.js": [
+    "personalRecoveryCost"
    ],
    "51-resistance.js": [
     "exerciseBiomechanics",
@@ -2707,6 +2820,9 @@
    ],
    "63-food-ext.js": [
     "adapterState"
+   ],
+   "64-physique.js": [
+    "tapeChanges"
    ],
    "65-import.js": [
     "photoMeta"
@@ -2845,6 +2961,7 @@
     "addDays",
     "daysBetween",
     "round",
+    "fmtNum",
     "mean",
     "sd",
     "theilSen"
@@ -2879,6 +2996,12 @@
    "51-resistance.js": [
     "setKind",
     "e1rmFrom"
+   ],
+   "58-explanation.js": [
+    "confidenceBasisText"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "61-conditioning.js": [
     "conditioningState",
@@ -3432,7 +3555,9 @@
     "injuryState"
    ],
    "48-domains-more.js": [
-    "readinessState"
+    "readinessState",
+    "readinessValidity",
+    "readinessTransitions"
    ],
    "49-movement.js": [
     "movementLibrary",
@@ -3448,6 +3573,7 @@
     "decide",
     "recordUserDecision",
     "scorePredictions",
+    "experimentProtocol",
     "applyDecisionIntervention",
     "evaluateExperiment",
     "addNegative",
@@ -3472,7 +3598,8 @@
     "stretchPrescription",
     "sequenceAnalysis",
     "logSequence",
-    "yogaResponse"
+    "yogaResponse",
+    "mobilityRecommendation"
    ],
    "54-scenarios.js": [
     "buildScenario",
@@ -3500,6 +3627,8 @@
    ],
    "58-explanation.js": [
     "currentExplanationLevel",
+    "heuristicContractById",
+    "heuristicValues",
     "compileExplanation"
    ],
    "58-plan.js": [
@@ -3565,7 +3694,8 @@
    ],
    "64-exercise.js": [
     "resolveExercise",
-    "substitutesFor"
+    "substitutesFor",
+    "substitutionStart"
    ],
    "64-mobility.js": [
     "coolDownFor",
@@ -3591,7 +3721,6 @@
     "livePhotos",
     "loadPhoto",
     "deletePhoto",
-    "photoPosePairs",
     "requestNotifications",
     "exportArtifact",
     "importArtifact",
@@ -3637,6 +3766,9 @@
     "optimisePlans",
     "personalStateModel",
     "captureRequest"
+   ],
+   "75-gaps.js": [
+    "photoPairs"
    ],
    "76-visual-complete.js": [
     "bodyMapModel",
@@ -4146,6 +4278,7 @@
   "layer": "ui",
   "calls": {
    "10-core.js": [
+    "_q",
     "shortDate",
     "round",
     "fmtNum",
@@ -4169,7 +4302,9 @@
     "personalResponseModel"
    ],
    "59-friction.js": [
-    "frictionModel"
+    "frictionModel",
+    "executionCalibration",
+    "executionTrackRecord"
    ],
    "80-ui.js": [
     "uiRow",
@@ -4321,6 +4456,10 @@
     "energyAvailability",
     "dietDigestibility",
     "exerciseLearningCurve"
+   ],
+   "62-food.js": [
+    "ownFoodForBarcode",
+    "foodSourceArbitration"
    ],
    "62-supplements.js": [
     "resolveSupplement",
@@ -4710,9 +4849,11 @@
     "correlation",
     "kgToLb",
     "unitPref",
+    "fmtWeight",
     "fmtRate",
     "fmtKcal",
-    "fromCanonicalWeight"
+    "fromCanonicalWeight",
+    "esc"
    ],
    "20-schema-storage.js": [
     "emptyDB",
@@ -4846,6 +4987,7 @@
     "domainContractIssues"
    ],
    "47-sleep-injury.js": [
+    "individualSleepNeed",
     "sleepState",
     "sleepLagEffect",
     "recordInjury",
@@ -4854,6 +4996,12 @@
    ],
    "48-domains-more.js": [
     "readinessState",
+    "_looMse",
+    "_readinessOutcomes",
+    "_validityVerdict",
+    "readinessValidity",
+    "readinessTransitions",
+    "personalRecoveryCost",
     "cardioState",
     "compositionState",
     "costState",
@@ -4880,6 +5028,7 @@
     "stampPredictions",
     "scorePredictions",
     "forecastAccuracy",
+    "experimentProtocol",
     "createExperiment",
     "applyDecisionIntervention",
     "evaluateExperiment",
@@ -4916,6 +5065,8 @@
     "uncertaintyChain",
     "personalResponse",
     "exerciseResponse",
+    "liftForecasts",
+    "liftForecast",
     "counterfactual",
     "valueOfInformationFormal",
     "predictionContext",
@@ -4930,7 +5081,8 @@
     "isometricProgression",
     "resolvePose",
     "sequenceAnalysis",
-    "logSequence"
+    "logSequence",
+    "mobilityRecommendation"
    ],
    "54-scenarios.js": [
     "buildScenario",
@@ -4944,6 +5096,7 @@
    "55-generate.js": [
     "trainingExperience",
     "generatePrograms",
+    "stallCauses",
     "progressionPlan",
     "planDay",
     "groceryList",
@@ -4952,6 +5105,8 @@
    ],
    "56-knowledge.js": [
     "detectEpisodes",
+    "knowledgeState",
+    "knowledgeClaims",
     "personalKnowledge",
     "knowledgeConflicts",
     "knowledgeGaps",
@@ -4965,14 +5120,19 @@
     "qualityTrend"
    ],
    "58-explanation.js": [
+    "confidenceBasis",
+    "confidenceBasisText",
     "explanationClaim",
     "heuristicContracts",
+    "heuristicContractById",
     "explainDecision",
     "compileExplanation",
+    "decisionQuestions",
     "reversalCondition",
     "reversalAll",
     "reversalAny",
     "renderReversal",
+    "claimById",
     "findingClaim",
     "claimRegistry"
    ],
@@ -5070,6 +5230,10 @@
    ],
    "59-friction.js": [
     "_logitRidge",
+    "_brier",
+    "_reliabilityBins",
+    "stampExecutionPredictions",
+    "executionTrackRecord",
     "interventionAdherence",
     "rankLevers"
    ],
@@ -5091,7 +5255,8 @@
     "cardioTiming",
     "normaliseCardioSession",
     "cardioLoad",
-    "cardioNormalisationAudit"
+    "cardioNormalisationAudit",
+    "cardioInterventionEvaluation"
    ],
    "61-physiology.js": [
     "_kgNow",
@@ -5107,6 +5272,8 @@
     "hydrationModel",
     "energyAvailability",
     "_foodGroup",
+    "dietDigestibility",
+    "glycaemicLoad",
     "personalSleepResponse"
    ],
    "62-food.js": [
@@ -5120,6 +5287,7 @@
     "portionResolve",
     "portionGrams",
     "nutrientsFor",
+    "macroConsistency",
     "recipeTotals",
     "recipeAsFood",
     "saveUserFood",
@@ -5137,6 +5305,8 @@
     "foodIdentity",
     "sameFood",
     "foodDuplicates",
+    "ownFoodForBarcode",
+    "foodSourceArbitration",
     "markSameFood",
     "markDifferentFood"
    ],
@@ -5160,7 +5330,9 @@
    ],
    "64-exercise.js": [
     "resolveExercise",
-    "substitutesFor"
+    "substitutesFor",
+    "substitutionStart",
+    "skillOrStrength"
    ],
    "64-mobility.js": [
     "warmUpFor",
@@ -5179,7 +5351,10 @@
     "exerciseRedundancy",
     "physiqueRate",
     "bodyCompositionState",
-    "bodyCompositionByMethod"
+    "bodyCompositionByMethod",
+    "visualBodyFatCalibration",
+    "_tapeReading",
+    "tapeChanges"
    ],
    "65-attachments.js": [
     "_dataUrlBytes",
@@ -5220,6 +5395,7 @@
     "adaptMeteosource",
     "ingestEnvironmentBatch",
     "_vpdFrom",
+    "weatherRefreshOutcome",
     "adaptOpenFoodFacts",
     "foodLabelConflicts",
     "weatherCondition"
@@ -5285,6 +5461,7 @@
    "75-gaps.js": [
     "photoProtocol",
     "photoComparability",
+    "photoPairs",
     "photoChangeContext",
     "loggingHabits",
     "adherenceRisk",
@@ -5348,7 +5525,8 @@
     "inventoryConfidence"
    ],
    "82-views-a.js": [
-    "_promotionPhrase"
+    "_promotionPhrase",
+    "foodDayCard"
    ],
    "83-propagation.js": [
     "mechanicalDemand",
@@ -5413,7 +5591,10 @@
     "waterGlycogenState",
     "adaptiveThermogenesis",
     "neatCompensation",
+    "kcalPerStep",
     "personalNeatResponse",
+    "neatResponseScored",
+    "neatOffset",
     "distributedLag",
     "absorptionContext",
     "_dailyLoad",
@@ -5499,6 +5680,7 @@
     "stateReport",
     "icsExport",
     "cmdkCommands",
+    "readinessTransitionsBlock",
     "runA11yAudit",
     "mealForNow",
     "snoozeAttention",
@@ -5731,7 +5913,8 @@
     "interruptedTimeSeries"
    ],
    "58-explanation.js": [
-    "compileExplanation"
+    "compileExplanation",
+    "decisionQuestions"
    ],
    "58-trace.js": [
     "traceValue"
@@ -5882,7 +6065,9 @@
     "sleepState"
    ],
    "48-domains-more.js": [
-    "readinessState"
+    "readinessState",
+    "readinessValidity",
+    "readinessTransitions"
    ],
    "50-decision.js": [
     "diagnose",

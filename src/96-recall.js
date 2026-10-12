@@ -33,7 +33,7 @@ function jumpTargets(){
   if(lastIv)t.push({id:'lastIntervention',label:'Last change to the plan',
     detail:lastIv.variable+(lastIv.from!=null?(' '+lastIv.from+' \u2192 '+lastIv.to):'')+' \u00b7 '+ageLabel(lastIv.date),
     date:lastIv.date,act:'nav.day',arg:lastIv.date});
-  var lastPred=(DB.predictions||[]).filter(function(p){return p.status==='scored';})
+  var lastPred=(DB.predictions||[]).filter(function(p){return p.status==='scored'&&p.model!=='execution_probability';})
     .sort(function(a,b){return String(a.scoredAt)<String(b.scoredAt)?1:-1;})[0];
   if(lastPred)t.push({id:'lastPrediction',label:'Last scored forecast',
     detail:(lastPred.covered?'within range':'outside range')+' by '+fmtWeight(Math.abs(lastPred.error||0))+' \u00b7 '+ageLabel(localDateOf(lastPred.scoredAt)),
@@ -88,6 +88,8 @@ function whyShown(kind,id){
   if(kind==='decision'){
     var d=(DB.decisions||[]).filter(function(x){return x.id===id;})[0];
     var _X=null;try{_X=d&&d.explanation?compileExplanation(d.explanation,'simple'):null;}catch(e){_X=null;}
+    if(d&&d.explanation){var Q=decisionQuestions(d);if(Q)return Object.assign({what:d.verb||d.code,because:_X.grounds.map(function(g){return g.text;}).join('; '),
+      ifIgnored:Q.ifNothing,todo:'Inspect the evidence behind it',act:'obs.inspectDecision',arg:d.id},{questions:Q});}
     if(d)return {what:d.verb||d.code,because:_X?_X.grounds.map(function(g){return g.text;}).join('; '):(d.why||[]).map(function(w){return typeof w==='string'?w:w.text;}).join('; '),
       ifIgnored:'The recommendation stays open; it is rechecked'+(d.recheckDays?(' after '+d.recheckDays+' days'):' on the next review')+'.',
       todo:'Inspect the evidence behind it',act:'obs.inspectDecision',arg:d.id};
@@ -96,7 +98,7 @@ function whyShown(kind,id){
 }
 /* ---------- comparisons (§11–§14) ---------- */
 function comparePredictionOutcome(limit){
-  var rows=(DB.predictions||[]).filter(function(p){return p.status==='scored';})
+  var rows=(DB.predictions||[]).filter(function(p){return p.status==='scored'&&p.model!=='execution_probability';})
     .sort(function(a,b){return String(a.scoredAt)<String(b.scoredAt)?1:-1;}).slice(0,limit||10)
     .map(function(p){
       return {made:String(p.madeAt||'').slice(0,10),due:p.dueDate,

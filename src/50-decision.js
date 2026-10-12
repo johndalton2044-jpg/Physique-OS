@@ -326,18 +326,22 @@ function stampPredictions(){
         phaseId:(activePhase()||{}).id||null,status:'pending'};
       DB.predictions.push(rec);emitEvent('prediction.stamped',rec,{at:rec.madeAt});made.push(rec);});
   }catch(e){_q(e,'P2');}
+  /* each day's planned items, with the probability of carrying them out, before the day (catalogue W-021) */
+  try{var xp=typeof stampExecutionPredictions==='function'?stampExecutionPredictions(today):null;if(xp)made.push(xp);}catch(e){_q(e,'P2');}
   if(made.length)save('predictions');return made;
 }
 function scorePredictions(){
   var today=todayISO();var scored=0;
   (DB.predictions||[]).forEach(function(p){
     if(p.status!=='pending'||p.dueDate>today)return;
+    if(p.model==='execution_probability')return;   /* scored against the day's record, not a weigh-in (59-friction.js) */
     var s=dailySeries('weight',p.dueDate,7);var actual=s.length>=3?mean(s.map(function(d){return d.value;})):(s.length?s[s.length-1].value:null);
     if(actual==null){if(daysBetween(p.dueDate,today)>5){p.status='expired';p.scoredAt=nowISO();p.note='no weigh-ins near the due date';scored++;
       emitEvent('prediction.scored',{id:p.id,result:{status:'expired',scoredAt:p.scoredAt,note:p.note}},{at:p.scoredAt});}return;}
     p.actual=round(actual,2);p.error=round(actual-p.point,2);p.absError=Math.abs(p.error);p.covered=actual>=p.lo&&actual<=p.hi;p.status='scored';p.scoredAt=nowISO();p.actualBasis=s.length>=3?('7-day mean of '+s.length+' weigh-ins'):'single weigh-in';scored++;
     emitEvent('prediction.scored',{id:p.id,result:{actual:p.actual,error:p.error,absError:p.absError,covered:p.covered,status:'scored',scoredAt:p.scoredAt,actualBasis:p.actualBasis}},{at:p.scoredAt});
   });
+  if(typeof scoreExecutionPredictions==='function')try{scored+=scoreExecutionPredictions();}catch(e){_q(e,'P2');}
   if(scored)save('predictions:score');return scored;
 }
 function forecastAccuracy(){
@@ -361,6 +365,37 @@ function experimentSpec(r){r=r||{};var dur=r.durationDays||14;
     intervention:r.intervention||(r.variable?{variable:r.variable,from:r.baselineValue,to:r.interventionValue}:null),outcome:r.outcome||null,
     analysis:{method:'trend-adjusted comparison of the two periods, scored against the stated prediction interval',prediction:r.prediction||null,interval:[r.predLo!=null?r.predLo:null,r.predHi!=null?r.predHi:null]},
     finding:r.conclusion?{conclusion:r.conclusion,confidence:r.confidence||null}:null};}
+/* N-OF-1 PROTOCOL (catalogue doc 2, P2; doc 1 W-043): every field a single-person experiment needs, as values, and how
+   strongly its design can identify an effect. An A-B design (a baseline period, then the change) cannot separate the change
+   from anything else that moved over the same weeks: its strongest claim is that the outcome responded (RESPONSIVE). A
+   design that returns to baseline or alternates (A-B-A, crossover) can support a causal claim when repeated and
+   unconfounded. The conclusion is held to that bound. */
+var N_OF_1_DESIGNS={'A-B':{identifiability:'weak',strongest:'RESPONSIVE',why:'one change after one baseline: a trend, a season or another change in the same weeks would look the same'},
+  'A-B-A':{identifiability:'moderate',strongest:'CAUSALLY_SUPPORTED',why:'the outcome must follow the change both ways; still one person, so repeat it before relying on it'},
+  'crossover':{identifiability:'strong',strongest:'CAUSALLY_SUPPORTED',why:'alternating periods separate the change from time trends'}};
+function experimentProtocol(ex){if(!ex)return null;var spec=experimentSpec(ex),k=String((ex.design&&ex.design.kind)||spec.design.kind||'');
+  var d=/crossover|alternat/i.test(k)?'crossover':(/A.B.A/.test(k)?'A-B-A':'A-B'),D=N_OF_1_DESIGNS[d];
+  var conf=ex.confounders||[];var watched=['another variable changed in the window','travel, illness, holiday, a new scale or an injury','sleep moving more than 0.8 h','intake moving more than 150 kcal (when intake is not the variable)'];
+  return {id:ex.id,design:d,
+    hypothesis:ex.hypothesis||ex.prediction||null,
+    intervention:{variable:ex.variable,from:ex.baselineValue,to:ex.interventionValue},
+    comparator:{kind:'the baseline period before the change',from:addDays(ex.startDate,-14),to:addDays(ex.startDate,-1),value:ex.baselineValue,trend:ex.baseline&&ex.baseline.trend!=null?ex.baseline.trend:null},
+    outcome:{metric:ex.metric,predicted:ex.predLo!=null&&ex.predHi!=null?{lo:ex.predLo,hi:ex.predHi}:null},
+    exposureWindow:{from:ex.startDate,to:ex.recheckDate,days:ex.durationDays},
+    confounders:{watched:watched,found:conf},
+    measurementPlan:{outcome:'daily weigh-ins: the trend needs 7 over 10 or more days',exposure:'the changed variable logged each day',checks:'sleep and intake, for the confounders above'},
+    stoppingRule:{scheduled:ex.recheckDate,early:['the safety level of the decision lattice fires (recovery poor with strength falling, or loss past the band)','the person abandons it']},
+    result:ex.conclusion?{conclusion:ex.conclusion,observed:ex.observed!=null?ex.observed:null,confidence:ex.confidence||null,status:ex.status}:null,
+    inference:{identifiability:D.identifiability,strongestClaim:D.strongest,why:D.why,confounded:conf.length>0,
+      allowedClaim:conf.length?'ASSOCIATED':D.strongest},
+    applicability:{phaseId:ex.phaseId||null,note:'this person, in the phase and weight zone it ran in'},
+    /* W-017: a cardio change is judged on dose, capacity, expenditure, recovery cost and interference, each on its own
+       measure; its single metric (weight) is one of them, not their stand-in */
+    concepts:ex.variable==='cardio'&&typeof cardioInterventionEvaluation==='function'?_cardioProtocolConcepts(ex):null};}
+function _cardioProtocolConcepts(ex){var now=asOf();
+  var outcomes=Object.keys(CARDIO_CONCEPTS).map(function(k){var c=CARDIO_CONCEPTS[k];return {concept:k,label:c.label,unit:c.unit,measure:c.measure,notReadAs:c.notReadAs};});
+  var ev=ex.startDate&&now>=ex.startDate?cardioInterventionEvaluation([addDays(ex.startDate,-14),addDays(ex.startDate,-1)],[ex.startDate,ex.recheckDate&&ex.recheckDate<now?ex.recheckDate:now]):null;
+  return {outcomes:outcomes,evaluation:ev};}
 function createExperiment(e){
   var start=e.startDate||todayISO();var dur=num(e.durationDays)||14;
   var rec={id:uid('exp'),createdAt:nowISO(),question:e.question||'',hypothesis:e.hypothesis||'',variable:e.variable||'other',baselineValue:e.baselineValue!=null?e.baselineValue:null,interventionValue:e.interventionValue!=null?e.interventionValue:null,intervention:e.intervention||'',

@@ -4491,3 +4491,439 @@ Tests:
   syncs on either device do not bring it back.
 
 All 37 gates pass (reproducible included); release 24/24; 1,867 self-tests.
+
+## The later phases: confidence, knowledge states, N-of-1 protocols, scored execution, why, current state (build 0dc41f684f)
+
+The remaining items of both catalogues that the record can honestly support now. Each was built on what exists and adds
+no registry.
+- **What a confidence label means** (doc 2, P2: "do not call arbitrary scores confidence").
+  - "High", "medium" and "low" are ratings a model gives from its own conditions (data, noise, failing conditions), not
+    probabilities. `confidenceBasis()` says so for each model.
+  - A model whose 80% intervals are scored against what happened (`INTERVAL_MODELS`) is called calibrated only when its
+    corrected interval held on newer predictions, and the label says how often it held.
+  - Every claim carries its basis. The scientific explanation and the decision's uncertainty say "a rating, not a
+    probability" or give the coverage, and the assistant receives what each kind means.
+- **The state of each finding** (doc 2, P2: personal knowledge; doc 1 W-041). Each finding is decided in order:
+  contradicted, needs testing, established (high confidence in more than one context), established in context,
+  probable, or unknown. The knowledge sheet shows each finding's state and the counts. `knowledgeClaims()` gives each
+  finding as a claim in the one claim structure, with its state, so personal knowledge is not a second system.
+- **N-of-1 protocols** (doc 2, P2; doc 1 W-043). `experimentProtocol()` gives each experiment its hypothesis, change,
+  comparator (the 14 days before), outcome and predicted range, window, confounders (watched and found), measurement
+  plan, stopping rule, result and applicability.
+  - The inference is bounded by the design: an A-B design shows at most a response, an A-B-A or a crossover can support
+    a causal claim when repeated, and a confounder found in the window brings it down to an association.
+  - The timeline and search pointed at `exp.open`, which was never registered, so tapping an experiment did nothing.
+    It now opens the experiment with its protocol.
+- **Execution probability, scored** (doc 1, W-021). It is checked in two ways, neither against itself:
+  - a backtest: fitted on the older half of the recorded days, scored on the newer half, with each item's Brier score
+    beside the base rate's and reliability bins;
+  - a prospective record: each day's planned items are stamped with their probability before the day and scored
+    against the day's record after it.
+  The friction card shows both. Execution predictions sit in the prediction ledger but are kept out of everything that
+  reads a prediction as a weight forecast.
+- **"Why am I seeing this?"** (doc 1, W-045). A decision now answers the catalogue's eight questions from its stored
+  explanation, ending with what doing nothing means:
+  - what changed (against the previous decision) and why it matters (the rules and the expected change);
+  - what supports it (claims and findings) and what is missing (grounds the rule reads that the record lacks, and the
+    conditions counting against a claim);
+  - the uncertainty, the alternatives weighed and the action proposed.
+  It shows a trace from the screen through the decision and its models to the observations it rests on.
+- **A generated current-state document** (doc 1, W-030). The governance gate writes `docs/CURRENT_STATE.md` from the
+  running registries on every run: live counts, every capability with its maturity, and the known limitations.
+
+Tests:
+- 22 self-tests, each made to fail once on purpose:
+  - confidence bases on scored predictions written here;
+  - the six states and their order;
+  - the protocol fields and each design's bound;
+  - the eight questions with a missing ground named;
+  - Brier and bins on predictions written here (0.255), and a day stamped and scored on the demo, worked out from the
+    day's record.
+- Black-box workflow V-017: a decision opened from the timeline answers the eight questions in the catalogue's order,
+  and its trace's count of observations matches the stored explanation, counted from the record.
+
+What stays open, and why:
+- Prospective validation and calibration of the scientific models need months of real use. The execution record is
+  now accumulating.
+- Running one self-test suite alone needs each block to build its own fixture.
+- W-015 to W-020 and W-044 are deferred by the catalogue's own order.
+
+All 37 gates pass (reproducible included); release 24/24; 1,889 self-tests.
+
+
+## What each view reads, whether readiness predicts, cardio five ways, a mobility recommendation (build abd4ef4b01)
+
+Four items the first catalogue had placed after calibration (phase F), built now because each can be tested on the
+record as it stands. None adds a registry.
+- **What each view reads, declared and checked** (doc 1, W-044: presentation authority).
+  - `STATE_REQUIREMENTS` lists the 21 models and 26 observation types the current state reads. `VIEW_REQUIREMENTS`
+    lists what each of the 12 views reads on top of it, and `registerView` fills each view's model and data
+    dependencies from it.
+  - The governance gate renders every view twice with every model function, `obsOf` and `seriesWindow` instrumented.
+    It fails on a view that reads a model or an observation it does not declare, or declares one it never reads.
+  - A read that depends on the day is declared as conditional, with its reason: Today runs the recovery model only on
+    a day with planned training, and Learn reads the MET energy model only when a cardio session falls in the seven
+    days energy availability reads.
+- **Whether readiness predicts the session that follows** (doc 1, W-019: "readiness/recovery outputs demonstrate
+  measurable incremental value over simple baselines").
+  - `readinessValidity()` scores each past session: each lift's best estimated 1RM against that lift's own last three
+    exposures, in %, averaged over the session.
+  - For each session it rebuilds, as the record stood the evening before (nothing from the session day), the three
+    recovery scores on screen: the recovery summary, the latent recovery state and the readiness average. Beside them
+    are three simple readings: no information, sleep alone and fatigue alone, each against the person's normal.
+  - Each is scored out of sample (leave one out, a straight-line fit). A score adds value only if its error is at most
+    0.95 of the best simple reading's and the lower bound of its correlation is above zero.
+  - On the demo record (22 sessions) all three predict the sessions: correlations 0.60 to 0.66, lower bounds 0.24 to
+    0.32. None beats fatigue alone: they miss by 9.6 to 10.4%, against 8.7% for fatigue alone and 12.0% for no
+    information.
+  - That verdict is what is shown. Both recovery sheets give each score's miss, its correlation and the verdict, and
+    the assistant's answer to "how recovered am I" carries it.
+  - The recovery debt read a baseline field that does not exist, so once a baseline existed no day counted as worse
+    than it and the debt read 0. It reads the baseline now.
+- **Cardio, five ways** (doc 1, W-017: "a cardio intervention can be represented and evaluated without conflating dose
+  with capacity or expenditure").
+  - `CARDIO_CONCEPTS` gives dose, capacity, expenditure, recovery cost and strength interference each its own measure
+    and unit, and says what each must not be read as.
+  - `cardioInterventionEvaluation(before, after)` measures each over a period before and a period after a change:
+    - dose: minutes a week;
+    - capacity: the fitness model's VO2max estimate as it stood at the end of each period, never moved by minutes;
+    - expenditure: kcal above rest from each session's own MET;
+    - recovery cost: relative load a week, refused when a session carries no intensity;
+    - strength: each lift against itself, reported and not attributed, beside the graded interference comparison.
+  - The cardio experiment asks "is cardio worth its recovery cost for me?" but measured only weight. Its protocol now
+    names the five outcomes and evaluates them once it starts. The template and the picker show them before it starts.
+  - Energy availability costed every cardio session at MET 5, because it read a field the normaliser does not return.
+    It now uses each session's own MET through the shared MET service: a 60-minute walk at 70 kg costs 183 kcal above
+    rest, not 293. The energy-availability model now lists the MET model among its inputs.
+- **A mobility recommendation that explains itself** (doc 1, W-016: it "can explain the limitation, measurement
+  quality, chosen intervention, expected change, retest condition, observed response and uncertainty").
+  - `mobilityRecommendation()` reads the knee-to-wall and sit-and-reach tests, which have a response model. It takes
+    one series per test, whether the quick log or an assessment recorded it.
+  - The limitation is, in order:
+    - a left-right difference larger than two test errors (worked on the lesser side);
+    - a gap between active and passive range at the joint;
+    - a range short of the working reference;
+    - range lost from the person's own best of the last six months.
+  - The working reference is a heuristic contract (`mobility_reference`, not validated): 10 cm knee-to-wall, and a
+    sit-and-reach that reaches the feet. It cites two findings now in the claim registry under a new mobility domain:
+    stretching dose and range (Thomas et al. 2018) and knee-to-wall reliability (Bennell et al. 1998).
+  - The measurement gives its readings and the test's error: from the person's own repeats within a week once there
+    are two pairs, otherwise the published figure (about a centimetre for knee-to-wall) or "unknown".
+  - The intervention follows the limitation's dimension: static work for range, end-range work for a gap, the lesser
+    side first. It asks for 30 more minutes a week than the four weeks before, with exercises from the library.
+  - The expected change comes from the mobility response: the population prior, updated by the person's own slope
+    with its weight.
+  - The retest is four weeks on, after at least 80% of the minutes, on the same test, side, warm-up and time of day.
+  - The observed response sets the latest reading against one three or more weeks earlier, beside the response's
+    prediction for the minutes actually done.
+  - The uncertainty says whether one retest can separate the expected change from the test's own error.
+  - The mobility sheet shows the seven parts, the reference's statement and its validation status.
+
+Tests:
+- 32 self-tests, each made to fail once on purpose:
+  - the leave-one-out error by hand (20/9) and the verdict rule at its boundaries;
+  - a session's outcome on lifts written here (+20%, then −25%);
+  - on the demo record:
+    - no lookahead: a rating logged on a session's own day leaves that session's predictors unchanged;
+    - fatigue alone's error, recomputed in the test;
+    - each verdict, worked out from the errors;
+    - both recovery screens and the assistant's answer;
+    - the recovery debt, counted from the record;
+  - runs written here with minutes only:
+    - the dose doubles;
+    - expenditure at 9.8 MET net of rest;
+    - recovery cost and capacity are refused;
+    - strength lift by lift: +10%, and a lift trained in one period only is left out;
+    - five distinct units;
+  - energy availability's walk at its own MET;
+  - the protocol's five outcomes, and the template's five questions;
+  - mobility, on records written here: 7 cm is 3 cm short of 10; a right side 2.5 cm short of the left comes first;
+    a 3 cm fall from the person's own best is lost range; steady range is not a limitation, with the error from the
+    person's own repeats (√((0.4² + 0.2²)/2) / √2); the expected +0.5 cm (−1.0 to +2.0) from the prior; the retest four
+    weeks on after 44 minutes a week; +1.0 cm observed against the prediction for 25 minutes a week; the seven parts on
+    screen; no test, no recommendation; the contract and its two findings.
+- The view-requirements check:
+  - made to fail four ways: an undeclared model on Today, a declared model Food never reads, an undeclared observation
+    on Food, and an undeclared model in the state;
+  - passing on seven consecutive days.
+- Black-box workflow V-018:
+  - the recovery state, opened from search, shows each score's miss, and the verdict on screen is the one worked out
+    from those misses;
+  - the cardio experiment, opened from the picker, asks five questions, each in its own unit.
+- Black-box workflow V-019: a knee-to-wall of 7 cm entered in the quick log; the mobility screen, opened from search,
+  explains all seven parts. The limitation is 10 − 7 cm short of the reference. With no minutes logged, the work is 30
+  minutes a week, with a retest 28 days on after at least 24 a week. One reading leaves nothing to compare.
+
+What stays open, and why:
+- On the demo record no recovery score beats fatigue alone. Whether one does for a real person is for the backtest to
+  say from their own sessions; nothing here can claim it in advance.
+- W-015, W-018 and W-020 (training, nutrition and body-composition refinement) give directions, not a definition of
+  done a test could hold, so they stay deferred.
+- The mobility recommendation covers the two tests with a response model. The shoulder and hip assessments are
+  reported but not yet recommended on.
+- Prospective validation still needs months of real use.
+
+All 37 gates pass (reproducible included); release 24/24; 1,921 self-tests.
+
+## The weather says why, a sleeping server is woken, the deployment measured, the last refinements (build e82ecf3367)
+
+What the person reported, and the items the catalogue left deferred.
+- **"The weather could not be fetched."**
+  - The refresh dropped its reason. `refreshEnvironment` returned the forecast's status without its error, so every
+    failure read the same: no server, a missing `/api/sync` rewrite, a stopped server, or a provider refusing.
+  - `weatherRefreshOutcome()` now carries the forecast's reason to the message, and gives a reason to a failure that
+    came back without one. A failed refresh is also shown at the top of the weather sheet, with the connection check;
+    it had been a line under the tables.
+  - The deployment forwards `/api/sync` to a server on free hosting, which sleeps when idle and takes up to a minute to
+    wake. The app gave up after 25 s. A timeout, or a 502 to 504 from the forwarder, is now retried once with "The
+    server is waking up; trying once more"; if both fail, the message says the server may be stopped or still waking.
+  - The provider itself could not be checked from the build environment: its network policy blocks Open-Meteo and the
+    sync host. `npm run deploy:smoke -- --app <url>` and the weather sheet's "Check the connection" name the broken
+    layer on a live deployment.
+- **The deployment footprint, measured** (doc 1, W-033). `scripts/deploy-footprint.mjs` (`npm run footprint`) measures
+  what a deployment serves and what a browser receives, and writes `docs/deployment-footprint.md`:
+  - 1,145 files: 97.8 MB raw, 24.0 MB with brotli; 93.3 MB of it is the food corpus;
+  - the cache header `vercel.json` gives each path, and the build time;
+  - from a host applying `vercel.json` with ETags: 1.42 MB on a first visit, 0.28 MB on a first food search (three
+    shards), nothing on a return visit.
+  It found two faults:
+  - the service worker precached the 4 MB page as both `./` and `./index.html`, so a first visit downloaded it twice
+    (2.87 MB, now 1.42 MB);
+  - `/data/food/manifest.json` matched two Cache-Control rules, `no-cache` and a day, so which one applied depended
+    on the host. The data rule now leaves the manifest out.
+  The deploy gate holds the budgets. What only the platform knows (its stored size, edge compression, cold starts)
+  needs the owner's account (`vercel inspect`).
+- **Why a lift stalled** (doc 1, W-015: progression failure classification). A lift the plan reads as flat or falling
+  against its own noise names its likely causes, in a stated order: an unapplied progression (the same top set three
+  times running), sets far from failure, readiness below the person's normal, loss faster than the band in a cut, and
+  volume up 30% or more. Each cause has its evidence, threshold, action and what would settle it, shown on "What to
+  change next week". The thresholds are a heuristic contract (`stall_causes`), not validated. No screen turns computed
+  stimulus into a prediction of growth.
+- **Two records of one food that disagree** (doc 1, W-018: food-source conflict arbitration).
+  - `foodSourceArbitration()` names the nutrients that differ, with both values.
+  - It checks each record against its own macros, with the food sheet's own 4/4/9 check (whose thresholds now come
+    from the contract).
+  - It uses the first of your own entry, USDA laboratory analysis, the USDA branded label and Open Food Facts that
+    agrees with itself, and keeps the other visible.
+  - Scanning a barcode you already have an entry for offers the record the rule chooses, and the food sheet says why.
+    The rule is a heuristic contract (`food_source_rank`), not validated.
+- **What a tape change can mean** (doc 1, W-020: measurement quality and region-specific interpretation).
+  - Each circumference site's change over its recent readings is set against the tape's error: the person's own repeats
+    within two days, or a 1 cm working assumption. It counts only beyond 2√2 errors.
+  - A change that counts is read with the weight trend and the strength trend for what it is consistent with. Every
+    reading says what the tape cannot separate: a tape measures girth, not tissue. It is shown site by site on the Body
+    tab.
+  - The working error and threshold are a heuristic contract (`tape_change`), not validated.
+
+Tests:
+- 29 self-tests, each made to fail once on purpose:
+  - the weather outcome and the sheet's banner;
+  - stall causes on lifts written here and on the excessive-loss fixture;
+  - food records that disagree, with each record's own check and the order;
+  - tape changes against the working error and the person's own repeats.
+- The deployment gate drives the real app, with the original stacks plus a new one (a server that is slow to wake):
+  - no server: the missing server is named;
+  - a stopped server: the app retries once and says it may be stopped;
+  - a sleeping server: the app says it is waking it, retries and gets the weather;
+  - the footprint budgets.
+- The external gate: a refusing provider is named, and a scanned product that disagrees with your own entry is settled
+  on screen.
+- Black-box workflows V-020 (six weeks of the same bench set, logged through the screen) and V-021 (two arm readings,
+  eight weeks apart, through the quick log).
+
+What stays open, and why:
+- W-019's question for a real person, prospective validation, and the provider accounts (item 11) are unchanged.
+- Each of W-015, W-018 and W-020 lists more refinements than were built: exercise-specific response calibration and
+  substitution equivalence, protein quality, meal timing and glycaemic response, and photo-condition normalisation.
+  These were chosen as the parts a test can hold now.
+
+All 37 gates pass (reproducible included); release 24/24; 1,950 self-tests.
+
+## Photos compared in matching conditions, protein across meals, what to start a substitute at (build 847a6961b4)
+
+More of W-015, W-018 and W-020's own lists, each where a test can hold it.
+- **Photos compared only in matching conditions** (doc 1, W-020: photo-condition normalisation).
+  - Two defects found. `photoComparability` checked four conditions no photo ever recorded (camera distance,
+    clothing, a time-of-day label, fed state), so every pair graded "too little was recorded". And the Body tab
+    tested `photoPairs()` for an array when it returns `{pairs}`, so it never showed a comparison. The old tests had
+    built photos with those never-recorded fields, so they passed where real photos could not.
+  - A photo now keeps when it was taken (the file's own time, which a library photo carries) and, optionally, whether
+    before or after food. The choice resets after each photo; the new workflow found it carrying over.
+  - Two photos are judged on view, light, time of day (more than four hours apart) and fed state. What the app does not
+    record is named as advice, not counted against the comparison.
+  - Within each view, the latest photo pairs with the earliest taken in matching conditions, and the photos set aside
+    are counted. One pairing serves the vault and the Body tab: the vault's own pose pairing and an unused second
+    comparability check are gone.
+- **Protein across the day's meals** (doc 1, W-018: meal timing). The per-meal threshold existed: "about 0.3 g/kg,
+  commonly cited", with no finding behind it. It is now a heuristic contract (`protein_meal`): 0.4 g/kg per meal across
+  four meals, once the day reaches 1.6 g/kg. It cites a finding now in the claim registry (Schoenfeld and Aragon
+  2018).
+  - A day short of its total is told to reach the total first.
+  - A day that is enough is told how many meals reach the amount and which to add to, on the Food tab.
+- **What to start a substitute at** (doc 1, W-015: substitution equivalence).
+  - No load ratio between two exercises is validated, so none is invented. The person's own last top set of the
+    substitute decides, at 90% of it after eight weeks away.
+  - With no record, the advice is a load with three or more reps in reserve, lighter still for a more technical lift.
+  - It is shown under each alternative in the Train tab's substitution search. The thresholds are a heuristic contract
+    (`substitution_start`), not validated.
+
+Tests:
+- 17 self-tests, each made to fail once on purpose:
+  - photo conditions, pairing, and both screens;
+  - the protein thresholds, total first, meal counts and the Food tab;
+  - the substitute's own record, the gap, no invented load, and aliases.
+- The photo tests that used never-recorded fields are rewritten to the records the app stores.
+- Black-box workflows V-022 (two photos through the vault, thirty days and eleven and a half hours apart) and V-023 (a
+  leg press logged, then a squat's substitutes searched).
+
+What stays open: exercise-specific response calibration, skill-versus-strength limitation, protein quality from amino
+acids, the food matrix, glycaemic response, and visual calibration.
+
+All 37 gates pass (reproducible included); release 24/24; 1,967 self-tests.
+
+## Each lift's forecast checked on its own record, how readiness moves from day to day (build e0ce259ce6)
+
+Two more of the open items, each checkable on the person's own record.
+- **Each lift's next session, its range checked on its own record** (doc 1, W-015: exercise-specific response
+  calibration).
+  - The response trend was one line per lift, and nothing said whether it forecast that lift. Lifts differ in how far
+    they scatter around their trend, so one range for all of them is too wide for some and too narrow for others.
+  - Each lift is now replayed. Every session from its fifth on is forecast from the lift's sessions in the 84 days
+    before it (Theil–Sen, as the trend is), and the miss is scored against the scatter around that fit.
+  - The scored misses go through the one calibration rule (`intervalCalibration`), not a second one. A lift with ten
+    or more takes its own factor, weighed against all the person's lifts as n against ten, and its weight is shown. A
+    lift with fewer takes the pooled factor and reads as a rating.
+  - Under each lift on "What to change next week": the next session's estimated 1RM, its 80% range, how many past
+    ranges held, and whether it is calibrated. All the lifts' forecasts together are a new row of "Are the intervals
+    honest?".
+  - On the demo record, the squat, Romanian deadlift and lat pulldown calibrate on their own. The bench press, with 9
+    scored, reads as a rating and takes the pooled factor, ×2.20.
+  - The windows, the 1% floor on the scatter and the weight are a heuristic contract (`lift_forecast`), not
+    validated.
+- **How readiness moves from day to day** (doc 1, W-019: fatigue-state transitions).
+  - Each day with two or more of the five ratings gets its readiness state as the record stood that day: better than
+    normal, about normal, or below.
+  - Days next to each other give a transition table. Each row starts from no carry-over (tomorrow distributed as the
+    person's days are), weighed as three days, and shows how much of it is the person's own record.
+  - Shown: the chance a day below is followed by another, the chance of being back to normal within two days, and the
+    median spell below normal (only spells whose length is known).
+  - It is checked as well. Walking forward, did today's state forecast a below-normal tomorrow better than the base
+    rate? That is scored by Brier score, each forecast made from the days before it only.
+  - On both recovery sheets and in the assistant's readiness answer. On the demo record, a day below was followed by
+    another 4 of 7 times, against 15% of days. Today forecast tomorrow better than the base rate: Brier 0.152 against
+    0.173, over 25 days.
+
+Tests:
+- 16 self-tests, each made to fail once on purpose:
+  - the replay, the ranges that held, the lift's own weight and the pooled factor, the next session, the sheet and the
+    calibration report, the floor, too few sessions, the contract;
+  - the rated days and the gaps, the counts and the prior, back within two days, spells of known length, the
+    walk-forward Brier scores and verdict, the recovery block and the assistant, too few pairs.
+- Black-box workflows V-024 (seven deadlift singles a week apart through the session sheet, the forecast worked out
+  by the test's own Theil–Sen fit) and V-025 (on the demo's recovery sheet, worked out from the screen alone).
+
+What stays open: skill-versus-strength limitation, protein quality from amino acids, the food matrix, glycaemic
+response, visual calibration, and W-019's exercise-specific recovery cost, individual sleep debt and NEAT compensation
+calibration.
+
+All 37 gates pass (reproducible included); release 24/24; 1,983 self-tests.
+
+## Skill or strength, what each lift costs, your own sleep need, the NEAT response checked (build fd6e597ef7)
+
+The four remaining training and recovery items, each extending the model that already held its subject.
+- **Skill or strength** (doc 1, W-015: skill-versus-strength limitation). A flat or falling lift is read against the
+  other lifts for the same muscles (the same pattern or a shared primary muscle, from the exercise library).
+  - It reads as skill-limited when a simpler lift for those muscles is rising, or when it scatters around its trend 1.5
+    times the person's other lifts or more. It reads as strength-limited when every lift for those muscles is flat
+    too. Otherwise it is not yet known, and a simpler lift to log is named.
+  - It is a stall cause on "What to change next week", after an unapplied progression and sets far from failure, with
+    what to do (practise below the limit, film a set) and what would settle it. A lift that is progressing is not
+    read for a limit. A heuristic contract (`skill_limit`), not validated.
+- **What each lift has cost you the next day** (doc 1, W-019: exercise-specific recovery cost). The ontology already
+  indexed what each lift should cost, the same for everyone (`exerciseRecoveryCost`).
+  - Its other half is now built: the next day's soreness and fatigue against each lift's sets the day before, over 120
+    days. Each cost per set starts from no cost (sd 0.15 a set) and says how much is the person's own record.
+  - Lifts almost always trained together are named, since their costs cannot be told apart. It is shown beside the
+    index on "Where training lands", and the index's rows carry it.
+  - On the demo record few days were rated, so every cost leans on the prior.
+- **Your own sleep need** (doc 1, W-019: individual sleep debt). Debt needs a requirement. The record can show one: the
+  night length beyond which the person's fatigue that day stops improving.
+  - Each candidate need is fitted as a level plus a rise per hour short of it. The bend is shown only when it beats a
+    straight line by the likelihood-ratio criterion. The need weighs each candidate by its fit and by a 7.5 h prior,
+    inside the 7 or more the consensus recommends (Watson et al. 2015).
+  - The last 14 nights' shortfall against it is a sleep finding and part of the assistant's sleep answer. A stated
+    target still governs the advice, and with no bend nothing personal is claimed.
+  - On the demo record, a need of 7.0 h, 57% the person's own.
+- **The NEAT response checked against each week's steps** (doc 1, W-019: NEAT compensation calibration).
+  - The response is replayed week by week from the seventh, each week's steps predicted from the weeks before it, and
+    each miss scored against the prediction's sd.
+  - The scores go through the one calibration rule. With ten or more, the factor widens or narrows the energy the
+    compensation carries into the energy balance and the optimiser.
+  - It is a row of "Are the intervals honest?" and is on the physiology screen. On the demo record, 3 weeks scored, so
+    it is a rating.
+
+Tests:
+- 25 self-tests, each made to fail once on purpose. The first sleep-need data were so sharp that the prior and the need
+  made no difference, so two checks could not fail. The NEAT data had no miss between 1.0 and 1.28, so how many
+  ranges held could not fail either. Both were rewritten until each check failed when its code was broken.
+- Black-box workflows:
+  - V-026: squat and leg press logged through the session sheet.
+  - V-027: on the demo record, the costs and the NEAT ranges, worked out from the screen.
+  - V-028: 21 nights and fatigue ratings through the quick log, the need and the debt from the test's own arithmetic.
+
+What stays open: protein quality from amino acids, the food matrix, glycaemic response and visual calibration (the
+next round), and W-019's question for a real person.
+
+All 37 gates pass (reproducible included); release 24/24; 2,008 self-tests.
+
+## Protein quality from amino acids, the food matrix, glycaemic load, visual calibration (build 7df2f090bc)
+
+The four remaining nutrition and body-composition items, each with a cited source registered as a finding.
+- **Protein quality from amino acids** (doc 1, W-018). The day's protein was scored only by food-group values.
+  - Where foods carry their amino acids, the day's protein is now scored as one mix against the FAO 2013 adult
+    pattern. The lowest ratio is the score and its amino acid the limiting one.
+  - A mix can score above its parts, which group values cannot show. A rice protein alone scores 0.625 (lysine) and a
+    pea protein 0.815 (methionine and cysteine); together they reach 1.07.
+  - It is an amino acid score, not corrected for digestion. Foods without a composition keep their group value and are
+    counted.
+  - Two ways in: one's own food can carry the amino acids its label prints (all eleven or none), and the corpus build
+    now keeps USDA's amino acids. The shipped corpus predates this, so no shipped food carries them until the next
+    corpus build.
+- **The food matrix** (doc 1, W-018).
+  - Defect fixed: every food whose name held a nut lost 20% of its energy, almond milk, flour, butter and peanut butter
+    included.
+  - Now only whole nuts that a feeding study measured count at the measured energy: almonds 129, walnuts 146 and
+    cashews 137 kcal per 28 g (Novotny et al. 2012; Baer et al. 2016; Baer and Novotny 2019). Butters, flours, milks
+    and oils, whose structure is broken, are not corrected, and nuts no study measured are not guessed at.
+  - It is shown on the Food tab, not taken off the intake, since the expenditure fitted from what is logged already
+    absorbs a steady difference.
+- **Glycaemic load** (doc 1, W-018: glycaemic response).
+  - Each food's carbohydrate less fibre is weighed by the glycaemic index of the group its name matches, from the
+    international tables (Atkinson et al. 2008). The meals' and the day's loads are shown, with the share of
+    carbohydrate matched.
+  - The day reads as low under 80 and high over 120, a convention held as a heuristic contract.
+  - It is a population figure: the person's own glucose response can differ widely (Zeevi et al. 2015) and is not
+    measured here, which the Food tab says.
+- **Visual calibration** (doc 1, W-020).
+  - Defect fixed: a body fat estimated by eye was a method the record knew but the log form never offered.
+  - Each visual estimate now pairs with the nearest measured reading within a week. The person's bias starts from none
+    (sd 4 points, the method's stated error), each gap weighed by both methods' errors, and with three pairs or more
+    their own visual error is read too.
+  - The latest estimate is read through both, on "Physique by region". Methods are still trended only against
+    themselves.
+
+Tests:
+- 22 self-tests, each made to fail once on purpose.
+- The claim registry checks each grade against the design its entry states. Five of the six new entries were first
+  written with designs that did not say what their grade needs, and the gate caught each one.
+- The first release run stopped at the inputs gate. The custom food's amino acid fields were read under computed names,
+  which it cannot see, so they are now read by name.
+- Black-box workflows:
+  - V-029: two protein isolates saved with their amino acids, logged, scored; a partial profile refused.
+  - V-030: whole almonds and cooked rice saved and logged, the energy held back and the glycaemic load.
+  - V-031: seven body-fat readings through the quick log, the bias and today's estimate.
+
+What stays open: bioavailability (W-018), the amino acids of the shipped corpus (the next corpus build), and every
+person's own glucose response.
+
+All 37 gates pass (reproducible included); release 24/24; 2,030 self-tests.

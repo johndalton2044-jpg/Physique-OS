@@ -245,7 +245,8 @@ var NEAT_PRIOR={mean:-250,sd:400,source:'spontaneous activity falls under energy
 /* energy per step: the personal response model's population figure, about 0.5 kcal per 1,000 steps per kg (90 kg if unknown) */
 function kcalPerStep(){var kg=(typeof _kgNow==='function')?_kgNow():null;return 0.0005*(kg||90);}
 function _neatWeeks(days){
-  days=days||182;var end=asOf(),by={};
+  days=days||182;return memo('neatWeeks:'+days+':'+asOf(),function(){return _neatWeeksFrom(days);});}
+function _neatWeeksFrom(days){var end=asOf(),by={};
   var add=function(type,key){dailySeries(type,end,days).forEach(function(d){var k=_weekKey(d.date),w=by[k]=by[k]||{s:[],c:[],last:d.date};w[key].push(d.value);if(d.date>w.last)w.last=d.date;});};
   add('steps','s');add('calories','c');
   var kcalLb=tissueKcalPerLb();
@@ -255,7 +256,7 @@ function _neatWeeks(days){
     return {week:k,steps:mean(w.s),deficitPct:100*deficit/expend};}).filter(Boolean);
 }
 function personalNeatResponse(weeks){
-  weeks=weeks||_neatWeeks();
+  var whole=!weeks;weeks=weeks||_neatWeeks();
   if(weeks.length<6)return {status:'insufficient',need:'6 weeks with steps, intake and a weight trend',n:weeks.length};
   var xs=weeks.map(function(w){return w.deficitPct/10;}),ys=weeks.map(function(w){return w.steps;});
   if((Math.max.apply(null,xs)-Math.min.apply(null,xs))*10<5)return {status:'insufficient',need:'weeks whose deficits differ by 5 points of expenditure or more',n:weeks.length};
@@ -264,11 +265,31 @@ function personalNeatResponse(weeks){
   var pv=NEAT_PRIOR.sd*NEAT_PRIOR.sd,vp=1/(1/pv+1/(se*se)),mp=vp*(NEAT_PRIOR.mean/pv+b/(se*se)),pw=Math.max(0,Math.min(1,1-vp/pv));
   var sdp=Math.sqrt(vp),lo=mp-2*sdp,hi=mp+2*sdp,kps=kcalPerStep();
   return {status:'ok',cls:'EMPIRICAL',perTenPct:Math.round(mp),sd:Math.round(sdp),interval:[Math.round(lo),Math.round(hi)],personalWeight:round(pw,2),n:weeks.length,
-    kcalPerStep:round(kps,4),kcalPerTenPct:Math.round(mp*kps),weeks:weeks,prior:NEAT_PRIOR,
+    kcalPerStep:round(kps,4),kcalPerTenPct:Math.round(mp*kps),weeks:weeks,prior:NEAT_PRIOR,calibration:whole?neatCalibration():null,
     reading:pw<0.2?('not enough of your own data yet; the population evidence is used ('+NEAT_PRIOR.source+')'):
       (hi<0?('your steps fall about '+Math.round(-mp)+' a day for each 10% deficit'):(lo>0?('your steps rise about '+Math.round(mp)+' a day for each 10% deficit'):'no clear change in your steps with the size of the deficit')),
     limits:'steps include deliberate walks, so a decision to walk less looks like unplanned compensation; an association across weeks, not proof of cause'};
 }
+/* W-019: NEAT COMPENSATION, CALIBRATED. The response above predicts each week's steps from that week's deficit. It is
+   replayed week by week, from the seventh, each prediction made from the weeks before it only: the level and slope
+   fitted then, and an sd from the residual scatter, the level's error and the slope's at that deficit. Each miss over
+   its sd is scored, and the scores go through the one calibration rule (intervalCalibration, 58-model-competition):
+   with ten or more, the factor that would have made the 80% range hold widens or narrows the energy the
+   compensation carries into the energy balance and the optimiser (neatOffset). */
+function neatResponseScored(){
+  return memo('neatScored:'+asOf(),function(){var W=_neatWeeks(),out=[];
+    for(var k=6;k<W.length;k++){var prior=W.slice(0,k),R=personalNeatResponse(prior);if(R.status!=='ok')continue;
+      var xs=prior.map(function(w){return w.deficitPct/10;}),ys=prior.map(function(w){return w.steps;}),mx=mean(xs),my=mean(ys),b=R.perTenPct;
+      var s2=xs.reduce(function(a,x,i){return a+Math.pow(ys[i]-my-b*(x-mx),2);},0)/Math.max(1,k-2),x=W[k].deficitPct/10,pred=my+b*(x-mx);
+      var psd=Math.sqrt(s2+s2/k+Math.pow(x-mx,2)*R.sd*R.sd);if(!(psd>0))continue;
+      out.push({at:W[k].week,ratio:Math.abs(W[k].steps-pred)/psd,predicted:Math.round(pred),actual:Math.round(W[k].steps),sd:Math.round(psd)});}
+    return out;});}
+function neatCalibration(){var S=neatResponseScored(),c=intervalCalibration(S),inUse=c.n>=CALIBRATION_MIN_N;
+  var basis=inUse?{kind:c.calibrated?'calibrated':'uncalibrated',interval:0.8,heldOnNewer:c.calibratedCoverage!=null?round(c.calibratedCoverage,2):null,n:c.n}:{kind:'rating',scored:c.n,need:CALIBRATION_MIN_N};
+  var held=S.filter(function(e){return e.ratio<=1.2816;}).length;
+  return {n:c.n,held:held,scale:inUse?round(c.scale,3):1,inUse:inUse,basis:basis,
+    text:c.n?('its 80% ranges held '+held+' of '+c.n+' weeks; '+(inUse?(confidenceBasisText(basis)+'; the range is corrected \u00d7'+fmtNum(c.scale,2)):('a rating, not a probability: '+c.n+' of '+CALIBRATION_MIN_N+' scored weeks to calibrate it'))):
+      ('no week scored yet: each needs six weeks before it')};}
 /* The expected change in everyday movement when the deficit deepens by deficitKcal a day: steps, the energy they carry
    (negative = less expenditure) and its sd, from the person's response, or the population prior while there is none. */
 function neatOffset(deficitKcal){
@@ -276,7 +297,9 @@ function neatOffset(deficitKcal){
   var t=(typeof tdeeEstimate==='function')?tdeeEstimate():null;if(!t||t.status!=='ok'||!(t.value>0))return null;
   var R=memo('pneat:'+todayISO(),function(){return personalNeatResponse();}),own=R.status==='ok';
   var per=own?R.perTenPct:NEAT_PRIOR.mean,sdPer=own?R.sd:NEAT_PRIOR.sd,units=100*deficitKcal/t.value/10,kps=kcalPerStep();
-  return {steps:Math.round(per*units),kcal:Math.round(per*units*kps),sdKcal:Math.round(Math.abs(sdPer*units*kps)),personalWeight:own?R.personalWeight:0,
+  /* W-019: the response's own scored weeks widen or narrow what it carries (a factor of 1 until ten are scored) */
+  var k=own&&R.calibration?R.calibration.scale:1;
+  return {steps:Math.round(per*units),kcal:Math.round(per*units*kps),sdKcal:Math.round(Math.abs(sdPer*units*kps*k)),calibrationScale:k,personalWeight:own?R.personalWeight:0,
     basis:own&&R.personalWeight>=0.2?('your NEAT response, '+R.perTenPct.toLocaleString()+' steps a day per 10% deficit, '+Math.round(R.personalWeight*100)+'% your own data'+
       (R.interval[0]<0&&R.interval[1]>0?'; its interval includes no change':'')):('the population prior: '+NEAT_PRIOR.source)};
 }

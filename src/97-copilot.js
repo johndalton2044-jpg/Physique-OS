@@ -162,13 +162,22 @@ var QUESTION_PATTERNS=[
      var s=sleepState();
      if(s.status!=='ok')return {status:'unknown',need:s.need||['nights logged']};
      return {value:fmtNum(s.mean,1)+' h, '+s.consistency,cls:'EMPIRICAL',
-       basis:s.nights+' nights'+(s.debtHours>3?(', '+fmtNum(s.debtHours,0)+' h short against '+s.basis):''),
+       basis:s.nights+' nights'+(s.debtHours>3?(', '+fmtNum(s.debtHours,0)+' h short against '+s.basis):'')+
+         /* W-019: the person's own need, where the record shows one */
+         (s.individual?('; your own sleep need reads '+fmtNum(s.individual.need,1)+' h ('+Math.round(s.individual.personalWeight*100)+'% your own record), '+fmtNum(s.individual.debtHours,1)+' h short of it'):''),
        act:'nav.domains'};}},
   {id:'readiness',re:/\b(readiness|recovered|recovery|how am i)\b/i,
    answer:function(){
      var r=readinessState();
      if(r.status!=='ok')return {status:'unknown',need:r.need||['a few days of ratings']};
-     return {value:r.band,cls:'EMPIRICAL',basis:r.parts.length+' signals against your own baseline',act:'nav.domains'};}},
+     /* W-019: the answer carries what the record shows about whether this score has predicted the person's sessions,
+        so it claims no more for it than that */
+     var V=null;try{V=readinessValidity();}catch(e){_q(e,'P2');}
+     var val=V&&V.status==='ok'?V.verdicts.readiness.text:('Whether it predicts your sessions is not known yet: '+(V?V.n:0)+' of '+READINESS_VALIDITY.minSessions+' sessions scored.');
+     /* and, from the person's own days, how a day below normal has gone on */
+     var M=null;try{M=readinessTransitions();}catch(e){_q(e,'P2');}
+     var mv=M&&M.status==='ok'&&M.from.below?(' After a day below your normal, the next was below too '+M.counts.below.below+' of '+M.from.below+' times; '+Math.round(M.belowShare*100)+'% of your rated days are below it.'):'';
+     return {value:r.band,cls:'EMPIRICAL',basis:r.parts.length+' signals against your own baseline. '+val+mv,act:'nav.domains'};}},
   {id:'missing',re:/\b(missing|what should i log|gaps)\b/i,
    answer:function(){
      var m=missingDataReport();
@@ -226,6 +235,7 @@ function contextPacket(opts){
     state:{},
     classes:CLASSES,
     claimClasses:EPISTEMIC_CLASSES,   /* what each epistemic class may claim (W-010); pack.claims gives each variable's */
+    confidenceMeans:CONFIDENCE_SEMANTICS,   /* "high" is a rating unless a claim's confidenceBasis says calibrated (doc 2, P2) */
     uncertainty:null,
     decision:null,
     domains:[],
@@ -255,7 +265,7 @@ function contextPacket(opts){
     pack.domains=domainSummary().map(function(x){return {id:x.id,status:x.status,headline:x.headline};});
     pack.knowledge=personalKnowledge().items.slice(0,12).map(function(k){
       return {kind:k.kind,subject:k.subject,statement:k.statement,
-        confidence:k.decayedConfidence,freshness:k.freshness,context:k.context};});
+        confidence:k.decayedConfidence,freshness:k.freshness,context:k.context,state:k.state};});
     pack.gaps=domainGaps().slice(0,8).map(function(g){return {question:g.question,limits:g.limits};});
     /* The ONLY things a model may propose, and every one of them must be DISPATCHABLE. The register also
        contains palette entries that carry their own closure rather than a registered action; offering those
@@ -334,7 +344,7 @@ var _UNIT_FAMILY={kcal:/\b(kcal|calories?)\b/i,mass:/\b(lb|lbs|kg|pounds?|kilos?
 function _unitFamilies(u){return Object.keys(_UNIT_FAMILY).filter(function(k){return _UNIT_FAMILY[k].test(String(u||''));});}
 function assistantClaimSet(E){if(!E)return null;
   var claims=E.claims.map(function(c){return {id:c.id,type:c.type,subject:c.proposition.subject,predicate:c.proposition.predicate,object:c.proposition.object,
-    epistemicClass:c.epistemicClass,confidence:c.confidence,applicability:c.applicability,population:c.population};});
+    epistemicClass:c.epistemicClass,confidence:c.confidence,confidenceBasis:c.confidenceBasis?c.confidenceBasis.kind:null,applicability:c.applicability,population:c.population};});
   var levers={};(E.action.levers||[]).forEach(function(l){levers[l.key]=1;});if(E.action.intervention)levers[E.action.intervention.variable]=1;
   var rel=[];try{var dr=energyDensityRef();rel.push({from:'kcal',to:'mass',claim:'tissue energy density',value:dr.kcalPerLb,unit:'kcal per lb'});}catch(e){}
   E.claims.forEach(function(c){var walk=function(o){if(!o||typeof o!=='object')return;Object.keys(o).forEach(function(k){var v=o[k];

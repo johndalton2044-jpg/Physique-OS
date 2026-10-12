@@ -49,7 +49,9 @@ function readinessState(){
   ['fatigue','soreness'].forEach(function(t){
     var s=seriesWindow(t,14);
     if(!s.length)return;
-    var base=(pb&&pb[t]&&pb[t].status==='ok')?pb[t].median:mean(s.map(function(d){return d.value;}));
+    /* `baseline`, as above: this read `median`, which does not exist, so once a baseline was established no day ever
+       counted as worse than it and the debt read 0 */
+    var base=(pb&&pb[t]&&pb[t].status==='ok'&&pb[t].baseline!=null)?pb[t].baseline:mean(s.map(function(d){return d.value;}));
     debt+=s.filter(function(d){return d.value>base;}).length;
   });
   return {status:'ok',cls:'EMPIRICAL',score:round(score,2),lo:round(score-1.96*rse,2),hi:round(score+1.96*rse,2),n:zs.length,agreement:rvar<0.5?'the signals agree':(rvar<1.5?'the signals mostly agree':'the signals disagree'),band:band,parts:parts,
@@ -58,6 +60,180 @@ function readinessState(){
     headline:band+(parts.length<4?(' \u00b7 from '+parts.length+' of 5 signals'):''),
     note:'Compared against your own middle for each signal, not against a scale. A 6 out of 10 means nothing until the system knows what your 6 usually is.'};
 }
+/* ---------------- W-019: DOES READINESS PREDICT THE SESSION THAT FOLLOWS? ----------------
+   A readiness score earns its place only if it says something about the next session that a simpler reading would
+   not. This backtest asks that of the person's own record. For each past session it rebuilds, as the record stood the
+   evening before (nothing from the session day or later), the three recovery outputs on screen (the recovery summary,
+   the latent recovery state and the readiness average) and three simple baselines: no information at all, last night's sleep against the
+   person's normal, and fatigue against theirs. It scores each against how the session went: each lift's best
+   estimated 1RM against that lift's own last three exposures, averaged over the session. Every predictor is scored
+   out of sample (leave one out), so one that fits its own noise gains nothing. The verdict is what the record shows,
+   including "no better than sleep alone". */
+var READINESS_VALIDITY={minSessions:12,priorExposures:3,lookbackDays:120,margin:0.05,
+  outcome:'each lift’s best estimated 1RM against its own last three exposures, in % (averaged over the session)',
+  asOf:'the evening before each session',scoring:'leave-one-out error of a straight-line fit, so every prediction is out of sample'};
+/* leave-one-out mean squared error of y = a + b*x; with x null it is the mean alone (the no-information baseline) */
+function _looMse(xs,ys){var n=ys.length;if(n<4)return null;var se=0;
+  for(var i=0;i<n;i++){var m=n-1,sx=0,sy=0,j;for(j=0;j<n;j++)if(j!==i){sx+=xs?xs[j]:0;sy+=ys[j];}
+    var mx=sx/m,my=sy/m,cov=0,vx=0;
+    if(xs)for(j=0;j<n;j++)if(j!==i){cov+=(xs[j]-mx)*(ys[j]-my);vx+=(xs[j]-mx)*(xs[j]-mx);}
+    var pred=xs&&vx>0?my+cov/vx*(xs[i]-mx):my;se+=Math.pow(ys[i]-pred,2);}
+  return se/n;}
+/* each session's performance against each lift's own recent level, in % */
+function _readinessOutcomes(from){
+  var prior={},out=[],P=READINESS_VALIDITY.priorExposures;
+  sessionsOf().forEach(function(s){var day={};
+    (s.sets||[]).forEach(function(x){var k=normExercise(x.exercise);if(!k||x.load==null||x.reps==null)return;var e=e1rm(x.load,x.reps);if(e&&(!day[k]||e.value>day[k]))day[k]=e.value;});
+    var res=[];Object.keys(day).forEach(function(k){var h=(prior[k]||[]).filter(function(p){return p.date<s.date;}).slice(-P);
+      if(h.length===P){var ref=mean(h.map(function(p){return p.value;}));if(ref>0)res.push((day[k]-ref)/ref*100);}});
+    if(s.date>=from&&res.length)out.push({date:s.date,value:mean(res),lifts:res.length});
+    Object.keys(day).forEach(function(k){(prior[k]=prior[k]||[]).push({date:s.date,value:day[k]});});});
+  return out;}
+function _validityVerdict(p,M,label){var simple=[{id:'none',l:'your average session'},{id:'sleep',l:'sleep alone'},{id:'fatigue',l:'fatigue alone'}]
+    .sort(function(a,b){return M[a.id]-M[b.id];})[0],m=1-READINESS_VALIDITY.margin;
+  if(p.mse<=m*M[simple.id]&&p.rLo>0)return {verdict:'adds value',text:label+' predicted your sessions better than sleep or fatigue alone.'};
+  if(p.mse<=m*M.none&&p.rLo>0)return {verdict:'no better than a simple reading',text:label+' predicted your sessions, but no better than '+simple.l+'.'};
+  return {verdict:'not shown',text:label+' has not predicted your sessions better than '+simple.l+'.'};}
+function readinessValidity(){
+  return memo('readinessValidity:'+asOf(),function(){
+    var V=READINESS_VALIDITY,perf=_readinessOutcomes(addDays(asOf(),-V.lookbackDays)),rows=[];
+    perf.forEach(function(p){
+      var x=withAsOf(addDays(p.date,-1),function(){var ur=null,rl=null,rd=null;try{if(typeof unifiedRecovery==='function')ur=unifiedRecovery();}catch(e){}try{rl=recoveryLatentState();}catch(e){}try{rd=readinessState();}catch(e){}
+        var part=function(t){var q=rd&&rd.status==='ok'?rd.parts.filter(function(z){return z.stream===t;})[0]:null;return q&&q.z!=null&&isFinite(q.z)?q.z:null;};
+        return {unified:ur&&ur.status==='ok'?ur.score:null,latent:rl&&rl.status==='ok'?rl.score:null,readiness:rd&&rd.status==='ok'?rd.score:null,sleep:part('sleep'),fatigue:part('fatigue')};});
+      if(x.unified!=null&&x.latent!=null&&x.readiness!=null&&x.sleep!=null&&x.fatigue!=null)rows.push({date:p.date,y:p.value,x:x});});
+    if(rows.length<V.minSessions)return {status:'insufficient',n:rows.length,sessions:perf.length,
+      need:[(V.minSessions-rows.length)+' more sessions with sleep and fatigue rated the day before, and a lift trained '+(V.priorExposures+1)+' times or more'],
+      outcome:V.outcome,asOf:V.asOf};
+    var ys=rows.map(function(r){return r.y;}),M={none:_looMse(null,ys)};
+    var defs=[{id:'unified',label:'Recovery summary'},{id:'latent',label:'Latent recovery state'},{id:'readiness',label:'Readiness average'},{id:'sleep',label:'Sleep alone'},{id:'fatigue',label:'Fatigue alone'}];
+    var preds=defs.map(function(d){var xs=rows.map(function(r){return r.x[d.id];}),mse=_looMse(xs,ys),c=correlation(xs,ys),r=c.r,n=rows.length;
+      var lo=null,hi=null;if(r!=null&&n>3){var z=0.5*Math.log((1+Math.min(r,0.999))/(1-Math.min(r,0.999))),se=1/Math.sqrt(n-3);lo=Math.tanh(z-1.96*se);hi=Math.tanh(z+1.96*se);}
+      M[d.id]=mse;return {id:d.id,label:d.label,mse:mse,rmse:round(Math.sqrt(mse),2),skill:M.none?round(1-mse/M.none,3):null,r:r!=null?round(r,2):null,rLo:lo!=null?round(lo,2):null,rHi:hi!=null?round(hi,2):null};});
+    preds.push({id:'none',label:'No information (your average session)',mse:M.none,rmse:round(Math.sqrt(M.none),2),skill:0,r:null,rLo:null,rHi:null});
+    var verdicts={unified:_validityVerdict(preds[0],M,'The recovery summary'),latent:_validityVerdict(preds[1],M,'The latent recovery state'),readiness:_validityVerdict(preds[2],M,'The readiness average')};
+    return {status:'ok',cls:'EMPIRICAL',n:rows.length,predictors:preds,verdicts:verdicts,rows:rows,
+      demonstrated:Object.keys(verdicts).some(function(k){return verdicts[k].verdict==='adds value';}),
+      outcome:V.outcome,asOf:V.asOf,scoring:V.scoring,
+      limits:'A backtest on your own past sessions: it shows whether the score has tracked your performance, not why. A session you cut short because you felt poor is scored on what you lifted.'};
+  });
+}
+/* ---------------- W-019: HOW READINESS MOVES FROM DAY TO DAY (fatigue-state transitions) ----------------
+   A day below normal says more once it is known how such days go on. Each day the person rated how they feel (at least
+   two of the five signals that day) is given its readiness state as the record stood that day: better than normal,
+   about normal, or below (below and well below together: few records have enough well-below days to count apart).
+   Rated days next to each other are counted as transitions. Each row of the table starts from no carry-over at all
+   (tomorrow distributed as the person's rated days are overall), weighed as three days against the transitions seen,
+   so a short record leans on "no carry-over" and says how much of each row is its own. Then it is checked: walking
+   forward through the record, did today's state forecast a below-normal tomorrow better than the person's base rate
+   alone? A spell below normal is counted only when its length is known: it began after a rated day at or above normal,
+   and has ended on one. */
+var READINESS_TRANSITIONS={lookbackDays:90,minStreams:2,minTransitions:20,warmup:10,minScored:10,priorDays:3,margin:0.05,
+  states:['better','normal','below'],labels:{better:'better than your normal',normal:'about your normal',below:'below your normal'},
+  streams:['fatigue','soreness','stress','motivation','sleep'],
+  asOf:'each rated day, as the record stood that day',scoring:'one day ahead, each forecast from the days before it only, by Brier score against your base rate'};
+function _readinessDayState(score){return score>0.5?'better':(score>-0.5?'normal':'below');}
+/* the transition table from rated days in date order: counts, shares, and each row with its no-carry-over prior */
+function _transitionTable(days){var T=READINESS_TRANSITIONS,S=T.states,cnt={},tot={},share={},P={},w={},n=0;
+  S.forEach(function(a){cnt[a]={};S.forEach(function(b){cnt[a][b]=0;});tot[a]=0;share[a]=0;});
+  days.forEach(function(d){share[d.state]++;});S.forEach(function(a){share[a]=days.length?share[a]/days.length:0;});
+  for(var i=1;i<days.length;i++)if(daysBetween(days[i-1].date,days[i].date)===1){cnt[days[i-1].state][days[i].state]++;tot[days[i-1].state]++;n++;}
+  S.forEach(function(a){P[a]={};S.forEach(function(b){P[a][b]=(cnt[a][b]+T.priorDays*share[b])/(tot[a]+T.priorDays);});w[a]=tot[a]/(tot[a]+T.priorDays);});
+  return {counts:cnt,from:tot,share:share,P:P,personalWeight:w,transitions:n};}
+function readinessTransitions(){
+  return memo('readinessTransitions:'+asOf(),function(){
+    var T=READINESS_TRANSITIONS,now=asOf(),days=[];
+    for(var d=addDays(now,-(T.lookbackDays-1));d<=now;d=addDays(d,1)){var day=d;
+      var x=withAsOf(day,function(){var rated=T.streams.filter(function(t){return seriesWindow(t,1).some(function(r){return r.date===day;});}).length;
+        if(rated<T.minStreams)return null;var rd=null;try{rd=readinessState();}catch(e){_q(e,'P2');}
+        return rd&&rd.status==='ok'&&rd.score!=null&&isFinite(rd.score)?{date:day,score:rd.score,state:_readinessDayState(rd.score),rated:rated}:null;});
+      if(x)days.push(x);}
+    var tab=_transitionTable(days);
+    if(tab.transitions<T.minTransitions)return {status:'insufficient',days:days.length,transitions:tab.transitions,
+      need:[(T.minTransitions-tab.transitions)+' more pairs of days next to each other with at least '+T.minStreams+' of the five ratings each'],asOf:T.asOf};
+    /* walking forward: each tomorrow forecast from the days up to today only */
+    var bm=0,bb=0,scored=0;
+    for(var i=1;i<days.length;i++){if(daysBetween(days[i-1].date,days[i].date)!==1)continue;
+      var past=_transitionTable(days.slice(0,i));if(past.transitions<T.warmup)continue;
+      var y=days[i].state==='below'?1:0,pm=past.P[days[i-1].state].below,pb=past.share.below;bm+=Math.pow(pm-y,2);bb+=Math.pow(pb-y,2);scored++;}
+    /* spells below normal whose length is known: a run of consecutive below days that began after a rated day at or
+       above normal and ended on one */
+    var spells=[],run=0,known=false,open=false;
+    days.forEach(function(e,j){var next=j>0&&daysBetween(days[j-1].date,e.date)===1;
+      if(e.state==='below'){if(run&&next)run++;else{run=1;known=next;}}
+      else{if(run&&next&&known)spells.push(run);run=0;}});
+    open=run>0;
+    var last=days[days.length-1],current=last&&daysBetween(last.date,now)<=1?last:null,pbb=tab.P.below.below;
+    var out={status:'ok',cls:'EMPIRICAL',days:days.length,transitions:tab.transitions,counts:tab.counts,from:tab.from,share:tab.share,
+      P:tab.P,personalWeight:tab.personalWeight,
+      stayBelow:round(pbb,3),belowShare:round(tab.share.below,3),carriesOver:tab.from.below>0&&pbb>tab.share.below,
+      backWithin2:round(1-pbb*pbb,3),spells:spells,medianSpell:spells.length?median(spells):null,spellOngoing:open,
+      current:current?{date:current.date,state:current.state,label:T.labels[current.state]}:null,
+      score:scored?{n:scored,brier:round(bm/scored,3),brierBase:round(bb/scored,3)}:{n:0},asOf:T.asOf,scoring:T.scoring,
+      limits:'A first-order chain: tomorrow is read from today alone, not from the run of days before it. A day is only as good as its ratings; days you did not rate are not counted.'};
+    var sc=out.score;
+    out.verdict=sc.n<T.minScored?{verdict:'not yet',text:'Too few days scored to say whether today forecasts tomorrow ('+sc.n+' of '+T.minScored+').'}:
+      (sc.brier<=(1-T.margin)*sc.brierBase?{verdict:'adds value',text:'Knowing today’s state forecast a below-normal tomorrow better than your base rate alone.'}:
+        {verdict:'no better',text:'Knowing today’s state forecast a below-normal tomorrow no better than your base rate alone.'});
+    return out;
+  });
+}
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','readiness_transitions'))return;
+  MODELS.push({id:'readiness_transitions',name:'How readiness moves from day to day',cls:'EMPIRICAL',version:'1.0',inputs:['fatigue','soreness','stress','motivation','sleep','personal_baseline'],minN:20,
+    assumes:['a day’s readiness state, as the record stood that day, is the state the person was in','tomorrow depends on today’s state, not on the days before it','the ratings mean the same across the period'],
+    failsWhen:['fewer than 20 pairs of rated days next to each other','ratings entered in batches after the fact','an illness or travel that changes what the ratings mean'],
+    output:'how likely a day below normal is to be followed by another, how long such spells last, how likely today’s state is to be back to normal within two days, and whether today forecasts tomorrow better than the base rate',
+    consumers:['readinessTransitionsBlock','askQuestion|the assistant’s readiness answer'],freshnessDays:7,uncertainty:{kind:'each row weighed against a no-carry-over prior, with its personal weight; one-day-ahead Brier score against the base rate'},fn:'readinessTransitions'});})();
+/* ---------------- W-019: WHAT EACH LIFT COSTS THE NEXT DAY (exercise-specific recovery cost) ----------------
+   exerciseRecoveryCost (83-propagation) indexes what a lift should cost from the exercise ontology, the same for
+   everyone; what it has cost this person is in their own record, and this is that half. Each
+   day before a rated day is a row: the next day's soreness (and, separately, fatigue) against the number of sets of
+   each lift that day, for the lifts trained on six days or more (the eight most trained), with an intercept for a
+   day without them. Each lift's cost per set starts from no cost at all (a prior with sd 0.15 points a set), so a lift
+   seen a few times leans on "no cost" and says how much of its figure is its own. The scatter is taken from the
+   residuals of the previous fit, twice, starting from the outcome's own variance, and never below 0.1. Lifts trained
+   almost always together (their set counts correlated 0.9 or more) are named, since their costs cannot be told apart.
+   An association within one person, not a measured cost: a hard day elsewhere in life counts against whatever lift
+   was trained that day. */
+var EXERCISE_RECOVERY={lookbackDays:120,minDays:20,minSessions:6,maxLifts:8,priorSd:0.15,interceptSd:5,sigmaFloor:0.1,together:0.9,outcomes:['soreness','fatigue']};
+function _ridgeFit(rows,p,C,sigma2){var k=p+1,A=[],b=[],i,j;for(i=0;i<k;i++){A.push(new Array(k).fill(0));b.push(0);}
+  rows.forEach(function(r){var x=[1].concat(r.x);for(i=0;i<k;i++){b[i]+=x[i]*r.y;for(j=0;j<k;j++)A[i][j]+=x[i]*x[j];}});
+  for(i=0;i<k;i++)A[i][i]+=sigma2/Math.pow(i===0?C.interceptSd:C.priorSd,2);
+  var inv=_matInv(A);if(!inv)return null;var mu=inv.map(function(row){return row.reduce(function(a,v,j2){return a+v*b[j2];},0);});
+  var sse=rows.reduce(function(a,r){var x=[1].concat(r.x),f=x.reduce(function(t,v,j2){return t+v*mu[j2];},0);return a+Math.pow(r.y-f,2);},0);
+  return {mu:mu,cov:inv.map(function(row){return row.map(function(v){return v*sigma2;});}),sse:sse};}
+function personalRecoveryCost(){
+  return memo('personalRecoveryCost:'+asOf(),function(){
+    var C=EXERCISE_RECOVERY,now=asOf(),from=addDays(now,-C.lookbackDays),sets={},days={};
+    sessionsOf({from:from}).forEach(function(s){(s.sets||[]).forEach(function(x){var k=normExercise(x.exercise);if(!k)return;var d=sets[s.date]=sets[s.date]||{};d[k]=(d[k]||0)+1;});});
+    Object.keys(sets).forEach(function(d){Object.keys(sets[d]).forEach(function(k){days[k]=(days[k]||0)+1;});});
+    var lifts=Object.keys(days).filter(function(k){return days[k]>=C.minSessions;}).sort(function(a,b){return days[b]-days[a]||(a<b?-1:1);}).slice(0,C.maxLifts);
+    if(!lifts.length)return {status:'insufficient',need:['a lift trained on '+C.minSessions+' days or more in the last '+C.lookbackDays+' days'],outcomes:{}};
+    var out={status:'ok',cls:'EMPIRICAL',lifts:lifts,outcomes:{},limits:'An association within one person, not a measured cost: a hard day elsewhere in life counts against whatever lift was trained that day.'};
+    C.outcomes.forEach(function(t){var by={};dailySeries(t,now,C.lookbackDays+1).forEach(function(r){by[r.date]=r.value;});
+      var rows=[];for(var d=from;d<now;d=addDays(d,1)){var y=by[addDays(d,1)];if(y==null)continue;var day=sets[d]||{};rows.push({date:d,y:y,x:lifts.map(function(k){return day[k]||0;})});}
+      if(rows.length<C.minDays){out.outcomes[t]={status:'insufficient',n:rows.length,need:[(C.minDays-rows.length)+' more days with '+((OBS_TYPES[t]||{}).label||t).toLowerCase()+' rated the day after']};return;}
+      var ys=rows.map(function(r){return r.y;}),s2=Math.max(C.sigmaFloor,Math.pow(sd(ys)||0,2)),F=null;
+      for(var it=0;it<2;it++){F=_ridgeFit(rows,lifts.length,C,s2);if(!F)break;s2=Math.max(C.sigmaFloor,F.sse/Math.max(1,rows.length-lifts.length-1));}
+      F=F&&_ridgeFit(rows,lifts.length,C,s2);
+      if(!F){out.outcomes[t]={status:'insufficient',n:rows.length,need:['set counts that vary between days']};return;}
+      var col=function(j){return rows.map(function(r){return r.x[j];});};
+      var list=lifts.map(function(k,j){var sdj=Math.sqrt(Math.max(0,F.cov[j+1][j+1])),m=F.mu[j+1],trained=rows.filter(function(r){return r.x[j]>0;});
+        var spd=trained.length?mean(trained.map(function(r){return r.x[j];})):null,lib=(typeof resolveExercise==='function')?resolveExercise(k):null;
+        var together=lifts.filter(function(k2,j2){if(j2===j)return false;var c=correlation(col(j),col(j2));return c.r!=null&&c.r>=C.together;});
+        return {exercise:k,days:trained.length,setsPerDay:spd!=null?round(spd,1):null,perSet:round(m,3),lo:round(m-1.96*sdj,3),hi:round(m+1.96*sdj,3),
+          perDay:spd!=null?round(m*spd,2):null,personalWeight:round(Math.max(0,1-sdj*sdj/(C.priorSd*C.priorSd)),2),together:together,library:lib?lib.fatigue:null};});
+      list.sort(function(a,b){return (b.perDay||0)-(a.perDay||0);});
+      out.outcomes[t]={status:'ok',n:rows.length,intercept:round(F.mu[0],2),sigma:round(Math.sqrt(s2),2),rows:list,label:((OBS_TYPES[t]||{}).label||t).toLowerCase()};});
+    return out;
+  });
+}
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','personal_recovery_cost'))return;
+  MODELS.push({id:'personal_recovery_cost',name:'What each lift costs the next day',cls:'EMPIRICAL',version:'1.0',inputs:['session.sets|sets per exercise','session.date|session dates','soreness','fatigue'],minN:20,
+    assumes:['the next day’s soreness and fatigue respond to the sets of the day before','each set of a lift costs about the same','the costs of lifts trained on one day add up'],
+    failsWhen:['lifts almost always trained together','fewer than 20 days rated the day after','a hard day elsewhere in life that coincides with training'],
+    output:'per lift, the next day’s extra soreness and fatigue per set and per training day, with its interval, how much is the person’s own record, and which lifts cannot be told apart',
+    consumers:['recoveryCostRanking','openPropagation|Where training lands'],freshnessDays:14,uncertainty:{kind:'posterior interval per lift, against a prior of no cost'},fn:'personalRecoveryCost'});})();
 registerDomain({
   id:'recovery',label:'Recovery and readiness',priority:20,ontology:'RECOVERY_INPUTS',derives:true,actions:['nav.recovery2','log.type'],
   observes:['fatigue','soreness','stress','motivation','sleep'],

@@ -44,6 +44,7 @@
     "deploy": "node tests/deployment-smoke.mjs --local",
     "deploy:smoke": "node tests/deployment-smoke.mjs",
     "deploy:configure": "node scripts/configure-deploy.mjs",
+    "footprint": "node scripts/deploy-footprint.mjs",
     "voice": "node tests/voice.mjs",
     "direction": "node tests/direction.mjs",
     "timezones": "node tests/timezones.mjs",

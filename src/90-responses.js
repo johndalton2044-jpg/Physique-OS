@@ -45,7 +45,11 @@ function frictionCard(){var M=frictionModel(),rows=M.items.filter(function(i){re
   return uiFold('learn-friction','What gets in the way',rows.map(function(i){return i.item+' '+Math.round(i.rate*100)+'%';}).join(' \u00b7 '),
     rows.map(function(i){var f=(i.factors||[]).filter(function(x){return x.oddsRatio<1;}),clear=f.filter(function(x){return x.clear;});
       var txt=!i.factors||!i.factors.length?(i.note||'nothing measurable gets in the way'):(clear.length?clear.map(function(x){return x.label+' (odds \u00d7'+x.oddsRatio+')';}).join(', '):(f.length?'possibly '+f[0].label+' (odds \u00d7'+f[0].oddsRatio+', not clear yet)':'no factor lowers it'));
-      return uiRow(esc(i.item),Math.round(i.rate*100)+'% of '+i.n+' days',{sub:esc(txt)});}).join('')+'<div class="prov">'+esc(M.method)+'. '+esc(M.limits)+'</div>');}
+      return uiRow(esc(i.item),Math.round(i.rate*100)+'% of '+i.n+' days',{sub:esc(txt)});}).join('')+
+    (function(){var C=null,T=null;try{C=executionCalibration();T=executionTrackRecord();}catch(e){_q(e,'P2');}if(!C)return '';var ok=C.items.filter(function(i){return i.status==='ok';});
+      return (ok.length?'<div class="card-title" style="margin-top:8px" data-execution-calibration>How well these probabilities predict</div>'+ok.map(function(i){return uiRow(esc(i.item),'Brier '+i.brier,{sub:esc('against '+i.brierBaseRate+' for always predicting your rate'+(i.skill!=null?' (skill '+i.skill+')':'')+'; checked on '+i.testDays+' newer days')});}).join(''):'')+
+        '<div class="hint">'+esc(T.status==='ok'?('Stamped before each day: '+T.n+' predictions scored, Brier '+T.brier+' against '+T.brierBaseRate+' for your rate.'):T.note)+'</div>';})()+
+    '<div class="prov">'+esc(M.method)+'. '+esc(M.limits)+'</div>');}
 /* WHICH FORECAST TO TRUST: the model competitions */
 function competitionCard(){var out=[];Object.keys(MODEL_COMPETITIONS).forEach(function(id){var E=evaluateCompetition(id);if(E.status!=='ok')return;var h=E.horizons[E.horizons.length-1];
     out.push('<div class="card-title" style="margin-top:6px">'+esc(E.label)+' ('+h+' days ahead)</div>'+(E.warning?'<div class="hint">'+esc(E.warning)+'</div>':'')+

@@ -243,7 +243,8 @@ function supplementEfficacy(){
 
 /* ---------- ENERGY AVAILABILITY (Loucks) ----------
    EA = (energy intake \u2212 exercise energy expenditure) / fat-free mass, per day, averaged over 7 days. Exercise energy:
-   cardio at its MET (net of resting) and lifting at ~5 MET. Fat-free mass needs a body-fat reading: without one EA is
+   cardio at its own MET (net of resting; it read a field the normaliser does not return, so every session counted as
+   MET 5) and lifting at ~5 MET. Fat-free mass needs a body-fat reading: without one EA is
    refused, not guessed. Thresholds (kcal/kg FFM/day): < 30 low, 30\u201345 reduced, \u2265 45 adequate. Not a diagnosis. */
 function energyAvailability(){
   var bf=obsOf('bodyfat').slice(-1)[0],kg=_kgNow();
@@ -251,7 +252,7 @@ function energyAvailability(){
   if(!bf)return {status:'insufficient',cls:'DERIVED',need:['a body-fat reading'],note:'Energy availability is per kilogram of fat-free mass; without body fat it would be a guess.'};
   var ffm=kg*(1-bf.value/100),days=[];
   for(var i=1;i<=7;i++){var d=addDays(todayISO(),-i),ei=_dayValue('calories',d);if(!ei)continue;
-    var eee=0;(cardioSessions(10).rows||[]).filter(function(r){return r.date===d;}).forEach(function(r){var met=(normaliseCardioSession(r).abs||{}).met||5;eee+=(met-1)*3.5*kg/200*(r.minutes||0);});
+    var eee=0;(cardioSessions(10).rows||[]).filter(function(r){return r.date===d;}).forEach(function(r){eee+=cardioNetKcal(r,kg)||0;});
     (DB.sessions||[]).filter(function(s){return s.date===d;}).forEach(function(s){eee+=(5-1)*3.5*kg/200*(s.durationMin||45);});
     days.push({date:d,ei:ei,eee:round(eee,0),ea:(ei-eee)/ffm});}
   if(days.length<4)return {status:'insufficient',cls:'DERIVED',need:[(4-days.length)+' more days of logged intake this week']};
@@ -269,17 +270,90 @@ var PROTEIN_QUALITY=[[/whey|casein|milk|yogh?urt|cheese|skyr|quark/i,1.0,'dairy'
   [/soy|tofu|tempeh|edamame/i,0.9,'soy'],[/pea protein/i,0.82,'pea protein'],[/bean|lentil|chickpea|pea\b/i,0.65,'legumes'],[/oat|rice|wheat|bread|pasta|cereal|corn|barley/i,0.5,'grains'],
   [/almond|walnut|peanut|cashew|nut\b|nuts|seed/i,0.45,'nuts and seeds']];
 function _foodGroup(name){for(var i=0;i<PROTEIN_QUALITY.length;i++)if(PROTEIN_QUALITY[i][0].test(name))return {q:PROTEIN_QUALITY[i][1],group:PROTEIN_QUALITY[i][2]};return {q:0.75,group:'unclassified'};}
+/* W-018: PROTEIN QUALITY FROM AMINO ACIDS. Where a food carries its amino acids (USDA's analyses, in g per 100 g, or a
+   label entered with one's own food), the day's protein is scored as one mix against the FAO 2013 pattern for adults:
+   each indispensable amino acid in mg per g of the protein whose composition is known, over the pattern; the lowest
+   ratio is the score and its amino acid the limiting one. A mix can score above its parts (grains short of lysine and
+   pulses short of methionine make up for each other), which group values cannot show. It is an amino acid score: how
+   much of each is digested is not known per food, so it is not corrected for digestion. Foods without a composition
+   keep their group value above and are counted. */
+var AMINO_PATTERN={his:16,ile:30,leu:61,lys:48,saa:23,aaa:41,thr:25,trp:6.6,val:40};
+var AMINO_LABEL={his:'histidine',ile:'isoleucine',leu:'leucine',lys:'lysine',saa:'methionine and cysteine',aaa:'phenylalanine and tyrosine',thr:'threonine',trp:'tryptophan',val:'valine'};
+var AMINO_KEYS=['his','ile','leu','lys','met','cys','phe','tyr','thr','trp','val'];
+function _logScale(e){var f=e.food||{},q=num(e.quantity);if(q==null)return null;return f.basis==='serving'?{src:f.perServing||{},k:q}:{src:f.per100||{},k:q/100};}
+function _aminoOf(e){var s=_logScale(e);if(!s||!AMINO_KEYS.every(function(a){return s.src[a]!=null&&isFinite(s.src[a]);}))return null;var g={};AMINO_KEYS.forEach(function(a){g[a]=s.src[a]*s.k;});
+  return {his:g.his,ile:g.ile,leu:g.leu,lys:g.lys,saa:g.met+g.cys,aaa:g.phe+g.tyr,thr:g.thr,trp:g.trp,val:g.val};}
+function aminoAcidScore(logs){var known=0,total=0,mg={},foods=[];Object.keys(AMINO_PATTERN).forEach(function(a){mg[a]=0;});
+  logs.forEach(function(e){var p=(e.nutrients||{}).protein||0;total+=p;var A=_aminoOf(e);if(!A||!(p>0))return;known+=p;foods.push(String((e.food||{}).name||''));Object.keys(mg).forEach(function(a){mg[a]+=A[a]*1000;});});
+  if(!(known>0))return {status:'insufficient',proteinG:round(total,1),need:['a food with its amino acids: USDA\u2019s analysed foods, or your own food with the label\u2019s amino acids']};
+  var rows=Object.keys(AMINO_PATTERN).map(function(a){var per=mg[a]/known;return {aa:a,label:AMINO_LABEL[a],mgPerG:round(per,1),pattern:AMINO_PATTERN[a],ratio:round(per/AMINO_PATTERN[a],3)};});
+  var lim=rows.slice().sort(function(x,y){return x.ratio-y.ratio;})[0];
+  return {status:'ok',cls:'DERIVED',score:lim.ratio,limiting:lim.aa,limitingLabel:lim.label,rows:rows,knownProteinG:round(known,1),proteinG:round(total,1),coverage:total?round(known/total,2):null,foods:foods,policy:'fao2013protein',
+    text:'amino acid score '+fmtNum(lim.ratio,2)+(lim.ratio>=1?' (meets the adult pattern; '+lim.label+' the closest)':' ('+lim.label+' limiting)')+', from '+Math.round(100*known/total)+'% of the day\u2019s protein with a known composition; not corrected for digestion'};}
+/* W-018: THE FOOD MATRIX. A food's label energy assumes every gram of fat, protein and carbohydrate is absorbed. For whole
+   nuts, feeding studies measured less: the cell walls hold part of the fat back. Where a study measured the energy, the
+   whole nut counts at that figure (almonds 129, walnuts 146, cashews 137 kcal per 28 g); its butter, flour, milk or oil,
+   whose structure is broken, is not corrected, and a nut no study measured is not guessed at. The correction is shown,
+   not applied to the logged intake: the expenditure fitted from intake and weight already absorbs a steady difference. */
+var FOOD_MATRIX_CONTRACT={id:'food_matrix_energy',subject:'whole nuts',predicate:'count at the energy measured in feeding studies, not their label energy',
+  parameters:{almonds:{value:129,unit:'kcal per 28 g',meaning:'whole almonds (Novotny et al. 2012)'},walnuts:{value:146,unit:'kcal per 28 g',meaning:'whole walnuts (Baer et al. 2016)'},
+    cashews:{value:137,unit:'kcal per 28 g',meaning:'whole cashews (Baer and Novotny 2019)'}},
+  statement:function(v){return 'whole almonds count '+v.almonds+', walnuts '+v.walnuts+' and cashews '+v.cashews+' kcal per 28 g, as measured in feeding studies; their butters, flours, milks and oils, and other nuts, are not corrected';},
+  rationale:'the structure of a whole nut holds part of its fat back from absorption; the measured figure replaces the label\u2019s only where it was measured',
+  evidenceBasis:['novotny2012almond','baer2016walnut','baer2019cashew'],parameterSource:'the measured figures of the cited feeding studies',parameterVersion:'1.0',
+  calibrationStatus:'not calibrated to this person',validationStatus:HEURISTIC_NOT_VALIDATED,applicability:{phases:['any'],population:'adults eating whole nuts'},
+  failureConditions:['roasted or chopped nuts, which release more energy than the whole nuts measured','a mixed food whose nut share is unknown'],outcomes:['energy intake']};
+var FOOD_MATRIX_NUTS=[['almonds',/almond/i],['walnuts',/walnut/i],['cashews',/cashew/i]];
+var FOOD_MATRIX_BROKEN=/butter|milk|flour|meal\b|oil|paste|spread|beverage|drink|extract|cream|bar\b|cereal|granola|cookie|cake|chocolate|cheese|yog|sauce|mix/i;
+function foodMatrixFor(name){name=String(name||'');if(FOOD_MATRIX_BROKEN.test(name))return null;var P=FOOD_MATRIX_CONTRACT.parameters;
+  for(var i=0;i<FOOD_MATRIX_NUTS.length;i++)if(FOOD_MATRIX_NUTS[i][1].test(name))return {nut:FOOD_MATRIX_NUTS[i][0],kcalPerG:P[FOOD_MATRIX_NUTS[i][0]].value/28,source:P[FOOD_MATRIX_NUTS[i][0]].meaning};return null;}
 function dietDigestibility(date){
   date=date||todayISO();var L=foodLogsOn(date);   /* the Food screen's entries, with their precomputed nutrients */
   if(!L.length)return {status:'insufficient',cls:'PRIOR',need:['food logged with individual foods']};
-  var prot=0,dig=0,kcal=0,adj=0,groups={},unk=0;
+  var prot=0,dig=0,kcal=0,fibAdj=0,mx=0,matrix=[],groups={},unk=0;
   L.forEach(function(e){var f=e.food||{},n=e.nutrients||{},p=n.protein||0,k=n.kcal||0,fib=n.fiber||0,nm=String(f.name||e.name||'');
     var g=_foodGroup(nm);if(g.group==='unclassified')unk++;prot+=p;dig+=p*g.q;kcal+=k;groups[g.group]=(groups[g.group]||0)+p;
-    if(/almond|walnut|peanut|cashew|pistachio|nuts\b/i.test(nm))adj-=0.2*k;adj-=2*fib;});
+    var m=foodMatrixFor(nm),gr=num(e.grams);if(m&&gr>0&&k>0){var meas=m.kcalPerG*gr;if(meas<k){mx+=meas-k;matrix.push({food:nm,nut:m.nut,grams:round(gr,0),logged:round(k,0),measured:round(meas,0),source:m.source});}}
+    fibAdj-=2*fib;});
   return {status:'ok',cls:'PRIOR',date:date,proteinG:round(prot,0),digestibleProteinG:round(dig,0),proteinQuality:prot?round(dig/prot,2):null,proteinByGroup:groups,
-    kcal:round(kcal,0),metabolisableAdjustmentKcal:round(adj,0),unclassifiedFoods:unk,
-    method:'protein quality by food group after FAO 2013 (DIAAS, truncated at 1.0); nuts \u221220% energy; fibre at 2 kcal/g',
+    kcal:round(kcal,0),metabolisableAdjustmentKcal:round(mx+fibAdj,0),matrixAdjustmentKcal:round(mx,0),matrix:matrix,unclassifiedFoods:unk,amino:aminoAcidScore(L),
+    method:'protein quality by food group after FAO 2013 (DIAAS, truncated at 1.0), and from amino acids where foods carry them; whole almonds, walnuts and cashews at their measured energy; fibre at 2 kcal/g',
     limits:'Group values, not measurements of these foods; unclassified foods count at 0.75.'};
+}
+/* W-018: GLYCAEMIC LOAD. Each food's available carbohydrate (carbohydrate less fibre) weighed by the glycaemic index of the
+   food group its name matches, from the international tables (glucose 100): the meal's and the day's load, with how much
+   of the carbohydrate was matched. The day is read against a common convention (under 80 low, over 120 high). It is a
+   population figure: the person's own glucose response to the same food can differ widely, and is not measured here. */
+var GLYCAEMIC_CONTRACT={id:'glycaemic_load_bands',subject:'a day\u2019s glycaemic load',predicate:'is read as low or high against',
+  parameters:{low:{value:80,unit:'glycaemic load a day',meaning:'a day under this reads as low'},high:{value:120,unit:'glycaemic load a day',meaning:'a day over this reads as high'}},
+  statement:function(v){return 'a day\u2019s glycaemic load reads as low under '+v.low+' and high over '+v.high;},
+  rationale:'a common convention for reading a daily glycaemic load; each food\u2019s index is from the international tables',
+  evidenceBasis:['atkinson2008gi','zeevi2015glycaemic'],parameterSource:'a widely used convention, not derived from a study',parameterVersion:'1.0',
+  calibrationStatus:'not calibrated to this person',validationStatus:HEURISTIC_NOT_VALIDATED,applicability:{phases:['any'],population:'adults'},
+  failureConditions:['foods matched by name to a group they do not belong to','mixed meals, whose fat and protein lower the response','the person\u2019s own glucose response, which can differ widely'],outcomes:['glycaemic response']};
+var GI_TABLE=[[/\bcorn ?flakes\b/i,81,'cornflakes'],[/instant (oat|oatmeal|porridge)|oats?,? instant/i,79,'instant oat porridge'],[/\bmuesli\b/i,57,'muesli'],[/\boat(s|meal)?\b|porridge/i,55,'rolled oat porridge'],
+  [/\brice (crackers?|cakes?)\b/i,87,'rice crackers'],[/\brice milk\b/i,86,'rice milk'],[/\brice noodles?\b|\bnoodles?, rice\b/i,53,'rice noodles'],[/\bbrown rice\b|\brice\b.*\bbrown\b/i,68,'boiled brown rice'],[/\brice\b/i,73,'boiled white rice'],
+  [/\b(whole[- ]?wheat|wholemeal|whole grain)\b.*\bbread\b|\bbread\b.*\b(whole[- ]?wheat|wholemeal|whole grain)\b/i,74,'whole-wheat bread'],[/\bbread\b|\bbagel\b|\btoast\b/i,75,'white wheat bread'],
+  [/\b(spaghetti|pasta|macaroni|penne|linguine|fettuccine)\b/i,49,'white spaghetti'],[/\bcouscous\b/i,65,'couscous'],[/\bbarley\b/i,28,'barley'],[/\bsweet ?corn\b|\bcorn, sweet\b/i,52,'sweet corn'],
+  [/\bsweet potato/i,63,'sweet potato'],[/\bpotato(es)?\b.*\b(instant|mashed)\b|\bmashed potato/i,87,'instant mashed potato'],[/\bfrench fries\b|\bfries\b/i,63,'french fries'],[/\bpotato (chips|crisps)\b|\bchips, potato\b/i,56,'potato crisps'],[/\bpotato(es)?\b/i,78,'boiled potato'],
+  [/\bcarrots?\b/i,39,'carrots'],[/\bpumpkin\b/i,64,'pumpkin'],[/\bapple juice\b|\bjuice, apple\b/i,41,'apple juice'],[/\borange juice\b|\bjuice, orange\b/i,50,'orange juice'],
+  [/\bapples?\b/i,36,'apple'],[/\boranges?\b/i,43,'orange'],[/\bbananas?\b/i,51,'banana'],[/\bpineapple/i,59,'pineapple'],[/\bmango(s|es)?\b/i,51,'mango'],[/\bwatermelon\b/i,76,'watermelon'],[/\bdates?\b/i,42,'dates'],
+  [/\bsoy ?milk\b|\bsoymilk\b/i,34,'soy milk'],[/\bice cream\b/i,51,'ice cream'],[/\byog(h)?urt\b/i,41,'yoghurt'],[/\bmilk\b.*\b(skim|nonfat|fat[- ]free)\b/i,37,'skim milk'],[/\bmilk\b/i,39,'milk'],
+  [/\bchickpeas?\b|garbanzo/i,28,'chickpeas'],[/\bkidney beans?\b|\bbeans, kidney\b/i,24,'kidney beans'],[/\blentils?\b/i,32,'lentils'],[/\bsoy ?beans?\b/i,16,'soya beans'],
+  [/\bpopcorn\b/i,65,'popcorn'],[/\bchocolate\b/i,40,'chocolate'],[/\b(cola|soda|soft drink)\b/i,59,'soft drink'],[/\bhoney\b/i,61,'honey'],[/\bglucose\b|\bdextrose\b/i,103,'glucose'],[/\bsugar\b|\bsucrose\b/i,65,'sucrose']];
+var GI_NOT=/almond|coconut|oat milk|protein|\bpowder\b/i;
+function glycaemicIndexFor(name){name=String(name||'');if(GI_NOT.test(name))return null;for(var i=0;i<GI_TABLE.length;i++)if(GI_TABLE[i][0].test(name))return {gi:GI_TABLE[i][1],as:GI_TABLE[i][2]};return null;}
+function glycaemicLoad(date){
+  date=date||todayISO();var L=foodLogsOn(date);if(!L.length)return {status:'insufficient',cls:'PRIOR',need:['food logged with individual foods']};
+  var P=GLYCAEMIC_CONTRACT.parameters,meals={},avail=0,matched=0,gl=0,foods=[];
+  L.forEach(function(e){var n=e.nutrients||{},c=Math.max(0,(n.carbs||0)-(n.fiber||0));if(!(c>0))return;avail+=c;var nm=String((e.food||{}).name||''),g=glycaemicIndexFor(nm);if(!g)return;
+    var l=g.gi/100*c;matched+=c;gl+=l;var m=e.meal||'snacks';meals[m]=(meals[m]||0)+l;foods.push({food:nm,as:g.as,gi:g.gi,availableG:round(c,1),load:round(l,1)});});
+  if(!(avail>0))return {status:'insufficient',cls:'PRIOR',need:['carbohydrate logged with individual foods']};
+  var band=matched<avail*0.5?null:(gl<P.low.value?'low':(gl>P.high.value?'high':'moderate'));
+  return {status:'ok',cls:'PRIOR',date:date,load:round(gl,0),meals:MEALS.filter(function(m){return meals[m]!=null;}).map(function(m){return {meal:m,load:round(meals[m],0)};}),
+    availableG:round(avail,0),matchedG:round(matched,0),coverage:round(matched/avail,2),band:band,foods:foods,policy:GLYCAEMIC_CONTRACT.id,
+    text:'glycaemic load '+Math.round(gl)+(band?' ('+band+' for a day)':'')+' from '+Math.round(100*matched/avail)+'% of the day\u2019s carbohydrate matched to the international tables',
+    limits:'A population figure from each food\u2019s group: your own glucose response to the same food can differ widely (Zeevi et al. 2015), and is not measured here.'};
 }
 
 /* RECOVERY RESOURCE ALLOCATION is recoveryAllocation() in 89-remaining.js (registered below). */
@@ -302,26 +376,15 @@ function exerciseLearningCurve(exercise){
     method:'power law of practice (log-log fit of e1RM gain on session number) and early vs late variability',limits:'Load lifted stands in for skill; technique itself is not measured.'};
 }
 
-/* ---------- VISUAL PROGRESS: comparisons are only as good as their conditions ----------
-   Two photos are comparable when the view, lighting and framing match. Computer-vision diagnosis (body fat or shape from
-   an image) is not done: no validated model runs within this app's privacy design, where images never leave the device,
-   and an unvalidated estimate would be worse than none. */
-function photoComparisonValidity(a,b){
-  if(!a||!b)return {status:'insufficient',need:['two photos']};var issues=[];
-  if(a.view!==b.view)issues.push('different views ('+a.view+' vs '+b.view+')');
-  if(a.lighting&&b.lighting&&a.lighting!==b.lighting)issues.push('different lighting');
-  var ta=String(a.at||'').slice(11,13),tb=String(b.at||'').slice(11,13);if(ta&&tb&&Math.abs(+ta-+tb)>4)issues.push('taken at different times of day (hydration and food change the look)');
-  return {status:'ok',comparable:!issues.length,issues:issues,note:issues.length?'Differences may come from conditions, not change.':'Same view and conditions: a fair visual comparison.',
-    limits:'Visual comparison only. No body-fat or shape estimate is made from images.'};
-}
 
 /* ---- registration in the canonical model registry (each inherits contracts, infer(), provenance, the gate) ---- */
 (function(){if(typeof MODELS==='undefined')return;[
   {id:'cardio_fitness_latent',name:'Cardio fitness (latent state)',cls:'EMPIRICAL',version:'1.0',inputs:['cardio','rhr','weight'],minN:1,assumes:['%HRR tracks %VO2 reserve in steady exercise','ACSM equations hold for the modality'],failsWhen:['intervals','beta blockers or other heart-rate modifiers','no heart rate'],output:'VO2max per modality family, with uncertainty, and its trend a month with an interval',consumers:['physiologySummary','capabilityVector'],freshnessDays:28,uncertainty:{kind:'kalman posterior'},fn:'cardioFitnessModel'},
   {id:'hydration_balance',name:'Hydration balance',cls:'HEURISTIC',version:'1.0',inputs:['water','calories','cardio'],minN:1,assumes:['EFSA adequate intake','sweat scales with intensity and heat'],failsWhen:['very hot or humid climates beyond the scaling','illness'],output:'daily water balance (L)',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'fixed',sd:0.8},fn:'hydrationBalance'},
   {id:'supplement_efficacy',name:'Supplement personal efficacy',cls:'EMPIRICAL',version:'1.0',inputs:['supplement'],minN:20,assumes:['on and off days otherwise comparable'],failsWhen:['unblinded expectation','supplements with slow effects'],output:'on-vs-off difference per supplement',consumers:['physiologySummary'],freshnessDays:60,uncertainty:{kind:'standard error'},fn:'supplementEfficacy'},
-  {id:'energy_availability',name:'Energy availability',cls:'DERIVED',version:'1.0',inputs:['calories','weight','bodyfat','cardio'],minN:4,assumes:['logged intake is complete','MET estimates of exercise'],failsWhen:['no body-fat reading'],output:'kcal per kg fat-free mass per day',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'propagated'},fn:'energyAvailability'},
-  {id:'diet_digestibility',name:'Protein quality and digestibility',cls:'PRIOR',version:'1.0',inputs:['calories'],minN:1,assumes:['food-group values represent these foods'],failsWhen:['unclassified foods'],output:'digestible protein (g) and energy adjustment',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'group values'},fn:'dietDigestibility'},
+  {id:'energy_availability',name:'Energy availability',cls:'DERIVED',version:'1.0',inputs:['calories','weight','bodyfat','cardio','met_energy'],minN:4,assumes:['logged intake is complete','MET estimates of exercise'],failsWhen:['no body-fat reading'],output:'kcal per kg fat-free mass per day',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'propagated'},fn:'energyAvailability'},
+  {id:'diet_digestibility',name:'Protein quality and digestibility',cls:'PRIOR',version:'1.0',inputs:['calories'],minN:1,assumes:['food-group values represent these foods','the amino acids a food carries are those of the food eaten','a whole nut eaten is like the whole nuts measured'],failsWhen:['unclassified foods','a food whose amino acids were entered for a different serving'],output:'digestible protein (g), the amino acid score of the day\u2019s protein, and the energy whole nuts do not release',consumers:['physiologySummary','foodDayCard'],freshnessDays:1,uncertainty:{kind:'group values'},fn:'dietDigestibility'},
+  {id:'glycaemic_load',name:'Glycaemic load',cls:'PRIOR',version:'1.0',inputs:['carbs','fiber'],minN:1,assumes:['a food\u2019s glycaemic index is its group\u2019s in the international tables','a meal\u2019s load is the sum of its foods\u2019'],failsWhen:['foods matched to the wrong group by name','the person\u2019s own glucose response, which can differ widely'],output:'the glycaemic load of each meal and the day, with the share of carbohydrate matched',consumers:['foodDayCard'],freshnessDays:1,uncertainty:{kind:'population values per food group; personal response not measured'},fn:'glycaemicLoad'},
   {id:'recovery_allocation',name:'Recovery resource allocation',cls:'HEURISTIC',version:'1.0',inputs:['sleep','steps','cardio'],minN:7,assumes:['relative costs of lifting, cardio and steps'],failsWhen:['illness','unlogged training'],output:'weekly recovery budget and its split',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'relative units'},fn:'recoveryAllocation'}
 ].forEach(function(m){if(!MODELS.some(function(x){return x.id===m.id;}))MODELS.push(m);});})();
 /* ============================================================================

@@ -25,7 +25,9 @@ const RECS_PER_SHARD=4000;
 fs.mkdirSync(path.join(OUT,'branded'),{recursive:true});
 
 /* ---- nutrient mapping: USDA nutrient number → canonical key (per 100 g) ---- */
-const NUT={ '203':'protein','204':'fat','205':'carbs','291':'fiber','269.3':'sugars','269':'sugars','606':'satfat','605':'transfat','307':'sodium','601':'cholesterol','306':'potassium','301':'calcium','303':'iron','304':'magnesium','305':'phosphorus','309':'zinc','401':'vitc','328':'vitd','320':'vita','415':'vitb6','418':'vitb12','417':'folate','404':'thiamin','405':'riboflavin','406':'niacin','645':'mufa','646':'pufa','255':'water' };
+const NUT={ '203':'protein','204':'fat','205':'carbs','291':'fiber','269.3':'sugars','269':'sugars','606':'satfat','605':'transfat','307':'sodium','601':'cholesterol','306':'potassium','301':'calcium','303':'iron','304':'magnesium','305':'phosphorus','309':'zinc','401':'vitc','328':'vitd','320':'vita','415':'vitb6','418':'vitb12','417':'folate','404':'thiamin','405':'riboflavin','406':'niacin','645':'mufa','646':'pufa','255':'water',
+  /* the indispensable amino acids, g per 100 g, where USDA analysed them: the day's protein is scored from them (W-018) */
+  '501':'trp','502':'thr','503':'ile','504':'leu','505':'lys','506':'met','507':'cys','508':'phe','509':'tyr','510':'val','512':'his' };
 const MACRO_KEYS=['kcal','protein','carbs','fat','fiber','sugars','satfat','sodium'];
 function nutrientsOf(fn){
   const out={};let kcal=null,atwS=null,atwG=null,fiberAOAC=null;

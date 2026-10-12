@@ -71,7 +71,8 @@ var EXT_ERROR_TEXT={network_unavailable:'The server could not reach the source.'
    person saw when setting a weather place on a deployment with no server attached. */
 function extError(category,detail,meta){var cat=EXT_ERRORS.indexOf(category)>=0?category:'provider_unavailable';meta=meta||{};
   var text=meta.text||EXT_ERROR_TEXT[cat]||'The request failed.';
-  return {status:'error',error:{category:cat,detail:detail||'',text:text,stage:meta.stage||null,http:meta.http||null}};}
+  var e={category:cat,detail:detail||'',text:text,stage:meta.stage||null,http:meta.http||null};if(meta.waking)e.waking=true;
+  return {status:'error',error:e};}
 function extServerBase(){try{var c=cloudConfig();return c&&c.url?String(c.url).replace(/\/$/,''):null;}catch(e){return null;}}
 /* Every failure is classified by what actually came back, so routing, server, provider and input failures no longer
    collapse into one message (deployment repair plan \u00a710):
@@ -81,24 +82,38 @@ function extServerBase(){try{var c=cloudConfig();return c&&c.url?String(c.url).r
      a failed fetch                  \u2192 network: the address could not be reached
      the server's own error envelope \u2192 its category (provider unavailable, rate limited, and so on) */
 var EXT_NO_SERVER_TEXT='Weather and online food lookups need the Physique OS server, and none is answering for this app.';
-function extRequest(pathQuery){
+/* A server on free hosting sleeps when idle and takes up to about a minute to wake: the first request after a quiet spell
+   times out, or the host's forwarder answers 502 to 504, while it starts. That signature, and only that one, is retried
+   once, because the first request is what wakes it; an address that cannot be reached at all is not retried. Before
+   this, a sleeping server read as "The weather could not be fetched" on the first refresh after a quiet spell. */
+var EXT_TIMEOUT_MS=25000;
+function extRequest(pathQuery,opts){opts=opts||{};
   var base=extServerBase();if(!base||typeof fetch!=='function')return Promise.resolve(extError('configuration_error','no Physique OS server is configured, so external sources are unavailable here',{stage:'configuration',text:EXT_NO_SERVER_TEXT}));
-  /* a request that hangs (a sleeping server, a dead connection) ends after 25 s as network_unavailable */
-  var ctl=typeof AbortController==='function'?new AbortController():null,tmo=ctl?setTimeout(function(){ctl.abort();},25000):null;
+  return _extAttempt(base,pathQuery).then(function(r){
+    if(!(r&&r.status==='error'&&r.error.waking)||opts.retry===false)return r;
+    try{if(typeof opts.onRetry==='function')opts.onRetry(r.error);}catch(e){}
+    return _extAttempt(base,pathQuery).then(function(r2){if(r2&&r2.status==='error'&&r2.error.waking){r2.error.retried=true;
+      r2.error.text='The Physique OS server did not answer, twice: it may be stopped, or still waking after a long sleep. Try again in a minute; if it keeps failing, check the connection.';}return r2;});});
+}
+function _extAttempt(base,pathQuery){
+  /* a request that hangs (a sleeping server, a dead connection) ends after EXT_TIMEOUT_MS as network_unavailable */
+  var ctl=typeof AbortController==='function'?new AbortController():null,tmo=ctl?setTimeout(function(){ctl.abort();},EXT_TIMEOUT_MS):null;
   return fetch(base+pathQuery,{headers:{accept:'application/json'},cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(r){if(tmo)clearTimeout(tmo);
     var ct=String((r.headers&&r.headers.get&&r.headers.get('content-type'))||'');
     if(!/json/i.test(ct)){
-      if(r.status>=502&&r.status<=504)return extError('network_unavailable','the address '+base+' is forwarded, but the server behind it is not answering (HTTP '+r.status+')',{stage:'routing',http:r.status,text:'The Physique OS server is not answering right now.'});
-      return extError('configuration_error','the address '+base+' answered with a web page (HTTP '+r.status+'), not the Physique OS server \u2014 the deployment has no rewrite from '+base+' to a running server',{stage:'routing',http:r.status,text:EXT_NO_SERVER_TEXT});}
+      if(r.status>=502&&r.status<=504)return extError('network_unavailable','the address '+base+' is forwarded, but the server behind it is not answering (HTTP '+r.status+')',{stage:'routing',http:r.status,waking:true,text:'The Physique OS server is not answering right now.'});
+      return extError('configuration_error','the address '+base+' answered with a web page (HTTP '+r.status+'), not the Physique OS server — the deployment has no rewrite from '+base+' to a running server',{stage:'routing',http:r.status,text:EXT_NO_SERVER_TEXT});}
     return r.json().then(function(j){
       if(j&&j.status==='error'&&j.error&&j.error.category)return extError(j.error.category,j.error.detail,{stage:'server',http:r.status});
       if(!r.ok){
-        if(r.status===404)return extError('configuration_error','the server at '+base+' has no '+pathQuery.split('?')[0]+' route \u2014 it may be an older version',{stage:'server',http:404,text:'The Physique OS server is an older version without this feature.'});
+        if(r.status===404)return extError('configuration_error','the server at '+base+' has no '+pathQuery.split('?')[0]+' route — it may be an older version',{stage:'server',http:404,text:'The Physique OS server is an older version without this feature.'});
         if(r.status===429)return extError('rate_limited','the server is limiting requests',{stage:'server',http:429});
         if(r.status>=500)return extError('provider_unavailable','the server returned '+r.status,{stage:'server',http:r.status});
         return extError('configuration_error',String((j&&j.error)||('HTTP '+r.status)),{stage:'server',http:r.status});}
       return j;},function(){return extError('malformed_payload','the server sent a response that could not be read',{stage:'server',http:r.status});});
-  },function(){return extError('network_unavailable','the address '+base+' could not be reached',{stage:'network',text:'The Physique OS server could not be reached.'});});
+  },function(){if(tmo)clearTimeout(tmo);
+    if(ctl&&ctl.signal.aborted)return extError('network_unavailable','the server at '+base+' did not answer within '+Math.round(EXT_TIMEOUT_MS/1000)+' s',{stage:'network',waking:true,text:'The Physique OS server did not answer in time; it may be waking up.'});
+    return extError('network_unavailable','the address '+base+' could not be reached',{stage:'network',text:'The Physique OS server could not be reached.'});});
 }
 /* ---- DEPLOYMENT: what this app needs from its deployment, and a test of each layer (plan \u00a711, \u00a715) ---- */
 function deploymentStatus(){var base=extServerBase();
@@ -281,24 +296,35 @@ function refreshEnvironment(opts){
   var provider=opts.provider||(DB.settings.weatherProvider||'open-meteo'),tz=L.timezone||_deviceTz();
   var q='lat='+L.lat+'&lon='+L.lon+'&tz='+encodeURIComponent(tz);
   /* hourly for 24 h back and 48 ahead (what the screens use); daily for 7 back and 14 ahead: ~7x less than full hourly */
-  var jobs=[extRequest('/v1/ext/weather/forecast?'+q+'&provider='+provider+'&past_days=7&forecast_days=14&past_hours=24&forecast_hours=48').then(function(r){
+  var xo={onRetry:opts.onRetry};
+  var jobs=[extRequest('/v1/ext/weather/forecast?'+q+'&provider='+provider+'&past_days=7&forecast_days=14&past_hours=24&forecast_hours=48',xo).then(function(r){
       if(r.status!=='ok')return r;var a=provider==='meteosource'?adaptMeteosource(r.payload,{retrievedAt:r.retrievedAt,lat:L.lat,lon:L.lon,label:L.label}):
         adaptOpenMeteo(r.payload,{dataset:'forecast',retrievedAt:r.retrievedAt,label:L.label,requested:ENV_REQUESTED.filter(function(v){return ENV_VARIABLES[v].res.indexOf('daily')<0||true;})});
       if(a.status!=='ok')return a;a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id=a.batch.id.replace(/:[-0-9.]+,[-0-9.]+/,':'+L.lat+','+L.lon);return ingestEnvironmentBatch(a.batch);}),
-    (opts.air===false?Promise.resolve({status:'ok',skipped:true}):extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=1&forecast_days=3&past_hours=24&forecast_hours=48')).then(function(r){if(r.skipped)return r;
+    (opts.air===false?Promise.resolve({status:'ok',skipped:true}):extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=1&forecast_days=3&past_hours=24&forecast_hours=48',xo)).then(function(r){if(r.skipped)return r;
       if(r.status!=='ok')return r;var a=adaptOpenMeteo(r.payload,{dataset:'air-quality',retrievedAt:r.retrievedAt,label:L.label});if(a.status!=='ok')return a;
       a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:air-quality:'+L.lat+','+L.lon;return ingestEnvironmentBatch(a.batch);})];
-  return Promise.all(jobs).then(function(rs){DB.settings.weatherSync={lastAttempt:nowISO(),lastSuccess:rs[0].status==='ok'?nowISO():((DB.settings.weatherSync||{}).lastSuccess||null),
-      state:rs.every(function(r){return r.status==='ok';})?'synced':(rs.some(function(r){return r.status==='ok';})?'partial':'failed'),
-      error:(rs.filter(function(r){return r.status!=='ok';})[0]||{}).error||null};save('settings');return {status:rs[0].status,results:rs};});
+  return Promise.all(jobs).then(function(rs){var o=weatherRefreshOutcome(rs);
+    DB.settings.weatherSync={lastAttempt:nowISO(),lastSuccess:o.status==='ok'?nowISO():((DB.settings.weatherSync||{}).lastSuccess||null),state:o.state,error:o.firstError};
+    save('settings');return {status:o.status,results:o.results,error:o.error};});
 }
+/* What a refresh tells the person. The forecast is what "the weather" means, so its failure, with its reason, is the
+   refresh's failure: the reason was dropped here, so every failure (no server, a missing rewrite, a stopped server, a
+   refusing provider) read only "The weather could not be fetched". A failure that came back without an error of the
+   taxonomy (a batch refused at ingestion, an adapter's note) is given one, so no failure is left without its reason. */
+function weatherRefreshOutcome(rs){
+  var results=(rs||[]).map(function(r){return !r||r.status==='ok'||r.error?r:extError('malformed_payload',r.note||r.reason||'the response could not be used',{stage:'app',text:'The weather arrived but could not be used.'});});
+  var bad=results.filter(function(r){return r&&r.status!=='ok';}),f=results[0]||extError('configuration_error','nothing was requested');
+  return {status:f.status==='ok'?'ok':'error',results:results,error:f.status==='ok'?null:f.error,firstError:bad.length?bad[0].error:null,
+    state:!bad.length?'synced':(bad.length<results.length?'partial':'failed')};}
 function fetchHistoricalWeather(start,end){
   var L=weatherLocation();if(!L)return Promise.resolve(extError('configuration_error','set a place first'));
   return extRequest('/v1/ext/weather/archive?lat='+L.lat+'&lon='+L.lon+'&tz='+encodeURIComponent(L.timezone||_deviceTz())+'&start='+start+'&end='+end).then(function(r){
     if(r.status!=='ok')return r;var a=adaptOpenMeteo(r.payload,{dataset:'archive',retrievedAt:r.retrievedAt,label:L.label});if(a.status!=='ok')return a;
-    a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:archive:'+L.lat+','+L.lon+':'+start+'..'+end;return ingestEnvironmentBatch(a.batch);});
+    a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:archive:'+L.lat+','+L.lon+':'+start+'..'+end;return ingestEnvironmentBatch(a.batch);})
+    .then(function(r){return weatherRefreshOutcome([r]).results[0];});
 }
-function searchPlaces(name){return extRequest('/v1/ext/geocode?name='+encodeURIComponent(name)).then(function(r){
+function searchPlaces(name,opts){return extRequest('/v1/ext/geocode?name='+encodeURIComponent(name),opts).then(function(r){
   if(r.status!=='ok')return r;return {status:'ok',places:((r.payload&&r.payload.results)||[]).map(function(x){return {label:[x.name,x.admin1,x.country].filter(Boolean).join(', '),lat:x.latitude,lon:x.longitude,timezone:x.timezone};})};});}
 
 /* ============================================================================

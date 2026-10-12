@@ -49,18 +49,32 @@ async function local(){
   {const vj=JSON.parse(fs.readFileSync('vercel.json','utf8'));
     line(vj.outputDirectory==='dist'&&/\bnpm run build\b|\bnode build\.mjs\b/.test(vj.buildCommand||''),'vercel.json tells the host to run the build and serve dist',JSON.stringify({buildCommand:vj.buildCommand,outputDirectory:vj.outputDirectory}));
     line(fs.existsSync('dist/index.html'),'the build put the app in dist');}
+  /* the deployment footprint (catalogue W-033): what a browser actually transfers from a host serving dist with
+     vercel.json's headers, held to budgets, and cache rules with one value per path (scripts/deploy-footprint.mjs) */
+  {const F=await import('../scripts/deploy-footprint.mjs'),B=F.FOOTPRINT_BUDGETS,c=F.cacheReport(),L=await F.measureFirstLoad({port:18890});
+    const docs=L.firstVisit.paths.filter(x=>/^\/index\.html 200 /.test(x)).length;
+    line(L.firstVisit.bytes<=B.firstVisitBytes&&docs===1&&L.firstVisit.foodShards===0,'a first visit transfers '+(L.firstVisit.bytes/1048576).toFixed(2)+' MB (budget '+(B.firstVisitBytes/1048576).toFixed(2)+'): the page once, and none of the food corpus',JSON.stringify({bytes:L.firstVisit.bytes,pageDownloads:docs,shards:L.firstVisit.foodShards,paths:L.firstVisit.paths}).slice(0,400));
+    line(L.returnVisit.bytes<=B.returnVisitBytes,'a return visit transfers '+(L.returnVisit.bytes/1024).toFixed(1)+' KB (budget '+(B.returnVisitBytes/1024).toFixed(0)+' KB): the page is revalidated, not downloaded again',JSON.stringify(L.returnVisit.paths));
+    line(L.firstSearch.searched&&L.firstSearch.foodShards>0&&L.firstSearch.bytes<=B.firstSearchBytes,'a first food search fetches only the shards it needs: '+L.firstSearch.foodShards+', '+(L.firstSearch.bytes/1048576).toFixed(2)+' MB',JSON.stringify(L.firstSearch.paths));
+    line(!c.ambiguous.length&&c.index==='no-cache'&&c.sw==='no-cache'&&c.manifest==='no-cache'&&/max-age=86400/.test(c.shard||''),'vercel.json gives every path one Cache-Control: the page, worker and food manifest revalidate, food shards are kept a day',JSON.stringify(c).slice(0,300));}
   const {chromium}=await import('playwright-core');const {findBrowser}=await import('./_browser-path.mjs');
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pos-deploy-'));const API=18801,wait=ms=>new Promise(r=>setTimeout(r,ms));
   const api=spawn(process.execPath,['server/server.mjs'],{env:Object.assign({},process.env,{PORT:String(API),HOST:'127.0.0.1',DATA_DIR:tmp,TRUST_PROXY:'1',METRICS_TOKEN:'met',PHYSIQUE_EXT_FIXTURES:path.resolve('tests/fixtures/ext')}),stdio:'ignore'});
   await wait(900);
   /* a static host: files from dist, and for anything missing its own HTML 404 page (as Vercel serves) */
-  const site=(port,rewriteTo)=>new Promise(res=>{const s=http.createServer((q,r)=>{const u=decodeURIComponent(q.url.split('?')[0]);
-    if(rewriteTo!==undefined&&u.startsWith('/api/sync/')){const pr=http.request({host:'127.0.0.1',port:rewriteTo,path:q.url.replace('/api/sync',''),method:q.method,headers:Object.assign({},q.headers,{'x-forwarded-for':'203.0.113.7'})},p=>{r.writeHead(p.statusCode,p.headers);p.pipe(r);});
-      pr.on('error',()=>{r.writeHead(502,{'content-type':'text/html'});r.end('<html><body>502: DNS_HOSTNAME_RESOLVED_PRIVATE / bad gateway</body></html>');});q.pipe(pr);return;}
+  /* wakeMs: a server asleep on a free host; the first requests are held until it has woken, as the host holds them */
+  const site=(port,rewriteTo,wakeMs)=>new Promise(res=>{let wakeAt=0;const s=http.createServer((q,r)=>{const u=decodeURIComponent(q.url.split('?')[0]);
+    if(rewriteTo!==undefined&&u.startsWith('/api/sync/')){
+      const go=held=>{if(held&&(r.destroyed||r.writableEnded||(q.socket&&q.socket.destroyed)))return;
+        const pr=http.request({host:'127.0.0.1',port:rewriteTo,path:q.url.replace('/api/sync',''),method:q.method,headers:Object.assign({},q.headers,{'x-forwarded-for':'203.0.113.7'})},p=>{r.on('error',()=>{});r.writeHead(p.statusCode,p.headers);p.pipe(r);});
+        pr.on('error',()=>{if(r.headersSent)return;r.writeHead(502,{'content-type':'text/html'});r.end('<html><body>502: DNS_HOSTNAME_RESOLVED_PRIVATE / bad gateway</body></html>');});
+        if(held)pr.end();else q.pipe(pr);};
+      if(wakeMs){const now=Date.now();if(!wakeAt)wakeAt=now+wakeMs;if(now<wakeAt){setTimeout(()=>go(true),wakeAt-now);return;}}
+      go(false);return;}
     const f=path.join('dist',u==='/'?'index.html':u);fs.readFile(f,(e,d)=>{if(e){r.writeHead(404,{'content-type':'text/html'});r.end('<!doctype html><title>404: NOT_FOUND</title><h1>404</h1>');return;}
       r.writeHead(200,{'Content-Type':/\.js$/.test(f)?'text/javascript':/\.json$/.test(f)?'application/json':/\.html$/.test(f)?'text/html':'application/octet-stream'});r.end(d);});});
     s.listen(port,'127.0.0.1',()=>res(s));});
-  const staticOnly=await site(18802),proxied=await site(18803,API),deadProxy=await site(18804,18899);
+  const staticOnly=await site(18802),proxied=await site(18803,API),deadProxy=await site(18804,18899),sleepy=await site(18805,API,2500);
   const browser=await chromium.launch({executablePath:findBrowser(),args:['--no-sandbox','--disable-dev-shm-usage']});
   const run=async(port,fn)=>{const ctx=await browser.newContext({viewport:{width:393,height:852}});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
     await p.goto('http://127.0.0.1:'+port+'/index.html');await p.waitForTimeout(1400);await p.evaluate(()=>window.dispatchAct('welcome.skip'));const r=await fn(p);await ctx.close();return {r,errs};};
@@ -71,6 +85,14 @@ async function local(){
   let o=await run(18802,searchAndCheck);
   line(!/Something went wrong/.test(o.r.shown)&&/need the Physique OS server/.test(o.r.shown),'with no server attached, the place search says the server is missing (not "Something went wrong")',o.r.shown.slice(0,160));
   line(o.r.d.code==='B'&&/no rewrite/.test(o.r.d.verdict),'the connection check names the missing rewrite',JSON.stringify(o.r.d).slice(0,200));
+  /* refreshing the weather with no server: the message names the missing server (it read only "The weather could not be
+     fetched"), and so does the top of the weather screen */
+  const refreshAndRead=async p=>{await p.evaluate(()=>{window.setWeatherLocation({lat:52.63,lon:1.3,label:'Norwich'});document.getElementById('toast').textContent='';window.dispatchAct('weather.refresh');});
+    await p.waitForFunction(()=>{const t=document.getElementById('toast').textContent;return t&&!/Fetching|waking up/.test(t);},null,{timeout:30000}).catch(()=>{});
+    const toast=await p.evaluate(()=>document.getElementById('toast').textContent);await p.evaluate(()=>window.dispatchAct('weather.open'));await p.waitForTimeout(250);
+    return {toast,banner:await p.evaluate(()=>{const b=document.querySelector('#editBackdrop [data-weather-problem]');return b?b.textContent:'';})};};
+  o=await run(18802,refreshAndRead);
+  line(/need the Physique OS server/.test(o.r.toast)&&!/could not be fetched/.test(o.r.toast)&&/need the Physique OS server/.test(o.r.banner),'with no server attached, refreshing the weather says the server is missing, in the message and at the top of the weather screen',JSON.stringify(o.r).slice(0,240));
   /* 2. a correct deployment */
   const h=await getJSON('http://127.0.0.1:18803/api/sync/v1/health');line(h.status===200&&h.json&&h.json.ok&&h.json.ext,'health through the /api/sync rewrite',JSON.stringify(h).slice(0,120));
   o=await run(18803,async p=>{const c=await searchAndCheck(p);await p.click('#editBackdrop [data-act="weather.pick"][data-arg="0"]');await p.waitForTimeout(1500);
@@ -81,6 +103,12 @@ async function local(){
   line(o.r.d.code==='OK','with the rewrite and server, the connection check passes every layer',JSON.stringify(o.r.d).slice(0,200));
   line(o.r.e.includes('forecast')&&o.r.e.includes('air-quality'),'picking a place loads the forecast and air quality',JSON.stringify(o.r.e));
   { const cert=await certify('http://127.0.0.1:18803',{metricsToken:'met'});line(cert.passed,'the certificate passes for a correct deployment',JSON.stringify(cert.layers.filter(l=>!l.ok)));}
+  /* 4. a server asleep on a free host: the first requests time out while it wakes. The app says so, tries once more,
+     and the weather arrives (the app's 25 s wait is shortened here, the host's wake to 2.5 s) */
+  const sl=await run(18805,async p=>{await p.evaluate(()=>{window.EXT_TIMEOUT_MS=1500;window.__toasts=[];const t=document.getElementById('toast');
+      new MutationObserver(()=>window.__toasts.push(t.textContent)).observe(t,{childList:true,characterData:true,subtree:true});});
+    const x=await refreshAndRead(p);return Object.assign(x,{toasts:await p.evaluate(()=>window.__toasts.slice()),env:await p.evaluate(()=>(window.DB.environment||[]).map(b=>b.dataset))});});
+  line(sl.r.toasts.some(t=>/waking up/.test(t))&&/Weather updated/.test(sl.r.toast)&&sl.r.env.includes('forecast')&&!sl.r.banner,'a sleeping server is woken: the first request times out, the app says the server is waking, tries once more and the weather arrives',JSON.stringify(sl.r).slice(0,300));
   api.kill('SIGKILL');await wait(400);
   const again2=await (async()=>{const ctx=await browser.newContext();const p=await ctx.newPage();await p.goto('http://127.0.0.1:18803/index.html');await p.waitForTimeout(1200);
     const s=await p.evaluate(()=>fetch('/api/sync/v1/ext/sources').then(r=>r.status).catch(()=>0));await ctx.close();return s;})();
@@ -89,7 +117,9 @@ async function local(){
   /* 3. a rewrite to a server that is not running */
   o=await run(18804,async p=>p.evaluate(()=>window.testExternalServer({probeProvider:true})));
   line(o.r.code==='C','a rewrite to a stopped server is named as the server not answering',JSON.stringify(o.r).slice(0,200));
-  await browser.close();[staticOnly,proxied,deadProxy].forEach(s=>s.close());fs.rmSync(tmp,{recursive:true,force:true});
+  o=await run(18804,refreshAndRead);
+  line(/did not answer, twice: it may be stopped/.test(o.r.toast)&&!/could not be fetched/.test(o.r.toast)&&/may be stopped/.test(o.r.banner),'with the server stopped, refreshing the weather tries once more, then says the server did not answer twice and may be stopped',JSON.stringify(o.r).slice(0,240));
+  await browser.close();[staticOnly,proxied,deadProxy,sleepy].forEach(s=>s.close());fs.rmSync(tmp,{recursive:true,force:true});
 }
 if(args.includes('--local'))await local();
 else{const app=arg('--app');if(!app){console.error('usage: node tests/deployment-smoke.mjs --app https://YOUR-APP [--sync https://YOUR-SERVER]  |  --local');process.exit(2);}

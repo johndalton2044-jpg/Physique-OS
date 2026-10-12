@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-11T20:44:27.718Z",
-  "build": "38097babc5",
+  "generatedAt": "2026-10-12T18:33:20.546Z",
+  "build": "7df2f090bc",
   "counts": {
     "hard": {},
     "soft": {}
@@ -74,15 +74,23 @@
     },
     {
       "cat": "heuristic-contracts",
-      "msg": "every threshold and curve behind a decision or goal has a complete contract (18)"
+      "msg": "every threshold and curve behind a decision or goal has a complete contract (30)"
     },
     {
       "cat": "claim-registry",
-      "msg": "every evidence entry carries a claim with grade, population, limitations and review date (24)"
+      "msg": "every evidence entry carries a claim with grade, population, limitations and review date (33)"
     },
     {
       "cat": "decision-grounds",
       "msg": "every decision code has declared grounds (15 codes)"
+    },
+    {
+      "cat": "view-requirements",
+      "msg": "every view’s declared models and observations are exactly what it reads (12 views)"
+    },
+    {
+      "cat": "current-state",
+      "msg": "docs/CURRENT_STATE.md generated from the running registries (117 lines)"
     },
     {
       "cat": "catalogue",
@@ -94,7 +102,7 @@
     },
     {
       "cat": "model-without-version",
-      "msg": "50 models, each versioned"
+      "msg": "56 models, each versioned"
     },
     {
       "cat": "model-without-provenance",

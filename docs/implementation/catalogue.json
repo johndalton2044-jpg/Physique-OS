@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "38097babc5",
+ "build": "7df2f090bc",
  "models": [
   {
    "id": "adherence",
@@ -73,6 +73,11 @@
    "fn": "frictionModel"
   },
   {
+   "id": "glycaemic_load",
+   "cls": "PRIOR",
+   "fn": "glycaemicLoad"
+  },
+  {
    "id": "goal_traj",
    "cls": "PREDICTIVE",
    "fn": "goalTrajectory"
@@ -91,6 +96,11 @@
    "id": "learning_loop",
    "cls": "DERIVED",
    "fn": "learningCycleView"
+  },
+  {
+   "id": "lift_forecast",
+   "cls": "EMPIRICAL",
+   "fn": "liftForecasts"
   },
   {
    "id": "measurement_quality",
@@ -153,6 +163,11 @@
    "fn": "personalPowerResponse"
   },
   {
+   "id": "personal_recovery_cost",
+   "cls": "EMPIRICAL",
+   "fn": "personalRecoveryCost"
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "fn": "personalResponseModel"
@@ -178,6 +193,11 @@
    "fn": "rateBand"
   },
   {
+   "id": "readiness_transitions",
+   "cls": "EMPIRICAL",
+   "fn": "readinessTransitions"
+  },
+  {
    "id": "recovery",
    "cls": "HEURISTIC",
    "fn": "recoveryLatentState"
@@ -191,6 +211,11 @@
    "id": "response_matrix",
    "cls": "EMPIRICAL",
    "fn": "personalResponse"
+  },
+  {
+   "id": "sleep_need",
+   "cls": "EMPIRICAL",
+   "fn": "individualSleepNeed"
   },
   {
    "id": "strength_trend",
@@ -231,6 +256,11 @@
    "id": "unified_optimiser",
    "cls": "PREDICTIVE",
    "fn": "unifiedOptimiser"
+  },
+  {
+   "id": "visual_calibration",
+   "cls": "EMPIRICAL",
+   "fn": "visualBodyFatCalibration"
   },
   {
    "id": "water_noise",
@@ -1042,6 +1072,10 @@
    "level": "insightful"
   },
   {
+   "id": "exp.open",
+   "level": "insightful"
+  },
+  {
    "id": "exp.save",
    "level": "insightful"
   },
@@ -1847,6 +1881,10 @@
   },
   {
    "id": "photo.delete",
+   "level": "casual"
+  },
+  {
+   "id": "photo.fed",
    "level": "casual"
   },
   {
@@ -2802,6 +2840,7 @@
   "expPicker",
   "expTemplate",
   "experiment",
+  "experimentDetail",
   "exports",
   "features",
   "foodAdd",
@@ -2999,5 +3038,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 116
+ "panels": 117
 }

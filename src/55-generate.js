@@ -189,12 +189,62 @@ function generatePrograms(opts){
    Progress what the record supports progressing, hold what it does not, and say which is which. The rule is
    deliberately conservative: adding volume to a lift that is not moving is how people accumulate fatigue and
    call it training. */
+/* W-015: WHY A LIFT STALLED. A lift that is flat or falling against its own noise has its likely causes named from the
+   record, each with the value that triggered it, the threshold, what to do and what would settle it, in a stated order:
+   causes the person can correct directly, and that make the stall not an adaptation at all, come first. A cause is a
+   reading of the record, not a diagnosis: nothing here can see technique, sleep it was not told about, or life. */
+var STALL_CONTRACT={id:'stall_causes',subject:'a lift that is flat or falling',predicate:'is read for these causes',
+  parameters:{sameTopSet:{value:3,unit:'exposures',meaning:'the same top set (load and reps) this many times running: the progression was not applied'},
+    farFromFailure:{value:4,unit:'reps in reserve (mean, last 3 exposures)',meaning:'sets this far from failure may be too light to drive progress'},
+    readiness:{value:-0.5,unit:'readiness score',meaning:'readiness at or below this is below your normal'},
+    volumeRise:{value:1.3,unit:'times the earlier 3 weeks',meaning:'weekly sets of the lift up by this much can outrun recovery'},
+    window:{value:21,unit:'days',meaning:'the recent period compared with the one before it'}},
+  statement:function(v){return 'a stalled lift is read for an unapplied progression ('+v.sameTopSet+' identical top sets), sets far from failure (RIR '+v.farFromFailure+'+), low readiness ('+v.readiness+'), loss faster than the band, and volume up '+Math.round((v.volumeRise-1)*100)+'%';},
+  rationale:'the common, checkable reasons a lift stops moving, read from the record before anything is changed',
+  evidenceBasis:['garthe2011rate','schoenfeld2017volume'],parameterSource:'chosen by this system; not derived from a study',
+  parameterVersion:'1.0',calibrationStatus:'not calibrated to this person',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults lifting with logged loads and reps'},failureConditions:['lifts logged without loads','a changed exercise variation counted as the same lift'],
+  outcomes:['strength progression']};
+var STALL_ORDER=['notApplied','effort','skill','recovery','energy','volumeRose'];
+function stallCauses(exercise){var P=STALL_CONTRACT.parameters,key=normExercise(exercise),W=P.window.value,now=asOf(),ex=[];
+  sessionsOf({from:addDays(now,-84)}).forEach(function(s){var top=null,rir=[],sets=0;
+    (s.sets||[]).forEach(function(x){if(normExercise(x.exercise)!==key||x.load==null||x.reps==null)return;sets++;if(x.rir!=null)rir.push(+x.rir);
+      if(!top||x.load>top.load||(x.load===top.load&&x.reps>top.reps))top={load:+x.load,reps:+x.reps};});
+    if(sets)ex.push({date:s.date,top:top,rir:rir,sets:sets});});
+  ex.sort(function(a,b){return a.date<b.date?-1:1;});
+  var out=[],last=ex.slice(-P.sameTopSet.value);
+  if(last.length===P.sameTopSet.value&&last.every(function(e){return e.top.load===last[0].top.load&&e.top.reps===last[0].top.reps;}))
+    out.push({id:'notApplied',label:'the progression was not applied',evidence:'the same top set, '+fmtNum(last[0].top.load,1)+' × '+last[0].top.reps+', '+last.length+' times running',
+      threshold:P.sameTopSet.value+' identical top sets',action:'add the smallest load step, or one rep, next session',check:'whether the lift moves within two exposures'});
+  var r3=[].concat.apply([],ex.slice(-3).map(function(e){return e.rir;}));
+  if(r3.length&&mean(r3)>=P.farFromFailure.value)out.push({id:'effort',label:'sets far from failure',evidence:'mean '+fmtNum(mean(r3),1)+' reps in reserve over the last 3 exposures',
+    threshold:'RIR '+P.farFromFailure.value+' or more',value:round(mean(r3),1),action:'take the last set to 1–2 reps from failure',check:'the effort ratings on the next exposures'});
+  var rd=null;try{rd=readinessState();}catch(e){}
+  if(rd&&rd.status==='ok'&&rd.score<=P.readiness.value)out.push({id:'recovery',label:'recovery below your normal',evidence:'readiness '+fmtSigned(rd.score,2)+' ('+rd.band+')',
+    threshold:'readiness '+P.readiness.value+' or lower',value:rd.score,action:'hold the load until readiness is back to your normal',check:'readiness, and the lift once it recovers'});
+  var S=null;try{S=getCurrentState();}catch(e){}
+  if(S&&S.phase&&S.phase.type==='cut'&&S.trend&&S.trend.status==='ok'&&S.targetRate&&S.targetRate.lo!=null&&S.trend.slopePerWeek<S.targetRate.lo)
+    out.push({id:'energy',label:'losing faster than the band',evidence:'weight trend '+fmtSigned(S.trend.slopePerWeek,2)+' lb a week against a band to '+fmtSigned(S.targetRate.lo,2),
+      threshold:'loss faster than the rate band',value:S.trend.slopePerWeek,band:S.targetRate.lo,action:'hold the load; strength is expected to lag while losing this fast',check:'whether the lift holds once the loss slows into the band'});
+  var setsIn=function(a,b){return ex.filter(function(e){return e.date>=a&&e.date<=b;}).reduce(function(s,e){return s+e.sets;},0);};
+  var recent=setsIn(addDays(now,-(W-1)),now),before=setsIn(addDays(now,-(2*W-1)),addDays(now,-W));
+  if(before>0&&recent>=P.volumeRise.value*before)out.push({id:'volumeRose',label:'volume rose',evidence:recent+' sets in the last '+W+' days against '+before+' in the '+W+' before',
+    threshold:'up '+Math.round((P.volumeRise.value-1)*100)+'% or more',value:round(recent/before,2),action:'return to the earlier volume for two weeks',check:'whether the lift recovers at the lower volume'});
+  /* skill or strength (64-exercise): a simpler lift for the same muscles rising, or a scatter far above the other lifts */
+  var sk=null;try{sk=skillOrStrength(exercise);}catch(e){_q(e,'P2');}
+  if(sk&&sk.status==='ok'&&sk.verdict==='skill')out.push({id:'skill',label:'skill rather than strength',evidence:sk.evidence.join('; '),
+    threshold:'a simpler lift for the same muscles rising, or scatter '+SKILL_LIMIT_CONTRACT.parameters.scatter.value+'\u00d7 your other lifts\u2019',action:sk.action,check:sk.check});
+  out.sort(function(a,b){return STALL_ORDER.indexOf(a.id)-STALL_ORDER.indexOf(b.id);});
+  return {exercise:key,exposures:ex.length,causes:out,policy:STALL_CONTRACT.id,limitation:sk&&sk.status==='ok'?sk:null,
+    text:out.length?('most likely: '+out[0].label+' ('+out[0].evidence+')'+(out.length>1?'; also '+out.slice(1).map(function(c){return c.label;}).join(', '):'')):
+      'the record shows none of the usual causes; a planned lighter week, or a change of variation, is the usual next step'};}
 function progressionPlan(opts){
   opts=opts||{};
   var p=trainingProgram();
   var resp=null;try{resp=exerciseResponse();}catch(e){}
   var rec=null;try{rec=readinessState();}catch(e){}
   var adh=null;try{adh=adherenceState(14);}catch(e){}
+  var fc=null;try{fc=liftForecasts();}catch(e){_q(e,'P2');}
   if(!resp||!resp.rows||!resp.rows.length)return {status:'insufficient',
     need:['several sessions per exercise before progression can be judged'],
     note:'Progression from no evidence is just a number going up.'};
@@ -219,8 +269,12 @@ function progressionPlan(opts){
     else if(direction==='flat'){action='hold';why='flat at '+fmtNum(r.weeklySets,1)+' sets/week \u2014 more volume is not the obvious lever';}
     else if(direction==='falling'){action='reduce volume';why='estimated 1RM falling '+fmtSigned(r.slopePerWeek,1)+'/week';}
     else{action='hold';why='no usable trend yet';}
+    /* W-015: a flat or falling lift with enough exposures says why it may have stalled */
+    var stall=(direction==='flat'||direction==='falling')&&(r.exposures||0)>=6?stallCauses(r.exercise):null;
+    /* W-015: the lift's next session, its range checked on its own past sessions */
+    var forecast=fc?(fc.rows.filter(function(f){return f.exercise===r.exercise&&f.status==='ok';})[0]||null):null;
     return {exercise:r.exercise,action:action,why:why,
-      weeklySets:r.weeklySets,direction:direction,exposures:r.exposures,
+      weeklySets:r.weeklySets,direction:direction,exposures:r.exposures,stall:stall,forecast:forecast,
       slopePerWeek:r.slopePerWeek!=null?round(r.slopePerWeek,2):null};
   });
   return {status:'ok',cls:'DERIVED',rows:rows,brake:brake,

@@ -125,6 +125,14 @@ var ADEQUACY_TARGETS=[
   {key:'calcium',label:'Calcium',unit:'mg',ref:function(){var a=num(prof().age)||30;return a>=51?(prof().sex==='female'?1200:1000):1000;},dir:'min',ref2:'RDA'},
   {key:'iron',label:'Iron',unit:'mg',ref:function(){return prof().sex==='female'&&(num(prof().age)||30)<51?18:8;},dir:'min',ref2:'RDA'}
 ];
+var PROTEIN_MEAL_CONTRACT={id:'protein_meal',subject:'protein across the day\u2019s meals',predicate:'is judged against',
+  parameters:{perMeal:{value:0.4,unit:'g/kg body weight per meal',meaning:'the protein a meal is judged to reach'},meals:{value:4,unit:'meals',meaning:'the meals the spread is counted over (breakfast, lunch, dinner, snacks)'},
+    daily:{value:1.6,unit:'g/kg body weight a day',meaning:'the total that comes first; below it, the spread is not the advice'}},
+  statement:function(v){return 'protein is judged at about '+v.perMeal+' g/kg per meal across '+v.meals+' meals, once the day reaches '+v.daily+' g/kg';},
+  rationale:'spreading protein helps only once the total is enough, and the total matters more',
+  evidenceBasis:['schoenfeld2018meal','protein_timing2013'],parameterSource:'the cited recommendation',parameterVersion:'1.0',calibrationStatus:'not calibrated to this person',
+  validationStatus:HEURISTIC_NOT_VALIDATED,applicability:{phases:['any'],population:'adults training for strength or muscle'},
+  failureConditions:['meals logged under the wrong label','body weight missing'],outcomes:['muscle protein synthesis']};
 function nutritionAdequacy(days){
   days=days||7;
   return memo('adequacy:'+days+':'+asOf(),function(){
@@ -147,11 +155,19 @@ function nutritionAdequacy(days){
         coverage:round(cov*100,0),
         note:cov<0.8?('only '+vals.length+' of '+logged.length+' logged days carried this nutrient \u2014 the mean understates intake'):null};
     });
-    // per-meal protein distribution (the leucine-threshold argument for spreading protein across meals)
+    /* per-meal protein distribution. W-018 (meal timing): the threshold was "about 0.3 g/kg, commonly cited", with no
+       finding behind it; it is now the protein_meal contract, citing a registered finding, and the advice says the daily
+       total first: spreading a short day across meals helps less than reaching the total. */
     var kg=weightKgNow();var perMeal=null;
-    if(kg){var byMeal={};MEALS.forEach(function(mm){var v=logged.map(function(d){return d.byMeal[mm].totals.protein;}).filter(function(x){return x>0;});byMeal[mm]=v.length?mean(v):0;});
-      var threshold=0.3*kg;perMeal={thresholdG:round(threshold,0),meals:MEALS.map(function(mm){return {meal:mm,mean:round(byMeal[mm],0),meets:byMeal[mm]>=threshold};}),
-        note:'\u22480.3 g/kg per meal is the intake commonly cited for maximal muscle-protein-synthesis stimulation; total daily protein matters more than distribution'};}
+    if(kg){var PM=PROTEIN_MEAL_CONTRACT.parameters,byMeal={};MEALS.forEach(function(mm){var v=logged.map(function(d){return d.byMeal[mm].totals.protein;}).filter(function(x){return x>0;});byMeal[mm]=v.length?mean(v):0;});
+      var threshold=PM.perMeal.value*kg,daily=mean(logged.map(function(d){return d.totals.protein||0;})),dailyTarget=PM.daily.value*kg;
+      var rowsM=MEALS.map(function(mm){return {meal:mm,mean:round(byMeal[mm],0),meets:byMeal[mm]>=threshold};}),meets=rowsM.filter(function(r){return r.meets;}).length;
+      var low=rowsM.slice().sort(function(a,b){return a.mean-b.mean;})[0];
+      var advice=daily<dailyTarget?('the day\u2019s total, about '+Math.round(daily)+' g, is short of '+PM.daily.value+' g/kg ('+Math.round(dailyTarget)+' g): reach that first; how it is spread matters less than the total')
+        :(meets<PM.meals.value?('the total is enough; '+meets+' of '+PM.meals.value+' meals reach about '+Math.round(threshold)+' g. Adding some to '+low.meal+' would bring one more meal there')
+          :('every meal reaches about '+Math.round(threshold)+' g'));
+      perMeal={thresholdG:round(threshold,0),meals:rowsM,meetsCount:meets,daily:round(daily,0),dailyTarget:round(dailyTarget,0),advice:advice,policy:PROTEIN_MEAL_CONTRACT.id,
+        note:'about '+PM.perMeal.value+' g/kg per meal across '+PM.meals.value+' meals is a recommendation built on acute protein-synthesis studies (Schoenfeld and Aragon 2018); total daily protein matters more than distribution'};}
     var fatFloor=null;var meanFat=mean(logged.map(function(d){return d.totals.fat;}));
     if(kg)fatFloor={mean:round(meanFat,0),floor:round(0.5*kg,0),meets:meanFat>=0.5*kg,note:'\u22480.5 g/kg/day is a common practical floor for hormone and fat-soluble-vitamin adequacy in a deficit'};
     return {status:'ok',days:days,logged:logged.length,coverage:round(100*logged.length/days,0),meanKcal:round(meanKcal,0),rows:rows,perMealProtein:perMeal,fatFloor:fatFloor,cls:'DERIVED',

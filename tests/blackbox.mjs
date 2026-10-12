@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-016). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-031). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -256,6 +256,344 @@ await run('V-016 photo durability',async ui=>{
   await ui.waitFor(()=>photoOnScreen()===URL_EXPECTED,'the restored image to show',15000);
   line(photoOnScreen()===URL_EXPECTED,'V-016 after restoring the encrypted backup, the photo shows with exactly its image');
 },{webcrypto:true});
+
+/* V-017 WHY AM I SEEING THIS (catalogue doc 1, W-045). On the demo record, a decision is opened from the timeline and asked
+   why it is shown. Expected, from the catalogue itself: its eight questions, in its order, each answered, and a trace from
+   the screen to the observations. Second witness: the number of observations the trace names is the number the stored
+   decision's explanation rests on, counted here from the record. */
+await run('V-017 why am I seeing this',async ui=>{
+  const EIGHT=['What changed?','Why does it matter?','What evidence supports this?','What evidence is missing?','What uncertainty exists?','What alternatives were considered?','What action is being proposed?','What happens if I do nothing?'];
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.decisions.length>0,'the demo’s decisions');
+  ui.tab('tools');await ui.until('details[data-fold="tools-navigation"] summary');ui.expand('tools-navigation');(await ui.until('[data-act="nav.timeline"]')).click();
+  const row=await ui.until('#editBackdrop .tl-row[data-act="obs.inspectDecision"]');const decId=row.getAttribute('data-arg');row.click();
+  const why=await ui.until('#editBackdrop [data-act="why.shown"]');why.click();await ui.until('#editBackdrop [data-question]');
+  const qs=[...ui.d.querySelectorAll('#editBackdrop [data-question]')].map(x=>({title:x.querySelector('.d-block-title').textContent,items:[...x.querySelectorAll('li')].map(l=>l.textContent.trim())}));
+  line(JSON.stringify(qs.map(q=>q.title))===JSON.stringify(EIGHT.map(q=>q.toUpperCase())),'V-017 the decision answers the catalogue’s eight questions, in its order',qs.map(q=>q.title).join(' | '));
+  line(qs.length===8&&qs.every(q=>q.items.length>0&&q.items.every(t=>t&&t!=='nothing recorded')),'V-017 each question has an answer',JSON.stringify(qs.map(q=>q.items.length)));
+  const tr=ui.text('#editBackdrop [data-trace]'),n=+((tr.match(/(\d+) observations? in the record/)||[])[1]);
+  const rec=ui.w.DB.decisions.find(d=>d.id===decId),want=rec&&rec.explanation?rec.explanation.claims.filter(c=>c.type!=='policy'&&c.type!=='finding').reduce((a,c)=>a+(c.evidenceIds||[]).length,0):null;
+  line(/the screen/.test(tr)&&/decision [A-Z_]+/.test(tr)&&n===want,'V-017 the trace runs from the screen through the decision and its models to the observations it rests on',tr+' / counted from the record: '+want);
+});
+
+/* V-018 DOES READINESS PREDICT MY SESSIONS (catalogue doc 1, W-019; V-025, how it moves from day to day, follows below on
+   the same sheet), AND CARDIO FIVE WAYS (W-017). On the demo record the
+   recovery state is opened from search. Expected, worked out from the screen alone: each score's verdict follows
+   from the misses shown beside it. A score adds value only if its squared miss is at most 0.95 of the best simple
+   reading's (sleep alone, fatigue alone, or no information) and its correlation's lower bound is above zero; it is "no
+   better" if it clears only the no-information baseline that way; otherwise it is not shown. Then the cardio experiment
+   is opened from the experiment picker: five questions, each with its own unit, and the picker says it is not measured on
+   weight alone. */
+await run('V-018/V-025 readiness validity and transitions, cardio concepts',async ui=>{
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.sessions.length>0,'the demo’s sessions');
+  await useLevel(ui,'insightful');   /* analysis pages and experiments are shown from the Insightful level */
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','Recovery state');
+  const pickRec=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^Recovery state/.test(x.textContent.trim()));
+  await ui.waitFor(pickRec,'the recovery state in search');pickRec().click();
+  await ui.until('#editBackdrop [data-readiness-validity] [data-validity-verdict]',30000);
+  const rows=[...ui.d.querySelectorAll('#editBackdrop [data-readiness-validity] .row')].map(r=>{const l=r.querySelector('.l'),sm=l.querySelector('small');
+    return {label:(l.firstChild&&l.firstChild.textContent||'').trim(),sub:sm?sm.textContent:'',miss:+((r.querySelector('.r').textContent.match(/misses by ([\d.]+)%/)||[])[1])};});
+  const by=Object.fromEntries(rows.map(r=>[r.label,r]));
+  const simple=['Sleep alone','Fatigue alone','No information (your average session)'].map(k=>by[k]).filter(Boolean);
+  line(rows.length===6&&simple.length===3&&rows.every(r=>isFinite(r.miss)&&r.miss>0),'V-018 three recovery scores and three simple readings, each with its miss',rows.map(r=>r.label+' '+r.miss).join(' | '));
+  const best=simple.slice().sort((a,b)=>a.miss-b.miss)[0],none=by['No information (your average session)'];
+  const name={'Sleep alone':'sleep alone','Fatigue alone':'fatigue alone','No information (your average session)':'your average session'}[best.label];
+  const lo=r=>+((r.sub.match(/\(([+\-−]?[\d.]+) to/)||[])[1]||'').replace('−','-');
+  const want=(label,who)=>{const r=by[label],sq=r.miss*r.miss;
+    if(sq<=0.95*best.miss*best.miss&&lo(r)>0)return who+' predicted your sessions better than sleep or fatigue alone.';
+    if(sq<=0.95*none.miss*none.miss&&lo(r)>0)return who+' predicted your sessions, but no better than '+name+'.';
+    return who+' has not predicted your sessions better than '+name+'.';};
+  const verdict=ui.text('#editBackdrop [data-validity-verdict]');
+  const expected=[want('Recovery summary','The recovery summary'),want('Latent recovery state','The latent recovery state'),want('Readiness average','The readiness average')].join(' ');
+  line(verdict===expected,'V-018 each verdict follows from the misses shown beside it',verdict+' / worked out from the screen: '+expected);
+  line(/the evening before each session/.test(ui.text('#editBackdrop [data-readiness-validity]'))&&/out of sample/.test(ui.text('#editBackdrop [data-readiness-validity]')),'V-018 and it says it used nothing from the session day and scored out of sample');
+  /* V-025 HOW READINESS MOVES (W-019: fatigue-state transitions), on the same sheet. Expected, worked out from the screen
+     alone: the estimate after a day below is the times it stayed below, plus three days at the share of days below,
+     over the days after a day below plus three; its own share of that is their number over their number plus three;
+     back within two days is one less the estimate squared; the verdict follows the two Brier scores shown, at 0.95. */
+  await ui.until('#editBackdrop [data-readiness-transitions] [data-transition-verdict]');
+  const tr=Object.fromEntries([...ui.d.querySelectorAll('#editBackdrop [data-readiness-transitions] .row')].map(r=>{const l=r.querySelector('.l'),sm=l.querySelector('small');
+    return [(l.firstChild&&l.firstChild.textContent||'').trim(),{sub:sm?sm.textContent:'',val:r.querySelector('.r').textContent.trim()}];}));
+  const share=+((tr['Days below your normal']||{val:''}).val.match(/^(\d+)% of \d+ rated days/)||[])[1],pairs=+(((tr['Days below your normal']||{sub:''}).sub.match(/^(\d+) pairs/))||[])[1];
+  const af=tr['After a day below']||{val:'',sub:''},ab=af.val.match(/below again (\d+) of (\d+) times/)||[],es=af.sub.match(/estimate (\d+)% \((\d+)% your own record, the rest no carry-over at (\d+)%\)/)||[];
+  const A2=+ab[1],B2=+ab[2],EST=+es[1],OWN=+es[2],wantEst=100*(A2+3*share/100)/(B2+3);
+  line(pairs>=20&&B2>0&&Math.abs(EST-wantEst)<=1.5&&OWN===Math.round(100*B2/(B2+3))&&+es[3]===share,'V-025 after a day below: stayed below '+A2+' of '+B2+' times, weighed against no carry-over at '+share+'% as '+B2+' against 3',JSON.stringify({pairs,A2,B2,EST,OWN,share,wantEst}));
+  const back=+(((tr['Back from a day below']||{val:''}).val.match(/^(\d+)% within 2 days/))||[])[1];
+  line(Math.abs(back-100*(1-(EST/100)**2))<=1.6,'V-025 back within two days is one less the estimate squared',back+' against '+(100*(1-(EST/100)**2)).toFixed(1));
+  const vt=ui.text('#editBackdrop [data-transition-verdict]'),bs=vt.match(/Brier ([\d.]+) against ([\d.]+) for your base rate, (\d+) days scored/)||[];
+  const wantV=+bs[1]<=0.95*+bs[2]?/forecast a below-normal tomorrow better than your base rate alone/:/forecast a below-normal tomorrow no better than your base rate alone/;
+  line(bs.length===4&&+bs[3]>=10&&wantV.test(vt),'V-025 the verdict follows the two Brier scores shown',vt);
+  ui.press('edit.close',null,'#editBackdrop');await wait(60);
+  ui.tab('experiments');(await ui.until('[data-act="exp.new"]')).click();
+  const pick=await ui.until('#editBackdrop [data-act="exp.fromTemplate"][data-arg="cardio"]');
+  const hint=pick.closest('.list-item').querySelector('.hint').textContent;
+  line(/each on its own/.test(hint)&&!/Measured on weight/.test(hint),'V-018 the picker says a cardio change is measured five ways, not on weight alone',hint);
+  pick.click();await ui.until('#editBackdrop [data-cardio-concepts]');
+  const cr=[...ui.d.querySelectorAll('#editBackdrop [data-cardio-concepts] .row')].map(r=>({label:(r.querySelector('.l').firstChild.textContent||'').trim(),unit:r.querySelector('.r').textContent.trim()}));
+  line(cr.map(c=>c.label).join()==='Dose,Capacity,Expenditure,Recovery cost,Strength interference'&&new Set(cr.map(c=>c.unit)).size===5,'V-018 the cardio experiment asks five separate questions, each on its own unit',cr.map(c=>c.label+' ['+c.unit+']').join(' | '));
+});
+
+/* V-019 A MOBILITY RECOMMENDATION THAT EXPLAINS ITSELF (catalogue doc 1, W-016). A knee-to-wall of 7 cm is entered in the
+   quick log and the mobility screen is opened from search. Expected, from the catalogue's definition of done and this
+   test's own arithmetic: seven parts, each answered; the limitation is 3 cm short of the 10 cm reference (10 − 7); with no
+   mobility minutes logged, the intervention is 30 minutes a week; the retest is 28 days after today, after at least 24
+   minutes a week (80% of 30); and one reading leaves nothing to compare yet. */
+await run('V-019 mobility recommendation',async ui=>{const KTW=7,REF=10,WEEKLY=30;
+  ui.press('log.open');(await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="tests"]')).click();await ui.until('#logBackdrop #f_kneewall');
+  ui.type('f_kneewall',KTW);ui.press('log.save',null,'#logBackdrop');
+  await ui.waitFor(()=>ui.w.DB.observations.some(o=>o.type==='kneewall'&&o.value===KTW),'the knee-to-wall to be stored');
+  await useLevel(ui,'insightful');
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','Mobility');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^Mobility and stretching/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'mobility in search');pick().click();
+  await ui.until('#editBackdrop [data-mobility-rec] [data-part="uncertainty"]');
+  const part=k=>ui.text('#editBackdrop [data-mobility-rec] [data-part="'+k+'"]');
+  const parts=['limitation','measurement','intervention','expectedChange','retest','observedResponse','uncertainty'];
+  line(parts.every(k=>part(k).trim().length>20),'V-019 the recommendation explains all seven parts',parts.map(k=>k+': '+part(k).slice(0,40)).join(' | '));
+  line(new RegExp(KTW.toFixed(1)+' cm is '+(REF-KTW).toFixed(1)+' cm short of the '+REF+' cm').test(part('limitation')),'V-019 the limitation is the entered reading against the reference',part('limitation'));
+  const due=new Date(Date.now()+28*864e5).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  line(new RegExp(WEEKLY+' minutes a week').test(part('intervention'))&&new RegExp('retest on '+due+' or later, after at least '+Math.round(0.8*WEEKLY)+' minutes a week').test(part('retest')),
+    'V-019 30 minutes a week, retested four weeks on after at least 24 a week',part('intervention')+' / '+part('retest')+' / expected '+due);
+  line(/nothing to compare yet/.test(part('observedResponse'))&&/cannot separate/.test(part('uncertainty')),'V-019 one reading leaves nothing to compare, and the uncertainty says what one retest can show',part('observedResponse')+' / '+part('uncertainty').slice(0,120));
+});
+
+/* V-020 WHY A LIFT STALLED (catalogue doc 1, W-015). The same bench set, 100 × 5 at 2 reps in reserve, is logged through
+   the session sheet once a week for six weeks (the clock moved back for each), then "What to change next week" is opened
+   from search. Expected, from this test's own record: the lift is flat, and the screen names the unapplied progression
+   with the set as entered, three times running, what to do and what would settle it. */
+await run('V-020 why a lift stalled',async ui=>{const LOAD=100,REPS=5;
+  for(const daysAgo of [35,28,21,14,7,0]){ui.setClock(daysAgo);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+    ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),'Bench press');ui.type('ss-0-load',LOAD);ui.type('ss-0-reps',REPS);ui.type('ss-0-rir',2);
+    const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+    await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the session for '+daysAgo+' days ago to be saved');}
+  if(new Set(ui.w.DB.sessions.map(s=>s.date)).size!==6)throw new Error('the six sessions did not land on six different days');
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What to change next week');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What to change next week/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the progression screen in search');pick().click();
+  await ui.until('#editBackdrop [data-stall-causes]');
+  const why=ui.text('#editBackdrop [data-stall-causes]');
+  line(new RegExp('the progression was not applied \\(the same top set, '+LOAD+'(\\.0)? × '+REPS+', 3 times running\\)').test(why),'V-020 the flat lift is read as an unapplied progression, with the set as entered',why);
+  line(/add the smallest load step, or one rep, next session/i.test(why)&&/whether the lift moves within two exposures/.test(why),'V-020 and it says what to do and what would settle it',why);
+});
+
+/* V-021 WHAT A TAPE CHANGE CAN MEAN (catalogue doc 1, W-020). An upper-arm reading is entered in the quick log eight weeks
+   ago (the clock moved back) and another today, 1.4 in (3.6 cm) smaller. Expected, from this test's own arithmetic: the
+   Body tab shows the change, beyond the tape's 1 cm working error, and, with no weight trend or training logged, says the
+   tape alone cannot say what was lost. */
+await run('V-021 a tape change, read',async ui=>{const metric=ui.w.unitPref()==='metric',A=metric?[35.6,32.0]:[14.0,12.6];
+  for(const [daysAgo,v] of [[56,A[0]],[0,A[1]]]){ui.setClock(daysAgo);ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="waist"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="waist"]').click();await ui.until('#logBackdrop #f_arm');
+    const n=ui.w.DB.observations.filter(o=>o.type==='arm').length;ui.type('f_arm',v);ui.press('log.save',null,'#logBackdrop');
+    await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='arm').length===n+1,'the arm reading for '+daysAgo+' days ago');}
+  ui.tab('body');await ui.until('#view-body [data-tape-site="arm"]');
+  const t=ui.text('#view-body [data-tape-site="arm"]'),want=metric?'3.6 cm':'1.4 in';
+  line(t.indexOf('−'+want+' over 8 weeks')>=0,'V-021 the Body tab shows the arm '+want+' smaller over 8 weeks, as entered',t);
+  line(/the tape cannot say what was lost/.test(t),'V-021 and, with no weight trend or training logged, says the tape alone cannot say what was lost',t);
+});
+
+/* V-022 PHOTO CONDITIONS (catalogue doc 1, W-020). Two front photos are added through the photo vault: one thirty days
+   ago at 07:30, marked "before food", and one today at 19:00 (the times are the files' own, as a phone library keeps
+   them). Expected, from this test's own record: the pair is shown, in the vault and on the Body tab (which never showed
+   one), as poorly comparable, naming both times; and the food choice is stored with the photo. */
+await run('V-022 photo conditions',async ui=>{
+  const img=tag=>new Uint8Array([0xFF,0xD8,0xFF,0xE0].concat(Array.from(('v022-'+tag+'-').repeat(120),ch=>ch.charCodeAt(0)),[0xFF,0xD9]));
+  const at=(daysAgo,h,m)=>{const d=new Date();d.setDate(d.getDate()-daysAgo);d.setHours(h,m,0,0);return d.getTime();};
+  const add=async(daysAgo,h,m,tag,fed)=>{ui.setClock(daysAgo);ui.tab('body');await ui.until('[data-act="nav.photos"]');ui.press('nav.photos');await ui.until('#photoLib');
+    if(fed){ui.press('photo.fed',fed,'#editBackdrop');await ui.until('#editBackdrop [data-act="photo.fed"][data-arg="'+fed+'"].btn-primary');}
+    const n=(ui.w.DB.settings.photos||[]).length,inp=ui.d.getElementById('photoLib');
+    Object.defineProperty(inp,'files',{value:[new ui.w.File([img(tag)],tag+'.jpg',{type:'image/jpeg',lastModified:at(daysAgo,h,m)})],configurable:true});inp.dispatchEvent(new ui.w.Event('change',{bubbles:true}));
+    await ui.waitFor(()=>(ui.w.DB.settings.photos||[]).length===n+1,'the photo from '+daysAgo+' days ago to be stored');ui.press('edit.close',null,'#editBackdrop');await wait(60);};
+  await add(30,7,30,'early','fasted');await add(0,19,0,'late',null);
+  const P=ui.w.DB.settings.photos.slice().sort((a,b)=>a.date<b.date?-1:1);
+  line(P[0].fed==='fasted'&&!P[1].fed,'V-022 the food choice is stored with the photo it was made for, and only that one',JSON.stringify(P.map(p=>p.fed)));
+  ui.setClock(0);ui.tab('body');await ui.until('[data-act="nav.photos"]');
+  const bodyPair=ui.text('#view-body [data-photo-pair="front"]');
+  line(/poorly comparable/.test(bodyPair)&&/30 days apart/.test(bodyPair),'V-022 the Body tab shows the pair, 30 days apart and poorly comparable',bodyPair);
+  ui.press('nav.photos');await ui.until('#editBackdrop [data-photo-pair="front"]');
+  const vaultPair=ui.text('#editBackdrop [data-photo-pair="front"]');
+  line(/taken at 07:30 and 19:00/.test(vaultPair),'V-022 the vault says why: taken at 07:30 and 19:00, as the files were',vaultPair);
+},{webcrypto:true});
+
+/* V-023 WHAT TO START A SUBSTITUTE AT (catalogue doc 1, W-015). A leg press of 300 × 10 is logged through the session sheet
+   two weeks ago; then "Squat" is typed into the Train tab's substitution search. Expected, from this test's own record:
+   the leg press says to start at the set as logged, on its date; the hack squat, never logged, offers no load. */
+await run('V-023 substitution start',async ui=>{const LOAD=300,REPS=10;
+  ui.setClock(14);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+  ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),'Leg press');ui.type('ss-0-load',LOAD);ui.type('ss-0-reps',REPS);ui.type('ss-0-rir',2);
+  const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+  await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the leg press session to be saved');
+  ui.setClock(0);ui.tab('train');await ui.until('details[data-fold="train-sub"] summary');ui.expand('train-sub');await ui.until('#subSearch');ui.type('subSearch','Squat');
+  await ui.until('#subResults [data-sub-start="legpress"]');
+  const d=new Date();d.setDate(d.getDate()-14);const when=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const lp=ui.text('#subResults [data-sub-start="legpress"]'),hs=ui.text('#subResults [data-sub-start="hacksquat"]');
+  line(new RegExp('your last leg press was '+LOAD+'(\\.0)? × '+REPS+' on '+when+': start there').test(lp),'V-023 the leg press starts at the set as logged, on its date',lp+' / expected date '+when);
+  line(/no hack squat in the last six months/.test(hs)&&!/\d+ × \d+/.test(hs),'V-023 the hack squat, never logged, offers no load',hs);
+});
+
+/* V-024 EACH LIFT'S NEXT SESSION (catalogue doc 1, W-015: exercise-specific response calibration). Seven deadlift singles
+   are logged a week apart through the session sheet (the clock moved back), so each session's estimated 1RM is its
+   load. Expected, from this test's own Theil–Sen fit (the median of the pairwise slopes, then the median intercept) and
+   the sample scatter around it: the next session, a week after the last, forecast with its 80% range (1.2816 times the
+   scatter, at least 1% of the forecast); the fifth to seventh sessions each forecast from those before them, and how
+   many fell inside their ranges; three scored are too few to calibrate, so it reads as a rating. */
+await run('V-024 each lift’s next session',async ui=>{const AGO=[42,35,28,21,14,7,0],LOAD=[300,305,310,312,318,320,326];
+  for(let i=0;i<AGO.length;i++){ui.setClock(AGO[i]);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+    ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),'Deadlift');ui.type('ss-0-load',LOAD[i]);ui.type('ss-0-reps',1);ui.type('ss-0-rir',2);
+    const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+    await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the session for '+AGO[i]+' days ago to be saved');}
+  ui.setClock(0);
+  const med=v=>{v=v.slice().sort((x,y)=>x-y);const m=v.length>>1;return v.length%2?v[m]:(v[m-1]+v[m])/2;};
+  const fit=(idx,atAgo)=>{const x0=AGO[idx[0]],P=idx.map(j=>[x0-AGO[j],LOAD[j]]),sl=[];for(let a=0;a<P.length;a++)for(let b=a+1;b<P.length;b++)sl.push((P[b][1]-P[a][1])/(P[b][0]-P[a][0]));
+    const b=med(sl),c=med(P.map(p=>p[1]-b*p[0])),res=P.map(p=>p[1]-c-b*p[0]),mu=res.reduce((s,r)=>s+r,0)/res.length;
+    const s=Math.sqrt(res.reduce((t,r)=>t+(r-mu)**2,0)/(res.length-1)),m=c+b*(x0-atAgo);return {mean:m,sd:Math.max(s,0.01*m)};};
+  const all=AGO.map((_,i)=>i),next=fit(all,-7),lo=next.mean-1.2816*next.sd,hi=next.mean+1.2816*next.sd;
+  let held=0;for(let i=4;i<AGO.length;i++){const f=fit(all.slice(0,i),AGO[i]);if(Math.abs(LOAD[i]-f.mean)/f.sd<=1.2816)held++;}
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What to change next week');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What to change next week/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the progression screen in search');pick().click();
+  await ui.until('#editBackdrop [data-lift-forecast="deadlift"]');
+  const t=ui.text('#editBackdrop [data-lift-forecast="deadlift"]'),m=t.match(/estimated 1RM about ([\d,.]+) (?:lb|kg) \(([\d,.]+)–([\d,.]+) (?:lb|kg)\)/),num=s=>+s.replace(/,/g,''),near=(a,b)=>Math.abs(a-b)<=0.15;
+  line(!!m&&near(num(m[1]),next.mean)&&near(num(m[2]),lo)&&near(num(m[3]),hi),'V-024 the next deadlift is forecast at '+next.mean.toFixed(1)+' ('+lo.toFixed(1)+'–'+hi.toFixed(1)+'), as worked out here',t);
+  const day=new Date(Date.now()+7*86400000),when=day.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  line(t.indexOf('Next session (about '+when+')')>=0,'V-024 for a week after the last session, '+when,t);
+  line(t.indexOf('held '+held+' of 3 past sessions')>=0&&/a rating, not a probability: 3 of 10 scored sessions/.test(t),'V-024 three past sessions scored, '+held+' inside their ranges: too few to calibrate, so a rating',t);
+});
+
+/* V-026 SKILL OR STRENGTH (catalogue doc 1, W-015: skill-versus-strength limitation). Seven weeks of squat singles at 200
+   and leg press singles rising 5 a week (300 to 330) are logged through the session sheet, a week apart (the clock moved
+   back). Expected, from this test's constants: the squat is flat and stalled; the leg press, a simpler lift for the same
+   muscles, rises 5.0 a week (5 every 7 days), so the squat reads as limited by skill, not strength, the leg press named. */
+await run('V-026 skill or strength',async ui=>{const AGO=[42,35,28,21,14,7,0],SQ=200,LP0=300,STEP=5;
+  const save=async(daysAgo,name,load)=>{ui.setClock(daysAgo);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+    ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),name);ui.type('ss-0-load',load);ui.type('ss-0-reps',1);ui.type('ss-0-rir',2);
+    const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+    await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the '+name+' session for '+daysAgo+' days ago to be saved');};
+  for(let i=0;i<AGO.length;i++){await save(AGO[i],'Squat',SQ);await save(AGO[i],'Leg press',LP0+STEP*i);}
+  ui.setClock(0);ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What to change next week');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What to change next week/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the progression screen in search');pick().click();
+  await ui.until('#editBackdrop [data-skill-limit="squat"]');
+  const t=ui.text('#editBackdrop [data-skill-limit="squat"]'),metric=ui.w.unitPref()==='metric',perWeek=(STEP*7/7).toFixed(1)+' '+(metric?'kg':'lb');
+  line(t.indexOf('Skill or strength: likely skill, not strength: leg press, on the same muscles, is rising '+perWeek+' a week while squat is not')>=0,'V-026 the flat squat reads as skill-limited: the leg press, on the same muscles, rises '+perWeek+' a week',t);
+  line(/Practise it more often below your limit/.test(t)&&/whether squat starts to follow the leg press/.test(t),'V-026 and it says what to do and what would settle it',t);
+});
+
+/* V-027 WHAT EACH LIFT HAS COST YOU, AND THE NEAT RESPONSE'S RANGES (catalogue doc 1, W-019), on the demo record. Expected,
+   worked out from the screen alone: on "Where training lands", each lift's cost a training day is its cost a set times
+   its sets a day; each interval is centred on its estimate; and how much is the person's own record is one less the
+   interval's variance (its width over 3.92, squared) over the prior's (the sd stated on the screen, squared). Then the
+   NEAT response's ranges: the physiology screen says how many of its weeks were scored and held, and the calibration
+   report on Learn shows the same count and that share held. */
+await run('V-027 recovery cost and NEAT ranges',async ui=>{
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await ui.until('#confirmOk');ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.sessions.length>0,'the demo’s sessions');
+  await useLevel(ui,'insightful');
+  const open=async(label)=>{ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput',label);
+    const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>x.textContent.trim().indexOf(label)===0);await ui.waitFor(pick,label+' in search');pick().click();};
+  await open('Where training lands');await ui.until('#editBackdrop [data-personal-recovery-cost] [data-recovery-cost]',30000);
+  const prov=ui.text('#editBackdrop [data-personal-recovery-cost] .prov'),prior=+((prov.match(/sd ([\d.]+) a set/)||[])[1]);
+  const num=s=>+String(s).replace('−','-').replace('+','');
+  const rows=[...ui.d.querySelectorAll('#editBackdrop [data-recovery-cost]')].map(el=>{const sub=(el.querySelector('small')||{}).textContent||'',val=el.querySelector('.r').textContent;
+    const m=sub.match(/([+−\-]?[\d.]+) a set \(([+−\-]?[\d.]+) to ([+−\-]?[\d.]+)\) · ([\d.]+) sets on (\d+) days · (\d+)% your own record/)||[],v=val.match(/^([+−\-]?[\d.]+) /)||[];
+    return {id:el.getAttribute('data-recovery-cost'),perSet:num(m[1]),lo:num(m[2]),hi:num(m[3]),sets:+m[4],own:+m[6],perDay:num(v[1])};});
+  const okRow=r=>isFinite(r.perSet)&&isFinite(r.perDay)&&Math.abs(r.perDay-r.perSet*r.sets)<=0.03&&r.lo<=r.perSet&&r.perSet<=r.hi&&Math.abs((r.hi-r.perSet)-(r.perSet-r.lo))<=0.011&&
+    Math.abs(r.own-100*Math.max(0,1-Math.pow((r.hi-r.lo)/3.92,2)/(prior*prior)))<=4;
+  line(prior>0&&rows.length>=2&&rows.every(okRow),'V-027 each lift’s cost a day is its cost a set times its sets, its interval centred, its own share from the prior of sd '+prior+' a set',JSON.stringify(rows.filter(r=>!okRow(r)).concat(rows.length<2?[{rows:rows.length}]:[])));
+  ui.press('edit.close',null,'#editBackdrop');await ui.waitFor(()=>!ui.d.querySelector('#editBackdrop.show'),'the sheet to close');
+  await open('Physiology models');await ui.until('#editBackdrop .card-title');
+  const ph=ui.text('#editBackdrop'),pm=ph.match(/its 80% ranges held (\d+) of (\d+) weeks/)||[];
+  ui.press('edit.close',null,'#editBackdrop');await ui.waitFor(()=>!ui.d.querySelector('#editBackdrop.show'),'the sheet to close');
+  ui.tab('learn');await ui.until('details[data-fold="learn-competition"] summary',30000);ui.expand('learn-competition');await ui.until('details[data-fold="learn-competition"] .row');
+  const row=[...ui.d.querySelectorAll('details[data-fold="learn-competition"] .row')].find(r=>/^Everyday movement in a deficit/.test(r.textContent.trim()));
+  const rt=row?row.textContent.replace(/\s+/g,' '):'',held=+pm[1],n=+pm[2],pct=rt.match(/(\d+)% held/),cnt=rt.match(/(\d+) scored against each week’s steps/);
+  line(pm.length===3&&!!pct&&!!cnt&&+cnt[1]===n&&+pct[1]===Math.round(100*held/n),'V-027 the NEAT response’s '+n+' scored weeks, '+held+' held, are the same on the calibration report',rt+' / physiology: '+(pm[0]||'none'));
+});
+
+/* V-028 YOUR OWN SLEEP NEED (catalogue doc 1, W-019: individual sleep debt). Twenty-one nights of sleep, cycling 5.5 to
+   8.5 h, each with that day's fatigue (4, plus 2 for every hour short of 7), are logged through the quick log and the
+   recovery check-in, one a day (the clock moved back). Expected, from this test's own arithmetic: the fatigue stops
+   improving at exactly 7 h, a fit no other candidate comes near, so the need is 7.0 h and wholly the person's own; the
+   last 14 nights (two cycles) fall short of it by 2 × (1.5 + 1 + 0.5) = 6.0 h. */
+await run('V-028 your own sleep need',async ui=>{const NX=[5.5,6,6.5,7,7.5,8,8.5],N=21,NEED=7;
+  await useLevel(ui,'insightful');
+  for(let i=0;i<N;i++){const daysAgo=N-1-i,x=NX[i%7],y=4+2*Math.max(0,NEED-x);ui.setClock(daysAgo);
+    const ns=ui.w.DB.observations.filter(o=>o.type==='sleep').length;ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="sleep"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="sleep"]').click();await ui.until('#logBackdrop #f_value');ui.type('f_value',x);ui.press('log.save',null,'#logBackdrop');
+    await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='sleep').length===ns+1,'the night '+daysAgo+' days ago');
+    const nf=ui.w.DB.observations.filter(o=>o.type==='fatigue').length;ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="recovery"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="recovery"]').click();await ui.until('#logBackdrop [data-act="sheet.scale"][data-arg="fatigue|'+y+'"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.scale"][data-arg="fatigue|'+y+'"]').click();ui.press('log.save',null,'#logBackdrop');
+    await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='fatigue').length===nf+1,'the fatigue rating '+daysAgo+' days ago');}
+  ui.setClock(0);const debt=NX.concat(NX).reduce((t,x)=>t+Math.max(0,NEED-x),0);
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What the system tracks');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What the system tracks/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the domains screen in search');pick().click();await ui.until('#editBackdrop .row');
+  const t=ui.text('#editBackdrop');
+  line(t.indexOf(debt.toFixed(1)+' h short of your own sleep need of '+NEED.toFixed(1)+' h over 14 nights')>=0,'V-028 the last 14 nights fall '+debt.toFixed(1)+' h short of a need of '+NEED.toFixed(1)+' h',t.slice(Math.max(0,t.indexOf('sleep need')-80),t.indexOf('sleep need')+260));
+  line(/your fatigue stops improving at about 7\.00 h \(7\.00 to 7\.00\), rising 2\.0 points an hour short of it/.test(t)&&/a need of 7\.0 h, 100% your own record/.test(t),'V-028 found where the fatigue stops improving, rising 2 points an hour short of it, wholly the person’s own',t.slice(Math.max(0,t.indexOf('stops improving')-40),t.indexOf('stops improving')+220));
+});
+
+/* the custom food form and the food sheet, as a person uses them: save a food, then log grams of it; each step waits
+   for the record it should make */
+async function saveOwnFood(ui,fields){const n=ui.w.DB.foods.length;ui.tab('food');ui.press('food.custom');await ui.until('#editBackdrop #f_name');
+  for(const [k,v] of Object.entries(fields))ui.type('f_'+k,v);ui.press('food.customSave');return n;}
+async function logOwnFood(ui,name,grams){const n=ui.w.DB.foodLogs.length;ui.tab('food');ui.press('food.add');await ui.until('#fs_q');ui.type('fs_q',name);
+  const pick=()=>[...ui.d.querySelectorAll('#editBackdrop [data-act="foodsheet.pick"]')].find(b=>b.textContent.indexOf(name)>=0);await ui.waitFor(pick,name+' in the food search');pick().click();
+  await ui.until('#editBackdrop #f_amount');ui.type('f_amount',grams);const u=ui.d.getElementById('f_unit');if(u){u.value='g';u.dispatchEvent(new ui.w.Event('change',{bubbles:true}));}
+  ui.press('foodsheet.save');await ui.waitFor(()=>ui.w.DB.foodLogs.length===n+1,grams+' g of '+name+' to be logged');}
+
+/* V-029 PROTEIN QUALITY FROM AMINO ACIDS (catalogue doc 1, W-018). A rice protein and a pea protein are saved as one's own
+   foods with the amino acids their labels print (mg per 100 g, defined here), and 30 g of each is logged. Expected from
+   this test's arithmetic and the FAO 2013 adult pattern written out here: together they score 1.068 (lysine the closest),
+   meeting the pattern though each alone falls short. A food given only some of its amino acids is refused. */
+await run('V-029 protein quality from amino acids',async ui=>{const PAT={his:16,ile:30,leu:61,lys:48,saa:23,aaa:41,thr:25,trp:6.6,val:40};
+  const RICE={protein:80,his:1800,ile:3400,leu:6600,lys:2400,met:2400,cys:1600,phe:4200,tyr:4000,thr:2900,trp:1000,val:4800},PEA={protein:80,his:2000,ile:3600,leu:6800,lys:5800,met:800,cys:700,phe:4400,tyr:3000,thr:3000,trp:800,val:4000};
+  const f=(name,F)=>Object.assign({name,kcal:380,protein:F.protein},Object.fromEntries(['his','ile','leu','lys','met','cys','phe','tyr','thr','trp','val'].map(k=>['aa_'+k,F[k]])));
+  const n0=await saveOwnFood(ui,{name:'Half profile',kcal:380,protein:80,aa_lys:2400});
+  await ui.waitFor(()=>/Enter all eleven amino acids, or none/.test(ui.d.body.textContent)||ui.w.DB.foods.length>n0,'the form to answer a partial profile');
+  line(ui.w.DB.foods.length===n0&&/Enter all eleven amino acids, or none/.test(ui.d.body.textContent),'V-029 a food given only some of its amino acids is refused, and says why');
+  if(ui.d.querySelector('#editBackdrop.show'))ui.press('edit.close',null,'#editBackdrop');await ui.waitFor(()=>!ui.d.querySelector('#editBackdrop.show'),'the form to close');
+  for(const [nm,F] of [['Rice protein isolate',RICE],['Pea protein isolate',PEA]]){const n=await saveOwnFood(ui,f(nm,F));await ui.waitFor(()=>ui.w.DB.foods.length===n+1,nm+' to be saved');}
+  await logOwnFood(ui,'Rice protein isolate',30);await logOwnFood(ui,'Pea protein isolate',30);
+  const mix=Object.fromEntries(Object.keys(PAT).map(k=>[k,0]));let P=0;for(const F of [RICE,PEA]){P+=F.protein*0.3;for(const k of ['his','ile','leu','lys','thr','trp','val'])mix[k]+=F[k]*0.3;mix.saa+=(F.met+F.cys)*0.3;mix.aaa+=(F.phe+F.tyr)*0.3;}
+  const ratios=Object.keys(PAT).map(k=>[k,mix[k]/P/PAT[k]]).sort((a,b)=>a[1]-b[1]),score=ratios[0][1];
+  ui.tab('food');await ui.until('#view-food [data-amino-score]');const t=ui.text('#view-food [data-amino-score]');
+  line(ratios[0][0]==='lys'&&t.indexOf('score '+score.toFixed(2))>=0&&/meets the adult pattern; lysine the closest/.test(t)&&/from 100% of the day/.test(t),'V-029 together they score '+score.toFixed(3)+', lysine the closest, from all of the day’s protein',t);
+});
+
+/* V-030 THE FOOD MATRIX AND GLYCAEMIC LOAD (catalogue doc 1, W-018). Whole almonds (600 kcal per 100 g on their label) and
+   cooked white rice (28 g of carbohydrate and 0.4 g of fibre per 100 g) are saved as one's own foods; 28 g and 150 g are
+   logged. Expected from this test's constants and the cited figures written out here: the almonds count 129 kcal, not
+   the 168 logged, so about 39 kcal held back; the rice's load is 73 / 100 x 41.4 g = 30, a low day, with the almonds'
+   carbohydrate unmatched (no index for them) and the share matched worked out here. */
+await run('V-030 food matrix and glycaemic load',async ui=>{const ALM={kcal:600,protein:21,carbs:22,fat:50,fiber:12.5},RICE={kcal:130,protein:2.7,carbs:28,fat:0.3,fiber:0.4};
+  for(const [nm,F] of [['Whole almonds',ALM],['White rice, cooked',RICE]]){const n=await saveOwnFood(ui,Object.assign({name:nm},F));await ui.waitFor(()=>ui.w.DB.foods.length===n+1,nm+' to be saved');}
+  await logOwnFood(ui,'Whole almonds',28);await logOwnFood(ui,'White rice, cooked',150);
+  const logged=ALM.kcal*0.28,held=Math.round(logged-129),riceAvail=(RICE.carbs-RICE.fiber)*1.5,almAvail=(ALM.carbs-ALM.fiber)*0.28,load=Math.round(0.73*riceAvail),share=Math.round(100*riceAvail/(riceAvail+almAvail));
+  ui.tab('food');await ui.until('#view-food [data-matrix-energy]');const m=ui.text('#view-food [data-matrix-energy]'),g=ui.text('#view-food [data-glycaemic-load]');
+  line(m.indexOf('about '+held+' kcal')>=0&&m.indexOf('Whole almonds: 28 g counts about 129 kcal, not the '+Math.round(logged)+' logged')>=0&&/not taken off your intake/.test(m),'V-030 28 g of whole almonds count 129 kcal, not '+Math.round(logged)+': about '+held+' held back',m);
+  line(g.indexOf(String(load))>=0&&/· low/.test(g)&&g.indexOf(share+'% of the carbohydrate matched')>=0,'V-030 the rice’s glycaemic load is '+load+', a low day, from '+share+'% of the carbohydrate',g);
+});
+
+/* V-031 VISUAL CALIBRATION (catalogue doc 1, W-020). Body-fat readings are logged through the quick log, the clock moved
+   back: a DEXA of 20 and, two days later, an estimate by eye of 17; a BIA of 22 and a day later 18; calipers of 21 and a
+   day later 17.5; and today an estimate of 16. Expected from this test's arithmetic: each estimate pairs with the
+   nearest measured reading within a week (today's with the calipers, five days back); the bias starts from none (sd 4)
+   and each gap weighs by both methods' errors (visual 4, DEXA 1.5, BIA 3.5, calipers 3); today's 16% is read through it. */
+await run('V-031 visual calibration',async ui=>{const R=[[40,20,'dexa'],[38,17,'visual'],[20,22,'bia'],[19,18,'visual'],[5,21,'calipers'],[4,17.5,'visual'],[0,16,'visual']];
+  for(const [daysAgo,v,m] of R){ui.setClock(daysAgo);const n=ui.w.DB.observations.filter(o=>o.type==='bodyfat').length;ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="bodyfat"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="bodyfat"]').click();await ui.until('#logBackdrop #f_method');ui.type('f_value',v);const s=ui.d.getElementById('f_method');s.value=m;s.dispatchEvent(new ui.w.Event('change',{bubbles:true}));
+    ui.press('log.save',null,'#logBackdrop');await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='bodyfat').length===n+1,'the '+m+' reading '+daysAgo+' days ago');}
+  ui.setClock(0);const P=[[17-20,1.5],[18-22,3.5],[17.5-21,3],[16-21,3]].map(([g,se])=>({g,v:16+se*se,se}));
+  const prec=1/16+P.reduce((t,p)=>t+1/p.v,0),bias=P.reduce((t,p)=>t+p.g/p.v,0)/prec,bv=1/prec,s2=P.reduce((t,p)=>t+(p.g-bias)**2,0)/3,m2=P.reduce((t,p)=>t+p.se**2,0)/4,own=Math.sqrt(Math.max(0,s2-m2));
+  const read=16-bias,half=1.96*Math.sqrt(bv+own*own),f1=x=>x.toFixed(1);
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','Physique by region');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^Physique by region/.test(x.textContent.trim()));await ui.waitFor(pick,'the physique screen in search');pick().click();
+  await ui.until('#editBackdrop [data-visual-calibration]');const t=ui.text('#editBackdrop [data-visual-calibration]');
+  line(t.indexOf('(4 pairs), you estimate '+f1(Math.abs(bias))+' points low')>=0&&t.indexOf(Math.round(100*(1-bv/16))+'% your own record')>=0,'V-031 four estimates by eye, each paired with the nearest measured reading: '+f1(Math.abs(bias))+' points low',t);
+  line(t.indexOf('Your latest visual 16.0% reads as about '+f1(read)+'% ('+f1(read-half)+' to '+f1(read+half)+')')>=0,'V-031 today’s 16% reads as about '+f1(read)+'%, with its interval',t);
+});
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

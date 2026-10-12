@@ -84,6 +84,30 @@
    }
   },
   {
+   "id": "photo-comparison",
+   "label": "Progress photos compared only in matching conditions",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-022"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a photo keeps when it was taken (the file’s own time) and, optionally, whether before or after food; two photos are judged on view, light, time of day (more than four hours apart) and fed state; within each view the latest photo pairs with the earliest taken in matching conditions, the ones set aside counted. One pairing serves the photo vault and the Body tab. No body change is inferred from images",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "data-deletion",
    "label": "Erase everything",
    "maturity": "validated",
@@ -120,6 +144,52 @@
     "ux": "workflow-tested",
     "operational": "local",
     "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "food-source-arbitration",
+   "label": "Two records of one food that disagree, settled by a declared rule",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "external"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the nutrients that differ are named with both values; each record is checked against its own macros (4/4/9, the food sheet’s own check); the first of your own entry, USDA laboratory analysis, the USDA branded label and Open Food Facts that agrees with itself is used, and the other is kept visible. Scanning a barcode you already have an entry for offers the record the rule chooses, and the food sheet says why. The order and thresholds are a heuristic contract, not validated",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "protein-distribution",
+   "label": "Protein across the day’s meals, the daily total first",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "about 0.4 g/kg per meal across four meals once the day reaches 1.6 g/kg: a day short of its total is told to reach the total first; a day that is enough is told how many meals reach the amount and which to add to. On the Food tab",
+   "source": "protein per meal and per day (Schoenfeld and Aragon 2018); protein timing around training (Schoenfeld et al. 2013)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
     "calibration": "not applicable"
    }
   },
@@ -197,6 +267,30 @@
     "scientific": "heuristic",
     "data": "real data path",
     "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "readiness-validity",
+   "label": "Readiness and recovery scores backtested against the session that follows",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-018"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each past session is scored against each lift’s own last three exposures; the recovery summary, the latent recovery state and the readiness average are rebuilt as the record stood the evening before, beside no information, sleep alone and fatigue alone, and each is scored out of sample (leave one out). A score adds value only if it beats the best simple reading by 5% with a positive correlation. On the demo record all three predict the sessions but no better than fatigue alone, and both recovery screens and the assistant say so",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
     "ux": "workflow-tested",
     "operational": "local",
     "evidence": "independent",
@@ -427,13 +521,16 @@
      "blackbox": "V-015"
     },
     {
+     "blackbox": "V-017"
+    },
+    {
      "gate": "engine"
     },
     {
      "gate": "governance"
     }
    ],
-   "note": "each decision's reasons are claims built from the models' values, rendered simple, analytical or scientific; a published finding supports a rule, never validates it",
+   "note": "each decision's reasons are claims built from the models' values, rendered simple, analytical or scientific; a published finding supports a rule, never validates it; every decision answers the eight questions of W-045 with a trace to its observations; each confidence says whether it is a rating or calibrated",
    "axes": {
     "engineering": "validated",
     "scientific": "not applicable",
@@ -464,6 +561,30 @@
     "ux": "surfaced",
     "operational": "local",
     "evidence": "internal",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "tape-change",
+   "label": "What a circumference change can mean, site by site",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-021"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each site’s change over its recent readings is set against the tape’s error (the person’s own repeats within two days, or a 1 cm working assumption) and counts only beyond 2√2 errors; a change that counts is read with the weight and strength trends for what it is consistent with, and says what the tape cannot separate. A tape measures girth, not tissue. The threshold and working error are a heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
     "calibration": "insufficient"
    }
   },
@@ -508,6 +629,350 @@
     "scientific": "population evidence",
     "data": "real data path",
     "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "stall-causes",
+   "label": "Why a lift stalled: likely causes named from the record",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-020"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a lift the plan reads as flat or falling against its own noise names its likely causes in a stated order: an unapplied progression (the same top set three times running), sets far from failure, readiness below the person’s normal, loss faster than the band in a cut, volume up 30% or more; each with its evidence, threshold, what to do and what would settle it, on “What to change next week”. The thresholds are a heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "substitution-start",
+   "label": "What to start a substitute exercise at",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-023"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "from the person’s own last top set of the substitute (90% of it after eight weeks away); with no record, no load is invented: a load with three or more reps in reserve, lighter still for a more technical lift. Shown under each alternative in the Train tab’s substitution search. A heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "lift-forecast",
+   "label": "Each lift’s next session, its range checked on its own record",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-024"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each lift is replayed: every session from its fifth on is forecast from the lift’s sessions in the 84 days before it (Theil–Sen), and the miss scored against the scatter around that fit. The scored misses go through the one calibration rule; a lift with ten or more takes its own factor, weighed against all the person’s lifts as n against ten, and one with fewer takes the pooled factor and reads as a rating. On “What to change next week” and in the calibration report. The windows, floor and weight are a heuristic contract, not validated",
+   "source": "the person’s own sessions",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "measured"
+   }
+  },
+  {
+   "id": "readiness-transitions",
+   "label": "How readiness moves from day to day",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-025"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each day with two or more of the five ratings is given its readiness state as the record stood that day; days next to each other give the chance a day below normal is followed by another, each row weighed against no carry-over as its count against three; spells below normal of known length; back to normal within two days; and, walking forward, whether today’s state forecast a below-normal tomorrow better than the base rate (Brier score). On both recovery sheets and in the assistant’s readiness answer. On the demo record a day below carries over and today forecasts tomorrow better than the base rate",
+   "source": "the person’s own ratings",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "skill-limit",
+   "label": "Whether a stalled lift is limited by skill or by strength",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-026"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a flat or falling lift of moderate or high skill reads as skill-limited when a simpler lift for the same muscles (same pattern or a shared primary muscle, from the exercise library) is rising, or when it scatters around its trend 1.5 times the median of the person’s other lifts or more; as strength-limited when every lift for those muscles is flat or falling too; otherwise not yet known, with a simpler lift to log named. A stall cause on “What to change next week”. A heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "personal-recovery-cost",
+   "label": "What each lift has cost the person the next day",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-027"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the next day’s soreness and fatigue against each lift’s sets the day before, over 120 days, with an intercept for a day without them; each cost per set starts from no cost (sd 0.15 a set) and reports how much is the person’s own record; lifts almost always trained together are named, since their costs cannot be told apart. Beside the ontology’s index of what each lift should cost, on “Where training lands”. On the demo record few days were rated, so every cost leans on the prior",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "sleep-need",
+   "label": "The person’s own sleep need, and the debt against it",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-028"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the night length beyond which the person’s fatigue that day stops improving: a level plus a rise per hour short of each candidate need, shown only when it beats a straight line by the likelihood-ratio criterion; the need weighs each candidate by its fit and by a 7.5 h prior (sd 0.75), inside the 7 or more the consensus recommends, and reports how much is the person’s own. The last 14 nights’ shortfall against it is a sleep finding and part of the assistant’s sleep answer; a stated target still governs the advice",
+   "source": "7 or more hours a night for adults (Watson et al. 2015, AASM and SRS consensus)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "neat-calibration",
+   "label": "The NEAT response’s ranges checked against each week’s steps",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-027"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the NEAT response is replayed week by week from the seventh, each week’s steps predicted from the weeks before it, and each miss scored against the prediction’s sd; the scores go through the one calibration rule, and with ten or more the factor widens or narrows the energy the compensation carries into the energy balance and the optimiser. On the physiology screen and in the calibration report; on the demo record, 3 weeks scored, so a rating",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "measured"
+   }
+  },
+  {
+   "id": "protein-amino-score",
+   "label": "Protein quality from the amino acids of the foods eaten",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-029"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the day’s protein whose amino acids are known is scored as one mix against the FAO 2013 adult pattern, naming the limiting amino acid; a mix can score above its parts. One’s own food can carry a label’s eleven amino acids, and the corpus build keeps USDA’s; the shipped corpus predates it, so no shipped food carries them yet. Not corrected for digestion",
+   "source": "FAO 2013, Dietary protein quality evaluation in human nutrition (FAO Food and Nutrition Paper 92)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "food-matrix",
+   "label": "Whole nuts counted at their measured energy (the food matrix)",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-030"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "whole almonds, walnuts and cashews count at the energy feeding studies measured (129, 146 and 137 kcal per 28 g); butters, flours, milks and oils, and nuts no study measured, are not corrected. Shown on the Food tab, not taken off the intake. Replaces a rule that took 20% off every food named after a nut",
+   "source": "Novotny et al. 2012 (almonds); Baer et al. 2016 (walnuts); Baer and Novotny 2019 (cashews)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "glycaemic-load",
+   "label": "Glycaemic load of each meal and the day",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-030"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each food’s carbohydrate less fibre weighed by the glycaemic index of the group its name matches, from the international tables, with the share of carbohydrate matched; a day under 80 reads as low and over 120 as high, a convention. A population figure: the person’s own glucose response can differ widely and is not measured",
+   "source": "Atkinson, Foster-Powell and Brand-Miller 2008 (international tables); Zeevi et al. 2015 (responses differ between people)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "visual-calibration",
+   "label": "Body fat estimated by eye, read through the person’s own bias",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-031"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each visual estimate pairs with the nearest measured reading within a week; the bias starts from none (sd 4 points) and each gap weighs by both methods’ errors; with three pairs or more the person’s own visual error is read; the latest estimate is read through both on “Physique by region”. The log form now offers an estimate by eye. A heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "mobility-recommendation",
+   "label": "Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-019"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "from the knee-to-wall and sit-and-reach tests (quick log or assessment): a left-right difference over two test errors, a gap between active and passive range, a range short of the working reference (a heuristic contract, not validated) or range lost from the person’s own best; the test’s error from the person’s own repeats or the published figure; static or end-range work at 30 more minutes a week; the change expected from the mobility response (population prior updated by the person’s own slope, with its weight); a retest after four weeks on the same protocol; what the earlier reading already shows against the response; and whether one retest can separate the change from the test’s error",
+   "source": "stretching dose and range of motion (Thomas et al. 2018); knee-to-wall reliability (Bennell et al. 1998)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "cardio-concepts",
+   "label": "Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-018"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a cardio change is evaluated on each over a period before and after it: minutes a week, the fitness model’s VO2max estimate (never moved by minutes), kcal above rest from each session’s own MET, relative load (refused when sessions carry no intensity), and strength lift by lift (reported, not attributed). Shown on the cardio experiment before and after it starts",
+   "source": "MET values: the 2024 Adult Compendium of Physical Activities; ACSM metabolic equations for walking, running and cycling",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
     "ux": "workflow-tested",
     "operational": "local",
     "evidence": "independent",
@@ -634,7 +1099,7 @@
      "gate": "engine"
     }
    ],
-   "note": "the forecast competition’s calibration made the one rule for every model that makes interval predictions (weight and strength forecasts, aerobic capacity, personal response predictions): the factor that would have made the 80% interval hold 80% of the time, learned on older predictions and checked on newer ones, widening or narrowing the live interval once ten predictions are scored; one report says whether each model’s intervals are honest",
+   "note": "the forecast competition’s calibration made the one rule for every model that makes interval predictions (weight and strength forecasts, aerobic capacity, personal response predictions): the factor that would have made the 80% interval hold 80% of the time, learned on older predictions and checked on newer ones, widening or narrowing the live interval once ten predictions are scored; one report says whether each model’s intervals are honest; and execution probabilities: a backtest (fitted on the older half of the days, scored on the newer half, Brier score against the base rate) and a prospective record (each day’s planned items stamped before the day, scored after it)",
    "axes": {
     "engineering": "surfaced",
     "scientific": "backtested",

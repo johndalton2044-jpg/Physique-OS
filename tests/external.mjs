@@ -92,6 +92,16 @@ await p.click('button[data-act="scan.lookup"]');await p.waitForTimeout(3000);
 const O=await S(()=>{const f=window._FOODSHEET&&window._FOODSHEET.picked;return f?{name:f.name,brand:f.brand,basis:f.basis,kcal:f.per100.kcal,src:f.source,id:window.foodIdentity(f),missing:f.provenance&&f.provenance.missing}:null;});
 line(!!O&&O.src==='OPEN_FOOD_FACTS'&&O.basis==='ml'&&O.kcal===43&&O.brand==='Coca-Cola'&&O.id==='gtin:05449000000996','a product missing from the bundled database is found on Open Food Facts and resolved by barcode',JSON.stringify(O));
 await S(()=>window.closeSheet&&window.closeSheet());
+/* W-018: the person's own entry for that barcode disagrees with Open Food Facts (60 kcal and 15 g carbohydrate per 100 mL
+   against 43 and 10.6); both agree with their own macros (4 × 15 = 60), so the declared order decides: their own entry */
+await S(()=>{window.saveUserFood({kind:'custom',name:'My cola',gtin:'5449000000996',basis:'ml',per100:{kcal:60,protein:0,carbs:15,fat:0},portions:[]});});
+await S(()=>window.dispatchAct('food.scan'));await p.waitForTimeout(200);
+await p.fill('#scanManual','5449000000996');await S(()=>document.getElementById('scanManual').dispatchEvent(new Event('input',{bubbles:true})));
+await p.click('button[data-act="scan.lookup"]');await p.waitForTimeout(3000);
+const ARB=await S(()=>({picked:window._FOODSHEET&&window._FOODSHEET.picked&&window._FOODSHEET.picked.name,banner:(document.querySelector('#editBackdrop [data-food-arbitration]')||{}).textContent||''}));
+line(ARB.picked==='My cola'&&/kcal 60(\.0)? against 43/.test(ARB.banner)&&/Using your own entry: both agree with their own macros/.test(ARB.banner)&&/Open Food Facts \(contributed\) is kept, not merged/.test(ARB.banner),
+  'a scanned product that disagrees with your own entry for its barcode: the rule picks one, and the sheet says why and what the other says',JSON.stringify(ARB));
+await S(()=>window.closeSheet&&window.closeSheet());
 await S(()=>window.dispatchAct('food.scan'));await p.waitForTimeout(150);
 await p.fill('#scanManual','0000000000017');await S(()=>document.getElementById('scanManual').dispatchEvent(new Event('input',{bubbles:true})));
 await p.click('button[data-act="scan.lookup"]');await p.waitForTimeout(2500);
@@ -103,6 +113,8 @@ await new Promise(r=>{api.once('exit',r);api.kill();});await wait(200);api=start
 const health=await get(API,'/v1/ext/sources');line(health.status===200,'the server restarts with failure fixtures');
 await S(()=>window.dispatchAct('weather.refresh'));await p.waitForTimeout(1500);
 const W=await S(()=>window.DB.settings.weatherSync);line(!!W&&W.state==='failed'&&W.error&&W.error.category==='authorization_denied','a refused request reaches the app as authorization_denied, and the weather already stored stays',JSON.stringify(W&&W.error));
+const WT=await S(()=>document.getElementById('toast').textContent);
+line(/refused this server/.test(WT)&&!/could not be fetched/.test(WT),'and the person is told the source refused the server’s credentials, not only that the weather could not be fetched',WT);
 line(await S(()=>(window.DB.environment||[]).some(b=>b.dataset==='forecast')),'existing weather survives a failed refresh');
 r=await get(API,'/v1/ext/weather/forecast?lat=40.7&lon=-74&provider=meteosource');line(r.json&&r.json.error&&r.json.error.category==='rate_limited','a rate-limited provider is reported as rate_limited',JSON.stringify(r.json));
 api.kill();

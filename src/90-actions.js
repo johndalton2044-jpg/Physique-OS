@@ -212,7 +212,7 @@ registerAction('session.new',function(arg){openSession(null,arg||null);});
 registerAction('session.edit',function(id){openSession(id);});
 registerAction('session.save',function(){saveSession();});
 registerAction('session.retract',function(id){return confirmDialog({title:'Delete this session?',msg:'The session is marked retracted and removed from strength and volume models. Undo is available.',okLabel:'Delete',danger:true}).then(function(ok){if(!ok)return;retractSession(id);_memoInvalidate();renderAll();toast('Session deleted',{undo:true});});});
-registerAction('train.sub',function(arg,ev,el){var q=el.value;var out=document.getElementById('subResults');if(!out)return;if(!q||q.length<3){out.innerHTML='<div class="muted">Type an exercise to see alternatives.</div>';return;}var e=resolveExercise(q);if(!e){out.innerHTML='<div class="muted">Not in the ontology yet; log it anyway \u2014 free-text exercises still count for volume.</div>';return;}var subs=substitutesFor(q);out.innerHTML=uiRow(esc(e.name),uiPill(e.pattern),{sub:'primary '+e.primary.map(function(m){return MUSCLE_GROUPS[m];}).join(', ')+' \u00b7 '+e.equipment.join('/')+' \u00b7 fatigue '+e.fatigue+' \u00b7 skill '+e.skill})+subs.map(function(s){return uiRow(esc(s.exercise.name),'',{sub:s.why});}).join('');});
+registerAction('train.sub',function(arg,ev,el){var q=el.value;var out=document.getElementById('subResults');if(!out)return;if(!q||q.length<3){out.innerHTML='<div class="muted">Type an exercise to see alternatives.</div>';return;}var e=resolveExercise(q);if(!e){out.innerHTML='<div class="muted">Not in the ontology yet; log it anyway \u2014 free-text exercises still count for volume.</div>';return;}var subs=substitutesFor(q);out.innerHTML=uiRow(esc(e.name),uiPill(e.pattern),{sub:'primary '+e.primary.map(function(m){return MUSCLE_GROUPS[m];}).join(', ')+' \u00b7 '+e.equipment.join('/')+' \u00b7 fatigue '+e.fatigue+' \u00b7 skill '+e.skill})+subs.map(function(s){var st=substitutionStart(e.name,s.exercise.name);return uiRow(esc(s.exercise.name),'',{sub:esc(s.why)+'<br><span data-sub-start="'+attrEsc(s.exercise.id)+'">'+esc(st.text)+'</span>'});}).join('');});
 /* ---- decisions / experiments ---- */
 registerAction('decision.apply',function(){var dec=decide();if(!dec.intervention){toast('Today\u2019s decision has no intervention to apply; it is a hold.');return;}var iv=dec.intervention;return confirmDialog({title:'Apply: '+dec.verb,msg:'<b>'+esc(iv.variable)+'</b> '+(iv.from!=null?esc(String(iv.from))+' \u2192 ':'')+(iv.to!=null?esc(String(iv.to)):'')+'.<br><br>This updates the phase target, records the decision, and creates an experiment with the prediction <i>'+esc(iv.expected)+'</i> to be checked in '+iv.recheckDays+' days. Undo is available.',okLabel:'Apply'}).then(function(ok){if(!ok)return;var exp=changePlan({kind:'decision',source:'decision',reason:dec.lede||dec.verb||'Today\u2019s decision',expected:(iv&&(iv.expected||iv.prediction))||dec.action||'the outcome the decision names',apply:function(){return applyDecisionIntervention(dec);}}).result;_memoInvalidate();renderAll();toast('Applied \u00b7 experiment recheck '+shortDate(exp.recheckDate),{undo:true});});});
 registerAction('decision.user',function(){openSheet('edit',{form:'userDecision',title:'Record my decision',desc:'',buf:{verb:'',note:'',recheckDays:14}});});
@@ -224,11 +224,29 @@ SHEETS.expPicker=function(){
   var rows=EXPERIMENT_TEMPLATES.map(function(t0){var t=experimentTemplate(t0.id)||t0,d=t.design;
     var dur=d&&d.status==='ok'?(d.weeksNeeded+' weeks for you'+(d.feasible?'':' \u2014 your own noise may hide the effect')):'how long depends on data you have not logged yet';
     return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(t.label)+'</div><div class="li-meta">'+uiPill(t.kind||t.metric)+'</div></div>'+
-      '<div class="li-body"><div>'+esc(t.question)+'</div><div class="hint">You would '+esc(t.todo||('change '+t.variable))+'. Measured on '+esc(t.metric)+' \u00b7 '+esc(dur)+'.</div>'+
+      '<div class="li-body"><div>'+esc(t.question)+'</div><div class="hint">You would '+esc(t.todo||('change '+t.variable))+'. Measured on '+esc(t.variable==='cardio'?'dose, capacity, expenditure, recovery cost and strength, each on its own':t.metric)+' \u00b7 '+esc(dur)+'.</div>'+
       '<div class="btn-row">'+uiBtn('See this experiment','exp.fromTemplate',t.id,'btn-sm btn-primary')+'</div></div></div>';}).join('');
   return {body:'<div class="hint">Each of these is one change, sized to your own day-to-day noise so it runs long enough to answer its question.</div>'+rows+
     '<div class="btn-row" style="margin-top:10px">'+uiBtn('Design my own','exp.custom',null,'btn-sm btn-ghost')+'</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('exp.save',function(){saveExperiment();});
+registerAction('exp.open',function(id){var e=(DB.experiments||[]).filter(function(x){return x.id===id;})[0];if(!e){toast('That experiment is not in the record');return;}
+  openSheet('edit',{form:'experimentDetail',title:e.intervention||('Experiment: '+e.variable),desc:'',buf:{id:id}});});
+SHEETS.experimentDetail=function(b){var e=(DB.experiments||[]).filter(function(x){return x.id===b.id;})[0];if(!e)return {body:'',foot:''};var P=experimentProtocol(e);
+  var row=function(l,v,s){return uiRow(esc(l),esc(v),{sub:esc(s||'')});};
+  return {body:row('Hypothesis',P.hypothesis||'\u2014')+row('Change',P.intervention.variable+': '+(P.intervention.from!=null?P.intervention.from:'current')+' \u2192 '+(P.intervention.to!=null?P.intervention.to:'changed'))+
+    row('Compared with',P.comparator.kind,shortDate(P.comparator.from)+' to '+shortDate(P.comparator.to))+row('Outcome',P.outcome.metric,P.outcome.predicted?('predicted '+P.outcome.predicted.lo+' to '+P.outcome.predicted.hi):'')+
+    row('Window',P.exposureWindow.days+' days',shortDate(P.exposureWindow.from)+' to '+shortDate(P.exposureWindow.to))+
+    row('Measured by',P.measurementPlan.outcome,P.measurementPlan.exposure+'; '+P.measurementPlan.checks)+
+    row('Stops',shortDate(P.stoppingRule.scheduled),'or earlier if '+P.stoppingRule.early.join(', or '))+
+    row('Confounders',P.confounders.found.length?P.confounders.found.join('; '):'none found',P.confounders.found.length?'':'watched: '+P.confounders.watched.join('; '))+
+    row('Result',P.result?String(P.result.conclusion):'not yet: '+e.status)+
+    (P.concepts?'<div class="d-block" data-cardio-concepts><div class="d-block-title">FIVE SEPARATE QUESTIONS</div>'+P.concepts.outcomes.map(function(o){
+      var v=P.concepts.evaluation&&P.concepts.evaluation.concepts?P.concepts.evaluation.concepts[o.concept]:null;
+      var val=!v?'from the start date':(v.status==='insufficient'?'not measurable yet':(o.concept==='interference'?fmtSigned(v.change,1)+'%':
+        (v.before!=null?v.before:'\u2014')+' \u2192 '+(v.after!=null?v.after:'\u2014')+(o.concept==='capacity'?(v.moved?' (moved)':' (within its earlier interval)'):'')));
+      return row(o.label+' ('+o.unit+')',val,v&&v.status==='insufficient'?'needs '+(v.need||[]).join(', '):'not read as '+o.notReadAs);}).join('')+'</div>':'')+
+    '<div class="d-block" data-protocol-inference><div class="d-block-title">WHAT IT CAN SHOW</div><div class="lead" style="font-size:13px">'+esc(P.design+' design, '+P.inference.identifiability+' identifiability: at most '+P.inference.allowedClaim.toLowerCase().replace(/_/g,' ')+'. '+P.inference.why+(P.inference.confounded?' A confounder was found, so it shows an association only.':''))+'</div></div>',
+    foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('exp.evaluate',function(id){var e=DB.experiments.filter(function(x){return x.id===id;})[0];if(!e)return;var early=e.recheckDate>todayISO();return confirmDialog({title:early?'Evaluate early?':'Evaluate experiment',msg:(early?'The recheck date is '+shortDate(e.recheckDate)+'. Evaluating now uses fewer days and lowers confidence.<br><br>':'')+'The outcome is scored against the stamped prediction. An unsupported result is written to negative knowledge. The experiment is archived. Undo is available.',okLabel:'Evaluate'}).then(function(ok){if(!ok)return;var r=evaluateExperiment(id,{asOf:todayISO()});_memoInvalidate();renderAll();toast('Result: '+r.conclusion,{undo:true});});});
 registerAction('exp.abandon',function(id){return confirmDialog({title:'Abandon experiment?',msg:'It is marked abandoned, not deleted; the intervention stays in the log. Undo is available.',okLabel:'Abandon',danger:true}).then(function(ok){if(!ok)return;var e=DB.experiments.filter(function(x){return x.id===id;})[0];pushUndo('abandon experiment');e.status='abandoned';e.abandonedAt=nowISO();e.completedAt=nowISO();var iv=DB.interventions.filter(function(i){return i.id===e.interventionId;})[0];if(iv)iv.status='abandoned';save('experiment:abandon');_memoInvalidate();renderAll();toast('Abandoned',{undo:true});});});
 registerAction('neg.new',function(){openSheet('edit',{form:'negative',title:'Record negative knowledge',desc:'What did not work is as useful as what did \u2014 if it is written down with its conditions.',buf:{variable:'calories',confidence:'low'}});});
@@ -243,8 +261,8 @@ registerAction('food.search',function(arg,ev,el){_FOOD_Q=el.value;if(_FOOD_Q.len
 registerAction('food.add',function(arg){openFoodAdd(arg||_FOOD_DAY||todayISO());});
 registerAction('food.pick',function(arg){var parts=arg.split('|');var f=foodByRef(parts[0]+'|'+parts[1]);if(!f){toast('Food not available offline',{tone:'negative'});return;}openFoodAdd(parts[2]||_FOOD_DAY||todayISO(),f);});
 registerAction('foodsheet.search',function(arg,ev,el){_FOODSHEET.q=el.value;if(_FOODSHEET.q.length<2){_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';var r=document.getElementById('fs_results');if(r)r.innerHTML=renderFoodSheetResults();return;}runFoodSearch(_FOODSHEET.q,_FOODSHEET);});
-registerAction('foodsheet.pick',function(arg){var f=foodByRef(arg);if(!f)return;_FOODSHEET.picked=f;prepPortion(f);});
-registerAction('foodsheet.back',function(){_FOODSHEET.picked=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q)q.focus();},30);});
+registerAction('foodsheet.pick',function(arg){var f=foodByRef(arg);if(!f)return;_FOODSHEET.picked=f;_FOODSHEET.arbitration=null;prepPortion(f);});
+registerAction('foodsheet.back',function(){_FOODSHEET.picked=null;_FOODSHEET.arbitration=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q)q.focus();},30);});
 registerAction('foodsheet.save',function(){saveFoodSheet();});
 registerAction('food.fav',function(arg){var f=_FOODSHEET.picked||foodByRef(arg);if(!f)return;var added=toggleFavorite(f);renderSheet();toast(added?'Added to favorites':'Removed from favorites');});
 registerAction('food.edit',function(id){var l=DB.foodLogs.filter(function(x){return x.id===id;})[0];if(!l)return;var basis=l.basis||'g',pt=l.portion||{amount:l.quantity!=null?l.quantity:l.grams,unit:basis==='ml'?'ml':(basis==='serving'?'serving':'g')};
@@ -252,7 +270,7 @@ registerAction('food.edit',function(id){var l=DB.foodLogs.filter(function(x){ret
 registerAction('food.editSave',function(){var b=_SHEET.buf,f=_foodForEdit(b.log),res=portionResolve(f,b.amount,b.unit);if(!res||!res.qty){toast('That amount does not resolve for this food',{tone:'negative'});return;}
   var lab=(b.unit.indexOf('portion:')===0||b.unit==='serving')?((num(b.amount)===1?'':fmtNum(num(b.amount),num(b.amount)%1?2:0)+' \u00d7 ')+(b.unit.indexOf('portion:')===0?b.unit.slice(8):'serving')+' ('+_qtyLabel(res.qty,res.basis)+')'):res.label;
   updateFoodLog(b.log.id,res.qty,b.meal,{amount:num(b.amount),unit:b.unit,label:lab});_memoInvalidate();closeSheet();renderAll();toast('Updated',{undo:true});});
-registerAction('foodsheet.clear',function(){_FOODSHEET.q='';_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';_FOODSHEET.picked=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q){q.value='';q.focus();}},30);});
+registerAction('foodsheet.clear',function(){_FOODSHEET.q='';_FOODSHEET.local=[];_FOODSHEET.branded=[];_FOODSHEET.state='idle';_FOODSHEET.picked=null;_FOODSHEET.arbitration=null;renderSheet();setTimeout(function(){var q=document.getElementById('fs_q');if(q){q.value='';q.focus();}},30);});
 registerAction('foodsheet.saveAnother',function(){saveFoodSheet({another:true});});
 registerAction('food.remove',function(id){removeFoodLog(id);_memoInvalidate();closeSheet();renderAll();toast('Removed',{undo:true});});
 registerAction('food.repeatDay',function(arg){var p=arg.split('|');var n=repeatDay(p[0],p[1]);_memoInvalidate();renderAll();toast('Repeated '+n+' items',{undo:true});});
@@ -488,6 +506,7 @@ SHEETS.recoveryLatent=function(){var r=recoveryLatentState();
     '<div class="prov">'+esc(r.forecastBasis)+'. '+esc(r.caveat)+'</div>';
   var legacy=readinessState();
   if(legacy&&legacy.status==='ok')body+='<div class="prov">The older readiness summary, an average of the same ratings, reads '+esc(String(legacy.score!=null?legacy.score:legacy.label||''))+' \u2014 kept as a summary of the readings, not as the state.</div>';
+  body+=readinessValidityBlock()+readinessTransitionsBlock();
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 SHEETS.internals=function(){
   var ids=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'];
@@ -1455,7 +1474,10 @@ SHEETS.since=function(){
       return uiRow(esc(x.label),esc(x.kind),{sub:esc(String(x.detail||'').slice(0,110))});}).join('')):'')+
     '<div class="prov">'+esc(c.note)+'</div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
-SHEETS.whyShown=function(b){var w=b.w;
+SHEETS.whyShown=function(b){var w=b.w,Q=w.questions;
+  if(Q)return {body:uiRow('What',esc(w.what),{})+Q.rows.map(function(r){return '<div class="d-block" data-question="'+esc(r.id)+'"><div class="d-block-title">'+esc(r.q.toUpperCase())+'</div><ul>'+(r.a.length?r.a:['nothing recorded']).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';}).join('')+
+      '<div class="prov" data-trace>'+esc('Traced: '+Q.trace.join(' \u2192 '))+'</div><div class="btn-row">'+uiBtn(w.todo||'Open',w.act||'edit.close',w.arg||'','btn-sm btn-primary')+'</div>',
+    foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   return {body:uiRow('What',esc(w.what),{})+uiRow('Why it is here',esc(w.because),{})+
     uiRow('If you ignore it',esc(w.ifIgnored),{})+
     '<div class="btn-row">'+uiBtn(w.todo||'Open','' + (w.act||'edit.close'),w.arg||'','btn-sm btn-primary')+'</div>',
@@ -1523,7 +1545,19 @@ SHEETS.propagation=function(){
            tone:r.ratio>=1.2?'good':(r.ratio<0.8?'attention':'')});}).join('')+
       '<div class="prov">'+esc(rk.note)+'</div><div class="hint">'+esc(rk.rows[0].caveat)+'</div>';
   }
+  body+=personalRecoveryBlock(rk.personal);
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
+/* W-019: what each lift has cost this person the next day, beside the ontology's index of what it should */
+function personalRecoveryBlock(P){if(!P)return '';var C=EXERCISE_RECOVERY,sg=function(v){return fmtSigned(v,2);};
+  var part=function(t){var o=P.outcomes&&P.outcomes[t],lab=((OBS_TYPES[t]||{}).label||t).toLowerCase();
+    if(!o||o.status!=='ok')return uiRow(esc((OBS_TYPES[t]||{}).label||t),'not yet',{sub:esc(o&&o.need?o.need.join(', '):(P.need||[]).join(', '))});
+    return o.rows.slice(0,5).map(function(r){return '<div data-recovery-cost="'+attrEsc(t+'|'+r.exercise)+'">'+uiRow(esc(r.exercise),esc(sg(r.perDay)+' '+lab+' a training day'),
+      {sub:esc(sg(r.perSet)+' a set ('+sg(r.lo)+' to '+sg(r.hi)+') \u00b7 '+fmtNum(r.setsPerDay,1)+' sets on '+r.days+' days \u00b7 '+Math.round(r.personalWeight*100)+'% your own record'+
+        (r.library?' \u00b7 the library rates it '+r.library+' fatigue':'')+(r.together.length?' \u00b7 trained with '+r.together.join(', ')+', so not told apart':''))})+'</div>';}).join('')+
+      '<div class="hint">Next-day '+esc(lab)+' on a day without these lifts: '+fmtNum(o.intercept,1)+', from '+o.n+' days.</div>';};
+  return '<div class="d-block" data-personal-recovery-cost><div class="d-block-title">WHAT EACH LIFT HAS COST YOU THE NEXT DAY</div>'+
+    (P.status!=='ok'?uiRow('Not yet','',{sub:esc((P.need||[]).join(', '))}):part('soreness')+part('fatigue'))+
+    '<div class="prov">The next day\u2019s rating against each lift\u2019s sets the day before, over '+C.lookbackDays+' days, each cost starting from none (sd '+C.priorSd+' a set). '+esc(P.limits||'')+'</div></div>';}
 function openResistance(){openSheet('edit',{form:'resistance',title:'Resistance',
   desc:'Volume, fatigue and progression from the sets you logged. Almost everything here is derived from three numbers you typed, so each carries the class that reflects that.',buf:{}});}
 SHEETS.resistance=function(){
@@ -2005,6 +2039,28 @@ SHEETS.optimise=function(){
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openRecoveryState(){openSheet('edit',{form:'recoveryState',title:'Recovery',
   desc:'Everything that bears on it, together \u2014 with the signals that are actually dragging named separately, because they do not share a remedy.',buf:{}});}
+/* W-019: whether each recovery score on screen has predicted the person's sessions better than a simple reading; shown
+   on both recovery sheets, beside the scores it judges */
+function readinessValidityBlock(){var V=null;try{V=readinessValidity();}catch(e){_q(e,'P2');}if(!V)return '';
+  return '<div class="d-block" data-readiness-validity><div class="d-block-title">DOES IT PREDICT YOUR SESSIONS?</div>'+
+    (V.status!=='ok'?uiRow('Not yet',esc(V.n+' of '+READINESS_VALIDITY.minSessions+' sessions'),{sub:esc((V.need||[]).join(', '))}):
+      V.predictors.map(function(p){return uiRow(esc(p.label),'misses by '+fmtNum(p.rmse,1)+'%',{sub:p.id==='none'?'the baseline every score must beat':
+        ('correlation '+fmtSigned(p.r,2)+' ('+fmtSigned(p.rLo,2)+' to '+fmtSigned(p.rHi,2)+') · '+fmtSigned(p.skill*100,0)+'% against no information')});}).join('')+
+      '<div class="lead" style="font-size:13px" data-validity-verdict>'+esc(['unified','latent','readiness'].map(function(k){return V.verdicts[k].text;}).join(' '))+'</div>')+
+    '<div class="prov">Scored against '+esc(READINESS_VALIDITY.outcome)+', as the record stood '+esc(READINESS_VALIDITY.asOf)+'; '+esc(READINESS_VALIDITY.scoring)+'.'+(V.limits?' '+esc(V.limits):'')+'</div></div>';}
+/* W-019: how a day below normal has gone on, from the person's own rated days; beside the validity block on both
+   recovery sheets */
+function readinessTransitionsBlock(){var M=null;try{M=readinessTransitions();}catch(e){_q(e,'P2');}if(!M)return '';var T=READINESS_TRANSITIONS,pct=function(x){return Math.round(x*100)+'%';};
+  var list=function(a){return a.length<2?String(a[0]):a.slice(0,-1).join(', ')+' and '+a[a.length-1];};
+  return '<div class="d-block" data-readiness-transitions><div class="d-block-title">HOW YOUR READINESS MOVES</div>'+
+    (M.status!=='ok'?uiRow('Not yet',esc(M.transitions+' of '+T.minTransitions+' pairs of days'),{sub:esc((M.need||[]).join(', '))}):
+      uiRow('Days below your normal',esc(pct(M.belowShare)+' of '+M.days+' rated days'),{sub:esc(M.transitions+' pairs of rated days next to each other')})+
+      (M.from.below?uiRow('After a day below',esc('below again '+M.counts.below.below+' of '+M.from.below+' times'),{sub:esc('estimate '+pct(M.stayBelow)+' ('+pct(M.personalWeight.below)+' your own record, the rest no carry-over at '+pct(M.belowShare)+'); '+
+          (M.carriesOver?'a day below tends to carry over':'no more than any day'))})+
+        uiRow('Back from a day below',esc(pct(M.backWithin2)+' within 2 days'),{sub:esc('back to normal or better by the second day, if tomorrow follows from today alone'+(M.current&&M.current.state==='below'?'; today is below your normal':''))}):'')+
+      (M.spells.length?uiRow('A spell below normal',esc('median '+fmtNum(M.medianSpell,M.medianSpell%1?1:0)+' day'+(M.medianSpell===1?'':'s')),{sub:esc(M.spells.length+' that ended ('+list(M.spells)+' days)'+(M.spellOngoing?'; one is still going':''))}):'')+
+      '<div class="lead" style="font-size:13px" data-transition-verdict>'+esc(M.verdict.text+(M.score.n?(' Brier '+fmtNum(M.score.brier,3)+' against '+fmtNum(M.score.brierBase,3)+' for your base rate, '+M.score.n+' days scored.'):''))+'</div>')+
+    '<div class="prov">A state for '+esc(T.asOf)+'; scored '+esc(T.scoring)+'.'+(M.limits?' '+esc(M.limits):'')+'</div></div>';}
 SHEETS.recoveryState=function(){
   var r=unifiedRecovery();
   if(r.status!=='ok')return {body:uiLocked('Recovery state',r.need||[],{why:r.note}),
@@ -2027,7 +2083,7 @@ SHEETS.recoveryState=function(){
         {sub:esc(k.transfer.verdict).slice(0,120),
          tone:/not transfer/.test(k.transfer.grade)?'attention':''});}).join('')+
       '<div class="prov">'+esc(tk.note)+'</div>';});
-  body+='<div class="prov">'+esc(r.note)+'</div><div class="hint">'+esc(r.caveat)+'</div>';
+  body+=readinessValidityBlock()+readinessTransitionsBlock()+'<div class="prov">'+esc(r.note)+'</div><div class="hint">'+esc(r.caveat)+'</div>';
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 var _SUB=null;
 function openSubstitute(){_SUB=null;openSheet('edit',{form:'substitute',title:'Swap a food',
@@ -2109,9 +2165,21 @@ SHEETS.skillLimiter=function(b){
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openMobility(){openSheet('edit',{form:'mobility',title:'Mobility',
   desc:'Range you have and range you can use are different questions with different remedies, so they are reported separately.',buf:{}});}
+/* W-016: the recommendation, in the seven parts the catalogue asks it to explain */
+var MOBILITY_REC_PARTS=[['limitation','Limitation'],['measurement','Measurement'],['intervention','Intervention'],['expectedChange','Expected change'],
+  ['retest','Retest'],['observedResponse','So far'],['uncertainty','Uncertainty']];
+function mobilityRecommendationBlock(){var R=null;try{R=mobilityRecommendation();}catch(e){_q(e,'P2');}if(!R)return '';
+  var H=typeof heuristicContractById==='function'?heuristicContractById(MOBILITY_REFERENCE_CONTRACT.id):null;
+  var pol=H?'<div class="prov">'+esc(H.statement(heuristicValues(H)))+' \u2014 '+esc(H.validationStatus)+'.</div>':'';
+  if(R.status==='insufficient')return '<div class="d-block" data-mobility-rec><div class="d-block-title">WHAT TO WORK ON</div>'+uiRow('Not yet',esc((R.need||[]).join(', ')),{sub:esc(R.note)})+'</div>';
+  if(R.status==='none')return '<div class="d-block" data-mobility-rec><div class="d-block-title">WHAT TO WORK ON</div>'+uiRow('Nothing the tests show',esc(R.text),{sub:esc(R.note)})+
+    R.checked.map(function(c){return '<div data-part="measurement">'+uiRow('Measurement','',{sub:esc(c.text)})+'</div>';}).join('')+pol+'</div>';
+  return '<div class="d-block" data-mobility-rec><div class="d-block-title">WHAT TO WORK ON</div>'+
+    MOBILITY_REC_PARTS.map(function(p){return '<div data-part="'+p[0]+'">'+uiRow(esc(p[1]),'',{sub:esc(R[p[0]].text)})+'</div>';}).join('')+
+    (R.others.length?'<div class="hint">Also, once this one is retested: '+esc(R.others.join('; '))+'.</div>':'')+pol+'<div class="prov">'+esc(R.note)+'</div></div>';}
 SHEETS.mobility=function(){
   var ov=mobilityOverview();
-  var body=uiRow('Measured',ov.measured+' of '+ov.total+' joints',{sub:esc(ov.note),rsub:clsMark(ov.cls)});
+  var body=mobilityRecommendationBlock()+uiRow('Measured',ov.measured+' of '+ov.total+' joints',{sub:esc(ov.note),rsub:clsMark(ov.cls)});
   ov.rows.filter(function(r){return r.measured;}).forEach(function(r){
     body+=uiRow(esc(r.label),r.activePassiveGap!=null?(fmtSigned(r.activePassiveGap,1)+' gap'):esc(String(r.latest||'')),
       {sub:esc(r.interpretation)});});
@@ -2264,6 +2332,9 @@ SHEETS.expTemplate=function(b){
       {sub:'derived from your own noise of '+fmtWeight(d.personalNoise)+' per day',tone:d.feasible?'good':'negative'})+
     uiRow('Verdict',esc(d.verdict),{});
   else body+=uiLocked('Duration',(d&&d.need)||['an effect estimate'],{why:d&&d.why});
+  /* W-017: a cardio change answers five questions, each on its own measure; weight is not their stand-in */
+  if(t.variable==='cardio'&&typeof CARDIO_CONCEPTS!=='undefined')body+='<div class="d-block" data-cardio-concepts><div class="d-block-title">FIVE SEPARATE QUESTIONS</div>'+
+    Object.keys(CARDIO_CONCEPTS).map(function(k){var c=CARDIO_CONCEPTS[k];return uiRow(esc(c.label),esc(c.unit),{sub:'not read as '+esc(c.notReadAs)});}).join('')+'</div>';
   body+='<div class="d-block"><div class="d-block-title">CONFOUNDERS TO AVOID</div><ul>'+
     t.confounders.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
     '<div class="prov">'+esc(t.note)+'</div>';
@@ -2294,7 +2365,15 @@ SHEETS.progression=function(){
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
   return {body:(p.brake?'<div class="hint warn">Everything is held: '+esc(p.brake)+'</div>':'')+
     p.rows.map(function(r){return uiRow(esc(r.exercise),esc(r.action),
-      {sub:esc(r.why),rsub:esc(String(r.direction)),tone:r.action==='hold'?'':(r.action==='reduce volume'?'attention':'good')});}).join('')+
+      {sub:esc(r.why),rsub:esc(String(r.direction)),tone:r.action==='hold'?'':(r.action==='reduce volume'?'attention':'good')})+
+      /* W-015: why a flat or falling lift may have stalled, each cause with its evidence, what to do and what would settle it */
+      (r.stall?'<div class="hint" data-stall-causes="'+attrEsc(r.exercise)+'">Why it may have stalled: '+esc(r.stall.text)+'.'+
+        (r.stall.causes.length?' '+esc(r.stall.causes[0].action.charAt(0).toUpperCase()+r.stall.causes[0].action.slice(1))+'; then check '+esc(r.stall.causes[0].check)+'.':'')+'</div>'+
+        /* W-015: skill or strength, from the lifts that train the same muscles */
+        (r.stall.limitation?'<div class="hint" data-skill-limit="'+attrEsc(r.exercise)+'">Skill or strength: '+esc(r.stall.limitation.text)+'. '+esc(r.stall.limitation.action.charAt(0).toUpperCase()+r.stall.limitation.action.slice(1))+'; then check '+esc(r.stall.limitation.check)+'.</div>':''):'')+
+      /* W-015: the lift's next session, with its range checked against its own past sessions */
+      (r.forecast?'<div class="hint" data-lift-forecast="'+attrEsc(r.exercise)+'">Next session (about '+esc(shortDate(r.forecast.next.date))+'): estimated 1RM about '+esc(fmtWeight(r.forecast.next.mean))+
+        ' ('+esc(fmtWeight(r.forecast.next.lo,{bare:true}))+'\u2013'+esc(fmtWeight(r.forecast.next.hi))+'), an 80% range; '+esc(r.forecast.text)+'.</div>':'');}).join('')+
     '<div class="prov">'+esc(p.note)+'</div><div class="hint">'+esc(p.caveat)+'</div>'+
     '<div class="btn-row">'+uiBtn('Edit the plan','nav.planEdit',null,'btn-sm btn-secondary')+'</div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
@@ -2503,9 +2582,10 @@ SHEETS.sync=function(){var st=syncState();var es=eventStats();var cf=syncConflic
 function openKnowledge(){openSheet('edit',{form:'knowledge',title:'What this record knows about you',desc:'Confidence decays with age, because a finding from a different body weight and a different phase is a different finding.',buf:{}});}
 SHEETS.knowledge=function(){var k=personalKnowledge();var g=knowledgeGaps();
   return {body:uiRow('Established',k.count+' items',{sub:k.current+' current \u00b7 '+k.stale+' stale \u00b7 half-life '+k.halfLifeDays+' days'})+
+    '<div class="hint" data-knowledge-states>'+esc(Object.keys(KNOWLEDGE_STATES).filter(function(s){return k.byState[s];}).map(function(s){return k.byState[s]+' '+s;}).join(' \u00b7 '))+'</div>'+
     ((k.conflicts||[]).length?'<div class="card-title" style="margin-top:8px">Findings that disagree</div>'+k.conflicts.map(function(c){
       return uiRow(esc(String(c.subject)),esc(c.text),{sub:esc('older counts '+Math.round(c.older.weight*100)+'%, newer '+Math.round(c.newer.weight*100)+'% \u00b7 '+c.settle),tone:'attention'});}).join(''):'')+
-    k.items.map(function(i){return uiRow(esc(String(i.subject)),esc(i.statement),{sub:esc(i.kind)+' \u00b7 '+esc(i.evidence)+' \u00b7 context '+esc(i.context)+(i.transfers?(' \u00b7 '+esc(i.transfers)):''),rsub:i.freshness+' / '+i.decayedConfidence,tone:i.freshness==='stale'?'attention':''})+
+    k.items.map(function(i){return uiRow(esc(String(i.subject)),esc(i.statement),{sub:'<b data-state="'+esc(i.state)+'">'+esc(i.state)+'</b> \u00b7 '+esc(i.kind)+' \u00b7 '+esc(i.evidence)+' \u00b7 context '+esc(i.context)+(i.transfers?(' \u00b7 '+esc(i.transfers)):''),rsub:i.freshness+' / '+i.decayedConfidence,tone:i.state==='contradicted'||i.state==='needs testing'?'attention':''})+
       '<div class="hint" style="margin:-4px 0 4px 0">Would change if: '+esc(i.wouldChange)+'.</div>'+
       (i.testable?'<div class="btn-row" style="margin:-2px 0 8px 0">'+uiBtn('Test it','exp.design',i.subject,'btn-sm btn-secondary')+'</div>':'')+
       (i.revalidate?'<div class="prov" style="margin:-4px 0 8px 0">'+esc(i.revalidate)+'</div>':'');}).join('')+
@@ -2561,16 +2641,17 @@ function openPhotos(){setTimeout(hydratePhotoThumbs,0);if(typeof _attState==='fu
    The gallery and comparisons existed, and addPhoto() existed, but nothing ever called it: there was no way to add a
    photo at all. Taking one (the camera, on a phone) and choosing one from the library both land here, with the
    view and lighting recorded so photos can be compared fairly. */
-var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',note:''};
+var _PHOTO_FORM={view:'front',lighting:'diffuseIndoor',fed:null,note:''};
 SHEETS.photos=function(){
   var _todaySwitch=livePhotos().length?'<div class="btn-row">'+uiBtn(DB.settings.showPhotoOnToday!==false?'Stop showing the latest on Today':'Show the latest on Today','photo.todayToggle',null,'btn-sm btn-ghost')+'</div>':'';var m=photoMeta();
-  var pairs=photoPosePairs();
+  var pairs=photoPairs().pairs;
   var chips=function(reg,cur,act){return '<div class="btn-row" style="margin-top:4px">'+Object.keys(reg).map(function(k){
     return uiBtn(reg[k].label,act,k,'btn-sm '+(cur===k?'btn-primary':'btn-secondary'));}).join('')+'</div>';};
   var v=PHOTO_VIEWS[_PHOTO_FORM.view]||PHOTO_VIEWS.front,l=LIGHTING_KINDS[_PHOTO_FORM.lighting]||LIGHTING_KINDS.mixed;
   var add='<div class="card-title">Add a photo</div>'+
     uiRow('View','',{sub:chips(PHOTO_VIEWS,_PHOTO_FORM.view,'photo.view')+'<div class="hint">'+esc(v.cue)+'</div>'})+
     uiRow('Lighting','',{sub:chips(LIGHTING_KINDS,_PHOTO_FORM.lighting,'photo.light')+'<div class="hint">consistency: '+esc(l.consistency)+'</div>'})+
+    uiRow('Before or after food','',{sub:chips(PHOTO_FED,_PHOTO_FORM.fed,'photo.fed')+'<div class="hint">optional: food and water change the look of the midsection</div>'})+
     '<label class="fld"><span>Note (optional)</span><input id="photoNote" type="text" maxlength="200" value="'+esc(_PHOTO_FORM.note)+'" aria-label="photo note"></label>'+
     '<div class="btn-row">'+uiBtn('Take photo','photo.pick','camera','btn-sm btn-primary')+uiBtn('Choose from library','photo.pick','library','btn-sm btn-secondary')+'</div>'+
     '<input id="photoCam" class="visually-hidden" aria-label="Take a photo" type="file" accept="image/*" capture="environment" data-act="photo.file" data-arg="camera" data-ev="change" tabindex="-1" aria-hidden="true">'+
@@ -2584,9 +2665,11 @@ SHEETS.photos=function(){
       '<span class="hint" data-durability="'+esc(p.id)+'">'+esc(!p.attachmentId?'this device only, not encrypted':(function(){var s=attachmentRemoteState(p.attachmentId).state;return s==='uploaded'?'encrypted \u00b7 in your vault':(s==='failed'?'encrypted \u00b7 upload failed, retrying':'encrypted \u00b7 this device');})())+'</span>'+
       uiBtn('Delete','photo.delete',p.id,'btn-sm btn-ghost')+'</figcaption></figure>';}).join('')+'</div>'):
     uiEmpty('No photos yet','Add one above. A photo every two to four weeks, same view and light, shows change that the scale cannot.','');
-  var comps=pairs.length?('<div class="card-title" style="margin-top:10px">Comparisons</div>'+pairs.map(function(p){return uiRow(esc(p.label),p.days+' days apart',
-    {sub:(p.weightChange!=null?(fmtSigned(p.weightChange,1)+' lb between them'):'')});}).join('')+
-    '<div class="prov">Same view, furthest apart in time \u2014 an honest comparison rather than a flattering one.</div>'):'';
+  /* W-020: one pairing for the vault and the Body tab: the latest photo against the earliest in matching conditions */
+  var comps=pairs.length?('<div class="card-title" style="margin-top:10px">Comparisons</div>'+pairs.map(function(p){var c=p.comparability;return '<div data-photo-pair="'+esc(p.view)+'">'+uiRow(esc(p.label),p.days+' days apart',
+    {sub:esc(c.grade)+' \u00b7 '+esc(c.verdict)+(c.issues.length?' ('+esc(c.issues.map(function(i){return i.field+': '+i.why;}).join('; '))+')':'')+(p.setAside?' \u00b7 '+p.setAside+' earlier photo'+(p.setAside===1?'':'s')+' set aside for '+(p.setAside===1?'its':'their')+' conditions':'')+
+      (p.weightChange!=null?' \u00b7 '+fmtSigned(p.weightChange,1)+' lb between them':''),tone:c.grade==='comparable'?'good':(c.grade==='roughly comparable'?'':'attention')})+'</div>';}).join('')+
+    '<div class="prov">Within each view, the latest photo against the earliest taken in matching conditions. '+esc(pairs[0].comparability.advice)+'</div>'):'';
   return {body:_todaySwitch+add+gallery+comps,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 /* Thumbnails come from IndexedDB, asynchronously, after the sheet has rendered. */
 function hydratePhotoThumbs(){
@@ -2598,14 +2681,15 @@ function hydratePhotoThumbs(){
 function _photoRerender(){renderSheet();setTimeout(hydratePhotoThumbs,0);}
 registerAction('photo.view',function(k){if(PHOTO_VIEWS[k]){_PHOTO_FORM.view=k;_photoRerender();}});
 registerAction('photo.light',function(k){if(LIGHTING_KINDS[k]){_PHOTO_FORM.lighting=k;_photoRerender();}});
+registerAction('photo.fed',function(k){_PHOTO_FORM.fed=PHOTO_FED[k]&&_PHOTO_FORM.fed!==k?k:null;_photoRerender();});
 registerAction('photo.pick',function(which){var n=document.getElementById('photoNote');if(n)_PHOTO_FORM.note=n.value;
   var el=document.getElementById(which==='camera'?'photoCam':'photoLib');if(el){el.value='';el.click();}});
 registerAction('photo.file',function(which,ev,el){
   var f=el&&el.files&&el.files[0];if(!f)return;
   var n=document.getElementById('photoNote');if(n)_PHOTO_FORM.note=n.value;
   toast('Saving photo\u2026');
-  addPhoto(f,{view:_PHOTO_FORM.view,lighting:_PHOTO_FORM.lighting,note:_PHOTO_FORM.note,source:which}).then(function(r){
-    _PHOTO_FORM.note='';_photoRerender();
+  addPhoto(f,{view:_PHOTO_FORM.view,lighting:_PHOTO_FORM.lighting,fed:_PHOTO_FORM.fed,note:_PHOTO_FORM.note,source:which}).then(function(r){
+    _PHOTO_FORM.note='';_PHOTO_FORM.fed=null;_photoRerender();   /* view and light carry over (keeping them is the point); food is this occasion's */
     toast('Photo saved'+(r.scaled?(' \u00b7 '+fmtNum(r.bytes/1024,0)+' KB'):''));
   }).catch(function(e){toast(String(e&&e.message||e),{tone:'negative'});});});
 registerAction('photo.delete',function(id){deletePhoto(id);_photoRerender();toast('Photo deleted');});

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-11T20:55:39.269Z",
-  "sourceBuildId": "38097babc5",
-  "releaseId": "4144fa900431",
+  "generatedAt": "2026-10-12T18:44:58.504Z",
+  "sourceBuildId": "7df2f090bc",
+  "releaseId": "9e68bc1158a9",
   "schemaVersion": 2,
   "applicationVersion": "1.0.0",
   "versionVector": {
@@ -86,8 +86,8 @@
   "registries": {
     "quantities": 41,
     "quantitySingleSource": true,
-    "models": 50,
-    "actions": 501,
+    "models": 56,
+    "actions": 503,
     "capabilities": 22
   },
   "note": "Generated from the running build. Do not edit by hand — regenerate with node scripts/baseline.mjs."

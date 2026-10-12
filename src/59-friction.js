@@ -59,6 +59,51 @@ function executionProbability(item,date){var M=frictionModel(),r=M.items.filter(
   if(!r||r.status!=='ok'||r.rate==null)return null;if(!r.coef)return {p:r.rate,basis:'your rate over '+r.n+' days',drivers:[]};
   var f=_frictionFeatures(date,item,null),z=r.intercept,drivers=[];Object.keys(r.coef).forEach(function(k){if(f[k]){z+=r.coef[k];drivers.push(FRICTION_FACTORS[k].label);}});
   return {p:round(1/(1+Math.exp(-z)),2),basis:'your record over '+r.n+' days',drivers:drivers};}
+/* EXECUTION PROBABILITY, SCORED (catalogue doc 1, W-021). Two checks of executionProbability(), both on the person's own
+   record and neither against itself:
+   - executionCalibration(): the model fitted on the older half of the recorded days predicts each day of the newer half;
+     each item's Brier score is compared with the base rate's (skill above 0 means the factors add something), and the
+     predictions are grouped into bins whose mean prediction is set beside the rate actually done;
+   - stampExecutionPredictions() and scoreExecutionPredictions(): each day's planned items get their probability stamped
+     before the day, and are scored once the day's record says done or missed; the track record accumulates from now on. */
+function _brier(rows){return rows.length?rows.reduce(function(a,r){return a+(r.p-r.y)*(r.p-r.y);},0)/rows.length:null;}
+function _reliabilityBins(rows){return [[0,0.5],[0.5,0.8],[0.8,1.0001]].map(function(b){var R=rows.filter(function(r){return r.p>=b[0]&&r.p<b[1];});
+  return {from:b[0],to:Math.min(1,b[1]),n:R.length,predicted:R.length?round(mean(R.map(function(r){return r.p;})),2):null,observed:R.length?round(mean(R.map(function(r){return r.y;})),2):null};});}
+function executionCalibration(days){days=days||56;return memo('execcal:'+days+':'+todayISO(),function(){
+  var data={};FRICTION_ITEMS.forEach(function(i){data[i]=[];});
+  for(var k=1;k<=days;k++){var d=addDays(todayISO(),-k),e=null;try{e=executionFor(d);}catch(err){}if(!e||!e.rows)continue;
+    e.rows.forEach(function(r){if(!data[r.item])return;if(r.status==='unknown'||r.status==='planned'||r.status==='pending'||r.status==='rest')return;data[r.item].push({date:d,y:r.status==='done'?1:0,f:_frictionFeatures(d,r.item,e.rows)});});}
+  var keys=Object.keys(FRICTION_FACTORS);
+  var items=FRICTION_ITEMS.map(function(it){var D=data[it].slice().sort(function(a,b){return a.date<b.date?-1:1;}),half=Math.floor(D.length/2),train=D.slice(0,half),test=D.slice(half);
+    if(train.length<14||test.length<7)return {item:it,status:'insufficient',n:D.length,note:'needs 14 older and 7 newer recorded days'};
+    var base=mean(train.map(function(x){return x.y;})),used=keys.filter(function(f){var ex=train.filter(function(x){return x.f[f];}).length;return ex>=3&&ex<=train.length-3;});
+    var predict=function(x){return base;};
+    if(used.length&&train.filter(function(x){return !x.y;}).length>=2){var fit=_logitRidge(train.map(function(x){return [1].concat(used.map(function(f){return x.f[f];}));}),train.map(function(x){return x.y;}),1);
+      predict=function(x){var z=fit.b[0];used.forEach(function(f,i){if(x.f[f])z+=fit.b[i+1];});return 1/(1+Math.exp(-z));};}
+    var rows=test.map(function(x){return {p:predict(x),y:x.y};}),bm=_brier(rows),bb=_brier(test.map(function(x){return {p:base,y:x.y};}));
+    return {item:it,status:'ok',trainDays:train.length,testDays:test.length,brier:round(bm,3),brierBaseRate:round(bb,3),skill:bb>0?round(1-bm/bb,2):null,factors:used.length,bins:_reliabilityBins(rows)};});
+  return {status:'ok',cls:'CALIBRATED',items:items,method:'fitted on the older half of the recorded days, scored on the newer half; Brier score against the base rate\u2019s',
+    limits:'A retrospective check on this record: the prospective record (stamped before each day) is the one that counts as it accumulates.'};});}
+function stampExecutionPredictions(date){date=date||todayISO();
+  if((DB.predictions||[]).some(function(p){return p.model==='execution_probability'&&p.dueDate===date;}))return null;
+  var e=null;try{e=executionFor(date);}catch(err){return null;}if(!e||!e.rows)return null;
+  var items={};e.rows.forEach(function(r){if(r.status==='rest'||!FRICTION_ITEMS.some(function(i){return i===r.item;}))return;var p=executionProbability(r.item,date);if(p&&p.p!=null)items[r.item]=p.p;});
+  if(!Object.keys(items).length)return null;
+  var rec={id:uid('pred'),madeAt:nowISO(),date:date,subject:'plan items done',model:'execution_probability',modelVersion:'1.0',dueDate:date,items:items,status:'pending',unit:'probability'};
+  DB.predictions.push(rec);emitEvent('prediction.stamped',rec,{at:rec.madeAt});return rec;}
+function scoreExecutionPredictions(){var today=todayISO(),n=0;
+  (DB.predictions||[]).forEach(function(p){if(p.model!=='execution_probability'||p.status!=='pending'||p.dueDate>=today)return;
+    var e=null;try{e=executionFor(p.dueDate);}catch(err){}var out={},rows=[];
+    if(e&&e.rows)e.rows.forEach(function(r){if(p.items[r.item]==null)return;if(r.status==='done'||r.status==='partial'||r.status==='skipped'){out[r.item]=r.status==='done'?1:0;rows.push({p:p.items[r.item],y:out[r.item]});}});
+    var at=nowISO(),res=rows.length?{status:'scored',outcomes:out,brier:round(_brier(rows),3),scoredAt:at}:(daysBetween(p.dueDate,today)>3?{status:'expired',scoredAt:at,note:'no outcome recorded for that day'}:null);
+    if(!res)return;Object.assign(p,res);emitEvent('prediction.scored',{id:p.id,result:res},{at:at});n++;});
+  if(n)save('predictions:score');return n;}
+function executionTrackRecord(){var S=(DB.predictions||[]).filter(function(p){return p.model==='execution_probability'&&p.status==='scored';}),rows=[];
+  S.forEach(function(p){Object.keys(p.outcomes||{}).forEach(function(k){rows.push({p:p.items[k],y:p.outcomes[k]});});});
+  if(!rows.length)return {status:'none',n:0,note:'nothing scored yet: each day\u2019s planned items are stamped before the day and scored after it'};
+  var base=mean(rows.map(function(r){return r.y;}));
+  return {status:'ok',n:rows.length,days:S.length,brier:round(_brier(rows),3),brierBaseRate:round(_brier(rows.map(function(r){return {p:base,y:r.y};})),3),bins:_reliabilityBins(rows),
+    note:'Brier score: 0 is perfect, 0.25 is a coin flip; the base rate\u2019s is what always predicting the overall rate would score.'};}
 /* P(execution | intervention): past adherence to changes of this kind (Response records), a prior that falls with the
    size of the change, and today's friction on the related item */
 var FRICTION_ITEM_FOR={steps:'steps',calories:'nutrition',protein:'protein',cardio:'cardio','training days':'training'};

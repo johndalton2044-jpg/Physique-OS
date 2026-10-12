@@ -220,7 +220,8 @@
     "predictions"
    ],
    "owners": [
-    "stampPredictions"
+    "stampPredictions",
+    "stampExecutionPredictions"
    ],
    "readModel": "pendingPredictions",
    "events": [
@@ -458,7 +459,7 @@
      "24-events.js:588"
     ],
     "action:data.restoreApply": [
-     "90-actions.js:670"
+     "90-actions.js:689"
     ]
    }
   },
@@ -489,7 +490,7 @@
      "30-observations.js:78"
     ],
     "syncNutritionObservations": [
-     "62-food.js:246"
+     "62-food.js:264"
     ],
     "importObservations": [
      "65-import.js:270"
@@ -565,13 +566,13 @@
    ],
    "writers": {
     "logFood": [
-     "62-food.js:181"
+     "62-food.js:199"
     ],
     "updateFoodLog": [
-     "62-food.js:226"
+     "62-food.js:244"
     ],
     "copyFoodLog": [
-     "62-food.js:259"
+     "62-food.js:277"
     ]
    }
   },
@@ -649,7 +650,7 @@
    ],
    "writers": {
     "createExperiment": [
-     "50-decision.js:377"
+     "50-decision.js:412"
     ]
    }
   },
@@ -667,7 +668,7 @@
      "30-observations.js:210"
     ],
     "createExperiment": [
-     "50-decision.js:379"
+     "50-decision.js:414"
     ]
    }
   },
@@ -680,7 +681,7 @@
    ],
    "writers": {
     "addNegative": [
-     "50-decision.js:465"
+     "50-decision.js:500"
     ]
    }
   },
@@ -693,7 +694,7 @@
    ],
    "writers": {
     "saveRecipe": [
-     "62-food.js:162"
+     "62-food.js:180"
     ]
    }
   },
@@ -706,7 +707,7 @@
    ],
    "writers": {
     "saveUserFood": [
-     "62-food.js:163"
+     "62-food.js:181"
     ]
    }
   },
@@ -715,12 +716,16 @@
     "Prediction"
    ],
    "owners": [
-    "stampPredictions"
+    "stampPredictions",
+    "stampExecutionPredictions"
    ],
    "writers": {
     "stampPredictions": [
      "50-decision.js:309",
      "50-decision.js:327"
+    ],
+    "stampExecutionPredictions": [
+     "59-friction.js:93"
     ]
    }
   },
@@ -733,8 +738,8 @@
    ],
    "writers": {
     "captureSnapshot": [
-     "50-decision.js:551",
-     "50-decision.js:552"
+     "50-decision.js:586",
+     "50-decision.js:587"
     ]
    }
   },
@@ -748,10 +753,10 @@
    ],
    "writers": {
     "evaluateExperiment": [
-     "50-decision.js:446"
+     "50-decision.js:481"
     ],
     "archivePhase": [
-     "50-decision.js:564"
+     "50-decision.js:599"
     ]
    }
   },

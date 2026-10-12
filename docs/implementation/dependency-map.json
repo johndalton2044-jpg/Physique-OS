@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-11T20:55:39.269Z",
-  "buildId": "38097babc5",
-  "nodes": 111,
-  "edges": 305,
-  "contractDerived": 99,
+  "generatedAt": "2026-10-12T18:44:58.504Z",
+  "buildId": "7df2f090bc",
+  "nodes": 119,
+  "edges": 335,
+  "contractDerived": 107,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -148,6 +148,21 @@
     {
       "sourceId": "fatigue",
       "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "sleep_need",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "personal_recovery_cost",
       "dependencyType": "data"
     },
     {
@@ -456,6 +471,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "carbs",
+      "targetId": "glycaemic_load",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "profile.age",
       "targetId": "tdee_prior",
       "dependencyType": "model"
@@ -731,8 +751,18 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "session.load",
+      "targetId": "lift_forecast",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "session.reps",
       "targetId": "e1rm",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.reps",
+      "targetId": "lift_forecast",
       "dependencyType": "model"
     },
     {
@@ -753,6 +783,11 @@
     {
       "sourceId": "e1rm",
       "targetId": "change_point",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "e1rm",
+      "targetId": "lift_forecast",
       "dependencyType": "model"
     },
     {
@@ -822,6 +857,16 @@
     },
     {
       "sourceId": "sleep",
+      "targetId": "sleep_need",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
       "targetId": "intervention_response",
       "dependencyType": "data"
     },
@@ -856,6 +901,16 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "soreness",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "soreness",
+      "targetId": "personal_recovery_cost",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "stress",
       "targetId": "recovery",
       "dependencyType": "data"
@@ -863,6 +918,11 @@
     {
       "sourceId": "stress",
       "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "stress",
+      "targetId": "readiness_transitions",
       "dependencyType": "data"
     },
     {
@@ -1086,6 +1146,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "met_energy",
+      "targetId": "energy_availability",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "cardio",
       "targetId": "personal_baseline",
       "dependencyType": "data"
@@ -1133,6 +1198,11 @@
     {
       "sourceId": "personal_baseline",
       "targetId": "learn",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_baseline",
+      "targetId": "readiness_transitions",
       "dependencyType": "model"
     },
     {
@@ -1192,6 +1262,11 @@
     },
     {
       "sourceId": "session.sets",
+      "targetId": "personal_recovery_cost",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.sets",
       "targetId": "personal_power_response",
       "dependencyType": "model"
     },
@@ -1228,6 +1303,61 @@
     {
       "sourceId": "uncertainty_chain",
       "targetId": "today",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "sleep_need",
+      "targetId": "sleepState",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "motivation",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "motivation",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "readiness_transitions",
+      "targetId": "readinessTransitionsBlock",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "readiness_transitions",
+      "targetId": "askQuestion",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.date",
+      "targetId": "personal_recovery_cost",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.date",
+      "targetId": "lift_forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_recovery_cost",
+      "targetId": "recoveryCostRanking",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "personal_recovery_cost",
+      "targetId": "openPropagation",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "lift_forecast",
+      "targetId": "progressionPlan",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "lift_forecast",
+      "targetId": "selfCalibration",
       "dependencyType": "model"
     },
     {
@@ -1284,11 +1414,6 @@
       "sourceId": "personal_response",
       "targetId": "evaluateResponse",
       "dependencyType": "model"
-    },
-    {
-      "sourceId": "motivation",
-      "targetId": "friction",
-      "dependencyType": "data"
     },
     {
       "sourceId": "friction",
@@ -1427,6 +1552,11 @@
     },
     {
       "sourceId": "bodyfat",
+      "targetId": "visual_calibration",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "bodyfat",
       "targetId": "physique_regions",
       "dependencyType": "data"
     },
@@ -1443,6 +1573,21 @@
     {
       "sourceId": "diet_digestibility",
       "targetId": "physiologySummary",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "diet_digestibility",
+      "targetId": "foodDayCard",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "fiber",
+      "targetId": "glycaemic_load",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "glycaemic_load",
+      "targetId": "foodDayCard",
       "dependencyType": "model"
     },
     {
@@ -1473,6 +1618,11 @@
     {
       "sourceId": "body_composition_state",
       "targetId": "stateVector",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "visual_calibration",
+      "targetId": "bodyCompositionByMethod",
       "dependencyType": "model"
     },
     {

@@ -209,3 +209,89 @@ Never start an item before what it depends on is in place.
   - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243;
   - capability statuses that need a live check read "not run" until a verification run has happened for this build (the
     internals sheet runs one when opened).
+
+## 9. State at abd4ef4b01 (after the catalogues' later phases)
+
+- **Gates and tests:** 37 gates, each under its runtime ceiling in `tests/gates.mjs`; all pass, none skipped, and the
+  release check passes 24/24. There are 1,921 in-app self-tests in 19 suites, 400 interface tests and 15 black-box
+  workflows (V-006 to V-008 are covered by other gates).
+- **What the round did**, one release each, every gate recorded:
+  - 0dbd06b359: structured explanations (doc 2, P1.1 to P1.3), the claim registry, evidence kept apart from policy,
+    18 heuristic contracts, the assistant's allowed claim set, goal arbitration as values;
+  - 6da68267d3: progress photos as encrypted attachments with an encrypted copy in the vault, carried by encrypted
+    backups (option B of §8);
+  - 38097babc5: undoing a sync merge holds on every device (the decision §8 left open);
+  - 0dc41f684f: confidence semantics, six knowledge states, N-of-1 protocols, execution probability scored (a backtest
+    and a prospective record), the eight-question "why", a generated `docs/CURRENT_STATE.md`;
+  - abd4ef4b01: what each view reads, declared and checked (W-044); whether readiness predicts the next session, against
+    simple readings (W-019); cardio as five separate quantities (W-017); a mobility recommendation that explains itself
+    (W-016).
+  `docs/handoff/CATALOGUE.md` has every item's status and the build that carries it.
+- **Decided by the person in this round:** photos are stored off the device, encrypted; a sync merge's undo removes
+  the merged entries on every device.
+- **Waiting on the person:**
+  - item 11 still needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key;
+  - making a red CI run block a merge needs a branch-protection rule on `main` in the repository's settings (Settings,
+    Branches, add a rule for `main` that requires the CI status check). `main` has none.
+- **Not done, and why:**
+  - W-015, W-018 and W-020 give directions, not a definition of done a test could hold;
+  - W-019 is partly done: the backtest is built, and on the demo record no recovery score beats fatigue alone. Whether
+    one does for a real person is for that person's record to show;
+  - prospective validation and calibration need months of real use; the execution record now accumulates;
+  - running one self-test suite alone needs each suite to build its own fixture;
+  - W-033 (deployment footprint) needs a real deployment; O-001 to O-010 are not built, as the catalogue directs.
+- **New limits to state:**
+  - the mobility reference (10 cm knee-to-wall, a sit-and-reach that reaches the feet) is this system's working
+    reference, not a validated threshold;
+  - the shoulder and hip assessments have no response model, so the mobility recommendation does not use them;
+  - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243.
+
+## 10. State at e82ecf3367 (after the weather report and the last refinements)
+
+- **Gates and tests:** 37 gates, all pass, none skipped; the release check passes 24/24. There are 1,950 in-app
+  self-tests, 400 interface tests and 17 black-box workflows.
+- **What the round did:**
+  - the weather now says why it could not be fetched, and a sleeping server is woken and retried once (see below);
+  - the deployment footprint is measured (`npm run footprint`, `docs/deployment-footprint.md`). A first visit no longer
+    downloads the page twice, and the food manifest has one cache rule;
+  - W-015 (why a lift stalled), W-018 (two records of one food that disagree) and W-020 (what a tape change can mean),
+    each with a definition of done chosen from its catalogue entry.
+- **If the weather still fails on the live app:** the message now names the layer.
+  - "Weather and online food lookups need the Physique OS server" means the deployment has no working `/api/sync`
+    rewrite.
+  - "did not answer, twice" means the server at `https://physique-os.onrender.com` (the rewrite's destination in
+    `vercel.json`) is stopped or not deployed.
+  - "The source refused this server's credentials" or "is limiting requests" comes from the provider.
+  - `npm run deploy:smoke -- --app https://YOUR-APP` checks each layer from outside; the weather sheet's "Check the
+    connection" does the same in the app.
+- **Waiting on the person:** item 11 (provider accounts and a model key), the branch-protection rule on `main`, and a
+  `vercel inspect` of a live deployment for the platform's own footprint record.
+
+## 11. State at 847a6961b4
+
+- 37 gates, all pass; release 24/24; 1,967 in-app self-tests, 400 interface tests, 19 black-box workflows.
+- Photos are compared only in matching conditions. Protein across meals is judged with the daily total first. A
+  substitute exercise starts from the person's own record of it (see the roadmap entry for this build).
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.
+
+## 12. State at e0ce259ce6
+
+- 37 gates, all pass; release 24/24; 1,983 in-app self-tests, 400 interface tests, 20 black-box workflows.
+- Each lift's next session is forecast with a range checked on its own record. How readiness moves from day to day is
+  counted from the person's rated days and checked one day ahead (see the roadmap entry for this build).
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.
+
+## 13. State at fd6e597ef7
+
+- 37 gates, all pass; release 24/24; 2,008 in-app self-tests, 400 interface tests, 23 black-box workflows.
+- Skill or strength, what each lift costs, the person's own sleep need and the NEAT response's calibration are built
+  (see the roadmap entry for this build). The nutrition and body items follow.
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.
+
+## 14. State at 7df2f090bc
+
+- 37 gates, all pass; release 24/24; 2,030 in-app self-tests, 400 interface tests, 26 black-box workflows.
+- Every refinement the catalogue lists for W-015, W-018, W-019 and W-020 is built except bioavailability (W-018). W-019
+  stays "partly": whether a recovery score adds value for a real person is for their own record to show.
+- The next food-corpus build should carry USDA's amino acids (the builder keeps them now).
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.

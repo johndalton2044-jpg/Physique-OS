@@ -147,7 +147,25 @@ function nutrientsFor(food,qty){
   MICRO_KEYS.forEach(function(k){var v=src[k];if(v!=null)out[k]=round(v*f,2);});
   return out;
 }
-function macroConsistency(food){food=normalizeFood(food);var p=food.per100||food.perServing||{};if(p.kcal==null||p.protein==null||p.carbs==null||p.fat==null)return null;var calc=4*p.protein+4*p.carbs+9*p.fat;var diff=calc-p.kcal;return {calc:calc,label:p.kcal,diff:diff,pct:p.kcal?Math.round(100*diff/p.kcal):null,note:Math.abs(diff)>Math.max(25,p.kcal*0.15)?'label energy and 4/4/9 macro energy differ by '+fmtSigned(diff,0)+' kcal per '+foodBasisLabel(food)+' (rounding, fiber or sugar alcohols); the label stays authoritative':null};}
+/* W-018: WHEN TWO RECORDS OF ONE FOOD DISAGREE. The same product can be the person's own entry, a USDA branded label, a
+   USDA laboratory analysis or a contributed Open Food Facts record, and they do not always agree. Which values to log was
+   whichever record happened to be picked. Now: the nutrients that differ are named with both values; each record is
+   checked against its own macros (4/4/9 kcal a gram, the check the food sheet already makes); and the first record in a
+   declared order that agrees with itself is used, the other kept visible beside it. */
+var FOOD_SOURCE_CONTRACT={id:'food_source_rank',subject:'two records of one food that disagree',predicate:'are settled by',
+  parameters:{conflict:{value:0.10,unit:'fraction of the larger value',meaning:'a nutrient differing by more than this, and by more than 1, is a disagreement'},
+    energyTolerance:{value:0.15,unit:'fraction of the declared energy',meaning:'beyond this from 4/4/9 kcal a gram of protein, carbohydrate and fat, a record does not agree with its own macros'},
+    energyFloor:{value:25,unit:'kcal per 100',meaning:'a difference smaller than this is rounding, whatever the fraction'},
+    order:{value:['own','FDC_FOUNDATION','FDC_BRANDED','OPEN_FOOD_FACTS'],unit:'sources, first preferred',meaning:'your own entry (the package in hand), USDA laboratory analysis, a USDA branded label, a contributed record'}},
+  statement:function(v){return 'when two records of one food disagree, the first of '+v.order.map(function(o){return FOOD_ORIGIN_LABEL[o]||o;}).join(', then ')+' whose energy agrees with its own macros is used';},
+  rationale:'a record that contradicts its own macros carries an error; among records that agree with themselves, the one nearest the package in hand or a laboratory measurement is preferred',
+  evidenceBasis:[],parameterSource:'chosen by this system; 4/4/9 are the general Atwater factors',parameterVersion:'1.0',calibrationStatus:'not calibrated',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'foods with energy, protein, carbohydrate and fat recorded'},
+  failureConditions:['energy declared in kilojoules and converted with rounding','fibre or sugar alcohols counted differently by the two records'],outcomes:['logged energy and macros']};
+var FOOD_ORIGIN_LABEL={own:'your own entry',FDC_FOUNDATION:'USDA laboratory analysis',FDC_BRANDED:'the USDA branded label',OPEN_FOOD_FACTS:'Open Food Facts (contributed)'};
+function macroConsistency(food){food=normalizeFood(food);var p=food.per100||food.perServing||{};if(p.kcal==null||p.protein==null||p.carbs==null||p.fat==null)return null;var calc=4*p.protein+4*p.carbs+9*p.fat;var diff=calc-p.kcal;
+  var P=FOOD_SOURCE_CONTRACT.parameters,off=Math.abs(diff)>Math.max(P.energyFloor.value,p.kcal*P.energyTolerance.value);
+  return {calc:calc,label:p.kcal,diff:diff,consistent:!off,pct:p.kcal?Math.round(100*diff/p.kcal):null,note:off?'label energy and 4/4/9 macro energy differ by '+fmtSigned(diff,0)+' kcal per '+foodBasisLabel(food)+' (rounding, fiber or sugar alcohols); the label stays authoritative':null};}
 /* ---- recipes: ingredients carry a quantity in their own basis; mass totals only when every ingredient has one ---- */
 function _ingQty(i){if(i.quantity!=null&&i.basis)return {qty:num(i.quantity)||0,basis:i.basis};return {qty:num(i.grams)||0,basis:'g'};}
 function recipeTotals(r){
@@ -364,6 +382,21 @@ function foodDuplicates(){
   return out;
 }
 /* Recorded through the ordinary custom-food save: nothing is deleted and no log is rewritten. */
+function foodOrigin(f){return f.kind==='custom'||f.kind==='user'||f.source==='USER'?'own':(f.source||f.kind||'other');}
+function ownFoodForBarcode(code){var g=_normGtin(code);if(!g)return null;return (DB.foods||[]).filter(function(f){return !f.retracted&&_normGtin(f.gtin)===g;}).slice(-1)[0]||null;}
+function foodSourceArbitration(a,b){var P=FOOD_SOURCE_CONTRACT.parameters,order=P.order.value;
+  var rec=[a,b].map(function(f){var o=foodOrigin(f),m=macroConsistency(f);return {food:f,origin:o,label:FOOD_ORIGIN_LABEL[o]||o,rank:order.indexOf(o)<0?order.length:order.indexOf(o),
+    check:m?{fromMacros:round(m.calc,0),declared:m.label,consistent:m.consistent}:null};});
+  var pa=normalizeFood(a).per100||{},pb=normalizeFood(b).per100||{},conflicts=[];
+  ['kcal','protein','carbs','fat'].forEach(function(k){var x=pa[k],y=pb[k];if(x!=null&&y!=null&&Math.abs(x-y)>Math.max(1,P.conflict.value*Math.max(x,y)))conflicts.push({nutrient:k,values:[x,y]});});
+  var byRank=rec.slice().sort(function(x,y){return x.rank-y.rank;});
+  if(!conflicts.length)return {status:'agree',conflicts:[],chosen:byRank[0],setAside:byRank[1],policy:FOOD_SOURCE_CONTRACT.id,text:'the two records agree within '+Math.round(P.conflict.value*100)+'%'};
+  var ok=byRank.filter(function(r){return r.check&&r.check.consistent;}),chosen=(ok.length?ok:byRank)[0],aside=rec.filter(function(r){return r!==chosen;})[0];
+  var why=ok.length===2?'both agree with their own macros, and '+chosen.label+' comes first':(ok.length===1?(aside.check?aside.label+' does not agree with its own macros ('+aside.check.declared+' kcal declared, '+aside.check.fromMacros+' from its macros)':aside.label+' lacks the macros to check it'):
+    'neither agrees with its own macros, so '+chosen.label+', first in the order, is used and should be checked against the package');
+  var diff=conflicts.map(function(c){var i=rec.indexOf(chosen);return c.nutrient+' '+fmtNum(c.values[i],1)+' against '+fmtNum(c.values[1-i],1);}).join(', ');
+  return {status:'conflict',conflicts:conflicts,chosen:chosen,setAside:aside,flagged:!ok.length,policy:FOOD_SOURCE_CONTRACT.id,
+    text:'Two records of this product disagree on '+diff+' (per 100). Using '+chosen.label+': '+why+'. '+aside.label.charAt(0).toUpperCase()+aside.label.slice(1)+' is kept, not merged.'};}
 function markSameFood(customId,targetFood){
   var own=(DB.foods||[]).filter(function(x){return x.id===customId;})[0];if(!own||!targetFood)return {status:'refused'};
   own.sameAs={identity:foodIdentity(targetFood),name:targetFood.name,at:nowISO()};saveUserFood(own);_memoInvalidate();

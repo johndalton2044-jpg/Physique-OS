@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "ed9b53d4d903",
+ "ontologyVersion": "8e492b5c9b9c",
  "observationTypes": [
   {
    "id": "adherence",
@@ -2202,7 +2202,7 @@
   {
    "id": "diet_digestibility",
    "cls": "PRIOR",
-   "output": "digestible protein (g) and energy adjustment",
+   "output": "digestible protein (g), the amino acid score of the day’s protein, and the energy whole nuts do not release",
    "uncertainty": "group values",
    "inputs": [
     "calories"
@@ -2227,7 +2227,8 @@
     "calories",
     "weight",
     "bodyfat",
-    "cardio"
+    "cardio",
+    "met_energy"
    ]
   },
   {
@@ -2277,6 +2278,16 @@
    ]
   },
   {
+   "id": "glycaemic_load",
+   "cls": "PRIOR",
+   "output": "the glycaemic load of each meal and the day, with the share of carbohydrate matched",
+   "uncertainty": "population values per food group; personal response not measured",
+   "inputs": [
+    "carbs",
+    "fiber"
+   ]
+  },
+  {
    "id": "goal_traj",
    "cls": "PREDICTIVE",
    "output": "required rate, status, projected date range",
@@ -2321,6 +2332,18 @@
    "inputs": [
     "weight",
     "calories"
+   ]
+  },
+  {
+   "id": "lift_forecast",
+   "cls": "EMPIRICAL",
+   "output": "each lift’s next session as an estimated 1RM with an 80% range, scored against its own past sessions, with how often those ranges held and how much of the correction is the lift’s own",
+   "uncertainty": "80% range from the scatter around each fit, corrected by the lift’s own scored sessions",
+   "inputs": [
+    "session.load|load × reps",
+    "session.reps|reps",
+    "session.date|session dates",
+    "e1rm"
    ]
   },
   {
@@ -2458,6 +2481,18 @@
    ]
   },
   {
+   "id": "personal_recovery_cost",
+   "cls": "EMPIRICAL",
+   "output": "per lift, the next day’s extra soreness and fatigue per set and per training day, with its interval, how much is the person’s own record, and which lifts cannot be told apart",
+   "uncertainty": "posterior interval per lift, against a prior of no cost",
+   "inputs": [
+    "session.sets|sets per exercise",
+    "session.date|session dates",
+    "soreness",
+    "fatigue"
+   ]
+  },
+  {
    "id": "personal_response",
    "cls": "EMPIRICAL",
    "output": "the expected effect of a change for this person, per unit of dose, with its uncertainty and how much rests on their own data",
@@ -2513,6 +2548,20 @@
    ]
   },
   {
+   "id": "readiness_transitions",
+   "cls": "EMPIRICAL",
+   "output": "how likely a day below normal is to be followed by another, how long such spells last, how likely today’s state is to be back to normal within two days, and whether today forecasts tomorrow better than the base rate",
+   "uncertainty": "each row weighed against a no-carry-over prior, with its personal weight; one-day-ahead Brier score against the base rate",
+   "inputs": [
+    "fatigue",
+    "soreness",
+    "stress",
+    "motivation",
+    "sleep",
+    "personal_baseline"
+   ]
+  },
+  {
    "id": "recovery",
    "cls": "HEURISTIC",
    "output": "good / acceptable / strained / poor / unknown with the signals that drove it",
@@ -2547,6 +2596,16 @@
     "weight_trend|weight trend before/after",
     "record.phases|phase",
     "rate_band|weight zone"
+   ]
+  },
+  {
+   "id": "sleep_need",
+   "cls": "EMPIRICAL",
+   "output": "the night length beyond which the person’s fatigue stops improving, with its interval, weighed against 7.5 h, and the debt against it",
+   "uncertainty": "likelihood-ratio interval on the bend, combined with the prior",
+   "inputs": [
+    "sleep",
+    "fatigue"
    ]
   },
   {
@@ -2636,6 +2695,15 @@
     "steps",
     "calories",
     "fatigue"
+   ]
+  },
+  {
+   "id": "visual_calibration",
+   "cls": "EMPIRICAL",
+   "output": "the person’s bias in reading their body fat by eye, how much is their own record, their visual error, and the latest visual estimate read through them",
+   "uncertainty": "posterior on the bias, against a prior of none",
+   "inputs": [
+    "bodyfat"
    ]
   },
   {
@@ -2882,10 +2950,12 @@
    "exercise_response",
    "fat_vs_other",
    "friction",
+   "glycaemic_load",
    "goal_traj",
    "hydration_balance",
    "intervention_response",
    "learning_loop",
+   "lift_forecast",
    "measurement_quality",
    "met_energy",
    "micronutrient_coverage",
@@ -2898,14 +2968,17 @@
    "personal_mobility_response",
    "personal_neat_response",
    "personal_power_response",
+   "personal_recovery_cost",
    "personal_response",
    "personal_sleep_response",
    "personal_speed_response",
    "physique_regions",
    "rate_band",
+   "readiness_transitions",
    "recovery",
    "recovery_allocation",
    "response_matrix",
+   "sleep_need",
    "strength_trend",
    "supplement_adherence",
    "supplement_efficacy",
@@ -2914,6 +2987,7 @@
    "tissue_energy_density",
    "uncertainty_chain",
    "unified_optimiser",
+   "visual_calibration",
    "water_noise",
    "weight_avg",
    "weight_forecast",
