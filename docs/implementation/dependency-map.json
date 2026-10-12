@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-12T09:10:37.152Z",
-  "buildId": "847a6961b4",
-  "nodes": 111,
-  "edges": 306,
-  "contractDerived": 99,
+  "generatedAt": "2026-10-12T12:28:47.000Z",
+  "buildId": "e0ce259ce6",
+  "nodes": 114,
+  "edges": 320,
+  "contractDerived": 102,
   "dependencies": [
     {
       "sourceId": "foodReference",
@@ -148,6 +148,11 @@
     {
       "sourceId": "fatigue",
       "targetId": "change_point",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "fatigue",
+      "targetId": "readiness_transitions",
       "dependencyType": "data"
     },
     {
@@ -731,8 +736,18 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "session.load",
+      "targetId": "lift_forecast",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "session.reps",
       "targetId": "e1rm",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.reps",
+      "targetId": "lift_forecast",
       "dependencyType": "model"
     },
     {
@@ -753,6 +768,11 @@
     {
       "sourceId": "e1rm",
       "targetId": "change_point",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "e1rm",
+      "targetId": "lift_forecast",
       "dependencyType": "model"
     },
     {
@@ -822,6 +842,11 @@
     },
     {
       "sourceId": "sleep",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "sleep",
       "targetId": "intervention_response",
       "dependencyType": "data"
     },
@@ -856,6 +881,11 @@
       "dependencyType": "data"
     },
     {
+      "sourceId": "soreness",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
       "sourceId": "stress",
       "targetId": "recovery",
       "dependencyType": "data"
@@ -863,6 +893,11 @@
     {
       "sourceId": "stress",
       "targetId": "personal_baseline",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "stress",
+      "targetId": "readiness_transitions",
       "dependencyType": "data"
     },
     {
@@ -1141,6 +1176,11 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "personal_baseline",
+      "targetId": "readiness_transitions",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "record.observations",
       "targetId": "measurement_quality",
       "dependencyType": "model"
@@ -1236,6 +1276,41 @@
       "dependencyType": "model"
     },
     {
+      "sourceId": "motivation",
+      "targetId": "readiness_transitions",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "motivation",
+      "targetId": "friction",
+      "dependencyType": "data"
+    },
+    {
+      "sourceId": "readiness_transitions",
+      "targetId": "readinessTransitionsBlock",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "readiness_transitions",
+      "targetId": "askQuestion",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "session.date",
+      "targetId": "lift_forecast",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "lift_forecast",
+      "targetId": "progressionPlan",
+      "dependencyType": "model"
+    },
+    {
+      "sourceId": "lift_forecast",
+      "targetId": "selfCalibration",
+      "dependencyType": "model"
+    },
+    {
       "sourceId": "physique_regions",
       "targetId": "personal_dose_response",
       "dependencyType": "model"
@@ -1289,11 +1364,6 @@
       "sourceId": "personal_response",
       "targetId": "evaluateResponse",
       "dependencyType": "model"
-    },
-    {
-      "sourceId": "motivation",
-      "targetId": "friction",
-      "dependencyType": "data"
     },
     {
       "sourceId": "friction",

@@ -4826,4 +4826,4 @@ What stays open: skill-versus-strength limitation, protein quality from amino ac
 response, visual calibration, and W-019's exercise-specific recovery cost, individual sleep debt and NEAT compensation
 calibration.
 
-1,983 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,983 self-tests.
