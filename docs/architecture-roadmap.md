@@ -4684,11 +4684,11 @@ What the person reported, and the items the catalogue left deferred.
   what a deployment serves and what a browser receives, and writes `docs/deployment-footprint.md`:
   - 1,145 files: 97.8 MB raw, 24.0 MB with brotli; 93.3 MB of it is the food corpus;
   - the cache header `vercel.json` gives each path, and the build time;
-  - from a host applying `vercel.json` with ETags: 1.41 MB on a first visit, 0.28 MB on a first food search (three
+  - from a host applying `vercel.json` with ETags: 1.42 MB on a first visit, 0.28 MB on a first food search (three
     shards), nothing on a return visit.
   It found two faults:
   - the service worker precached the 4 MB page as both `./` and `./index.html`, so a first visit downloaded it twice
-    (2.87 MB, now 1.41 MB);
+    (2.87 MB, now 1.42 MB);
   - `/data/food/manifest.json` matched two Cache-Control rules, `no-cache` and a day, so which one applied depended
     on the host. The data rule now leaves the manifest out.
   The deploy gate holds the budgets. What only the platform knows (its stored size, edge compression, cold starts)
