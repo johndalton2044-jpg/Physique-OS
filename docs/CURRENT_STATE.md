@@ -13,11 +13,11 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Event types | 57 |
 | Entity contracts | 29 |
 | Persisted collections | 22 |
-| Heuristic contracts | 18 (none validated as a model) |
-| Evidence claims | 24 (no claim yet for: hydration) |
-| Capabilities | 37 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 16 surfaced, 11 validated) |
+| Heuristic contracts | 19 (none validated as a model) |
+| Evidence claims | 26 (no claim yet for: hydration) |
+| Capabilities | 40 (2 not implemented, 1 specified, 1 implemented, 6 integrated, 16 surfaced, 14 validated) |
 | Release gates | 37 |
-| Black-box workflows | 13 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017) |
+| Black-box workflows | 15 (V-002, V-003, V-005, V-009/V-010, V-004, V-011, V-013, V-014, V-001, V-012, V-015, V-016, V-017, V-018, V-019) |
 
 ## Capabilities and their maturity
 
@@ -32,6 +32,7 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Corrections and deletions with history | validated | not applicable | independent |
 | Phase targets reaching Today | validated | not applicable | independent |
 | Recovery readings changing today's training advice | validated | heuristic | independent |
+| Readiness and recovery scores backtested against the session that follows | validated | backtested | independent |
 | One plan authority (every plan change through changePlan, one version each) | integrated | not applicable | internal |
 | What was known on a past date | validated | not applicable | independent |
 | Encrypted sync between devices | integrated | not applicable | independent |
@@ -46,6 +47,8 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 | Body composition: fat and lean trajectories | surfaced | population evidence | internal |
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | internal |
 | Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | independent |
+| Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty | validated | population evidence | independent |
+| Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference | validated | population evidence | independent |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | internal |
 | Personal knowledge: versions, conflicts and decay | surfaced | heuristic | internal |
 | Experiment portfolio: the next test by expected information gain | surfaced | population evidence | internal |
@@ -92,5 +95,5 @@ it is rewritten on every run of the governance gate. The architecture is in `ARC
 - Prospectively validated cannot be claimed yet: no prospective validation exists.
 - Real data at scale cannot be claimed yet.
 - Real-world cannot be claimed yet.
-- The 18 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
+- The 19 heuristic contracts (rate band, decision rules, curves, goal tensions) are policies: cited evidence supports their findings, not the rules themselves.
 - No published evidence is registered for: hydration.

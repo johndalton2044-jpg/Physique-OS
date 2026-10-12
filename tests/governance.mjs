@@ -216,6 +216,23 @@ w.runVerification();
   const bare=codes.filter(c=>!w.DECISION_GROUNDS[c]);
   bare.length?hard('decision-grounds','decision codes with no declared grounds: their explanation would rest on nothing',bare)
     :pass('decision-grounds','every decision code has declared grounds ('+codes.length+' codes)');}
+/* S2l — EACH VIEW'S REQUIREMENTS ARE AUTHORITATIVE (catalogue doc 1, W-044). Every view is rendered twice on the demo record
+   with each model function and each observation read wrapped; what it read must be exactly what the view registry
+   declares (VIEW_REQUIREMENTS, with STATE_REQUIREMENTS checked against getCurrentState() alone). Runs last among the
+   checks that read the app, since the wrappers stay in place. */
+{const used=new Set(),obs=new Set(),issues=[];
+  for(const m of w.MODELS){const fn=m.fn;if(!fn||typeof w[fn]!=='function')continue;const orig=w[fn];w[fn]=function(){used.add(m.id);return orig.apply(this,arguments);};}
+  const oo=w.obsOf,sw=w.seriesWindow;w.obsOf=function(t){obs.add(t);return oo.apply(this,arguments);};w.seriesWindow=function(t){obs.add(t);return sw.apply(this,arguments);};
+  const keepDetail=w.DB.settings.detail;w.DB.settings.detail='developer';
+  const cmp=(what,got,want,cond)=>{got.filter(x=>!want.includes(x)).forEach(x=>issues.push(what+' reads '+x+' without declaring it'));want.filter(x=>!got.includes(x)&&!(cond&&cond[x])).forEach(x=>issues.push(what+' declares '+x+' but never reads it'));};
+  used.clear();obs.clear();w._memoInvalidate();w.getCurrentState();cmp('the state',[...used].sort(),w.STATE_REQUIREMENTS.models);cmp('the state',[...obs].sort(),w.STATE_REQUIREMENTS.observations);
+  for(const id of Object.keys(w.VIEW_REGISTRY)){const R=w.viewRequirements(id);if(!R){issues.push('view '+id+' has no declared requirements');continue;}
+    const M=new Set(),O=new Set();for(let k=0;k<2;k++){used.clear();obs.clear();w._memoInvalidate();try{w.switchTab(id);}catch(e){issues.push('view '+id+' failed to render: '+e.message);}used.forEach(x=>M.add(x));obs.forEach(x=>O.add(x));}
+    cmp('view '+id,[...M].sort(),R.models,R.conditional);cmp('view '+id,[...O].sort(),R.observations,R.conditional);
+    if(JSON.stringify(w.VIEW_REGISTRY[id].modelDependencies)!==JSON.stringify(R.models))issues.push('view '+id+': the registry’s modelDependencies are not its declared requirements');}
+  w.DB.settings.detail=keepDetail;w._memoInvalidate();
+  issues.length?hard('view-requirements','views read models or observations they do not declare, or declare ones they never read (W-044)',issues)
+    :pass('view-requirements','every view’s declared models and observations are exactly what it reads ('+Object.keys(w.VIEW_REGISTRY).length+' views)');}
 /* S2k — THE CURRENT STATE, GENERATED (catalogue doc 1, W-030). docs/CURRENT_STATE.md holds live counts, the capabilities and
    their maturity, and the known limitations, written from the running registries and docs/capabilities.json on every
    run, so it cannot drift from the code. Architecture, history, the roadmap and release evidence keep their own

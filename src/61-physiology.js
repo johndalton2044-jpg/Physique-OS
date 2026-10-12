@@ -243,7 +243,8 @@ function supplementEfficacy(){
 
 /* ---------- ENERGY AVAILABILITY (Loucks) ----------
    EA = (energy intake \u2212 exercise energy expenditure) / fat-free mass, per day, averaged over 7 days. Exercise energy:
-   cardio at its MET (net of resting) and lifting at ~5 MET. Fat-free mass needs a body-fat reading: without one EA is
+   cardio at its own MET (net of resting; it read a field the normaliser does not return, so every session counted as
+   MET 5) and lifting at ~5 MET. Fat-free mass needs a body-fat reading: without one EA is
    refused, not guessed. Thresholds (kcal/kg FFM/day): < 30 low, 30\u201345 reduced, \u2265 45 adequate. Not a diagnosis. */
 function energyAvailability(){
   var bf=obsOf('bodyfat').slice(-1)[0],kg=_kgNow();
@@ -251,7 +252,7 @@ function energyAvailability(){
   if(!bf)return {status:'insufficient',cls:'DERIVED',need:['a body-fat reading'],note:'Energy availability is per kilogram of fat-free mass; without body fat it would be a guess.'};
   var ffm=kg*(1-bf.value/100),days=[];
   for(var i=1;i<=7;i++){var d=addDays(todayISO(),-i),ei=_dayValue('calories',d);if(!ei)continue;
-    var eee=0;(cardioSessions(10).rows||[]).filter(function(r){return r.date===d;}).forEach(function(r){var met=(normaliseCardioSession(r).abs||{}).met||5;eee+=(met-1)*3.5*kg/200*(r.minutes||0);});
+    var eee=0;(cardioSessions(10).rows||[]).filter(function(r){return r.date===d;}).forEach(function(r){eee+=cardioNetKcal(r,kg)||0;});
     (DB.sessions||[]).filter(function(s){return s.date===d;}).forEach(function(s){eee+=(5-1)*3.5*kg/200*(s.durationMin||45);});
     days.push({date:d,ei:ei,eee:round(eee,0),ea:(ei-eee)/ffm});}
   if(days.length<4)return {status:'insufficient',cls:'DERIVED',need:[(4-days.length)+' more days of logged intake this week']};
@@ -320,7 +321,7 @@ function photoComparisonValidity(a,b){
   {id:'cardio_fitness_latent',name:'Cardio fitness (latent state)',cls:'EMPIRICAL',version:'1.0',inputs:['cardio','rhr','weight'],minN:1,assumes:['%HRR tracks %VO2 reserve in steady exercise','ACSM equations hold for the modality'],failsWhen:['intervals','beta blockers or other heart-rate modifiers','no heart rate'],output:'VO2max per modality family, with uncertainty, and its trend a month with an interval',consumers:['physiologySummary','capabilityVector'],freshnessDays:28,uncertainty:{kind:'kalman posterior'},fn:'cardioFitnessModel'},
   {id:'hydration_balance',name:'Hydration balance',cls:'HEURISTIC',version:'1.0',inputs:['water','calories','cardio'],minN:1,assumes:['EFSA adequate intake','sweat scales with intensity and heat'],failsWhen:['very hot or humid climates beyond the scaling','illness'],output:'daily water balance (L)',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'fixed',sd:0.8},fn:'hydrationBalance'},
   {id:'supplement_efficacy',name:'Supplement personal efficacy',cls:'EMPIRICAL',version:'1.0',inputs:['supplement'],minN:20,assumes:['on and off days otherwise comparable'],failsWhen:['unblinded expectation','supplements with slow effects'],output:'on-vs-off difference per supplement',consumers:['physiologySummary'],freshnessDays:60,uncertainty:{kind:'standard error'},fn:'supplementEfficacy'},
-  {id:'energy_availability',name:'Energy availability',cls:'DERIVED',version:'1.0',inputs:['calories','weight','bodyfat','cardio'],minN:4,assumes:['logged intake is complete','MET estimates of exercise'],failsWhen:['no body-fat reading'],output:'kcal per kg fat-free mass per day',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'propagated'},fn:'energyAvailability'},
+  {id:'energy_availability',name:'Energy availability',cls:'DERIVED',version:'1.0',inputs:['calories','weight','bodyfat','cardio','met_energy'],minN:4,assumes:['logged intake is complete','MET estimates of exercise'],failsWhen:['no body-fat reading'],output:'kcal per kg fat-free mass per day',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'propagated'},fn:'energyAvailability'},
   {id:'diet_digestibility',name:'Protein quality and digestibility',cls:'PRIOR',version:'1.0',inputs:['calories'],minN:1,assumes:['food-group values represent these foods'],failsWhen:['unclassified foods'],output:'digestible protein (g) and energy adjustment',consumers:['physiologySummary'],freshnessDays:1,uncertainty:{kind:'group values'},fn:'dietDigestibility'},
   {id:'recovery_allocation',name:'Recovery resource allocation',cls:'HEURISTIC',version:'1.0',inputs:['sleep','steps','cardio'],minN:7,assumes:['relative costs of lifting, cardio and steps'],failsWhen:['illness','unlogged training'],output:'weekly recovery budget and its split',consumers:['physiologySummary'],freshnessDays:7,uncertainty:{kind:'relative units'},fn:'recoveryAllocation'}
 ].forEach(function(m){if(!MODELS.some(function(x){return x.id===m.id;}))MODELS.push(m);});})();

@@ -168,7 +168,11 @@ var QUESTION_PATTERNS=[
    answer:function(){
      var r=readinessState();
      if(r.status!=='ok')return {status:'unknown',need:r.need||['a few days of ratings']};
-     return {value:r.band,cls:'EMPIRICAL',basis:r.parts.length+' signals against your own baseline',act:'nav.domains'};}},
+     /* W-019: the answer carries what the record shows about whether this score has predicted the person's sessions,
+        so it claims no more for it than that */
+     var V=null;try{V=readinessValidity();}catch(e){_q(e,'P2');}
+     var val=V&&V.status==='ok'?V.verdicts.readiness.text:('Whether it predicts your sessions is not known yet: '+(V?V.n:0)+' of '+READINESS_VALIDITY.minSessions+' sessions scored.');
+     return {value:r.band,cls:'EMPIRICAL',basis:r.parts.length+' signals against your own baseline. '+val,act:'nav.domains'};}},
   {id:'missing',re:/\b(missing|what should i log|gaps)\b/i,
    answer:function(){
      var m=missingDataReport();

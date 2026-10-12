@@ -82,7 +82,7 @@ var EVIDENCE_GRADES={A:'systematic review or meta-analysis of controlled trials'
   C:'systematic review or meta-analysis of observational studies, or of mixed designs',D:'consensus, position stand, guideline, narrative review or model',
   E:'single uncontrolled study'};
 var CLAIM_DOMAINS=['training volume','energy balance','weight-loss rate','muscle retention','cardio interference','protein','supplements','sleep',
-  'hydration','recovery','body composition','adherence','meal timing'];
+  'hydration','recovery','body composition','adherence','meal timing','mobility'];
 var CLAIM_REVIEW_DATE='2027-10-01';   /* reviewed in October 2026; every claim is due for review again by this date */
 REF_EVIDENCE.push(
   {id:'schoenfeld2017volume',topic:'training volume',design:'systematic review / meta-analysis, 15 studies',summary:'Muscle growth rose with weekly sets in a graded dose-response: each additional set per muscle a week was associated with about 0.37% more growth, and 10 or more sets a week gave larger gains than fewer than 5.',citation:'Schoenfeld BJ, Ogborn D, Krieger JW. J Sports Sci 2017;35(11):1073–1082',implication:'the weekly-sets curve rises with volume and is anchored near 10 sets a week',cls:'REFERENCE'},
@@ -94,7 +94,9 @@ REF_EVIDENCE.push(
   {id:'garthe2011rate',topic:'rate of loss',design:'randomised trial, n=24 athletes',summary:'A slower loss (about 0.7% of body weight a week) increased lean mass and strength over the intervention, while a faster loss (about 1.4% a week) did not.',citation:'Garthe I, Raastad T, Refsnes PE, Koivisto A, Sundgot-Borgen J. Int J Sport Nutr Exerc Metab 2011;21(2):97–104',implication:'loss faster than about 1% a week is treated as a lean-mass risk',cls:'REFERENCE'},
   {id:'helms2014prep',topic:'rate of loss',design:'narrative review with recommendations',summary:'For lean, resistance-trained people dieting, a loss of about 0.5–1% of body weight a week was recommended to limit lean-mass loss, with protein of 2.3–3.1 g per kg of lean mass.',citation:'Helms ER, Aragon AA, Fitschen PJ. JISSN 2014;11:20',implication:'the rate band is set within 0.5–1% of body weight a week',cls:'REFERENCE'},
   {id:'schoenfeld2019freq',topic:'training frequency',design:'systematic review / meta-analysis',summary:'When weekly volume was equated, training a muscle more often a week made no meaningful difference to hypertrophy.',citation:'Schoenfeld BJ, Grgic J, Krieger J. J Sports Sci 2019;37(11):1286–1295',implication:'an extra weekly exposure at the same sets is expected to add little on average',cls:'REFERENCE'},
-  {id:'grgic2018freq',topic:'training frequency',design:'systematic review / meta-analysis',summary:'Higher training frequency increased strength gains, but the effect largely disappeared when weekly volume was equated.',citation:'Grgic J et al. Sports Med 2018;48(5):1207–1220',implication:'frequency is judged at equal weekly sets',cls:'REFERENCE'});
+  {id:'grgic2018freq',topic:'training frequency',design:'systematic review / meta-analysis',summary:'Higher training frequency increased strength gains, but the effect largely disappeared when weekly volume was equated.',citation:'Grgic J et al. Sports Med 2018;48(5):1207–1220',implication:'frequency is judged at equal weekly sets',cls:'REFERENCE'},
+  {id:'thomas2018stretch',topic:'flexibility',design:'systematic review',summary:'Stretching programmes increased range of motion; static stretching gave the largest gains, and the gain grew with the total stretching time a week.',citation:'Thomas E, Bianco A, Paoli A, Palma A. Int J Sports Med 2018;39(4):243–254',implication:'a weekly stretching dose is expected to raise a range test by a few units over weeks; static stretching is the default where available range is short',cls:'REFERENCE'},
+  {id:'bennell1998ktw',topic:'flexibility measurement',design:'reliability study in healthy adults',summary:'The weight-bearing lunge (knee-to-wall) measure of ankle dorsiflexion was highly reliable within and between raters, repeating to about a centimetre.',citation:'Bennell KL, Talbot RC, Wajswelner H, Techovanich W, Kelly DH, Hall AJ. Aust J Physiother 1998;44(3):175–180',implication:'a knee-to-wall change within about two centimetres is not separated from repeating the test',cls:'REFERENCE'});
 (function(){var D=CLAIM_REVIEW_DATE;var C={
   sumithran2011:{proposition:{subject:'diet-induced weight loss',predicate:'raises',object:{outcome:'appetite and the hormones that regulate it',persistence:'one year'}},outcome:'appetite, appetite hormones',
     population:'adults with overweight or obesity after a 10-week very-low-energy diet',scope:'clinic, one year of follow-up',applicability:{appliesTo:'maintenance after a loss'},
@@ -167,7 +169,13 @@ REF_EVIDENCE.push(
     limitations:['short studies','few studies of more than three exposures a week'],grade:'A',confidence:'medium',domains:['training volume']},
   grgic2018freq:{proposition:{subject:'training frequency at equal weekly sets',predicate:'does not change',object:{outcome:'strength gains'}},outcome:'strength',
     population:'adults in resistance-training studies',scope:'meta-analysis',applicability:{appliesTo:'distributing sets across the week'},
-    limitations:['the advantage of frequency appears only when volume is not equated'],grade:'A',confidence:'medium',domains:['training volume']}};
+    limitations:['the advantage of frequency appears only when volume is not equated'],grade:'A',confidence:'medium',domains:['training volume']},
+  thomas2018stretch:{proposition:{subject:'a stretching programme',predicate:'increases',object:{outcome:'range of motion',growsWith:'stretching time a week'}},outcome:'range of motion',
+    population:'adults in stretching studies',scope:'systematic review',applicability:{appliesTo:'available (passive) range'},
+    limitations:['short programmes','range measured by different tests','part of the gain is tolerance of the stretch rather than tissue length'],grade:'C',confidence:'medium',domains:['mobility']},
+  bennell1998ktw:{proposition:{subject:'the knee-to-wall test',predicate:'repeats to',object:{outcome:'ankle dorsiflexion range',error:{value:1,unit:'cm'}}},outcome:'measurement error',
+    population:'healthy adults',scope:'reliability study',applicability:{appliesTo:'the knee-to-wall test done to its protocol'},
+    limitations:['a small sample','healthy adults only'],grade:'E',confidence:'medium',domains:['mobility']}};
   REF_EVIDENCE.forEach(function(r){if(C[r.id])r.claim=Object.assign({reviewDate:D},C[r.id]);});})();
 /* Compendium of Physical Activities 2024 — loaded lazily from ./data/reference/compendium-2024.json; a small inline subset covers the app's built-in modalities. */
 var REF_COMPENDIUM_INLINE={source:'2024 Adult Compendium of Physical Activities',version:'2024',retrieved:'2026-09-02',cls:'REFERENCE',

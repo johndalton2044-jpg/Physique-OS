@@ -73,8 +73,34 @@ W-045 (why am I seeing this): **done**, 0dc41f684f. Every decision answers the c
 structured explanation, with a trace from the screen through the decision and its models to the observations (black-box
 workflow V-017).
 
-W-015 to W-020 and W-044: **deferred**, as the catalogue orders them after calibration. Mobility, conditioning and power
-responses (TRANSITION item 4) were done before this round.
+W-044 (presentation authority): **done**, abd4ef4b01. The state and each of the 12 views declare the models and
+observation types they read (`STATE_REQUIREMENTS`, `VIEW_REQUIREMENTS`). The governance gate renders every view with
+the model functions and observation readers instrumented, and fails on an undeclared read or a declared one never made.
+A read that depends on the day is declared as conditional, with its reason.
+
+W-019 (recovery): **partly**, abd4ef4b01. Its definition of done is that readiness and recovery outputs show measurable
+incremental value over simple baselines. The measurement is built: `readinessValidity()` rebuilds the three recovery
+scores as the record stood the evening before each session. It scores them out of sample against the session, beside
+sleep alone, fatigue alone and no information. On the demo record all three predict the sessions but none beats fatigue
+alone, and that is the verdict shown (both recovery sheets, the assistant's answer, black-box workflow V-018). Whether a
+score adds value for a real person is for their own record to show. Exercise-specific recovery cost, individual sleep
+debt, NEAT compensation calibration and fatigue-state transitions are not built.
+
+W-017 (cardio): **done**, abd4ef4b01. Dose, capacity, expenditure, recovery cost and strength interference each have
+their own measure and unit (`CARDIO_CONCEPTS`). A cardio change is evaluated on all five over a period before and after
+it (`cardioInterventionEvaluation`), and the cardio experiment's protocol, template and picker show them. Energy
+availability now costs each session at its own MET, not MET 5.
+
+W-016 (mobility): **done**, abd4ef4b01. `mobilityRecommendation()` explains the seven parts the definition of done
+names: the limitation, the measurement's quality, the intervention, the expected change, the retest condition, the
+observed response and the uncertainty. It works from the knee-to-wall and sit-and-reach tests, their response model,
+and a working reference that is a heuristic contract, not validated. It is shown on the mobility sheet (black-box
+workflow V-019). The shoulder and hip assessments have no response model yet, so they are reported but not
+recommended on.
+
+W-015, W-018 and W-020 (training, nutrition and body-composition refinement): **deferred**. Their catalogue entries
+give directions rather than a definition of done a test could hold. Mobility, conditioning and power responses
+(TRANSITION item 4) were done before this round.
 
 ### The rest
 

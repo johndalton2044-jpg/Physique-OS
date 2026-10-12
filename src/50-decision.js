@@ -388,7 +388,14 @@ function experimentProtocol(ex){if(!ex)return null;var spec=experimentSpec(ex),k
     result:ex.conclusion?{conclusion:ex.conclusion,observed:ex.observed!=null?ex.observed:null,confidence:ex.confidence||null,status:ex.status}:null,
     inference:{identifiability:D.identifiability,strongestClaim:D.strongest,why:D.why,confounded:conf.length>0,
       allowedClaim:conf.length?'ASSOCIATED':D.strongest},
-    applicability:{phaseId:ex.phaseId||null,note:'this person, in the phase and weight zone it ran in'}};}
+    applicability:{phaseId:ex.phaseId||null,note:'this person, in the phase and weight zone it ran in'},
+    /* W-017: a cardio change is judged on dose, capacity, expenditure, recovery cost and interference, each on its own
+       measure; its single metric (weight) is one of them, not their stand-in */
+    concepts:ex.variable==='cardio'&&typeof cardioInterventionEvaluation==='function'?_cardioProtocolConcepts(ex):null};}
+function _cardioProtocolConcepts(ex){var now=asOf();
+  var outcomes=Object.keys(CARDIO_CONCEPTS).map(function(k){var c=CARDIO_CONCEPTS[k];return {concept:k,label:c.label,unit:c.unit,measure:c.measure,notReadAs:c.notReadAs};});
+  var ev=ex.startDate&&now>=ex.startDate?cardioInterventionEvaluation([addDays(ex.startDate,-14),addDays(ex.startDate,-1)],[ex.startDate,ex.recheckDate&&ex.recheckDate<now?ex.recheckDate:now]):null;
+  return {outcomes:outcomes,evaluation:ev};}
 function createExperiment(e){
   var start=e.startDate||todayISO();var dur=num(e.durationDays)||14;
   var rec={id:uid('exp'),createdAt:nowISO(),question:e.question||'',hypothesis:e.hypothesis||'',variable:e.variable||'other',baselineValue:e.baselineValue!=null?e.baselineValue:null,interventionValue:e.interventionValue!=null?e.interventionValue:null,intervention:e.intervention||'',

@@ -209,3 +209,39 @@ Never start an item before what it depends on is in place.
   - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243;
   - capability statuses that need a live check read "not run" until a verification run has happened for this build (the
     internals sheet runs one when opened).
+
+## 9. State at abd4ef4b01 (after the catalogues' later phases)
+
+- **Gates and tests:** 37 gates, each under its runtime ceiling in `tests/gates.mjs`; all pass, none skipped, and the
+  release check passes 24/24. There are 1,921 in-app self-tests in 19 suites, 400 interface tests and 15 black-box
+  workflows (V-006 to V-008 are covered by other gates).
+- **What the round did**, one release each, every gate recorded:
+  - 0dbd06b359: structured explanations (doc 2, P1.1 to P1.3), the claim registry, evidence kept apart from policy,
+    18 heuristic contracts, the assistant's allowed claim set, goal arbitration as values;
+  - 6da68267d3: progress photos as encrypted attachments with an encrypted copy in the vault, carried by encrypted
+    backups (option B of §8);
+  - 38097babc5: undoing a sync merge holds on every device (the decision §8 left open);
+  - 0dc41f684f: confidence semantics, six knowledge states, N-of-1 protocols, execution probability scored (a backtest
+    and a prospective record), the eight-question "why", a generated `docs/CURRENT_STATE.md`;
+  - abd4ef4b01: what each view reads, declared and checked (W-044); whether readiness predicts the next session, against
+    simple readings (W-019); cardio as five separate quantities (W-017); a mobility recommendation that explains itself
+    (W-016).
+  `docs/handoff/CATALOGUE.md` has every item's status and the build that carries it.
+- **Decided by the person in this round:** photos are stored off the device, encrypted; a sync merge's undo removes
+  the merged entries on every device.
+- **Waiting on the person:**
+  - item 11 still needs S3, Fitbit, Withings and Oura developer accounts and one model provider's key;
+  - making a red CI run block a merge needs a branch-protection rule on `main` in the repository's settings (Settings,
+    Branches, add a rule for `main` that requires the CI status check). `main` has none.
+- **Not done, and why:**
+  - W-015, W-018 and W-020 give directions, not a definition of done a test could hold;
+  - W-019 is partly done: the backtest is built, and on the demo record no recovery score beats fatigue alone. Whether
+    one does for a real person is for that person's record to show;
+  - prospective validation and calibration need months of real use; the execution record now accumulates;
+  - running one self-test suite alone needs each suite to build its own fixture;
+  - W-033 (deployment footprint) needs a real deployment; O-001 to O-010 are not built, as the catalogue directs.
+- **New limits to state:**
+  - the mobility reference (10 cm knee-to-wall, a sit-and-reach that reaches the feet) is this system's working
+    reference, not a validated threshold;
+  - the shoulder and hip assessments have no response model, so the mobility recommendation does not use them;
+  - this container offers Chromium build 1194 only, so local releases run on it while CI uses the locked build 1243.

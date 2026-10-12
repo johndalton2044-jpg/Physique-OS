@@ -293,3 +293,103 @@ function logSequence(id,opts){
 function yogaResponse(metric,opts){
   return crossModalityEffect('practice',metric||'fatigue',opts);
 }
+/* ---------------- W-016: A MOBILITY RECOMMENDATION THAT EXPLAINS ITSELF ----------------
+   The catalogue's rule: build mobility only where it is tied to measurable adaptation, and let a recommendation say the
+   limitation, the quality of the measurement, the intervention chosen, the change expected, when to retest, what was
+   observed and how uncertain it is. Every part is read from what exists: the two field tests that have a response model
+   (one series each, whether the quick log or an assessment recorded it), the joint's active-against-passive gap, the
+   stretch kinds, the mobility response (a population prior and the person's own slope), and the mobility minutes logged. */
+var MOBILITY_TESTS={
+  kneewall:{label:'knee-to-wall',unit:'cm',assessment:'ankle-wall',joint:'ankle',region:'ankles',limits:'squat depth and lunge position',
+    error:{value:1,basis:'knee-to-wall repeats to about a centimetre (Bennell et al. 1998)'}},
+  sitreach:{label:'sit-and-reach',unit:'cm',assessment:'sit-reach',joint:'lumbar',region:'hamstrings',limits:'the hinge',error:null}};
+var MOBILITY_REFERENCE_CONTRACT={id:'mobility_reference',subject:'a measured range',predicate:'is treated as limiting below',
+  parameters:{kneewall:{value:10,unit:'cm knee-to-wall',meaning:'below this, the ankle is treated as limiting squat depth and lunge position'},
+    sitreach:{value:0,unit:'cm past the feet',meaning:'short of the feet, the hamstrings and lower back are treated as limiting the hinge'},
+    asymmetry:{value:2,unit:'test errors',meaning:'a left-right difference larger than this many test errors is treated as real'},
+    lost:{value:2,unit:'test errors',meaning:'a fall from your own best of the last six months larger than this many test errors is treated as lost range'}},
+  statement:function(v){return 'a knee-to-wall below '+v.kneewall+' cm, or a sit-and-reach short of the feet, is treated as a limitation';},
+  rationale:'working references this system uses to decide what to work on first, not targets: range beyond what a movement needs is not the aim',
+  evidenceBasis:['thomas2018stretch','bennell1998ktw'],parameterSource:'chosen by this system; not derived from a study',
+  parameterVersion:'1.0',calibrationStatus:'not calibrated to this person',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults without an injury in the region'},failureConditions:['an injury in the region','a test done without the protocol'],
+  outcomes:['range of motion']};
+var MOBILITY_REMEDY={symmetry:{dimension:'symmetry',stretch:'static'},active:{dimension:'active',stretch:'endRange'},
+  passive:{dimension:'passive',stretch:'static'},lost:{dimension:'passive',stretch:'static'}};
+var MOBILITY_LIMITATION_ORDER=['symmetry','active','passive','lost'];
+/* one series per test: the field test and the assessment that measures the same thing */
+function _mobilitySeries(type){var T=MOBILITY_TESTS[type];
+  var a=obsOf(type).filter(function(o){return !o.retracted;}).map(function(o){var m=o.meta||{};return {date:o.date,value:o.value,side:m.side||null,source:'field test',obs:o};});
+  var b=(T.assessment?assessmentHistory(T.assessment):[]).map(function(h){return {date:h.date,value:+h.value,side:h.side||null,source:'assessment'};});
+  return a.concat(b).filter(function(x){return isFinite(x.value);}).sort(function(x,y){return x.date<y.date?-1:(x.date>y.date?1:0);});}
+/* the test's own error: from the person's repeats within a week when there are two or more pairs, else the published figure */
+function _mobilityError(type,S){var d=[];
+  for(var i=1;i<S.length;i++)if(S[i].side===S[i-1].side&&daysBetween(S[i-1].date,S[i].date)<=7)d.push(S[i].value-S[i-1].value);
+  if(d.length>=2)return {value:round(Math.sqrt(d.reduce(function(a,x){return a+x*x;},0)/d.length)/Math.SQRT2,2),basis:'your own repeats within a week ('+d.length+' pairs)',own:true};
+  var T=MOBILITY_TESTS[type];return T.error?{value:T.error.value,basis:T.error.basis,own:false}:{value:null,basis:'not known until the test is repeated within a week',own:false};}
+function _mobilityLimitation(type,S,err){var T=MOBILITY_TESTS[type],P=MOBILITY_REFERENCE_CONTRACT.parameters,e=err.value,last=S[S.length-1];
+  var L=null,R=null;for(var i=S.length-1;i>=0&&daysBetween(S[i].date,last.date)<=14;i--){if(S[i].side==='left'&&!L)L=S[i];if(S[i].side==='right'&&!R)R=S[i];}
+  if(L&&R&&e!=null&&Math.abs(L.value-R.value)>P.asymmetry.value*e){var lo=L.value<R.value?L:R,gap=Math.abs(L.value-R.value);
+    return {kind:'symmetry',test:type,side:lo.side,size:round(gap,1),errors:round(gap/e,1),
+      text:'your '+lo.side+' side reaches '+fmtNum(gap,1)+' '+T.unit+' less than the other on the '+T.label+', more than '+P.asymmetry.value+' test errors'};}
+  var js=jointState(T.joint);
+  if(js&&js.activePassiveGap!=null&&js.activePassiveGap>=3)return {kind:'active',test:type,size:js.activePassiveGap,errors:null,
+    text:'at the '+js.label.toLowerCase()+', the range you can produce is '+fmtNum(js.activePassiveGap,1)+' short of the range you have: strength at length, not tightness'};
+  var ref=P[type]?P[type].value:null;
+  if(ref!=null&&last.value<ref)return {kind:'passive',test:type,size:round(ref-last.value,1),errors:e?round((ref-last.value)/e,1):null,
+    text:'your '+T.label+' of '+fmtNum(last.value,1)+' '+T.unit+' is '+fmtNum(ref-last.value,1)+' '+T.unit+' short of the '+ref+' '+T.unit+' this system works to, which limits '+T.limits};
+  var same=S.filter(function(x){return x.side===last.side&&daysBetween(x.date,last.date)<=180;}),best=Math.max.apply(null,same.map(function(x){return x.value;}));
+  if(e!=null&&best-last.value>P.lost.value*e)return {kind:'lost',test:type,size:round(best-last.value,1),errors:round((best-last.value)/e,1),
+    text:'your '+T.label+' is '+fmtNum(best-last.value,1)+' '+T.unit+' below your own best of the last six months, more than '+P.lost.value+' test errors'};
+  return null;}
+function mobilityRecommendation(){
+  return memo('mobilityRecommendation:'+asOf(),function(){
+    var C=CAPACITY_RESPONSES.mobility,cr=capacityResponse('mobility'),checked=[],cands=[];
+    Object.keys(MOBILITY_TESTS).forEach(function(type){var S=_mobilitySeries(type);if(!S.length)return;var err=_mobilityError(type,S);checked.push({test:type,series:S,error:err});
+      var lim=_mobilityLimitation(type,S,err);if(lim)cands.push({lim:lim,series:S,error:err});});
+    if(!checked.length)return {status:'insufficient',need:['a knee-to-wall or sit-and-reach test in the quick log'],
+      note:'A mobility recommendation needs a measurement to start from: without one it would be a feeling.'};
+    var measurement=function(type,S,err){var T=MOBILITY_TESTS[type],last=S[S.length-1],q=last.obs&&typeof measurementQuality==='function'?measurementQuality(last.obs):null;
+      return {test:type,readings:S.length,error:err,quality:q?q.level:null,
+        text:S.length+' '+T.label+' reading'+(S.length===1?'':'s')+'; the test’s error is '+(err.value!=null?fmtNum(err.value,1)+' '+T.unit+' ('+err.basis+')':err.basis)+(q?'; latest reading '+q.level+' quality':'')};};
+    if(!cands.length)return {status:'none',cls:'MEASURED',checked:checked.map(function(c){return measurement(c.test,c.series,c.error);}),
+      text:'every measured range meets its working reference, with no left-right difference and no lost range the tests can show',
+      note:'Nothing to work on that the record can show. Testing both sides, or active as well as passive range, would show more.'};
+    cands.sort(function(a,b){var o=MOBILITY_LIMITATION_ORDER.indexOf(a.lim.kind)-MOBILITY_LIMITATION_ORDER.indexOf(b.lim.kind);return o||((b.lim.errors||b.lim.size)-(a.lim.errors||a.lim.size));});
+    var c=cands[0],L=c.lim,type=L.test,T=MOBILITY_TESTS[type],S=c.series,e=c.error.value,last=S[S.length-1];
+    var R=MOBILITY_REMEDY[L.kind],D=MOBILITY_DIMENSIONS[R.dimension],K=STRETCH_KINDS[R.stretch];
+    var now=_doseBefore(C,asOf()),target=Math.round(now)+C.dose.scale;
+    var ex=(typeof MOBILITY_LIBRARY!=='undefined'?MOBILITY_LIBRARY:[]).filter(function(m){return m.regions.indexOf(T.region)>=0&&(R.stretch!=='static'||m.type==='stretch');}).slice(0,3).map(function(m){return m.name;});
+    var how=(ASSESSMENTS.filter(function(a){return a.id===T.assessment;})[0]||{}).how||T.label;
+    /* the change expected from 30 more minutes a week: the response per 30 minutes a week, the person's own where it is fitted */
+    var t=(cr.tests||[]).filter(function(x){return x.type===type;})[0]||{},fitted=t.status==='ok';
+    var per=fitted?t.perUnit:t.prior.mean,sdv=fitted?t.sd:t.prior.sd,pw=fitted?t.personalWeight:0;
+    var expected={value:round(per,2),lo:round(per-2*sdv,2),hi:round(per+2*sdv,2),unit:T.unit,weeks:4,personalWeight:pw,
+      basis:fitted?('your own '+T.label+' tests against your mobility minutes, '+Math.round(pw*100)+'% of the weight'):('the population figure: your own response is not fitted yet ('+t.need+')')};
+    expected.text=fmtSigned(expected.value,1)+' '+T.unit+' after four weeks of '+target+' minutes a week ('+fmtSigned(expected.lo,1)+' to '+fmtSigned(expected.hi,1)+'), from '+expected.basis;
+    var separable=e!=null?Math.abs(expected.value)>2*e:null;
+    var retest={after:addDays(last.date,28),minutesPerWeek:Math.round(0.8*target),
+      protocol:['the same test: '+how,'the same side'+(L.side?' ('+L.side+')':''),'the same warm-up and time of day'],
+      text:'retest on '+shortDate(addDays(last.date,28))+' or later, after at least '+Math.round(0.8*target)+' minutes a week of the work: the same test, the same side'+(L.side?' ('+L.side+')':'')+', the same warm-up and time of day'};
+    /* what the record already shows: the latest reading against one three or more weeks before it, beside what the
+       response predicts for the change in mobility minutes between them */
+    var prev=S.filter(function(x){return x.side===last.side&&daysBetween(x.date,last.date)>=21;}).slice(-1)[0],observed;
+    if(!prev)observed={status:'not yet',text:'no earlier '+T.label+' three or more weeks before the latest, so there is nothing to compare yet'};
+    else{var dPrev=_doseBefore(C,prev.date),dLast=_doseBefore(C,last.date),u=(dLast-dPrev)/C.dose.scale,ch=round(last.value-prev.value,1);
+      var plo=Math.min((per-2*sdv)*u,(per+2*sdv)*u),phi=Math.max((per-2*sdv)*u,(per+2*sdv)*u);
+      var st=ch<plo?'less than expected':(ch>phi?'more than expected':'as expected');
+      observed={status:st,from:prev.value,to:last.value,change:ch,minutesBefore:Math.round(dPrev),minutesSince:Math.round(dLast),predicted:[round(plo,2),round(phi,2)],
+        text:'from '+fmtNum(prev.value,1)+' to '+fmtNum(last.value,1)+' '+T.unit+' ('+fmtSigned(ch,1)+') while your mobility work went from '+Math.round(dPrev)+' to '+Math.round(dLast)+' minutes a week; the response predicts '+fmtSigned(plo,1)+' to '+fmtSigned(phi,1)+': '+st};}
+    var uncertainty={interval:[expected.lo,expected.hi],personalWeight:pw,error:e,separable:separable,
+      text:(pw<0.2?'The expected change is the population figure; your tests only hint so far. ':'The expected change is '+Math.round(pw*100)+'% your own tests. ')+
+        (e==null?'The test’s own error is unknown until it is repeated within a week. ':(separable?'It is more than twice the test’s error, so one retest can show it. ':'It is within twice the test’s error ('+fmtNum(e,1)+' '+T.unit+'), so one retest cannot separate it from repeating the test. '))+cr.limits};
+    return {status:'ok',cls:'EMPIRICAL',test:type,
+      limitation:L,
+      measurement:measurement(type,S,c.error),
+      intervention:{dimension:D.label,remedy:D.remedy,stretch:K.label,how:K.how,dose:K.dose,minutesPerWeek:target,side:L.side||null,exercises:ex,why:K.effect,
+        text:K.label.toLowerCase()+' work ('+D.remedy+')'+(L.side?' on the '+L.side+' side first':'')+', '+target+' minutes a week'+(ex.length?': '+ex.join(', '):'')},
+      expectedChange:expected,retest:retest,observedResponse:observed,uncertainty:uncertainty,
+      policy:MOBILITY_REFERENCE_CONTRACT.id,others:cands.slice(1).map(function(o){return o.lim.text;}),
+      note:'One limitation at a time, so a retest can say whether the work changed it.'};
+  });
+}

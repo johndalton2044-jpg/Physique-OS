@@ -4550,3 +4550,117 @@ What stays open, and why:
 
 All 37 gates pass (reproducible included); release 24/24; 1,889 self-tests.
 
+
+## What each view reads, whether readiness predicts, cardio five ways, a mobility recommendation (build abd4ef4b01)
+
+Four items the first catalogue had placed after calibration (phase F), built now because each can be tested on the
+record as it stands. None adds a registry.
+- **What each view reads, declared and checked** (doc 1, W-044: presentation authority).
+  - `STATE_REQUIREMENTS` lists the 21 models and 26 observation types the current state reads. `VIEW_REQUIREMENTS`
+    lists what each of the 12 views reads on top of it, and `registerView` fills each view's model and data
+    dependencies from it.
+  - The governance gate renders every view twice with every model function, `obsOf` and `seriesWindow` instrumented.
+    It fails on a view that reads a model or an observation it does not declare, or declares one it never reads.
+  - A read that depends on the day is declared as conditional, with its reason: Today runs the recovery model only on
+    a day with planned training, and Learn reads the MET energy model only when a cardio session falls in the seven
+    days energy availability reads.
+- **Whether readiness predicts the session that follows** (doc 1, W-019: "readiness/recovery outputs demonstrate
+  measurable incremental value over simple baselines").
+  - `readinessValidity()` scores each past session: each lift's best estimated 1RM against that lift's own last three
+    exposures, in %, averaged over the session.
+  - For each session it rebuilds, as the record stood the evening before (nothing from the session day), the three
+    recovery scores on screen: the recovery summary, the latent recovery state and the readiness average. Beside them
+    are three simple readings: no information, sleep alone and fatigue alone, each against the person's normal.
+  - Each is scored out of sample (leave one out, a straight-line fit). A score adds value only if its error is at most
+    0.95 of the best simple reading's and the lower bound of its correlation is above zero.
+  - On the demo record (22 sessions) all three predict the sessions: correlations 0.60 to 0.66, lower bounds 0.24 to
+    0.32. None beats fatigue alone: they miss by 9.6 to 10.4%, against 8.7% for fatigue alone and 12.0% for no
+    information.
+  - That verdict is what is shown. Both recovery sheets give each score's miss, its correlation and the verdict, and
+    the assistant's answer to "how recovered am I" carries it.
+  - The recovery debt read a baseline field that does not exist, so once a baseline existed no day counted as worse
+    than it and the debt read 0. It reads the baseline now.
+- **Cardio, five ways** (doc 1, W-017: "a cardio intervention can be represented and evaluated without conflating dose
+  with capacity or expenditure").
+  - `CARDIO_CONCEPTS` gives dose, capacity, expenditure, recovery cost and strength interference each its own measure
+    and unit, and says what each must not be read as.
+  - `cardioInterventionEvaluation(before, after)` measures each over a period before and a period after a change:
+    - dose: minutes a week;
+    - capacity: the fitness model's VO2max estimate as it stood at the end of each period, never moved by minutes;
+    - expenditure: kcal above rest from each session's own MET;
+    - recovery cost: relative load a week, refused when a session carries no intensity;
+    - strength: each lift against itself, reported and not attributed, beside the graded interference comparison.
+  - The cardio experiment asks "is cardio worth its recovery cost for me?" but measured only weight. Its protocol now
+    names the five outcomes and evaluates them once it starts. The template and the picker show them before it starts.
+  - Energy availability costed every cardio session at MET 5, because it read a field the normaliser does not return.
+    It now uses each session's own MET through the shared MET service: a 60-minute walk at 70 kg costs 183 kcal above
+    rest, not 293. The energy-availability model now lists the MET model among its inputs.
+- **A mobility recommendation that explains itself** (doc 1, W-016: it "can explain the limitation, measurement
+  quality, chosen intervention, expected change, retest condition, observed response and uncertainty").
+  - `mobilityRecommendation()` reads the knee-to-wall and sit-and-reach tests, which have a response model. It takes
+    one series per test, whether the quick log or an assessment recorded it.
+  - The limitation is, in order:
+    - a left-right difference larger than two test errors (worked on the lesser side);
+    - a gap between active and passive range at the joint;
+    - a range short of the working reference;
+    - range lost from the person's own best of the last six months.
+  - The working reference is a heuristic contract (`mobility_reference`, not validated): 10 cm knee-to-wall, and a
+    sit-and-reach that reaches the feet. It cites two findings now in the claim registry under a new mobility domain:
+    stretching dose and range (Thomas et al. 2018) and knee-to-wall reliability (Bennell et al. 1998).
+  - The measurement gives its readings and the test's error: from the person's own repeats within a week once there
+    are two pairs, otherwise the published figure (about a centimetre for knee-to-wall) or "unknown".
+  - The intervention follows the limitation's dimension: static work for range, end-range work for a gap, the lesser
+    side first. It asks for 30 more minutes a week than the four weeks before, with exercises from the library.
+  - The expected change comes from the mobility response: the population prior, updated by the person's own slope
+    with its weight.
+  - The retest is four weeks on, after at least 80% of the minutes, on the same test, side, warm-up and time of day.
+  - The observed response sets the latest reading against one three or more weeks earlier, beside the response's
+    prediction for the minutes actually done.
+  - The uncertainty says whether one retest can separate the expected change from the test's own error.
+  - The mobility sheet shows the seven parts, the reference's statement and its validation status.
+
+Tests:
+- 32 self-tests, each made to fail once on purpose:
+  - the leave-one-out error by hand (20/9) and the verdict rule at its boundaries;
+  - a session's outcome on lifts written here (+20%, then −25%);
+  - on the demo record:
+    - no lookahead: a rating logged on a session's own day leaves that session's predictors unchanged;
+    - fatigue alone's error, recomputed in the test;
+    - each verdict, worked out from the errors;
+    - both recovery screens and the assistant's answer;
+    - the recovery debt, counted from the record;
+  - runs written here with minutes only:
+    - the dose doubles;
+    - expenditure at 9.8 MET net of rest;
+    - recovery cost and capacity are refused;
+    - strength lift by lift: +10%, and a lift trained in one period only is left out;
+    - five distinct units;
+  - energy availability's walk at its own MET;
+  - the protocol's five outcomes, and the template's five questions;
+  - mobility, on records written here: 7 cm is 3 cm short of 10; a right side 2.5 cm short of the left comes first;
+    a 3 cm fall from the person's own best is lost range; steady range is not a limitation, with the error from the
+    person's own repeats (√((0.4² + 0.2²)/2) / √2); the expected +0.5 cm (−1.0 to +2.0) from the prior; the retest four
+    weeks on after 44 minutes a week; +1.0 cm observed against the prediction for 25 minutes a week; the seven parts on
+    screen; no test, no recommendation; the contract and its two findings.
+- The view-requirements check:
+  - made to fail four ways: an undeclared model on Today, a declared model Food never reads, an undeclared observation
+    on Food, and an undeclared model in the state;
+  - passing on seven consecutive days.
+- Black-box workflow V-018:
+  - the recovery state, opened from search, shows each score's miss, and the verdict on screen is the one worked out
+    from those misses;
+  - the cardio experiment, opened from the picker, asks five questions, each in its own unit.
+- Black-box workflow V-019: a knee-to-wall of 7 cm entered in the quick log; the mobility screen, opened from search,
+  explains all seven parts. The limitation is 10 − 7 cm short of the reference. With no minutes logged, the work is 30
+  minutes a week, with a retest 28 days on after at least 24 a week. One reading leaves nothing to compare.
+
+What stays open, and why:
+- On the demo record no recovery score beats fatigue alone. Whether one does for a real person is for the backtest to
+  say from their own sessions; nothing here can claim it in advance.
+- W-015, W-018 and W-020 (training, nutrition and body-composition refinement) give directions, not a definition of
+  done a test could hold, so they stay deferred.
+- The mobility recommendation covers the two tests with a response model. The shoulder and hip assessments are
+  reported but not yet recommended on.
+- Prospective validation still needs months of real use.
+
+1,921 self-tests pass; the full release record is in progress.

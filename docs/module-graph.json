@@ -400,17 +400,20 @@
     "fmtSigned",
     "mean",
     "sd",
+    "correlation",
     "esc"
    ],
    "20-schema-storage.js": [
     "save",
-    "pushUndo"
+    "pushUndo",
+    "memo"
    ],
    "24-events.js": [
     "emitEvent"
    ],
    "30-observations.js": [
     "asOf",
+    "withAsOf",
     "activePhase",
     "obsOf",
     "seriesWindow",
@@ -418,6 +421,8 @@
    ],
    "40-models.js": [
     "bodyComp",
+    "e1rm",
+    "normExercise",
     "strengthTrend"
    ],
    "45-baselines.js": [
@@ -442,12 +447,18 @@
    "67-program-edit.js": [
     "equipPossible"
    ],
+   "71-integration.js": [
+    "unifiedRecovery"
+   ],
    "77-lifecycle.js": [
     "inventoryLifecycle"
    ],
    "81-conformance.js": [
     "costConfidence",
     "inventoryConfidence"
+   ],
+   "85-latent.js": [
+    "recoveryLatentState"
    ]
   }
  },
@@ -593,6 +604,9 @@
     "scoreExecutionPredictions",
     "rankLevers"
    ],
+   "61-conditioning.js": [
+    "cardioInterventionEvaluation"
+   ],
    "67-program-edit.js": [
     "programIsCustom",
     "programDef"
@@ -686,12 +700,22 @@
   "calls": {
    "10-core.js": [
     "addDays",
+    "daysBetween",
+    "shortDate",
     "num",
     "round",
+    "fmtNum",
     "fmtSigned"
    ],
+   "20-schema-storage.js": [
+    "memo"
+   ],
    "30-observations.js": [
-    "asOf"
+    "asOf",
+    "obsOf"
+   ],
+   "45-baselines.js": [
+    "measurementQuality"
    ],
    "49-movement.js": [
     "movementDose",
@@ -700,6 +724,10 @@
     "logMovement",
     "movementLog",
     "crossModalityEffect"
+   ],
+   "61-physiology.js": [
+    "_doseBefore",
+    "capacityResponse"
    ]
   }
  },
@@ -1482,6 +1510,7 @@
    "10-core.js": [
     "localDateOf",
     "addDays",
+    "daysBetween",
     "num",
     "round",
     "fmtSigned",
@@ -1490,12 +1519,15 @@
    ],
    "30-observations.js": [
     "asOf",
+    "withAsOf",
     "activePhase",
     "obsOf",
     "sessionsOf"
    ],
    "40-models.js": [
-    "prof"
+    "prof",
+    "e1rm",
+    "normExercise"
    ],
    "48-domains-more.js": [
     "readinessState"
@@ -1506,6 +1538,9 @@
    ],
    "64-exercise.js": [
     "resolveExercise"
+   ],
+   "66-data-reference.js": [
+    "metKcal"
    ],
    "85-latent.js": [
     "cardioFitnessState"
@@ -1543,7 +1578,8 @@
    ],
    "61-conditioning.js": [
     "cardioSessions",
-    "normaliseCardioSession"
+    "normaliseCardioSession",
+    "cardioNetKcal"
    ],
    "62-food.js": [
     "foodLogsOn",
@@ -3450,7 +3486,8 @@
     "injuryState"
    ],
    "48-domains-more.js": [
-    "readinessState"
+    "readinessState",
+    "readinessValidity"
    ],
    "49-movement.js": [
     "movementLibrary",
@@ -3491,7 +3528,8 @@
     "stretchPrescription",
     "sequenceAnalysis",
     "logSequence",
-    "yogaResponse"
+    "yogaResponse",
+    "mobilityRecommendation"
    ],
    "54-scenarios.js": [
     "buildScenario",
@@ -3519,6 +3557,8 @@
    ],
    "58-explanation.js": [
     "currentExplanationLevel",
+    "heuristicContractById",
+    "heuristicValues",
     "compileExplanation"
    ],
    "58-plan.js": [
@@ -4876,6 +4916,10 @@
    ],
    "48-domains-more.js": [
     "readinessState",
+    "_looMse",
+    "_readinessOutcomes",
+    "_validityVerdict",
+    "readinessValidity",
     "cardioState",
     "compositionState",
     "costState",
@@ -4953,7 +4997,8 @@
     "isometricProgression",
     "resolvePose",
     "sequenceAnalysis",
-    "logSequence"
+    "logSequence",
+    "mobilityRecommendation"
    ],
    "54-scenarios.js": [
     "buildScenario",
@@ -4994,6 +5039,7 @@
     "confidenceBasisText",
     "explanationClaim",
     "heuristicContracts",
+    "heuristicContractById",
     "explainDecision",
     "compileExplanation",
     "decisionQuestions",
@@ -5123,7 +5169,8 @@
     "cardioTiming",
     "normaliseCardioSession",
     "cardioLoad",
-    "cardioNormalisationAudit"
+    "cardioNormalisationAudit",
+    "cardioInterventionEvaluation"
    ],
    "61-physiology.js": [
     "_kgNow",
@@ -5915,7 +5962,8 @@
     "sleepState"
    ],
    "48-domains-more.js": [
-    "readinessState"
+    "readinessState",
+    "readinessValidity"
    ],
    "50-decision.js": [
     "diagnose",

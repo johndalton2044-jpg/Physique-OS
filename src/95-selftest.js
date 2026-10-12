@@ -5084,6 +5084,110 @@ function runSelfTest(opts){
       ok('and scored against the day’s record, not a weigh-in: its Brier score is the one worked out from the record',!!r.q&&r.q.status==='scored'&&r.q.actual===undefined&&want!=null&&r.q.brier===want,JSON.stringify({q:r.q&&r.q.brier,want:want}));
       ok('the track record counts every scored item',r.T.status==='ok'&&r.T.n===Object.keys(r.q.outcomes).length,JSON.stringify(r.T));
     })();
+    _stSuite('recovery');
+    /* READINESS PREDICTIVE VALIDITY (catalogue doc 1, W-019). The scoring and the verdict rule by hand, the outcome on lifts
+       written here, then the backtest on the demo: no lookahead, an error that is out of sample, and a verdict that follows
+       from the errors it reports. */
+    (function(){
+      ok('out-of-sample error by hand: the mean alone misses 1, 2, 3, 4 by 20/9 on average; a perfect line misses by nothing',
+        Math.abs(_looMse(null,[1,2,3,4])-20/9)<1e-9&&_looMse([1,2,3,4],[2,4,6,8])<1e-12);
+      var M={none:10,sleep:9,fatigue:8};
+      ok('a score adds value only if it beats the best simple reading by 5% and correlates positively',
+        _validityVerdict({mse:7.5,rLo:0.1},M,'X').verdict==='adds value'&&_validityVerdict({mse:7.7,rLo:0.1},M,'X').verdict==='no better than a simple reading'
+        &&/no better than fatigue alone/.test(_validityVerdict({mse:7.7,rLo:0.1},M,'X').text)&&_validityVerdict({mse:7.5,rLo:-0.05},M,'X').verdict==='not shown'
+        &&_validityVerdict({mse:9.6,rLo:0.1},M,'X').verdict==='not shown');
+      var a=asOf(),keepS=DB.sessions,out=null,mk=function(i,load){var d=addDays(a,-40+i*7);return {id:'st-rv-'+i,date:d,createdAt:d+'T08:00:00.000Z',sets:[{exercise:'Test press',load:load,reps:1}]};};
+      try{DB.sessions=[mk(0,100),mk(1,110),mk(2,90),mk(3,120),mk(4,80)];_memoInvalidate();out=_readinessOutcomes(addDays(a,-60));}finally{DB.sessions=keepS;_memoInvalidate();}
+      ok('a session is scored against the same lift’s own last three exposures: 120 against 100 is +20%, 80 against 106.7 is −25%',
+        out.length===2&&Math.abs(out[0].value-20)<1e-9&&Math.abs(out[1].value-(80-320/3)/(320/3)*100)<1e-9,JSON.stringify(out));
+      var R={},keepDB=DB;try{DB=emptyDB();loadDemo();_memoInvalidate();R.V=JSON.parse(JSON.stringify(readinessValidity()));
+        var pb=personalBaselines().streams;R.debtWant=0;['fatigue','soreness'].forEach(function(t){if(pb[t]&&pb[t].status==='ok')seriesWindow(t,14).forEach(function(d){if(d.value>pb[t].baseline)R.debtWant++;});});
+        R.debt=readinessState().daysBelowNormal;R.sheet=SHEETS.recoveryState().body;R.sheet2=SHEETS.recoveryLatent().body;R.ask=askQuestion('how recovered am I');
+        var last=R.V.rows&&R.V.rows[R.V.rows.length-1];R.last=last;
+        if(last){DB.observations.push({id:'obs-st-rv',type:'fatigue',date:last.date,at:last.date+'T06:00:00.000Z',createdAt:last.date+'T06:00:00.000Z',value:10,unit:'/10',source:'manual',meta:{},flags:[],retracted:false});
+          _memoInvalidate();R.after=(readinessValidity().rows||[]).filter(function(x){return x.date===last.date;})[0]||null;}}finally{DB=keepDB;_memoInvalidate();}
+      var V=R.V,P={};(V.predictors||[]).forEach(function(p){P[p.id]=p;});
+      ok('on the demo, each session is scored against no information, sleep alone and fatigue alone',V.status==='ok'&&V.n>=12&&V.rows.length===V.n
+        &&['unified','latent','readiness','sleep','fatigue','none'].every(function(k){return !!P[k];}),JSON.stringify({n:V.n,status:V.status}));
+      ok('no lookahead: a rating logged on a session’s own day leaves that session’s predictors as they were',!!R.after&&JSON.stringify(R.after.x)===JSON.stringify(R.last.x)&&R.after.y===R.last.y,JSON.stringify({before:R.last&&R.last.x,after:R.after&&R.after.x}));
+      /* leave-one-out, worked here from the scored rows, for fatigue alone */
+      var xs=V.rows.map(function(r){return r.x.fatigue;}),ys=V.rows.map(function(r){return r.y;}),n=ys.length,se=0;
+      for(var i=0;i<n;i++){var X=xs.filter(function(_,j){return j!==i;}),Y=ys.filter(function(_,j){return j!==i;}),mx=X.reduce(function(s,v){return s+v;},0)/X.length,my=Y.reduce(function(s,v){return s+v;},0)/Y.length,
+        sxy=0,sxx=0;X.forEach(function(v,j){sxy+=(v-mx)*(Y[j]-my);sxx+=(v-mx)*(v-mx);});se+=Math.pow(ys[i]-(my+(sxx?sxy/sxx:0)*(xs[i]-mx)),2);}
+      ok('every error is out of sample: fatigue alone’s is the leave-one-out error worked out here',Math.abs(P.fatigue.mse-se/n)<1e-9,P.fatigue.mse+' vs '+se/n);
+      var rule=function(p){var simple=Math.min(P.none.mse,P.sleep.mse,P.fatigue.mse);return p.mse<=0.95*simple&&p.rLo>0?'adds value':(p.mse<=0.95*P.none.mse&&p.rLo>0?'no better than a simple reading':'not shown');};
+      ok('and each verdict follows from the errors it reports',['unified','latent','readiness'].every(function(k){return V.verdicts[k].verdict===rule(P[k]);}),JSON.stringify(V.verdicts));
+      ok('both recovery screens say whether each score has predicted your sessions',[R.sheet,R.sheet2].every(function(b){return /DOES IT PREDICT YOUR SESSIONS/.test(b)&&b.indexOf(V.verdicts.unified.text)>=0&&b.indexOf(V.verdicts.readiness.text)>=0&&/Fatigue alone/.test(b);}));
+      ok('asked how recovered you are, the assistant says what the record shows about whether readiness predicts your sessions',R.ask.matched==='readiness'&&String(R.ask.basis).indexOf(V.verdicts.readiness.text)>=0,JSON.stringify(R.ask&&R.ask.basis));
+      ok('recovery debt counts the days worse than your own baseline (it read a field that does not exist, so it was always 0)',R.debtWant>0&&R.debt===R.debtWant,JSON.stringify({got:R.debt,want:R.debtWant}));
+    })();
+    _stSuite('training');
+    /* CARDIO, FIVE CONCEPTS (catalogue doc 1, W-017), on records written here. Runs logged with minutes only, the dose doubled:
+       expected by hand, the dose doubles, expenditure follows each run's MET (9.8 in the reference table, net of rest), and
+       recovery cost and capacity are refused rather than read from minutes. */
+    (function(){var a=asOf(),kg=154*0.45359237;
+      var o=function(i,date,type,value,meta){return {id:'obs-st-c'+i,type:type,date:date,at:date+'T07:00:00.000Z',createdAt:date+'T07:00:00.000Z',value:value,unit:type==='weight'?'lb':(type==='bodyfat'?'%':(type==='calories'?'kcal':'min')),
+        source:'manual',meta:meta||{},flags:[],retracted:false};};
+      var run={modality:'run'},obs=[o(0,addDays(a,-27),'weight',154),o(1,addDays(a,-25),'cardio',30,run),o(2,addDays(a,-20),'cardio',30,run),
+        o(3,addDays(a,-12),'cardio',30,run),o(4,addDays(a,-10),'cardio',30,run),o(5,addDays(a,-6),'cardio',30,run),o(6,addDays(a,-3),'cardio',30,run)];
+      var mkS=function(id,d,sets){return {id:id,date:d,createdAt:d+'T08:00:00.000Z',sets:sets};};
+      var sess=[mkS('st-c1',addDays(a,-20),[{exercise:'Test squat',load:100,reps:1}]),mkS('st-c2',addDays(a,-6),[{exercise:'Test squat',load:110,reps:1},{exercise:'Test deadlift',load:300,reps:1}])];
+      var E=null,keepO=DB.observations,keepS=DB.sessions;
+      try{DB.observations=obs;DB.sessions=sess;_memoInvalidate();E=cardioInterventionEvaluation([addDays(a,-27),addDays(a,-14)],[addDays(a,-13),a]);}finally{DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();}
+      var C=E.concepts,net=(9.8-1)*3.5*kg/200*30;
+      ok('the dose doubles: 30 to 60 minutes a week',C.dose.before===30&&C.dose.after===60&&C.dose.change===30,JSON.stringify(C.dose));
+      ok('expenditure follows each run’s MET net of rest, times 70 kg and 30 minutes: '+Math.round(net)+' to '+Math.round(2*net)+' kcal a week',
+        C.expenditure.status==='estimated'&&C.expenditure.before===Math.round(net)&&C.expenditure.after===Math.round(2*net),JSON.stringify(C.expenditure));
+      ok('recovery cost is refused, not inferred from minutes, when no session carries an intensity',C.recoveryCost.status==='insufficient'&&C.recoveryCost.before===undefined);
+      ok('capacity is not moved by minutes: without heart rate it is not estimated at all',C.capacity.status==='insufficient'&&C.capacity.change===undefined);
+      ok('strength is compared lift by lift: the squat’s 100 to 110 is +10%, and a lift trained in one period only is left out',C.interference.lifts===1&&C.interference.change===10,JSON.stringify(C.interference));
+      ok('five concepts with five different units',Object.keys(C).length===5&&Object.keys(C).map(function(k){return C[k].unit;}).filter(function(u,i,arr){return arr.indexOf(u)===i;}).length===5);
+      /* exercise energy in energy availability: a 60-minute walk at its own MET (3.5 in the table), not MET 5 */
+      var t=todayISO(),eo=[o(10,addDays(t,-9),'weight',154),o(11,addDays(t,-9),'bodyfat',20),o(12,addDays(t,-2),'cardio',60,{modality:'walk'})];
+      for(var i=1;i<=7;i++)eo.push(o(20+i,addDays(t,-i),'calories',2500));
+      var EA=null;try{DB.observations=eo;DB.sessions=[];_memoInvalidate();EA=energyAvailability();}finally{DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();}
+      var day=EA&&EA.days?EA.days.filter(function(d){return d.date===addDays(t,-2);})[0]:null;
+      ok('energy availability costs a walk at its own MET: '+Math.round((3.5-1)*3.5*kg/200*60)+' kcal for 60 minutes, not the '+Math.round((5-1)*3.5*kg/200*60)+' of MET 5',
+        !!day&&day.eee===Math.round((3.5-1)*3.5*kg/200*60),JSON.stringify(day));
+      var base={id:'x-c1',variable:'cardio',baselineValue:2,interventionValue:3,metric:'weight trend (lb/week)',startDate:addDays(a,30),recheckDate:addDays(a,44),durationDays:14,status:'active'};
+      var pc=experimentProtocol(base),ps=experimentProtocol(Object.assign({},base,{variable:'steps'}));
+      ok('a cardio experiment names its five outcomes, each with its own unit; another experiment carries none',!!pc.concepts&&pc.concepts.outcomes.map(function(x){return x.concept;}).join()==='dose,capacity,expenditure,recoveryCost,interference'
+        &&pc.concepts.evaluation===null&&ps.concepts===null);
+      var tb=SHEETS.expTemplate({t:experimentTemplate('cardio')}).body;
+      ok('and the cardio experiment, before it starts, lists the five questions on their own measures',/FIVE SEPARATE QUESTIONS/.test(tb)&&(tb.match(/not read as/g)||[]).length===5,tb.slice(0,200));
+    })();
+    /* A MOBILITY RECOMMENDATION THAT EXPLAINS ITSELF (catalogue doc 1, W-016), on records written here. Expected by hand: a
+       knee-to-wall of 7 cm is 3 cm short of the 10 cm reference; a right side 2.5 cm short of the left outranks it; the
+       expected change for 30 more minutes a week is the population prior (0.5 cm, two SDs of 0.75 either side); the
+       earlier reading is judged against that prior times the change in weekly minutes; the test's error is 1 cm. */
+    (function(){var a=asOf(),keepO=DB.observations,keepS=DB.sessions;
+      var o=function(i,d,type,v,meta){return {id:'obs-st-m'+i,type:type,date:d,at:d+'T07:00:00.000Z',createdAt:d+'T07:00:00.000Z',value:v,unit:type==='mobility'?'min':'cm',source:'manual',meta:meta||{},flags:[],retracted:false};};
+      var run=function(obs){var r=null;try{DB.observations=obs;DB.sessions=[];_memoInvalidate();r=JSON.parse(JSON.stringify(mobilityRecommendation()));r.sheet=SHEETS.mobility().body;}finally{DB.observations=keepO;DB.sessions=keepS;_memoInvalidate();}return r;};
+      var mins=[];for(var k=1;k<=28;k+=3)mins.push(o(100+k,addDays(a,-k),'mobility',10));   /* 10 sessions of 10 minutes in the 4 weeks: 25 a week */
+      var R=run([o(1,addDays(a,-30),'kneewall',6),o(2,a,'kneewall',7)].concat(mins)),Rk=R.status==='ok';
+      ok('a knee-to-wall of 7 cm is a limitation: 3 cm short of the 10 cm reference, three test errors',R.status==='ok'&&R.limitation.kind==='passive'&&R.limitation.size===3&&R.limitation.errors===3,JSON.stringify(R.limitation));
+      ok('the measurement says how good it is: two readings, and the published 1 cm error until the test is repeated within a week',Rk&&R.measurement.readings===2&&R.measurement.error.value===1&&R.measurement.error.own===false&&/Bennell/.test(R.measurement.text));
+      ok('the intervention is static work on the ankle, 30 minutes a week more than the 25 already done',Rk&&R.intervention.stretch==='Static'&&R.intervention.minutesPerWeek===55&&R.intervention.exercises.length>0);
+      ok('the expected change is the population prior: +0.5 cm (−1.0 to +2.0), none of it the person’s own',Rk&&R.expectedChange.value===0.5&&R.expectedChange.lo===-1&&R.expectedChange.hi===2&&R.expectedChange.personalWeight===0);
+      ok('the retest is four weeks after the latest reading, after at least 44 minutes a week, on the same protocol',Rk&&R.retest.after===addDays(a,28)&&R.retest.minutesPerWeek===44&&R.retest.protocol.length===3);
+      var u=25/30;
+      ok('what was observed is judged against the response for the minutes actually done: +1.0 cm against −0.83 to +1.67',Rk&&R.observedResponse.status==='as expected'&&R.observedResponse.change===1
+        &&Math.abs(R.observedResponse.predicted[0]-(0.5-1.5)*u)<0.006&&Math.abs(R.observedResponse.predicted[1]-(0.5+1.5)*u)<0.006,JSON.stringify(R.observedResponse||null));
+      ok('and the uncertainty says one retest cannot separate +0.5 cm from the test’s own 1 cm',Rk&&R.uncertainty.separable===false&&/cannot separate/.test(R.uncertainty.text));
+      ok('the mobility screen explains all seven parts',/WHAT TO WORK ON/.test(R.sheet)&&['limitation','measurement','intervention','expectedChange','retest','observedResponse','uncertainty'].every(function(k){return R.sheet.indexOf('data-part="'+k+'"')>=0;})&&/not validated/.test(R.sheet));
+      var A=run([o(1,addDays(a,-30),'kneewall',6),o(2,a,'kneewall',7),o(3,addDays(a,-2),'kneewall',11,{side:'left'}),o(4,addDays(a,-1),'kneewall',8.5,{side:'right'})]);
+      ok('a right side 2.5 cm short of the left, more than two test errors, comes first, worked on that side',A.status==='ok'&&A.limitation.kind==='symmetry'&&A.limitation.side==='right'&&A.limitation.size===2.5&&A.intervention.side==='right');
+      var Lo=run([o(1,addDays(a,-60),'kneewall',14),o(2,a,'kneewall',11)]);
+      ok('a fall of 3 cm from the person’s own best, above the reference, is lost range',Lo.status==='ok'&&Lo.limitation.kind==='lost'&&Lo.limitation.size===3);
+      /* two repeats within a week (+0.4, then −0.2 cm), the readings between them 17 days apart */
+      var N=run([o(1,addDays(a,-20),'kneewall',12),o(2,addDays(a,-19),'kneewall',12.4),o(3,addDays(a,-2),'kneewall',12.3),o(4,a,'kneewall',12.1)]);
+      ok('steady range above the reference is not a limitation, and the error comes from the person’s own repeats: √((0.4² + 0.2²)/2) / √2',
+        N.status==='none'&&!!N.checked&&N.checked[0].error.own===true&&Math.abs(N.checked[0].error.value-Math.sqrt((0.16+0.04)/2)/Math.SQRT2)<0.006,JSON.stringify(N.checked&&N.checked[0].error));
+      ok('with no test, it asks for one rather than recommend from nothing',run([]).status==='insufficient');
+      var H=heuristicContractById('mobility_reference'),C=claimRegistry();
+      ok('the reference is a heuristic contract, not validated, citing two findings now in the claim registry under mobility',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.kneewall.value===10
+        &&['thomas2018stretch','bennell1998ktw'].every(function(id){return C.claims.some(function(c){return c.id===id&&(c.domains||[]).indexOf('mobility')>=0;});})&&heuristicContracts().ok);
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

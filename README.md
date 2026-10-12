@@ -22,6 +22,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Corrections and deletions with history | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-005 |
 | Phase targets reaching Today | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-001 |
 | Recovery readings changing today's training advice | validated | heuristic | real data path | population | workflow-tested | local | independent | insufficient | workflow V-004 |
+| Readiness and recovery scores backtested against the session that follows | validated | backtested | real data path | early personal | workflow-tested | local | independent | insufficient | workflow V-018, gate engine |
 | One plan authority (every plan change through changePlan, one version each) | integrated | — | real data path | — | surfaced | local | internal | — | gate authority |
 | What was known on a past date | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-011, gate engine |
 | Encrypted sync between devices | integrated | — | real data path | — | surfaced | server | independent | — | gate cloud:e2e, gate server |
@@ -36,6 +37,8 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Body composition: fat and lean trajectories | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | measured | gate engine |
 | Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | gate engine, workflow V-014 |
+| Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty | validated | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | workflow V-019, gate engine |
+| Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference | validated | population evidence | real data path | population | workflow-tested | local | independent | insufficient | workflow V-018, gate engine |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
 | Personal knowledge: versions, conflicts and decay | surfaced | heuristic | real data path | early personal | surfaced | local | internal | — | gate engine |
 | Experiment portfolio: the next test by expected information gain | surfaced | population evidence | real data path | early personal | surfaced | local | internal | — | gate engine |

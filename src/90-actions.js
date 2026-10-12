@@ -224,7 +224,7 @@ SHEETS.expPicker=function(){
   var rows=EXPERIMENT_TEMPLATES.map(function(t0){var t=experimentTemplate(t0.id)||t0,d=t.design;
     var dur=d&&d.status==='ok'?(d.weeksNeeded+' weeks for you'+(d.feasible?'':' \u2014 your own noise may hide the effect')):'how long depends on data you have not logged yet';
     return '<div class="list-item"><div class="li-head"><div class="li-title">'+esc(t.label)+'</div><div class="li-meta">'+uiPill(t.kind||t.metric)+'</div></div>'+
-      '<div class="li-body"><div>'+esc(t.question)+'</div><div class="hint">You would '+esc(t.todo||('change '+t.variable))+'. Measured on '+esc(t.metric)+' \u00b7 '+esc(dur)+'.</div>'+
+      '<div class="li-body"><div>'+esc(t.question)+'</div><div class="hint">You would '+esc(t.todo||('change '+t.variable))+'. Measured on '+esc(t.variable==='cardio'?'dose, capacity, expenditure, recovery cost and strength, each on its own':t.metric)+' \u00b7 '+esc(dur)+'.</div>'+
       '<div class="btn-row">'+uiBtn('See this experiment','exp.fromTemplate',t.id,'btn-sm btn-primary')+'</div></div></div>';}).join('');
   return {body:'<div class="hint">Each of these is one change, sized to your own day-to-day noise so it runs long enough to answer its question.</div>'+rows+
     '<div class="btn-row" style="margin-top:10px">'+uiBtn('Design my own','exp.custom',null,'btn-sm btn-ghost')+'</div>',foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
@@ -240,6 +240,11 @@ SHEETS.experimentDetail=function(b){var e=(DB.experiments||[]).filter(function(x
     row('Stops',shortDate(P.stoppingRule.scheduled),'or earlier if '+P.stoppingRule.early.join(', or '))+
     row('Confounders',P.confounders.found.length?P.confounders.found.join('; '):'none found',P.confounders.found.length?'':'watched: '+P.confounders.watched.join('; '))+
     row('Result',P.result?String(P.result.conclusion):'not yet: '+e.status)+
+    (P.concepts?'<div class="d-block" data-cardio-concepts><div class="d-block-title">FIVE SEPARATE QUESTIONS</div>'+P.concepts.outcomes.map(function(o){
+      var v=P.concepts.evaluation&&P.concepts.evaluation.concepts?P.concepts.evaluation.concepts[o.concept]:null;
+      var val=!v?'from the start date':(v.status==='insufficient'?'not measurable yet':(o.concept==='interference'?fmtSigned(v.change,1)+'%':
+        (v.before!=null?v.before:'\u2014')+' \u2192 '+(v.after!=null?v.after:'\u2014')+(o.concept==='capacity'?(v.moved?' (moved)':' (within its earlier interval)'):'')));
+      return row(o.label+' ('+o.unit+')',val,v&&v.status==='insufficient'?'needs '+(v.need||[]).join(', '):'not read as '+o.notReadAs);}).join('')+'</div>':'')+
     '<div class="d-block" data-protocol-inference><div class="d-block-title">WHAT IT CAN SHOW</div><div class="lead" style="font-size:13px">'+esc(P.design+' design, '+P.inference.identifiability+' identifiability: at most '+P.inference.allowedClaim.toLowerCase().replace(/_/g,' ')+'. '+P.inference.why+(P.inference.confounded?' A confounder was found, so it shows an association only.':''))+'</div></div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 registerAction('exp.evaluate',function(id){var e=DB.experiments.filter(function(x){return x.id===id;})[0];if(!e)return;var early=e.recheckDate>todayISO();return confirmDialog({title:early?'Evaluate early?':'Evaluate experiment',msg:(early?'The recheck date is '+shortDate(e.recheckDate)+'. Evaluating now uses fewer days and lowers confidence.<br><br>':'')+'The outcome is scored against the stamped prediction. An unsupported result is written to negative knowledge. The experiment is archived. Undo is available.',okLabel:'Evaluate'}).then(function(ok){if(!ok)return;var r=evaluateExperiment(id,{asOf:todayISO()});_memoInvalidate();renderAll();toast('Result: '+r.conclusion,{undo:true});});});
@@ -501,6 +506,7 @@ SHEETS.recoveryLatent=function(){var r=recoveryLatentState();
     '<div class="prov">'+esc(r.forecastBasis)+'. '+esc(r.caveat)+'</div>';
   var legacy=readinessState();
   if(legacy&&legacy.status==='ok')body+='<div class="prov">The older readiness summary, an average of the same ratings, reads '+esc(String(legacy.score!=null?legacy.score:legacy.label||''))+' \u2014 kept as a summary of the readings, not as the state.</div>';
+  body+=readinessValidityBlock();
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 SHEETS.internals=function(){
   var ids=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'];
@@ -2021,6 +2027,15 @@ SHEETS.optimise=function(){
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openRecoveryState(){openSheet('edit',{form:'recoveryState',title:'Recovery',
   desc:'Everything that bears on it, together \u2014 with the signals that are actually dragging named separately, because they do not share a remedy.',buf:{}});}
+/* W-019: whether each recovery score on screen has predicted the person's sessions better than a simple reading; shown
+   on both recovery sheets, beside the scores it judges */
+function readinessValidityBlock(){var V=null;try{V=readinessValidity();}catch(e){_q(e,'P2');}if(!V)return '';
+  return '<div class="d-block" data-readiness-validity><div class="d-block-title">DOES IT PREDICT YOUR SESSIONS?</div>'+
+    (V.status!=='ok'?uiRow('Not yet',esc(V.n+' of '+READINESS_VALIDITY.minSessions+' sessions'),{sub:esc((V.need||[]).join(', '))}):
+      V.predictors.map(function(p){return uiRow(esc(p.label),'misses by '+fmtNum(p.rmse,1)+'%',{sub:p.id==='none'?'the baseline every score must beat':
+        ('correlation '+fmtSigned(p.r,2)+' ('+fmtSigned(p.rLo,2)+' to '+fmtSigned(p.rHi,2)+') · '+fmtSigned(p.skill*100,0)+'% against no information')});}).join('')+
+      '<div class="lead" style="font-size:13px" data-validity-verdict>'+esc(['unified','latent','readiness'].map(function(k){return V.verdicts[k].text;}).join(' '))+'</div>')+
+    '<div class="prov">Scored against '+esc(READINESS_VALIDITY.outcome)+', as the record stood '+esc(READINESS_VALIDITY.asOf)+'; '+esc(READINESS_VALIDITY.scoring)+'.'+(V.limits?' '+esc(V.limits):'')+'</div></div>';}
 SHEETS.recoveryState=function(){
   var r=unifiedRecovery();
   if(r.status!=='ok')return {body:uiLocked('Recovery state',r.need||[],{why:r.note}),
@@ -2043,7 +2058,7 @@ SHEETS.recoveryState=function(){
         {sub:esc(k.transfer.verdict).slice(0,120),
          tone:/not transfer/.test(k.transfer.grade)?'attention':''});}).join('')+
       '<div class="prov">'+esc(tk.note)+'</div>';});
-  body+='<div class="prov">'+esc(r.note)+'</div><div class="hint">'+esc(r.caveat)+'</div>';
+  body+=readinessValidityBlock()+'<div class="prov">'+esc(r.note)+'</div><div class="hint">'+esc(r.caveat)+'</div>';
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 var _SUB=null;
 function openSubstitute(){_SUB=null;openSheet('edit',{form:'substitute',title:'Swap a food',
@@ -2125,9 +2140,21 @@ SHEETS.skillLimiter=function(b){
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 function openMobility(){openSheet('edit',{form:'mobility',title:'Mobility',
   desc:'Range you have and range you can use are different questions with different remedies, so they are reported separately.',buf:{}});}
+/* W-016: the recommendation, in the seven parts the catalogue asks it to explain */
+var MOBILITY_REC_PARTS=[['limitation','Limitation'],['measurement','Measurement'],['intervention','Intervention'],['expectedChange','Expected change'],
+  ['retest','Retest'],['observedResponse','So far'],['uncertainty','Uncertainty']];
+function mobilityRecommendationBlock(){var R=null;try{R=mobilityRecommendation();}catch(e){_q(e,'P2');}if(!R)return '';
+  var H=typeof heuristicContractById==='function'?heuristicContractById(MOBILITY_REFERENCE_CONTRACT.id):null;
+  var pol=H?'<div class="prov">'+esc(H.statement(heuristicValues(H)))+' \u2014 '+esc(H.validationStatus)+'.</div>':'';
+  if(R.status==='insufficient')return '<div class="d-block" data-mobility-rec><div class="d-block-title">WHAT TO WORK ON</div>'+uiRow('Not yet',esc((R.need||[]).join(', ')),{sub:esc(R.note)})+'</div>';
+  if(R.status==='none')return '<div class="d-block" data-mobility-rec><div class="d-block-title">WHAT TO WORK ON</div>'+uiRow('Nothing the tests show',esc(R.text),{sub:esc(R.note)})+
+    R.checked.map(function(c){return '<div data-part="measurement">'+uiRow('Measurement','',{sub:esc(c.text)})+'</div>';}).join('')+pol+'</div>';
+  return '<div class="d-block" data-mobility-rec><div class="d-block-title">WHAT TO WORK ON</div>'+
+    MOBILITY_REC_PARTS.map(function(p){return '<div data-part="'+p[0]+'">'+uiRow(esc(p[1]),'',{sub:esc(R[p[0]].text)})+'</div>';}).join('')+
+    (R.others.length?'<div class="hint">Also, once this one is retested: '+esc(R.others.join('; '))+'.</div>':'')+pol+'<div class="prov">'+esc(R.note)+'</div></div>';}
 SHEETS.mobility=function(){
   var ov=mobilityOverview();
-  var body=uiRow('Measured',ov.measured+' of '+ov.total+' joints',{sub:esc(ov.note),rsub:clsMark(ov.cls)});
+  var body=mobilityRecommendationBlock()+uiRow('Measured',ov.measured+' of '+ov.total+' joints',{sub:esc(ov.note),rsub:clsMark(ov.cls)});
   ov.rows.filter(function(r){return r.measured;}).forEach(function(r){
     body+=uiRow(esc(r.label),r.activePassiveGap!=null?(fmtSigned(r.activePassiveGap,1)+' gap'):esc(String(r.latest||'')),
       {sub:esc(r.interpretation)});});
@@ -2280,6 +2307,9 @@ SHEETS.expTemplate=function(b){
       {sub:'derived from your own noise of '+fmtWeight(d.personalNoise)+' per day',tone:d.feasible?'good':'negative'})+
     uiRow('Verdict',esc(d.verdict),{});
   else body+=uiLocked('Duration',(d&&d.need)||['an effect estimate'],{why:d&&d.why});
+  /* W-017: a cardio change answers five questions, each on its own measure; weight is not their stand-in */
+  if(t.variable==='cardio'&&typeof CARDIO_CONCEPTS!=='undefined')body+='<div class="d-block" data-cardio-concepts><div class="d-block-title">FIVE SEPARATE QUESTIONS</div>'+
+    Object.keys(CARDIO_CONCEPTS).map(function(k){var c=CARDIO_CONCEPTS[k];return uiRow(esc(c.label),esc(c.unit),{sub:'not read as '+esc(c.notReadAs)});}).join('')+'</div>';
   body+='<div class="d-block"><div class="d-block-title">CONFOUNDERS TO AVOID</div><ul>'+
     t.confounders.map(function(c){return '<li>'+esc(c)+'</li>';}).join('')+'</ul></div>'+
     '<div class="prov">'+esc(t.note)+'</div>';

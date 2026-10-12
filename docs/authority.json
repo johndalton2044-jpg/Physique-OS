@@ -459,7 +459,7 @@
      "24-events.js:588"
     ],
     "action:data.restoreApply": [
-     "90-actions.js:683"
+     "90-actions.js:689"
     ]
    }
   },
@@ -650,7 +650,7 @@
    ],
    "writers": {
     "createExperiment": [
-     "50-decision.js:405"
+     "50-decision.js:412"
     ]
    }
   },
@@ -668,7 +668,7 @@
      "30-observations.js:210"
     ],
     "createExperiment": [
-     "50-decision.js:407"
+     "50-decision.js:414"
     ]
    }
   },
@@ -681,7 +681,7 @@
    ],
    "writers": {
     "addNegative": [
-     "50-decision.js:493"
+     "50-decision.js:500"
     ]
    }
   },
@@ -738,8 +738,8 @@
    ],
    "writers": {
     "captureSnapshot": [
-     "50-decision.js:579",
-     "50-decision.js:580"
+     "50-decision.js:586",
+     "50-decision.js:587"
     ]
    }
   },
@@ -753,10 +753,10 @@
    ],
    "writers": {
     "evaluateExperiment": [
-     "50-decision.js:474"
+     "50-decision.js:481"
     ],
     "archivePhase": [
-     "50-decision.js:592"
+     "50-decision.js:599"
     ]
    }
   },

@@ -2227,7 +2227,8 @@
     "calories",
     "weight",
     "bodyfat",
-    "cardio"
+    "cardio",
+    "met_energy"
    ]
   },
   {

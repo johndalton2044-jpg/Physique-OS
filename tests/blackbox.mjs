@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-017). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-019). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -274,6 +274,71 @@ await run('V-017 why am I seeing this',async ui=>{
   const tr=ui.text('#editBackdrop [data-trace]'),n=+((tr.match(/(\d+) observations? in the record/)||[])[1]);
   const rec=ui.w.DB.decisions.find(d=>d.id===decId),want=rec&&rec.explanation?rec.explanation.claims.filter(c=>c.type!=='policy'&&c.type!=='finding').reduce((a,c)=>a+(c.evidenceIds||[]).length,0):null;
   line(/the screen/.test(tr)&&/decision [A-Z_]+/.test(tr)&&n===want,'V-017 the trace runs from the screen through the decision and its models to the observations it rests on',tr+' / counted from the record: '+want);
+});
+
+/* V-018 DOES READINESS PREDICT MY SESSIONS (catalogue doc 1, W-019), AND CARDIO FIVE WAYS (W-017). On the demo record the
+   recovery state is opened from search. Expected, worked out from the screen alone: each score's verdict follows
+   from the misses shown beside it. A score adds value only if its squared miss is at most 0.95 of the best simple
+   reading's (sleep alone, fatigue alone, or no information) and its correlation's lower bound is above zero; it is "no
+   better" if it clears only the no-information baseline that way; otherwise it is not shown. Then the cardio experiment
+   is opened from the experiment picker: five questions, each with its own unit, and the picker says it is not measured on
+   weight alone. */
+await run('V-018 readiness validity and cardio concepts',async ui=>{
+  ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();
+  await ui.waitFor(()=>ui.w.DB.sessions.length>0,'the demo’s sessions');
+  await useLevel(ui,'insightful');   /* analysis pages and experiments are shown from the Insightful level */
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','Recovery state');
+  const pickRec=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^Recovery state/.test(x.textContent.trim()));
+  await ui.waitFor(pickRec,'the recovery state in search');pickRec().click();
+  await ui.until('#editBackdrop [data-readiness-validity] [data-validity-verdict]',30000);
+  const rows=[...ui.d.querySelectorAll('#editBackdrop [data-readiness-validity] .row')].map(r=>{const l=r.querySelector('.l'),sm=l.querySelector('small');
+    return {label:(l.firstChild&&l.firstChild.textContent||'').trim(),sub:sm?sm.textContent:'',miss:+((r.querySelector('.r').textContent.match(/misses by ([\d.]+)%/)||[])[1])};});
+  const by=Object.fromEntries(rows.map(r=>[r.label,r]));
+  const simple=['Sleep alone','Fatigue alone','No information (your average session)'].map(k=>by[k]).filter(Boolean);
+  line(rows.length===6&&simple.length===3&&rows.every(r=>isFinite(r.miss)&&r.miss>0),'V-018 three recovery scores and three simple readings, each with its miss',rows.map(r=>r.label+' '+r.miss).join(' | '));
+  const best=simple.slice().sort((a,b)=>a.miss-b.miss)[0],none=by['No information (your average session)'];
+  const name={'Sleep alone':'sleep alone','Fatigue alone':'fatigue alone','No information (your average session)':'your average session'}[best.label];
+  const lo=r=>+((r.sub.match(/\(([+\-−]?[\d.]+) to/)||[])[1]||'').replace('−','-');
+  const want=(label,who)=>{const r=by[label],sq=r.miss*r.miss;
+    if(sq<=0.95*best.miss*best.miss&&lo(r)>0)return who+' predicted your sessions better than sleep or fatigue alone.';
+    if(sq<=0.95*none.miss*none.miss&&lo(r)>0)return who+' predicted your sessions, but no better than '+name+'.';
+    return who+' has not predicted your sessions better than '+name+'.';};
+  const verdict=ui.text('#editBackdrop [data-validity-verdict]');
+  const expected=[want('Recovery summary','The recovery summary'),want('Latent recovery state','The latent recovery state'),want('Readiness average','The readiness average')].join(' ');
+  line(verdict===expected,'V-018 each verdict follows from the misses shown beside it',verdict+' / worked out from the screen: '+expected);
+  line(/the evening before each session/.test(ui.text('#editBackdrop [data-readiness-validity]'))&&/out of sample/.test(ui.text('#editBackdrop [data-readiness-validity]')),'V-018 and it says it used nothing from the session day and scored out of sample');
+  ui.press('edit.close',null,'#editBackdrop');await wait(60);
+  ui.tab('experiments');(await ui.until('[data-act="exp.new"]')).click();
+  const pick=await ui.until('#editBackdrop [data-act="exp.fromTemplate"][data-arg="cardio"]');
+  const hint=pick.closest('.list-item').querySelector('.hint').textContent;
+  line(/each on its own/.test(hint)&&!/Measured on weight/.test(hint),'V-018 the picker says a cardio change is measured five ways, not on weight alone',hint);
+  pick.click();await ui.until('#editBackdrop [data-cardio-concepts]');
+  const cr=[...ui.d.querySelectorAll('#editBackdrop [data-cardio-concepts] .row')].map(r=>({label:(r.querySelector('.l').firstChild.textContent||'').trim(),unit:r.querySelector('.r').textContent.trim()}));
+  line(cr.map(c=>c.label).join()==='Dose,Capacity,Expenditure,Recovery cost,Strength interference'&&new Set(cr.map(c=>c.unit)).size===5,'V-018 the cardio experiment asks five separate questions, each on its own unit',cr.map(c=>c.label+' ['+c.unit+']').join(' | '));
+});
+
+/* V-019 A MOBILITY RECOMMENDATION THAT EXPLAINS ITSELF (catalogue doc 1, W-016). A knee-to-wall of 7 cm is entered in the
+   quick log and the mobility screen is opened from search. Expected, from the catalogue's definition of done and this
+   test's own arithmetic: seven parts, each answered; the limitation is 3 cm short of the 10 cm reference (10 − 7); with no
+   mobility minutes logged, the intervention is 30 minutes a week; the retest is 28 days after today, after at least 24
+   minutes a week (80% of 30); and one reading leaves nothing to compare yet. */
+await run('V-019 mobility recommendation',async ui=>{const KTW=7,REF=10,WEEKLY=30;
+  ui.press('log.open');(await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="tests"]')).click();await ui.until('#logBackdrop #f_kneewall');
+  ui.type('f_kneewall',KTW);ui.press('log.save',null,'#logBackdrop');
+  await ui.waitFor(()=>ui.w.DB.observations.some(o=>o.type==='kneewall'&&o.value===KTW),'the knee-to-wall to be stored');
+  await useLevel(ui,'insightful');
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','Mobility');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^Mobility and stretching/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'mobility in search');pick().click();
+  await ui.until('#editBackdrop [data-mobility-rec] [data-part="uncertainty"]');
+  const part=k=>ui.text('#editBackdrop [data-mobility-rec] [data-part="'+k+'"]');
+  const parts=['limitation','measurement','intervention','expectedChange','retest','observedResponse','uncertainty'];
+  line(parts.every(k=>part(k).trim().length>20),'V-019 the recommendation explains all seven parts',parts.map(k=>k+': '+part(k).slice(0,40)).join(' | '));
+  line(new RegExp(KTW.toFixed(1)+' cm is '+(REF-KTW).toFixed(1)+' cm short of the '+REF+' cm').test(part('limitation')),'V-019 the limitation is the entered reading against the reference',part('limitation'));
+  const due=new Date(Date.now()+28*864e5).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  line(new RegExp(WEEKLY+' minutes a week').test(part('intervention'))&&new RegExp('retest on '+due+' or later, after at least '+Math.round(0.8*WEEKLY)+' minutes a week').test(part('retest')),
+    'V-019 30 minutes a week, retested four weeks on after at least 24 a week',part('intervention')+' / '+part('retest')+' / expected '+due);
+  line(/nothing to compare yet/.test(part('observedResponse'))&&/cannot separate/.test(part('uncertainty')),'V-019 one reading leaves nothing to compare, and the uncertainty says what one retest can show',part('observedResponse')+' / '+part('uncertainty').slice(0,120));
 });
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');

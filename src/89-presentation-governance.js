@@ -618,13 +618,40 @@ function presentationSpecificationAudit(){
 /* Register executable presentation surfaces against the application's real view/render registry.
    This intentionally follows RENDERERS rather than inventing a second navigation taxonomy. */
 registerWidget({widgetId:'body.weightTrend',version:'1.0',data:['weight','date'],modelDependencies:[],renderer:'lineChart',contractId:'WeightTrendChart',sizes:['sm','md','lg'],refresh:'materialized'});
+/* WHAT EACH VIEW NEEDS (catalogue doc 1, W-044). The models a view runs and the observation types it reads, declared here
+   and filled into the view registry's modelDependencies and dataDependencies, so the registry says what a view requires
+   without reading its renderer. The governance gate renders every view on the demo record (which exercises every panel)
+   with each model and each observation read instrumented, twice, and fails when a view reads something it does not
+   declare or declares something it never reads. "state" stands for what getCurrentState() reads, which most views share
+   (STATE_REQUIREMENTS, checked the same way). A requirement read only on some days is listed with the condition under
+   which it is read (conditional), so the check holds on every day of the week. A record with less data takes fewer
+   branches, never more. */
+var STATE_REQUIREMENTS={models:['adherence','appetite','bodycomp_circ','data_trust','energy_balance','exercise_response','fat_vs_other','goal_traj','measurement_quality','muscle_risk','personal_baseline','personal_neat_response','rate_band','strength_trend','tdee_personal','tdee_prior','tissue_energy_density','water_noise','weight_avg','weight_forecast','weight_trend'],
+  observations:['adherence','bodyfat','calories','carbs','cardio','context','cravings','difficulty','fat','fatigue','fiber','fullness','hip','hunger','motivation','neck','protein','sleep','sleepq','soreness','steps','stress','supplement','waist','water','weight']};
+var VIEW_REQUIREMENTS={
+  today:{state:true,models:['recovery','response_matrix','supplement_adherence','uncertainty_chain'],observations:['note'],conditional:{recovery:'only on a day with planned training'}},
+  log:{state:false,models:['weight_avg'],observations:['adherence','bodyfat','calories','carbs','cardio','context','cravings','fat','fatigue','fiber','hunger','neck','protein','rhr','sleep','sleepq','soreness','steps','stress','supplement','waist','water','weight']},
+  plan:{state:true,models:['cardio_fitness_latent','friction','personal_dose_response','personal_frequency_response','personal_response','personal_sleep_response','physique_regions','uncertainty_chain','unified_optimiser'],observations:['arm','chest','cmj','hrr','kneewall','mobility','note','rhr','sitreach','sprint','thigh']},
+  train:{state:true,models:[],observations:[]},
+  food:{state:true,models:['micronutrient_coverage','supplement_adherence'],observations:['sweatrate','urine']},
+  body:{state:true,models:['body_composition_state','physique_regions'],observations:['arm','chest','thigh']},
+  progress:{state:true,models:[],observations:[]},
+  diagnose:{state:true,models:['change_point'],observations:[]},
+  experiments:{state:false,models:['weight_avg'],observations:['weight']},
+  learn:{state:true,models:['cardio_fitness_latent','change_point','diet_digestibility','energy_availability','friction','hydration_balance','intervention_response','met_energy','model_competition','personal_response','physique_regions','recovery_allocation','response_matrix','supplement_efficacy','uncertainty_chain','unified_optimiser'],observations:['arm','chest','cmj','hrr','kneewall','rhr','sitreach','sprint','sweatrate','thigh','urine'],
+    conditional:{met_energy:'only when a cardio session falls in the seven days energy availability reads'}},
+  archive:{state:false,models:['weight_avg'],observations:['weight']},
+  tools:{state:true,models:['uncertainty_chain'],observations:['note']}};
+function viewRequirements(id){var v=VIEW_REQUIREMENTS[id];if(!v)return null;var S=v.state?STATE_REQUIREMENTS:{models:[],observations:[]};
+  var u=function(a,b){return a.concat(b.filter(function(x){return a.indexOf(x)<0;})).sort();};
+  return {viewId:id,state:v.state,models:u(S.models,v.models),observations:u(S.observations,v.observations),conditional:v.conditional||{}};}
 [
   ['today','/today','Today','core'],['log','/log','Log','core'],['plan','/plan','Plan','training'],
   ['train','/train','Train','training'],['food','/food','Food','nutrition'],['body','/body','Body','body'],
   ['progress','/progress','Progress','body'],['diagnose','/diagnose','Diagnose','knowledge'],
   ['experiments','/experiments','Experiments','knowledge'],['learn','/learn','Learn','knowledge'],
   ['archive','/archive','Archive','core'],['tools','/tools','Tools','system']
-].forEach(function(v){registerView({viewId:v[0],route:v[1],title:v[2],domain:v[3]});});
+].forEach(function(v){var r=viewRequirements(v[0]);registerView({viewId:v[0],route:v[1],title:v[2],domain:v[3],modelDependencies:r?r.models:[],dataDependencies:r?r.observations:[]});});
 function presentationViewGuard(id){
   var spec=viewSpec(id),renderer=(typeof RENDERERS!=='undefined'&&RENDERERS)?RENDERERS[id]:null;
   if(!spec)return {ok:false,status:'unregistered-view',viewId:id};

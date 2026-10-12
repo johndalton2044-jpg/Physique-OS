@@ -204,6 +204,30 @@
    }
   },
   {
+   "id": "readiness-validity",
+   "label": "Readiness and recovery scores backtested against the session that follows",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-018"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each past session is scored against each lift’s own last three exposures; the recovery summary, the latent recovery state and the readiness average are rebuilt as the record stood the evening before, beside no information, sleep alone and fatigue alone, and each is scored out of sample (leave one out). A score adds value only if it beats the best simple reading by 5% with a positive correlation. On the demo record all three predict the sessions but no better than fatigue alone, and both recovery screens and the assistant say so",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
    "id": "plan-authority",
    "label": "One plan authority (every plan change through changePlan, one version each)",
    "maturity": "integrated",
@@ -511,6 +535,56 @@
     "scientific": "population evidence",
     "data": "real data path",
     "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "mobility-recommendation",
+   "label": "Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-019"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "from the knee-to-wall and sit-and-reach tests (quick log or assessment): a left-right difference over two test errors, a gap between active and passive range, a range short of the working reference (a heuristic contract, not validated) or range lost from the person’s own best; the test’s error from the person’s own repeats or the published figure; static or end-range work at 30 more minutes a week; the change expected from the mobility response (population prior updated by the person’s own slope, with its weight); a retest after four weeks on the same protocol; what the earlier reading already shows against the response; and whether one retest can separate the change from the test’s error",
+   "source": "stretching dose and range of motion (Thomas et al. 2018); knee-to-wall reliability (Bennell et al. 1998)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "cardio-concepts",
+   "label": "Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-018"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a cardio change is evaluated on each over a period before and after it: minutes a week, the fitness model’s VO2max estimate (never moved by minutes), kcal above rest from each session’s own MET, relative load (refused when sessions carry no intensity), and strength lift by lift (reported, not attributed). Shown on the cardio experiment before and after it starts",
+   "source": "MET values: the 2024 Adult Compendium of Physical Activities; ACSM metabolic equations for walking, running and cycling",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
     "ux": "workflow-tested",
     "operational": "local",
     "evidence": "independent",
