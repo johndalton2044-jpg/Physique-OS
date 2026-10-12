@@ -467,7 +467,7 @@ RENDERERS.food=function(){
       if(r.status!=='ok')return uiRow(r.label,'no data',{sub:r.note});
       var tone=r.verdict==='meets'||r.verdict==='within'?'good':(r.verdict==='below'||r.verdict==='above'?'attention':(r.verdict==='info'?'neutral':'negative'));
       return uiRow(r.label,'<strong>'+fmtNum(r.mean,r.mean<10?1:0)+' '+esc(r.unit)+'</strong>'+(r.target!=null?' '+uiPill(r.verdict,tone):''),{sub:(r.target!=null?(r.dir==='min'?'target \u2265':'limit \u2264')+fmtNum(r.target,r.target<10?1:0)+' '+esc(r.unit)+' \u00b7 ':'')+esc(r.ref)+(r.note?' \u00b7 '+esc(r.note):''),rsub:r.coverage<100?(r.coverage+'% coverage'):''});}).join('')+
-    (ad.perMealProtein?'<div class="divider"></div>'+uiRow('Protein per meal','<strong>'+ad.perMealProtein.meals.map(function(m){return m.mean;}).join(' / ')+' g</strong>',{sub:'breakfast / lunch / dinner / snacks \u00b7 \u2265'+ad.perMealProtein.thresholdG+' g per meal \u00b7 '+esc(ad.perMealProtein.note)}):'')+
+    (ad.perMealProtein?'<div class="divider"></div>'+uiRow('Protein per meal','<strong>'+ad.perMealProtein.meals.map(function(m){return m.mean;}).join(' / ')+' g</strong>',{sub:'breakfast / lunch / dinner / snacks \u00b7 \u2265'+ad.perMealProtein.thresholdG+' g per meal \u00b7 <span data-protein-meals>'+esc(ad.perMealProtein.advice)+'</span> \u00b7 '+esc(ad.perMealProtein.note)}):'')+
     (ad.fatFloor?uiRow('Fat floor',fmtG(ad.fatFloor.mean,0)+' / day',{sub:esc(ad.fatFloor.note),rsub:ad.fatFloor.meets?'above floor':'below floor'}):'')+
     (ad.caveat?'<div class="hint warn">'+esc(ad.caveat)+'</div>':'')});
   else out+=uiCard({title:'Adequacy (7-day)',sub:'not enough logged food',body:'<div class="muted">'+esc(ad.need||'log a day of food')+'</div>'});

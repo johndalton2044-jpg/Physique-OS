@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-12T08:09:39.528Z",
-  "build": "66de301dfc",
+  "generatedAt": "2026-10-12T08:42:48.440Z",
+  "build": "847a6961b4",
   "counts": {
     "hard": {},
     "soft": {}
@@ -74,11 +74,11 @@
     },
     {
       "cat": "heuristic-contracts",
-      "msg": "every threshold and curve behind a decision or goal has a complete contract (22)"
+      "msg": "every threshold and curve behind a decision or goal has a complete contract (24)"
     },
     {
       "cat": "claim-registry",
-      "msg": "every evidence entry carries a claim with grade, population, limitations and review date (26)"
+      "msg": "every evidence entry carries a claim with grade, population, limitations and review date (27)"
     },
     {
       "cat": "decision-grounds",
@@ -90,11 +90,11 @@
     },
     {
       "cat": "current-state",
-      "msg": "docs/CURRENT_STATE.md generated from the running registries (103 lines)"
+      "msg": "docs/CURRENT_STATE.md generated from the running registries (107 lines)"
     },
     {
       "cat": "catalogue",
-      "msg": "catalogue generated from the running registries — 1 change(s) since the previous run"
+      "msg": "catalogue generated from the running registries — 0 change(s) since the previous run"
     },
     {
       "cat": "entity-contracts",

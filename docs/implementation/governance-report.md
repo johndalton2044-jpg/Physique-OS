@@ -1,6 +1,6 @@
 # Governance report
 
-Build 66de301dfc · generated 2026-10-12T08:09:39.528Z
+Build 847a6961b4 · generated 2026-10-12T08:42:48.440Z
 
 **0 hard** (fail the build) · **0 soft** (tracked) · **34 passing**
 
@@ -22,12 +22,12 @@ Build 66de301dfc · generated 2026-10-12T08:09:39.528Z
 - **audit-never-run** — 50 audit functions, every one invoked
 - **registry-id-unique** — every registry id is unique in the running app (21 registries)
 - **registry-key-twice** — no keyed registry is given a key twice in the source (14 registries)
-- **heuristic-contracts** — every threshold and curve behind a decision or goal has a complete contract (22)
-- **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (26)
+- **heuristic-contracts** — every threshold and curve behind a decision or goal has a complete contract (24)
+- **claim-registry** — every evidence entry carries a claim with grade, population, limitations and review date (27)
 - **decision-grounds** — every decision code has declared grounds (15 codes)
 - **view-requirements** — every view’s declared models and observations are exactly what it reads (12 views)
-- **current-state** — docs/CURRENT_STATE.md generated from the running registries (103 lines)
-- **catalogue** — catalogue generated from the running registries — 1 change(s) since the previous run
+- **current-state** — docs/CURRENT_STATE.md generated from the running registries (107 lines)
+- **catalogue** — catalogue generated from the running registries — 0 change(s) since the previous run
 - **entity-contracts** — all 29 entity contracts hold, and every store in the record is owned or explained
 - **model-without-version** — 50 models, each versioned
 - **model-without-provenance** — every model result carries provenance

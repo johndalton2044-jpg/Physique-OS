@@ -46,6 +46,29 @@ function resolveExercise(name){var k=normExercise(name);if(!k)return null;
   var exact=EXERCISES.filter(function(e){return normExercise(e.name)===k||normExercise(e.id)===k;})[0];if(exact)return exact;
   var direct=EXERCISES.filter(function(e){return e.aliases.some(function(a){return normExercise(a)===k;});})[0];if(direct)return direct;var fuzzy=EXERCISES.filter(function(e){return k.indexOf(normExercise(e.name))>=0||e.aliases.some(function(a){return k.indexOf(normExercise(a))>=0||normExercise(a).indexOf(k)>=0;});})[0];return fuzzy||null;}
 function substitutesFor(name,equipment){var e=resolveExercise(name);if(!e)return [];return EXERCISES.filter(function(x){if(x.id===e.id)return false;var sharePattern=x.pattern===e.pattern;var shareMuscle=x.primary.some(function(m){return e.primary.indexOf(m)>=0;});if(!sharePattern&&!shareMuscle)return false;if(equipment&&equipment.length&&!x.equipment.some(function(q){return equipment.indexOf(q)>=0;}))return false;return true;}).map(function(x){return {exercise:x,why:(x.pattern===e.pattern?'same movement pattern':'same primary muscle')+' \u00b7 '+x.equipment.join('/')+' \u00b7 fatigue '+x.fatigue};}).sort(function(a,b){return (a.exercise.pattern===e.pattern?0:1)-(b.exercise.pattern===e.pattern?0:1);}).slice(0,5);}
+/* W-015: WHAT TO START A SUBSTITUTE AT. Two exercises for the same muscles are not the same load: no ratio between them
+   is validated, so none is invented. The person's own record of the substitute decides (its last top set, a little
+   lighter after a long gap); without one, the advice is a load with reps in reserve, lighter still when the substitute
+   is more technical than the lift it replaces. */
+var SUBSTITUTION_CONTRACT={id:'substitution_start',subject:'a substitute exercise',predicate:'is started at',
+  parameters:{gapWeeks:{value:8,unit:'weeks',meaning:'after this long without the exercise, start below its last load'},
+    gapFactor:{value:0.9,unit:'fraction of the last top set',meaning:'the load to start at after a gap'},
+    reserve:{value:3,unit:'reps in reserve',meaning:'with no record of the exercise, a first load you could lift at least this many more reps with'}},
+  statement:function(v){return 'a substitute starts at your own last top set ('+Math.round(v.gapFactor*100)+'% of it after '+v.gapWeeks+' weeks away), or, with no record, at '+v.reserve+'+ reps in reserve';},
+  rationale:'loads do not carry between exercises by any validated ratio; the person’s own record of the substitute is the only figure that does',
+  evidenceBasis:[],parameterSource:'chosen by this system',parameterVersion:'1.0',calibrationStatus:'not calibrated',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults lifting with logged loads'},failureConditions:['a different variation logged under the same name'],outcomes:['a safe first session on the substitute']};
+var SKILL_RANK={low:0,moderate:1,high:2};
+function substitutionStart(fromName,toName){var P=SUBSTITUTION_CONTRACT.parameters,from=resolveExercise(fromName),to=resolveExercise(toName);
+  if(!to)return {status:'unknown',text:'not in the exercise library'};
+  var last=null;sessionsOf({from:addDays(asOf(),-180)}).forEach(function(se){(se.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e||e.id!==to.id||x.load==null||x.reps==null)return;
+    if(!last||se.date>last.date||(se.date===last.date&&x.load>last.load))last={date:se.date,load:+x.load,reps:+x.reps,rir:x.rir!=null?+x.rir:null};});});
+  var harder=from&&SKILL_RANK[to.skill]>SKILL_RANK[from.skill];
+  if(!last)return {status:'new',exercise:to.name,policy:SUBSTITUTION_CONTRACT.id,harder:!!harder,
+    text:'no '+to.name.toLowerCase()+' in the last six months: start with a load you could lift '+P.reserve.value+' or more reps more with, and build from that session'+(harder?'; it is more technical than '+from.name.toLowerCase()+', so start lighter still':'')};
+  var weeks=Math.floor(daysBetween(last.date,asOf())/7),gap=weeks>=P.gapWeeks.value,load=gap?Math.round(last.load*P.gapFactor.value/2.5)*2.5:last.load;
+  return {status:'own',exercise:to.name,policy:SUBSTITUTION_CONTRACT.id,last:last,weeksAgo:weeks,start:{load:load,reps:last.reps},
+    text:'your last '+to.name.toLowerCase()+' was '+fmtNum(last.load,1)+' × '+last.reps+' on '+shortDate(last.date)+(gap?': after '+weeks+' weeks, start at about '+fmtNum(load,1)+' × '+last.reps:': start there')};}
 function weeklyMuscleSets(days){days=days||7;var sess=sessionsOf({from:addDays(asOf(),-(days-1))});var out={};sess.forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(!e)return;e.primary.forEach(function(m){out[m]=(out[m]||0)+1;});e.secondary.forEach(function(m){out[m]=(out[m]||0)+0.5;});});});return Object.keys(out).map(function(m){return {muscle:MUSCLE_GROUPS[m]||m,sets:round(out[m],1)};}).sort(function(a,b){return b.sets-a.sets;});}
 function movementCoverage(days){var sess=sessionsOf({from:addDays(asOf(),-(days||7)+1)});var pats={};sess.forEach(function(s){(s.sets||[]).forEach(function(x){var e=resolveExercise(x.exercise);if(e)pats[e.pattern]=(pats[e.pattern]||0)+1;});});var core=['squat','hinge','horizontal push','vertical push','horizontal pull','vertical pull'];return core.map(function(p){return {pattern:p,sets:pats[p]||0,covered:!!pats[p]};});}
 /* ---- supplements: decision tree, not a stack ---- */

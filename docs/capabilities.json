@@ -84,6 +84,30 @@
    }
   },
   {
+   "id": "photo-comparison",
+   "label": "Progress photos compared only in matching conditions",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-022"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "a photo keeps when it was taken (the file’s own time) and, optionally, whether before or after food; two photos are judged on view, light, time of day (more than four hours apart) and fed state; within each view the latest photo pairs with the earliest taken in matching conditions, the ones set aside counted. One pairing serves the photo vault and the Body tab. No body change is inferred from images",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "not applicable",
+    "data": "real data path",
+    "personalization": "not applicable",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "data-deletion",
    "label": "Erase everything",
    "maturity": "validated",
@@ -141,6 +165,28 @@
     "scientific": "heuristic",
     "data": "real data path",
     "personalization": "not applicable",
+    "ux": "surfaced",
+    "operational": "local",
+    "evidence": "internal",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "protein-distribution",
+   "label": "Protein across the day’s meals, the daily total first",
+   "maturity": "surfaced",
+   "evidence": [
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "about 0.4 g/kg per meal across four meals once the day reaches 1.6 g/kg: a day short of its total is told to reach the total first; a day that is enough is told how many meals reach the amount and which to add to. On the Food tab",
+   "source": "protein per meal and per day (Schoenfeld and Aragon 2018); protein timing around training (Schoenfeld et al. 2013)",
+   "axes": {
+    "engineering": "surfaced",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
     "ux": "surfaced",
     "operational": "local",
     "evidence": "internal",
@@ -611,6 +657,30 @@
     "operational": "local",
     "evidence": "independent",
     "calibration": "insufficient"
+   }
+  },
+  {
+   "id": "substitution-start",
+   "label": "What to start a substitute exercise at",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-023"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "from the person’s own last top set of the substitute (90% of it after eight weeks away); with no record, no load is invented: a load with three or more reps in reserve, lighter still for a more technical lift. Shown under each alternative in the Train tab’s substitution search. A heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
    }
   },
   {

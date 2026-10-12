@@ -266,3 +266,10 @@ Never start an item before what it depends on is in place.
     connection" does the same in the app.
 - **Waiting on the person:** item 11 (provider accounts and a model key), the branch-protection rule on `main`, and a
   `vercel inspect` of a live deployment for the platform's own footprint record.
+
+## 11. State at 847a6961b4
+
+- 37 gates, all pass; release 24/24; 1,967 in-app self-tests, 400 interface tests, 19 black-box workflows.
+- Photos are compared only in matching conditions. Protein across meals is judged with the daily total first. A
+  substitute exercise starts from the person's own record of it (see the roadmap entry for this build).
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.

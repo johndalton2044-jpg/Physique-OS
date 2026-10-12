@@ -5303,6 +5303,42 @@ function runSelfTest(opts){
       ok('the latest photo pairs with the earliest taken in matching conditions, and the one set aside is counted',!!pr&&pr.earlier.id==='photo-st-g'&&pr.later.id==='photo-st-h'&&pr.setAside===1&&pr.comparability.grade==='comparable'&&pr.days===40,JSON.stringify(pr&&{e:pr.earlier.id,aside:pr.setAside,g:pr.comparability.grade}));
       ok('the photo vault and the Body tab both show it, from the one pairing (the Body tab never showed one)',/data-photo-pair="front"/.test(vault)&&/1 earlier photo set aside for its conditions/.test(vault)&&/data-photo-pair="front"/.test(body)&&/comparable/.test(body));
     })();
+    _stSuite('nutrition');
+    /* PROTEIN ACROSS MEALS (catalogue doc 1, W-018: meal timing), on three days written here for an 80 kg person. Expected
+       by hand: 0.4 g/kg is 32 g a meal and 1.6 g/kg is 128 g a day; 30/30/30/10 is 100 g, short of the day; 50/15/50/30 is
+       145 g with two meals at 32 g or more, the lowest lunch; 35 g four times reaches every meal. */
+    (function(){var a=asOf(),keepL=DB.foodLogs,keepO=DB.observations,kgLb=80/0.45359237;
+      var run=function(meals){var r=null;try{var logs=[];for(var d=0;d<3;d++){var day=addDays(a,-d);MEALS.forEach(function(m,i){logs.push({id:'fl-st-pm-'+d+m,date:day,meal:m,food:{kind:'custom',id:'x',name:'x'},quantity:100,basis:'g',grams:100,
+          nutrients:{kcal:meals[i]*4,protein:meals[i],carbs:0,fat:0},createdAt:day+'T08:00:00.000Z'});});}
+        DB.foodLogs=logs;DB.observations=[{id:'obs-st-pm-w',type:'weight',date:a,at:a+'T07:00:00.000Z',createdAt:a+'T07:00:00.000Z',value:kgLb,unit:'lb',source:'manual',meta:{},flags:[],retracted:false}];
+        _memoInvalidate();var ad=nutritionAdequacy(7);var keep=setHTML,cap='';setHTML=function(id,h){if(id==='foodZone')cap=h;};try{RENDERERS.food();}finally{setHTML=keep;}r={pm:ad.perMealProtein,html:cap};}
+        finally{DB.foodLogs=keepL;DB.observations=keepO;_memoInvalidate();}return r;};
+      var A=run([30,30,30,10]).pm,B=run([50,15,50,30]),C=run([35,35,35,35]).pm;
+      ok('the per-meal threshold is 0.4 g/kg: 32 g for 80 kg; the day, 1.6 g/kg, 128 g',!!A&&A.thresholdG===32&&A.dailyTarget===128,JSON.stringify(A&&{t:A.thresholdG,d:A.dailyTarget}));
+      ok('a day short of its total is told to reach the total first, not to spread it',!!A&&A.daily===100&&/short of 1\.6 g\/kg \(128 g\): reach that first/.test(A.advice),A&&A.advice);
+      ok('a day that is enough is told how many meals reach 32 g and which to add to',!!B.pm&&B.pm.meetsCount===2&&/2 of 4 meals reach about 32 g\. Adding some to lunch/.test(B.pm.advice),B.pm&&B.pm.advice);
+      ok('four meals of 35 g reach every meal',!!C&&C.meetsCount===4&&/every meal reaches about 32 g/.test(C.advice));
+      ok('the Food tab says it where the protein per meal is shown',/data-protein-meals/.test(B.html)&&/2 of 4 meals reach about 32 g/.test(B.html));
+      var H=heuristicContractById('protein_meal');
+      ok('the thresholds are a heuristic contract citing a registered finding, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.perMeal.value===0.4&&H.evidenceBasis.indexOf('schoenfeld2018meal')>=0&&heuristicContracts().ok);
+    })();
+    _stSuite('training');
+    /* WHAT TO START A SUBSTITUTE AT (catalogue doc 1, W-015: substitution equivalence), on sessions written here. Expected by
+       hand: a leg press of 300 × 10 two weeks ago is where to start; ten weeks ago, 90% of 300 is 270; with no squat on
+       record, a load with 3 or more reps in reserve, lighter still because a squat is more technical than a leg press. */
+    (function(){var a=asOf(),keepS=DB.sessions;var sess=function(d,name,load,reps){var day=addDays(a,-d);return {id:'st-sub-'+d,date:day,createdAt:day+'T08:00:00.000Z',sets:[{exercise:name,load:load,reps:reps,rir:2}]};};
+      var run=function(list,fn){var r=null;try{DB.sessions=list;_memoInvalidate();r=fn();}finally{DB.sessions=keepS;_memoInvalidate();}return r;};
+      var A=run([sess(14,'Leg Press',300,10)],function(){return substitutionStart('Squat','Leg press');});
+      ok('your own recent record of the substitute is where to start: 300 × 10',A.status==='own'&&A.start.load===300&&A.start.reps===10&&/start there/.test(A.text),A.text);
+      var B=run([sess(70,'leg press',300,10)],function(){return substitutionStart('Squat','Leg press');});
+      ok('after ten weeks away, about 90% of the last load: 270',B.status==='own'&&B.weeksAgo===10&&B.start.load===270&&/after 10 weeks, start at about 270/.test(B.text),B.text);
+      var C=run([],function(){return {up:substitutionStart('Leg press','Squat'),same:substitutionStart('Squat','Hack squat')};});
+      ok('with no record, no load is invented: reps in reserve, and lighter still for a more technical lift',C.up.status==='new'&&C.up.harder===true&&/3 or more reps more/.test(C.up.text)&&/more technical than leg press/.test(C.up.text)
+        &&C.same.status==='new'&&!/more technical/.test(C.same.text),JSON.stringify([C.up.text,C.same.text]));
+      ok('a record under an alias counts as the exercise (logged as "leg press", asked as "Leg press")',B.last&&B.last.load===300);
+      var H=heuristicContractById('substitution_start');
+      ok('the gap and the reserve are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.gapFactor.value===0.9&&heuristicContracts().ok);
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

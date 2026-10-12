@@ -76,4 +76,4 @@ Produced from the running registries on every governance run. Do not edit by han
 
 ## Drift since the previous run
 
-- added command: photo.fed
+- none

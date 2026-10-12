@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-022). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-023). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -397,6 +397,22 @@ await run('V-022 photo conditions',async ui=>{
   const vaultPair=ui.text('#editBackdrop [data-photo-pair="front"]');
   line(/taken at 07:30 and 19:00/.test(vaultPair),'V-022 the vault says why: taken at 07:30 and 19:00, as the files were',vaultPair);
 },{webcrypto:true});
+
+/* V-023 WHAT TO START A SUBSTITUTE AT (catalogue doc 1, W-015). A leg press of 300 × 10 is logged through the session sheet
+   two weeks ago; then "Squat" is typed into the Train tab's substitution search. Expected, from this test's own record:
+   the leg press says to start at the set as logged, on its date; the hack squat, never logged, offers no load. */
+await run('V-023 substitution start',async ui=>{const LOAD=300,REPS=10;
+  ui.setClock(14);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+  ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),'Leg press');ui.type('ss-0-load',LOAD);ui.type('ss-0-reps',REPS);ui.type('ss-0-rir',2);
+  const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+  await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the leg press session to be saved');
+  ui.setClock(0);ui.tab('train');await ui.until('details[data-fold="train-sub"] summary');ui.expand('train-sub');await ui.until('#subSearch');ui.type('subSearch','Squat');
+  await ui.until('#subResults [data-sub-start="legpress"]');
+  const d=new Date();d.setDate(d.getDate()-14);const when=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const lp=ui.text('#subResults [data-sub-start="legpress"]'),hs=ui.text('#subResults [data-sub-start="hacksquat"]');
+  line(new RegExp('your last leg press was '+LOAD+'(\\.0)? × '+REPS+' on '+when+': start there').test(lp),'V-023 the leg press starts at the set as logged, on its date',lp+' / expected date '+when);
+  line(/no hack squat in the last six months/.test(hs)&&!/\d+ × \d+/.test(hs),'V-023 the hack squat, never logged, offers no load',hs);
+});
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');
 console.log(failed?failed+' failed':'all passed');process.exit(failed?1:0);

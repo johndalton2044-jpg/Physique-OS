@@ -4738,3 +4738,45 @@ What stays open, and why:
   These were chosen as the parts a test can hold now.
 
 All 37 gates pass (reproducible included); release 24/24; 1,950 self-tests.
+
+## Photos compared in matching conditions, protein across meals, what to start a substitute at (build 847a6961b4)
+
+More of W-015, W-018 and W-020's own lists, each where a test can hold it.
+- **Photos compared only in matching conditions** (doc 1, W-020: photo-condition normalisation).
+  - Two defects found. `photoComparability` checked four conditions no photo ever recorded (camera distance,
+    clothing, a time-of-day label, fed state), so every pair graded "too little was recorded". And the Body tab
+    tested `photoPairs()` for an array when it returns `{pairs}`, so it never showed a comparison. The old tests had
+    built photos with those never-recorded fields, so they passed where real photos could not.
+  - A photo now keeps when it was taken (the file's own time, which a library photo carries) and, optionally, whether
+    before or after food. The choice resets after each photo; the new workflow found it carrying over.
+  - Two photos are judged on view, light, time of day (more than four hours apart) and fed state. What the app does not
+    record is named as advice, not counted against the comparison.
+  - Within each view, the latest photo pairs with the earliest taken in matching conditions, and the photos set aside
+    are counted. One pairing serves the vault and the Body tab: the vault's own pose pairing and an unused second
+    comparability check are gone.
+- **Protein across the day's meals** (doc 1, W-018: meal timing). The per-meal threshold existed: "about 0.3 g/kg,
+  commonly cited", with no finding behind it. It is now a heuristic contract (`protein_meal`): 0.4 g/kg per meal across
+  four meals, once the day reaches 1.6 g/kg. It cites a finding now in the claim registry (Schoenfeld and Aragon
+  2018).
+  - A day short of its total is told to reach the total first.
+  - A day that is enough is told how many meals reach the amount and which to add to, on the Food tab.
+- **What to start a substitute at** (doc 1, W-015: substitution equivalence).
+  - No load ratio between two exercises is validated, so none is invented. The person's own last top set of the
+    substitute decides, at 90% of it after eight weeks away.
+  - With no record, the advice is a load with three or more reps in reserve, lighter still for a more technical lift.
+  - It is shown under each alternative in the Train tab's substitution search. The thresholds are a heuristic contract
+    (`substitution_start`), not validated.
+
+Tests:
+- 17 self-tests, each made to fail once on purpose:
+  - photo conditions, pairing, and both screens;
+  - the protein thresholds, total first, meal counts and the Food tab;
+  - the substitute's own record, the gap, no invented load, and aliases.
+- The photo tests that used never-recorded fields are rewritten to the records the app stores.
+- Black-box workflows V-022 (two photos through the vault, thirty days and eleven and a half hours apart) and V-023 (a
+  leg press logged, then a squat's substitutes searched).
+
+What stays open: exercise-specific response calibration, skill-versus-strength limitation, protein quality from amino
+acids, the food matrix, glycaemic response, and visual calibration.
+
+1,967 self-tests pass; the full release record is in progress.

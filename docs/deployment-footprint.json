@@ -1,26 +1,26 @@
 {
- "build": "e82ecf3367",
- "at": "2026-10-12T04:40:29.109Z",
- "buildMs": 2662,
+ "build": "847a6961b4",
+ "at": "2026-10-12T08:46:07.810Z",
+ "buildMs": 3681,
  "inventory": {
   "outputDirectory": "dist",
   "buildCommand": "npm run build",
   "files": 1145,
-  "bytes": 102579039,
-  "br": 25174544,
-  "gzip": 27806499,
+  "bytes": 102597283,
+  "br": 25179728,
+  "gzip": 27812537,
   "groups": {
    "documents": {
     "files": 16,
-    "bytes": 544452,
-    "br": 201569,
-    "gzip": 211332
+    "bytes": 548982,
+    "br": 202891,
+    "gzip": 212708
    },
    "app shell": {
     "files": 17,
-    "bytes": 4017961,
-    "br": 1418265,
-    "gzip": 1541259
+    "bytes": 4031675,
+    "br": 1422127,
+    "gzip": 1545921
    },
    "food corpus": {
     "files": 1109,
@@ -38,8 +38,8 @@
   "largest": [
    {
     "path": "/index.html",
-    "bytes": 3984654,
-    "br": 1391681
+    "bytes": 3998368,
+    "br": 1395540
    },
    {
     "path": "/data/food/branded/recs-046.json",
@@ -90,18 +90,18 @@
  "load": {
   "firstVisit": {
    "requests": 15,
-   "bytes": 1489111,
+   "bytes": 1492973,
    "revalidated": 1,
    "paths": [
-    "/index.html 200 1391681",
-    "/sw.js 200 1374",
+    "/index.html 200 1395540",
     "/data/food/manifest.json 200 54074",
+    "/sw.js 200 1377",
     "/index.html 304 0",
     "/manifest.webmanifest 200 463",
     "/icons/icon.svg 200 225",
     "/icons/favicon.svg 200 225",
-    "/version.json 200 1218",
     "/icons/favicon-32.png 200 452",
+    "/version.json 200 1218",
     "/icons/favicon-16.png 200 272",
     "/icons/icon-192.png 200 2525",
     "/icons/icon-512.png 200 7007",
@@ -109,7 +109,7 @@
     "/icons/apple-touch-icon.png 200 2354",
     "/data/reference/compendium-2024.json 200 22145"
    ],
-   "readyMs": 1440,
+   "readyMs": 1844,
    "foodShards": 0
   },
   "firstSearch": {
@@ -132,7 +132,7 @@
     "/index.html 304 0",
     "/data/food/manifest.json 304 0"
    ],
-   "readyMs": 1206
+   "readyMs": 1388
   },
   "compression": "brotli quality 5 (gzip level 6 for clients without brotli)"
  }

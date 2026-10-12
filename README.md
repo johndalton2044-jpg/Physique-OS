@@ -16,9 +16,11 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Local persistence (IndexedDB, incremental writes) | validated | — | real data path | — | surfaced | local | independent | — | gate persistence |
 | Backup and restore | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-010 |
 | Progress photos: encrypted on the device, copied encrypted to the vault, carried by encrypted backups | validated | — | real data path | — | workflow-tested | server | independent | — | workflow V-016, gate cloud:e2e, gate server, gate persistence |
+| Progress photos compared only in matching conditions | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-022, gate engine |
 | Erase everything | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-009 |
 | Food logging with portions | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-002 |
 | Two records of one food that disagree, settled by a declared rule | surfaced | heuristic | real data path | — | surfaced | local | internal | — | gate external, gate engine |
+| Protein across the day’s meals, the daily total first | surfaced | population evidence | real data path | population | surfaced | local | internal | — | gate engine |
 | Training sessions and sets | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-003 |
 | Corrections and deletions with history | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-005 |
 | Phase targets reaching Today | validated | — | real data path | — | workflow-tested | local | independent | — | workflow V-001 |
@@ -40,6 +42,7 @@ What is finished, what is partial and what is not built, rated on separate axes 
 | Aerobic fitness: VO2max level and trend | surfaced | population evidence | real data path | early personal | surfaced | local | internal | measured | gate engine |
 | Mobility, conditioning, power and speed: field tests and their responses | surfaced | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | gate engine, workflow V-014 |
 | Why a lift stalled: likely causes named from the record | validated | heuristic | real data path | early personal | workflow-tested | local | independent | insufficient | workflow V-020, gate engine |
+| What to start a substitute exercise at | validated | heuristic | real data path | early personal | workflow-tested | local | independent | — | workflow V-023, gate engine |
 | Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty | validated | population evidence | real data path | early personal | workflow-tested | local | independent | insufficient | workflow V-019, gate engine |
 | Cardio as five separate quantities: dose, capacity, expenditure, recovery cost and strength interference | validated | population evidence | real data path | population | workflow-tested | local | independent | insufficient | workflow V-018, gate engine |
 | Causal estimates of each change: interrupted series and matched periods | surfaced | population evidence | real data path | early personal | surfaced | local | internal | insufficient | gate engine |
