@@ -388,6 +388,8 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
+    "_q",
     "localDateOf",
     "uid",
     "todayISO",
@@ -399,6 +401,7 @@
     "fmtNum",
     "fmtSigned",
     "mean",
+    "median",
     "sd",
     "correlation",
     "esc"
@@ -648,6 +651,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_registryTaken",
     "addDays",
     "daysBetween",
     "num",
@@ -688,6 +692,13 @@
    ],
    "50-decision.js": [
     "detectConfounders"
+   ],
+   "58-explanation.js": [
+    "confidenceBasisText",
+    "heuristicValues"
+   ],
+   "58-model-competition.js": [
+    "intervalCalibration"
    ],
    "79-rigour.js": [
     "tissueEnergyDensity",
@@ -782,6 +793,7 @@
   "layer": "engine",
   "calls": {
    "10-core.js": [
+    "_q",
     "todayISO",
     "addDays",
     "daysBetween",
@@ -813,7 +825,8 @@
     "trainingProgram"
    ],
    "52-response.js": [
-    "exerciseResponse"
+    "exerciseResponse",
+    "liftForecasts"
    ],
    "54-scenarios.js": [
     "buildScenario",
@@ -1112,6 +1125,9 @@
    "30-observations.js": [
     "seriesWindow",
     "sessionsOf"
+   ],
+   "52-response.js": [
+    "liftForecasts"
    ],
    "58-response-entity.js": [
     "_slopePerWeek"
@@ -3499,7 +3515,8 @@
    ],
    "48-domains-more.js": [
     "readinessState",
-    "readinessValidity"
+    "readinessValidity",
+    "readinessTransitions"
    ],
    "49-movement.js": [
     "movementLibrary",
@@ -4791,6 +4808,7 @@
     "correlation",
     "kgToLb",
     "unitPref",
+    "fmtWeight",
     "fmtRate",
     "fmtKcal",
     "fromCanonicalWeight",
@@ -4940,6 +4958,7 @@
     "_readinessOutcomes",
     "_validityVerdict",
     "readinessValidity",
+    "readinessTransitions",
     "cardioState",
     "compositionState",
     "costState",
@@ -5003,6 +5022,8 @@
     "uncertaintyChain",
     "personalResponse",
     "exerciseResponse",
+    "liftForecasts",
+    "liftForecast",
     "counterfactual",
     "valueOfInformationFormal",
     "predictionContext",
@@ -5607,6 +5628,7 @@
     "stateReport",
     "icsExport",
     "cmdkCommands",
+    "readinessTransitionsBlock",
     "runA11yAudit",
     "mealForNow",
     "snoozeAttention",
@@ -5992,7 +6014,8 @@
    ],
    "48-domains-more.js": [
     "readinessState",
-    "readinessValidity"
+    "readinessValidity",
+    "readinessTransitions"
    ],
    "50-decision.js": [
     "diagnose",

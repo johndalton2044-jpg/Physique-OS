@@ -240,6 +240,7 @@ function progressionPlan(opts){
   var resp=null;try{resp=exerciseResponse();}catch(e){}
   var rec=null;try{rec=readinessState();}catch(e){}
   var adh=null;try{adh=adherenceState(14);}catch(e){}
+  var fc=null;try{fc=liftForecasts();}catch(e){_q(e,'P2');}
   if(!resp||!resp.rows||!resp.rows.length)return {status:'insufficient',
     need:['several sessions per exercise before progression can be judged'],
     note:'Progression from no evidence is just a number going up.'};
@@ -266,8 +267,10 @@ function progressionPlan(opts){
     else{action='hold';why='no usable trend yet';}
     /* W-015: a flat or falling lift with enough exposures says why it may have stalled */
     var stall=(direction==='flat'||direction==='falling')&&(r.exposures||0)>=6?stallCauses(r.exercise):null;
+    /* W-015: the lift's next session, its range checked on its own past sessions */
+    var forecast=fc?(fc.rows.filter(function(f){return f.exercise===r.exercise&&f.status==='ok';})[0]||null):null;
     return {exercise:r.exercise,action:action,why:why,
-      weeklySets:r.weeklySets,direction:direction,exposures:r.exposures,stall:stall,
+      weeklySets:r.weeklySets,direction:direction,exposures:r.exposures,stall:stall,forecast:forecast,
       slopePerWeek:r.slopePerWeek!=null?round(r.slopePerWeek,2):null};
   });
   return {status:'ok',cls:'DERIVED',rows:rows,brake:brake,

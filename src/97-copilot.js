@@ -172,7 +172,10 @@ var QUESTION_PATTERNS=[
         so it claims no more for it than that */
      var V=null;try{V=readinessValidity();}catch(e){_q(e,'P2');}
      var val=V&&V.status==='ok'?V.verdicts.readiness.text:('Whether it predicts your sessions is not known yet: '+(V?V.n:0)+' of '+READINESS_VALIDITY.minSessions+' sessions scored.');
-     return {value:r.band,cls:'EMPIRICAL',basis:r.parts.length+' signals against your own baseline. '+val,act:'nav.domains'};}},
+     /* and, from the person's own days, how a day below normal has gone on */
+     var M=null;try{M=readinessTransitions();}catch(e){_q(e,'P2');}
+     var mv=M&&M.status==='ok'&&M.from.below?(' After a day below your normal, the next was below too '+M.counts.below.below+' of '+M.from.below+' times; '+Math.round(M.belowShare*100)+'% of your rated days are below it.'):'';
+     return {value:r.band,cls:'EMPIRICAL',basis:r.parts.length+' signals against your own baseline. '+val+mv,act:'nav.domains'};}},
   {id:'missing',re:/\b(missing|what should i log|gaps)\b/i,
    answer:function(){
      var m=missingDataReport();

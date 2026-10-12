@@ -4,7 +4,7 @@ Produced from the running registries on every governance run. Do not edit by han
 
 | | count |
 |---|---|
-| models | 50 |
+| models | 52 |
 | capabilities | 22 |
 | entity contracts | 29 |
 | commands | 543 |

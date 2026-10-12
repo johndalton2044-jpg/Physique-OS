@@ -273,3 +273,10 @@ Never start an item before what it depends on is in place.
 - Photos are compared only in matching conditions. Protein across meals is judged with the daily total first. A
   substitute exercise starts from the person's own record of it (see the roadmap entry for this build).
 - Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.
+
+## 12. State at e0ce259ce6
+
+- 37 gates, all pass; release 24/24; 1,983 in-app self-tests, 400 interface tests, 20 black-box workflows.
+- Each lift's next session is forecast with a range checked on its own record. How readiness moves from day to day is
+  counted from the person's rated days and checked one day ahead (see the roadmap entry for this build).
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.

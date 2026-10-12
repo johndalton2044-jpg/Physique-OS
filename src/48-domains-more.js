@@ -118,6 +118,72 @@ function readinessValidity(){
       limits:'A backtest on your own past sessions: it shows whether the score has tracked your performance, not why. A session you cut short because you felt poor is scored on what you lifted.'};
   });
 }
+/* ---------------- W-019: HOW READINESS MOVES FROM DAY TO DAY (fatigue-state transitions) ----------------
+   A day below normal says more once it is known how such days go on. Each day the person rated how they feel (at least
+   two of the five signals that day) is given its readiness state as the record stood that day: better than normal,
+   about normal, or below (below and well below together: few records have enough well-below days to count apart).
+   Rated days next to each other are counted as transitions. Each row of the table starts from no carry-over at all
+   (tomorrow distributed as the person's rated days are overall), weighed as three days against the transitions seen,
+   so a short record leans on "no carry-over" and says how much of each row is its own. Then it is checked: walking
+   forward through the record, did today's state forecast a below-normal tomorrow better than the person's base rate
+   alone? A spell below normal is counted only when its length is known: it began after a rated day at or above normal,
+   and has ended on one. */
+var READINESS_TRANSITIONS={lookbackDays:90,minStreams:2,minTransitions:20,warmup:10,minScored:10,priorDays:3,margin:0.05,
+  states:['better','normal','below'],labels:{better:'better than your normal',normal:'about your normal',below:'below your normal'},
+  streams:['fatigue','soreness','stress','motivation','sleep'],
+  asOf:'each rated day, as the record stood that day',scoring:'one day ahead, each forecast from the days before it only, by Brier score against your base rate'};
+function _readinessDayState(score){return score>0.5?'better':(score>-0.5?'normal':'below');}
+/* the transition table from rated days in date order: counts, shares, and each row with its no-carry-over prior */
+function _transitionTable(days){var T=READINESS_TRANSITIONS,S=T.states,cnt={},tot={},share={},P={},w={},n=0;
+  S.forEach(function(a){cnt[a]={};S.forEach(function(b){cnt[a][b]=0;});tot[a]=0;share[a]=0;});
+  days.forEach(function(d){share[d.state]++;});S.forEach(function(a){share[a]=days.length?share[a]/days.length:0;});
+  for(var i=1;i<days.length;i++)if(daysBetween(days[i-1].date,days[i].date)===1){cnt[days[i-1].state][days[i].state]++;tot[days[i-1].state]++;n++;}
+  S.forEach(function(a){P[a]={};S.forEach(function(b){P[a][b]=(cnt[a][b]+T.priorDays*share[b])/(tot[a]+T.priorDays);});w[a]=tot[a]/(tot[a]+T.priorDays);});
+  return {counts:cnt,from:tot,share:share,P:P,personalWeight:w,transitions:n};}
+function readinessTransitions(){
+  return memo('readinessTransitions:'+asOf(),function(){
+    var T=READINESS_TRANSITIONS,now=asOf(),days=[];
+    for(var d=addDays(now,-(T.lookbackDays-1));d<=now;d=addDays(d,1)){var day=d;
+      var x=withAsOf(day,function(){var rated=T.streams.filter(function(t){return seriesWindow(t,1).some(function(r){return r.date===day;});}).length;
+        if(rated<T.minStreams)return null;var rd=null;try{rd=readinessState();}catch(e){_q(e,'P2');}
+        return rd&&rd.status==='ok'&&rd.score!=null&&isFinite(rd.score)?{date:day,score:rd.score,state:_readinessDayState(rd.score),rated:rated}:null;});
+      if(x)days.push(x);}
+    var tab=_transitionTable(days);
+    if(tab.transitions<T.minTransitions)return {status:'insufficient',days:days.length,transitions:tab.transitions,
+      need:[(T.minTransitions-tab.transitions)+' more pairs of days next to each other with at least '+T.minStreams+' of the five ratings each'],asOf:T.asOf};
+    /* walking forward: each tomorrow forecast from the days up to today only */
+    var bm=0,bb=0,scored=0;
+    for(var i=1;i<days.length;i++){if(daysBetween(days[i-1].date,days[i].date)!==1)continue;
+      var past=_transitionTable(days.slice(0,i));if(past.transitions<T.warmup)continue;
+      var y=days[i].state==='below'?1:0,pm=past.P[days[i-1].state].below,pb=past.share.below;bm+=Math.pow(pm-y,2);bb+=Math.pow(pb-y,2);scored++;}
+    /* spells below normal whose length is known: a run of consecutive below days that began after a rated day at or
+       above normal and ended on one */
+    var spells=[],run=0,known=false,open=false;
+    days.forEach(function(e,j){var next=j>0&&daysBetween(days[j-1].date,e.date)===1;
+      if(e.state==='below'){if(run&&next)run++;else{run=1;known=next;}}
+      else{if(run&&next&&known)spells.push(run);run=0;}});
+    open=run>0;
+    var last=days[days.length-1],current=last&&daysBetween(last.date,now)<=1?last:null,pbb=tab.P.below.below;
+    var out={status:'ok',cls:'EMPIRICAL',days:days.length,transitions:tab.transitions,counts:tab.counts,from:tab.from,share:tab.share,
+      P:tab.P,personalWeight:tab.personalWeight,
+      stayBelow:round(pbb,3),belowShare:round(tab.share.below,3),carriesOver:tab.from.below>0&&pbb>tab.share.below,
+      backWithin2:round(1-pbb*pbb,3),spells:spells,medianSpell:spells.length?median(spells):null,spellOngoing:open,
+      current:current?{date:current.date,state:current.state,label:T.labels[current.state]}:null,
+      score:scored?{n:scored,brier:round(bm/scored,3),brierBase:round(bb/scored,3)}:{n:0},asOf:T.asOf,scoring:T.scoring,
+      limits:'A first-order chain: tomorrow is read from today alone, not from the run of days before it. A day is only as good as its ratings; days you did not rate are not counted.'};
+    var sc=out.score;
+    out.verdict=sc.n<T.minScored?{verdict:'not yet',text:'Too few days scored to say whether today forecasts tomorrow ('+sc.n+' of '+T.minScored+').'}:
+      (sc.brier<=(1-T.margin)*sc.brierBase?{verdict:'adds value',text:'Knowing today’s state forecast a below-normal tomorrow better than your base rate alone.'}:
+        {verdict:'no better',text:'Knowing today’s state forecast a below-normal tomorrow no better than your base rate alone.'});
+    return out;
+  });
+}
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','readiness_transitions'))return;
+  MODELS.push({id:'readiness_transitions',name:'How readiness moves from day to day',cls:'EMPIRICAL',version:'1.0',inputs:['fatigue','soreness','stress','motivation','sleep','personal_baseline'],minN:20,
+    assumes:['a day’s readiness state, as the record stood that day, is the state the person was in','tomorrow depends on today’s state, not on the days before it','the ratings mean the same across the period'],
+    failsWhen:['fewer than 20 pairs of rated days next to each other','ratings entered in batches after the fact','an illness or travel that changes what the ratings mean'],
+    output:'how likely a day below normal is to be followed by another, how long such spells last, how likely today’s state is to be back to normal within two days, and whether today forecasts tomorrow better than the base rate',
+    consumers:['readinessTransitionsBlock','askQuestion|the assistant’s readiness answer'],freshnessDays:7,uncertainty:{kind:'each row weighed against a no-carry-over prior, with its personal weight; one-day-ahead Brier score against the base rate'},fn:'readinessTransitions'});})();
 registerDomain({
   id:'recovery',label:'Recovery and readiness',priority:20,ontology:'RECOVERY_INPUTS',derives:true,actions:['nav.recovery2','log.type'],
   observes:['fatigue','soreness','stress','motivation','sleep'],

@@ -638,7 +638,7 @@ var VIEW_REQUIREMENTS={
   progress:{state:true,models:[],observations:[]},
   diagnose:{state:true,models:['change_point'],observations:[]},
   experiments:{state:false,models:['weight_avg'],observations:['weight']},
-  learn:{state:true,models:['cardio_fitness_latent','change_point','diet_digestibility','energy_availability','friction','hydration_balance','intervention_response','met_energy','model_competition','personal_response','physique_regions','recovery_allocation','response_matrix','supplement_efficacy','uncertainty_chain','unified_optimiser'],observations:['arm','chest','cmj','hrr','kneewall','rhr','sitreach','sprint','sweatrate','thigh','urine'],
+  learn:{state:true,models:['cardio_fitness_latent','change_point','diet_digestibility','energy_availability','friction','hydration_balance','intervention_response','lift_forecast','met_energy','model_competition','personal_response','physique_regions','recovery_allocation','response_matrix','supplement_efficacy','uncertainty_chain','unified_optimiser'],observations:['arm','chest','cmj','hrr','kneewall','rhr','sitreach','sprint','sweatrate','thigh','urine'],
     conditional:{met_energy:'only when a cardio session falls in the seven days energy availability reads'}},
   archive:{state:false,models:['weight_avg'],observations:['weight']},
   tools:{state:true,models:['uncertainty_chain'],observations:['note']}};

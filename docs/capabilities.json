@@ -684,6 +684,56 @@
    }
   },
   {
+   "id": "lift-forecast",
+   "label": "Each lift’s next session, its range checked on its own record",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-024"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each lift is replayed: every session from its fifth on is forecast from the lift’s sessions in the 84 days before it (Theil–Sen), and the miss scored against the scatter around that fit. The scored misses go through the one calibration rule; a lift with ten or more takes its own factor, weighed against all the person’s lifts as n against ten, and one with fewer takes the pooled factor and reads as a rating. On “What to change next week” and in the calibration report. The windows, floor and weight are a heuristic contract, not validated",
+   "source": "the person’s own sessions",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "measured"
+   }
+  },
+  {
+   "id": "readiness-transitions",
+   "label": "How readiness moves from day to day",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-025"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each day with two or more of the five ratings is given its readiness state as the record stood that day; days next to each other give the chance a day below normal is followed by another, each row weighed against no carry-over as its count against three; spells below normal of known length; back to normal within two days; and, walking forward, whether today’s state forecast a below-normal tomorrow better than the base rate (Brier score). On both recovery sheets and in the assistant’s readiness answer. On the demo record a day below carries over and today forecasts tomorrow better than the base rate",
+   "source": "the person’s own ratings",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "backtested",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "mobility-recommendation",
    "label": "Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty",
    "maturity": "validated",

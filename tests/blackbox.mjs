@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-023). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-025). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -276,14 +276,15 @@ await run('V-017 why am I seeing this',async ui=>{
   line(/the screen/.test(tr)&&/decision [A-Z_]+/.test(tr)&&n===want,'V-017 the trace runs from the screen through the decision and its models to the observations it rests on',tr+' / counted from the record: '+want);
 });
 
-/* V-018 DOES READINESS PREDICT MY SESSIONS (catalogue doc 1, W-019), AND CARDIO FIVE WAYS (W-017). On the demo record the
+/* V-018 DOES READINESS PREDICT MY SESSIONS (catalogue doc 1, W-019; V-025, how it moves from day to day, follows below on
+   the same sheet), AND CARDIO FIVE WAYS (W-017). On the demo record the
    recovery state is opened from search. Expected, worked out from the screen alone: each score's verdict follows
    from the misses shown beside it. A score adds value only if its squared miss is at most 0.95 of the best simple
    reading's (sleep alone, fatigue alone, or no information) and its correlation's lower bound is above zero; it is "no
    better" if it clears only the no-information baseline that way; otherwise it is not shown. Then the cardio experiment
    is opened from the experiment picker: five questions, each with its own unit, and the picker says it is not measured on
    weight alone. */
-await run('V-018 readiness validity and cardio concepts',async ui=>{
+await run('V-018/V-025 readiness validity and transitions, cardio concepts',async ui=>{
   ui.tab('tools');await ui.until('details[data-fold="tools-demo"] summary');ui.expand('tools-demo');await ui.until('[data-act="demo.load"]');ui.press('demo.load');await wait(60);ui.d.getElementById('confirmOk').click();
   await ui.waitFor(()=>ui.w.DB.sessions.length>0,'the demo’s sessions');
   await useLevel(ui,'insightful');   /* analysis pages and experiments are shown from the Insightful level */
@@ -307,6 +308,22 @@ await run('V-018 readiness validity and cardio concepts',async ui=>{
   const expected=[want('Recovery summary','The recovery summary'),want('Latent recovery state','The latent recovery state'),want('Readiness average','The readiness average')].join(' ');
   line(verdict===expected,'V-018 each verdict follows from the misses shown beside it',verdict+' / worked out from the screen: '+expected);
   line(/the evening before each session/.test(ui.text('#editBackdrop [data-readiness-validity]'))&&/out of sample/.test(ui.text('#editBackdrop [data-readiness-validity]')),'V-018 and it says it used nothing from the session day and scored out of sample');
+  /* V-025 HOW READINESS MOVES (W-019: fatigue-state transitions), on the same sheet. Expected, worked out from the screen
+     alone: the estimate after a day below is the times it stayed below, plus three days at the share of days below,
+     over the days after a day below plus three; its own share of that is their number over their number plus three;
+     back within two days is one less the estimate squared; the verdict follows the two Brier scores shown, at 0.95. */
+  await ui.until('#editBackdrop [data-readiness-transitions] [data-transition-verdict]');
+  const tr=Object.fromEntries([...ui.d.querySelectorAll('#editBackdrop [data-readiness-transitions] .row')].map(r=>{const l=r.querySelector('.l'),sm=l.querySelector('small');
+    return [(l.firstChild&&l.firstChild.textContent||'').trim(),{sub:sm?sm.textContent:'',val:r.querySelector('.r').textContent.trim()}];}));
+  const share=+((tr['Days below your normal']||{val:''}).val.match(/^(\d+)% of \d+ rated days/)||[])[1],pairs=+(((tr['Days below your normal']||{sub:''}).sub.match(/^(\d+) pairs/))||[])[1];
+  const af=tr['After a day below']||{val:'',sub:''},ab=af.val.match(/below again (\d+) of (\d+) times/)||[],es=af.sub.match(/estimate (\d+)% \((\d+)% your own record, the rest no carry-over at (\d+)%\)/)||[];
+  const A2=+ab[1],B2=+ab[2],EST=+es[1],OWN=+es[2],wantEst=100*(A2+3*share/100)/(B2+3);
+  line(pairs>=20&&B2>0&&Math.abs(EST-wantEst)<=1.5&&OWN===Math.round(100*B2/(B2+3))&&+es[3]===share,'V-025 after a day below: stayed below '+A2+' of '+B2+' times, weighed against no carry-over at '+share+'% as '+B2+' against 3',JSON.stringify({pairs,A2,B2,EST,OWN,share,wantEst}));
+  const back=+(((tr['Back from a day below']||{val:''}).val.match(/^(\d+)% within 2 days/))||[])[1];
+  line(Math.abs(back-100*(1-(EST/100)**2))<=1.6,'V-025 back within two days is one less the estimate squared',back+' against '+(100*(1-(EST/100)**2)).toFixed(1));
+  const vt=ui.text('#editBackdrop [data-transition-verdict]'),bs=vt.match(/Brier ([\d.]+) against ([\d.]+) for your base rate, (\d+) days scored/)||[];
+  const wantV=+bs[1]<=0.95*+bs[2]?/forecast a below-normal tomorrow better than your base rate alone/:/forecast a below-normal tomorrow no better than your base rate alone/;
+  line(bs.length===4&&+bs[3]>=10&&wantV.test(vt),'V-025 the verdict follows the two Brier scores shown',vt);
   ui.press('edit.close',null,'#editBackdrop');await wait(60);
   ui.tab('experiments');(await ui.until('[data-act="exp.new"]')).click();
   const pick=await ui.until('#editBackdrop [data-act="exp.fromTemplate"][data-arg="cardio"]');
@@ -412,6 +429,35 @@ await run('V-023 substitution start',async ui=>{const LOAD=300,REPS=10;
   const lp=ui.text('#subResults [data-sub-start="legpress"]'),hs=ui.text('#subResults [data-sub-start="hacksquat"]');
   line(new RegExp('your last leg press was '+LOAD+'(\\.0)? × '+REPS+' on '+when+': start there').test(lp),'V-023 the leg press starts at the set as logged, on its date',lp+' / expected date '+when);
   line(/no hack squat in the last six months/.test(hs)&&!/\d+ × \d+/.test(hs),'V-023 the hack squat, never logged, offers no load',hs);
+});
+
+/* V-024 EACH LIFT'S NEXT SESSION (catalogue doc 1, W-015: exercise-specific response calibration). Seven deadlift singles
+   are logged a week apart through the session sheet (the clock moved back), so each session's estimated 1RM is its
+   load. Expected, from this test's own Theil–Sen fit (the median of the pairwise slopes, then the median intercept) and
+   the sample scatter around it: the next session, a week after the last, forecast with its 80% range (1.2816 times the
+   scatter, at least 1% of the forecast); the fifth to seventh sessions each forecast from those before them, and how
+   many fell inside their ranges; three scored are too few to calibrate, so it reads as a rating. */
+await run('V-024 each lift’s next session',async ui=>{const AGO=[42,35,28,21,14,7,0],LOAD=[300,305,310,312,318,320,326];
+  for(let i=0;i<AGO.length;i++){ui.setClock(AGO[i]);ui.tab('train');ui.press('session.new');await ui.until('#editBackdrop [data-arg="0|exercise"]');
+    ui.type(ui.d.querySelector('#editBackdrop [data-arg="0|exercise"]'),'Deadlift');ui.type('ss-0-load',LOAD[i]);ui.type('ss-0-reps',1);ui.type('ss-0-rir',2);
+    const n=ui.w.DB.sessions.length;[...ui.d.querySelectorAll('#editBackdrop [data-act]')].find(b=>/^session\.save$/.test(b.getAttribute('data-act'))).click();
+    await ui.waitFor(()=>ui.w.DB.sessions.length===n+1,'the session for '+AGO[i]+' days ago to be saved');}
+  ui.setClock(0);
+  const med=v=>{v=v.slice().sort((x,y)=>x-y);const m=v.length>>1;return v.length%2?v[m]:(v[m-1]+v[m])/2;};
+  const fit=(idx,atAgo)=>{const x0=AGO[idx[0]],P=idx.map(j=>[x0-AGO[j],LOAD[j]]),sl=[];for(let a=0;a<P.length;a++)for(let b=a+1;b<P.length;b++)sl.push((P[b][1]-P[a][1])/(P[b][0]-P[a][0]));
+    const b=med(sl),c=med(P.map(p=>p[1]-b*p[0])),res=P.map(p=>p[1]-c-b*p[0]),mu=res.reduce((s,r)=>s+r,0)/res.length;
+    const s=Math.sqrt(res.reduce((t,r)=>t+(r-mu)**2,0)/(res.length-1)),m=c+b*(x0-atAgo);return {mean:m,sd:Math.max(s,0.01*m)};};
+  const all=AGO.map((_,i)=>i),next=fit(all,-7),lo=next.mean-1.2816*next.sd,hi=next.mean+1.2816*next.sd;
+  let held=0;for(let i=4;i<AGO.length;i++){const f=fit(all.slice(0,i),AGO[i]);if(Math.abs(LOAD[i]-f.mean)/f.sd<=1.2816)held++;}
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','What to change next week');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^What to change next week/.test(x.textContent.trim()));
+  await ui.waitFor(pick,'the progression screen in search');pick().click();
+  await ui.until('#editBackdrop [data-lift-forecast="deadlift"]');
+  const t=ui.text('#editBackdrop [data-lift-forecast="deadlift"]'),m=t.match(/estimated 1RM about ([\d,.]+) (?:lb|kg) \(([\d,.]+)–([\d,.]+) (?:lb|kg)\)/),num=s=>+s.replace(/,/g,''),near=(a,b)=>Math.abs(a-b)<=0.15;
+  line(!!m&&near(num(m[1]),next.mean)&&near(num(m[2]),lo)&&near(num(m[3]),hi),'V-024 the next deadlift is forecast at '+next.mean.toFixed(1)+' ('+lo.toFixed(1)+'–'+hi.toFixed(1)+'), as worked out here',t);
+  const day=new Date(Date.now()+7*86400000),when=day.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  line(t.indexOf('Next session (about '+when+')')>=0,'V-024 for a week after the last session, '+when,t);
+  line(t.indexOf('held '+held+' of 3 past sessions')>=0&&/a rating, not a probability: 3 of 10 scored sessions/.test(t),'V-024 three past sessions scored, '+held+' inside their ranges: too few to calibrate, so a rating',t);
 });
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');

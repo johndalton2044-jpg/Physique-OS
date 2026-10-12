@@ -506,7 +506,7 @@ SHEETS.recoveryLatent=function(){var r=recoveryLatentState();
     '<div class="prov">'+esc(r.forecastBasis)+'. '+esc(r.caveat)+'</div>';
   var legacy=readinessState();
   if(legacy&&legacy.status==='ok')body+='<div class="prov">The older readiness summary, an average of the same ratings, reads '+esc(String(legacy.score!=null?legacy.score:legacy.label||''))+' \u2014 kept as a summary of the readings, not as the state.</div>';
-  body+=readinessValidityBlock();
+  body+=readinessValidityBlock()+readinessTransitionsBlock();
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 SHEETS.internals=function(){
   var ids=['inferenceGateway','provenance','runIdentity','materialization','quantityRegistry'];
@@ -2036,6 +2036,19 @@ function readinessValidityBlock(){var V=null;try{V=readinessValidity();}catch(e)
         ('correlation '+fmtSigned(p.r,2)+' ('+fmtSigned(p.rLo,2)+' to '+fmtSigned(p.rHi,2)+') · '+fmtSigned(p.skill*100,0)+'% against no information')});}).join('')+
       '<div class="lead" style="font-size:13px" data-validity-verdict>'+esc(['unified','latent','readiness'].map(function(k){return V.verdicts[k].text;}).join(' '))+'</div>')+
     '<div class="prov">Scored against '+esc(READINESS_VALIDITY.outcome)+', as the record stood '+esc(READINESS_VALIDITY.asOf)+'; '+esc(READINESS_VALIDITY.scoring)+'.'+(V.limits?' '+esc(V.limits):'')+'</div></div>';}
+/* W-019: how a day below normal has gone on, from the person's own rated days; beside the validity block on both
+   recovery sheets */
+function readinessTransitionsBlock(){var M=null;try{M=readinessTransitions();}catch(e){_q(e,'P2');}if(!M)return '';var T=READINESS_TRANSITIONS,pct=function(x){return Math.round(x*100)+'%';};
+  var list=function(a){return a.length<2?String(a[0]):a.slice(0,-1).join(', ')+' and '+a[a.length-1];};
+  return '<div class="d-block" data-readiness-transitions><div class="d-block-title">HOW YOUR READINESS MOVES</div>'+
+    (M.status!=='ok'?uiRow('Not yet',esc(M.transitions+' of '+T.minTransitions+' pairs of days'),{sub:esc((M.need||[]).join(', '))}):
+      uiRow('Days below your normal',esc(pct(M.belowShare)+' of '+M.days+' rated days'),{sub:esc(M.transitions+' pairs of rated days next to each other')})+
+      (M.from.below?uiRow('After a day below',esc('below again '+M.counts.below.below+' of '+M.from.below+' times'),{sub:esc('estimate '+pct(M.stayBelow)+' ('+pct(M.personalWeight.below)+' your own record, the rest no carry-over at '+pct(M.belowShare)+'); '+
+          (M.carriesOver?'a day below tends to carry over':'no more than any day'))})+
+        uiRow('Back from a day below',esc(pct(M.backWithin2)+' within 2 days'),{sub:esc('back to normal or better by the second day, if tomorrow follows from today alone'+(M.current&&M.current.state==='below'?'; today is below your normal':''))}):'')+
+      (M.spells.length?uiRow('A spell below normal',esc('median '+fmtNum(M.medianSpell,M.medianSpell%1?1:0)+' day'+(M.medianSpell===1?'':'s')),{sub:esc(M.spells.length+' that ended ('+list(M.spells)+' days)'+(M.spellOngoing?'; one is still going':''))}):'')+
+      '<div class="lead" style="font-size:13px" data-transition-verdict>'+esc(M.verdict.text+(M.score.n?(' Brier '+fmtNum(M.score.brier,3)+' against '+fmtNum(M.score.brierBase,3)+' for your base rate, '+M.score.n+' days scored.'):''))+'</div>')+
+    '<div class="prov">A state for '+esc(T.asOf)+'; scored '+esc(T.scoring)+'.'+(M.limits?' '+esc(M.limits):'')+'</div></div>';}
 SHEETS.recoveryState=function(){
   var r=unifiedRecovery();
   if(r.status!=='ok')return {body:uiLocked('Recovery state',r.need||[],{why:r.note}),
@@ -2058,7 +2071,7 @@ SHEETS.recoveryState=function(){
         {sub:esc(k.transfer.verdict).slice(0,120),
          tone:/not transfer/.test(k.transfer.grade)?'attention':''});}).join('')+
       '<div class="prov">'+esc(tk.note)+'</div>';});
-  body+=readinessValidityBlock()+'<div class="prov">'+esc(r.note)+'</div><div class="hint">'+esc(r.caveat)+'</div>';
+  body+=readinessValidityBlock()+readinessTransitionsBlock()+'<div class="prov">'+esc(r.note)+'</div><div class="hint">'+esc(r.caveat)+'</div>';
   return {body:body,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};
 var _SUB=null;
 function openSubstitute(){_SUB=null;openSheet('edit',{form:'substitute',title:'Swap a food',
@@ -2343,7 +2356,10 @@ SHEETS.progression=function(){
       {sub:esc(r.why),rsub:esc(String(r.direction)),tone:r.action==='hold'?'':(r.action==='reduce volume'?'attention':'good')})+
       /* W-015: why a flat or falling lift may have stalled, each cause with its evidence, what to do and what would settle it */
       (r.stall?'<div class="hint" data-stall-causes="'+attrEsc(r.exercise)+'">Why it may have stalled: '+esc(r.stall.text)+'.'+
-        (r.stall.causes.length?' '+esc(r.stall.causes[0].action.charAt(0).toUpperCase()+r.stall.causes[0].action.slice(1))+'; then check '+esc(r.stall.causes[0].check)+'.':'')+'</div>':'');}).join('')+
+        (r.stall.causes.length?' '+esc(r.stall.causes[0].action.charAt(0).toUpperCase()+r.stall.causes[0].action.slice(1))+'; then check '+esc(r.stall.causes[0].check)+'.':'')+'</div>':'')+
+      /* W-015: the lift's next session, with its range checked against its own past sessions */
+      (r.forecast?'<div class="hint" data-lift-forecast="'+attrEsc(r.exercise)+'">Next session (about '+esc(shortDate(r.forecast.next.date))+'): estimated 1RM about '+esc(fmtWeight(r.forecast.next.mean))+
+        ' ('+esc(fmtWeight(r.forecast.next.lo,{bare:true}))+'\u2013'+esc(fmtWeight(r.forecast.next.hi))+'), an 80% range; '+esc(r.forecast.text)+'.</div>':'');}).join('')+
     '<div class="prov">'+esc(p.note)+'</div><div class="hint">'+esc(p.caveat)+'</div>'+
     '<div class="btn-row">'+uiBtn('Edit the plan','nav.planEdit',null,'btn-sm btn-secondary')+'</div>',
     foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};

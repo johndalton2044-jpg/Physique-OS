@@ -84,7 +84,10 @@ scores as the record stood the evening before each session. It scores them out o
 sleep alone, fatigue alone and no information. On the demo record all three predict the sessions but none beats fatigue
 alone, and that is the verdict shown (both recovery sheets, the assistant's answer, black-box workflow V-018). Whether a
 score adds value for a real person is for their own record to show. Exercise-specific recovery cost, individual sleep
-debt, NEAT compensation calibration and fatigue-state transitions are not built.
+debt and NEAT compensation calibration are not built. At e0ce259ce6: how readiness moves from day to day. Each rated day's
+state, as the record stood that day, gives the chance a day below normal is followed by another (each row weighed
+against no carry-over), back to normal within two days, and spells of known length. Walking forward, it is checked
+whether today's state forecast tomorrow better than the base rate (both recovery sheets, the assistant, workflow V-025).
 
 W-017 (cardio): **done**, abd4ef4b01. Dose, capacity, expenditure, recovery cost and strength interference each have
 their own measure and unit (`CARDIO_CONCEPTS`). A cardio change is evaluated on all five over a period before and after
@@ -105,8 +108,9 @@ its own list of high-value work:
   unapplied progression, sets far from failure, low readiness, loss faster than the band, a rise in volume. Each has
   its evidence, threshold, action and what would settle it, on "What to change next week" (workflow V-020). No screen
   turns computed stimulus into predicted growth. At 847a6961b4: a substitute exercise starts from the person's own last
-  top set of it, and with no record no load is invented (workflow V-023). Not built: exercise-specific response
-  calibration, skill-versus-strength limitation.
+  top set of it, and with no record no load is invented (workflow V-023). At e0ce259ce6: each lift's next session is
+  forecast with an 80% range checked on the lift's own past sessions, calibrated by its own factor once ten are scored
+  and by all its lifts' before that (workflow V-024). Not built: skill-versus-strength limitation.
 - W-018 (nutrition): **done**, e82ecf3367. Two records of one food that disagree are settled by a declared rule: each
   checked against its own macros, the first of your own entry, USDA laboratory analysis, the branded label and Open
   Food Facts that agrees with itself, the other kept visible. A barcode scan meeting your own entry uses it (external

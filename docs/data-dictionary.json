@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "ed9b53d4d903",
+ "ontologyVersion": "ede1c345fce3",
  "observationTypes": [
   {
    "id": "adherence",
@@ -2325,6 +2325,18 @@
    ]
   },
   {
+   "id": "lift_forecast",
+   "cls": "EMPIRICAL",
+   "output": "each lift’s next session as an estimated 1RM with an 80% range, scored against its own past sessions, with how often those ranges held and how much of the correction is the lift’s own",
+   "uncertainty": "80% range from the scatter around each fit, corrected by the lift’s own scored sessions",
+   "inputs": [
+    "session.load|load × reps",
+    "session.reps|reps",
+    "session.date|session dates",
+    "e1rm"
+   ]
+  },
+  {
    "id": "measurement_quality",
    "cls": "DERIVED",
    "output": "0–1 quality score per observation and per stream",
@@ -2511,6 +2523,20 @@
    "inputs": [
     "weight|current weight",
     "record.phases|phase"
+   ]
+  },
+  {
+   "id": "readiness_transitions",
+   "cls": "EMPIRICAL",
+   "output": "how likely a day below normal is to be followed by another, how long such spells last, how likely today’s state is to be back to normal within two days, and whether today forecasts tomorrow better than the base rate",
+   "uncertainty": "each row weighed against a no-carry-over prior, with its personal weight; one-day-ahead Brier score against the base rate",
+   "inputs": [
+    "fatigue",
+    "soreness",
+    "stress",
+    "motivation",
+    "sleep",
+    "personal_baseline"
    ]
   },
   {
@@ -2887,6 +2913,7 @@
    "hydration_balance",
    "intervention_response",
    "learning_loop",
+   "lift_forecast",
    "measurement_quality",
    "met_energy",
    "micronutrient_coverage",
@@ -2904,6 +2931,7 @@
    "personal_speed_response",
    "physique_regions",
    "rate_band",
+   "readiness_transitions",
    "recovery",
    "recovery_allocation",
    "response_matrix",

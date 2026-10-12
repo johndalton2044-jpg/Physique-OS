@@ -4780,3 +4780,50 @@ What stays open: exercise-specific response calibration, skill-versus-strength l
 acids, the food matrix, glycaemic response, and visual calibration.
 
 All 37 gates pass (reproducible included); release 24/24; 1,967 self-tests.
+
+## Each lift's forecast checked on its own record, how readiness moves from day to day (build e0ce259ce6)
+
+Two more of the open items, each checkable on the person's own record.
+- **Each lift's next session, its range checked on its own record** (doc 1, W-015: exercise-specific response
+  calibration).
+  - The response trend was one line per lift, and nothing said whether it forecast that lift. Lifts differ in how far
+    they scatter around their trend, so one range for all of them is too wide for some and too narrow for others.
+  - Each lift is now replayed. Every session from its fifth on is forecast from the lift's sessions in the 84 days
+    before it (Theil–Sen, as the trend is), and the miss is scored against the scatter around that fit.
+  - The scored misses go through the one calibration rule (`intervalCalibration`), not a second one. A lift with ten
+    or more takes its own factor, weighed against all the person's lifts as n against ten, and its weight is shown. A
+    lift with fewer takes the pooled factor and reads as a rating.
+  - Under each lift on "What to change next week": the next session's estimated 1RM, its 80% range, how many past
+    ranges held, and whether it is calibrated. All the lifts' forecasts together are a new row of "Are the intervals
+    honest?".
+  - On the demo record, the squat, Romanian deadlift and lat pulldown calibrate on their own. The bench press, with 9
+    scored, reads as a rating and takes the pooled factor, ×2.20.
+  - The windows, the 1% floor on the scatter and the weight are a heuristic contract (`lift_forecast`), not
+    validated.
+- **How readiness moves from day to day** (doc 1, W-019: fatigue-state transitions).
+  - Each day with two or more of the five ratings gets its readiness state as the record stood that day: better than
+    normal, about normal, or below.
+  - Days next to each other give a transition table. Each row starts from no carry-over (tomorrow distributed as the
+    person's days are), weighed as three days, and shows how much of it is the person's own record.
+  - Shown: the chance a day below is followed by another, the chance of being back to normal within two days, and the
+    median spell below normal (only spells whose length is known).
+  - It is checked as well. Walking forward, did today's state forecast a below-normal tomorrow better than the base
+    rate? That is scored by Brier score, each forecast made from the days before it only.
+  - On both recovery sheets and in the assistant's readiness answer. On the demo record, a day below was followed by
+    another 4 of 7 times, against 15% of days. Today forecast tomorrow better than the base rate: Brier 0.152 against
+    0.173, over 25 days.
+
+Tests:
+- 16 self-tests, each made to fail once on purpose:
+  - the replay, the ranges that held, the lift's own weight and the pooled factor, the next session, the sheet and the
+    calibration report, the floor, too few sessions, the contract;
+  - the rated days and the gaps, the counts and the prior, back within two days, spells of known length, the
+    walk-forward Brier scores and verdict, the recovery block and the assistant, too few pairs.
+- Black-box workflows V-024 (seven deadlift singles a week apart through the session sheet, the forecast worked out
+  by the test's own Theil–Sen fit) and V-025 (on the demo's recovery sheet, worked out from the screen alone).
+
+What stays open: skill-versus-strength limitation, protein quality from amino acids, the food matrix, glycaemic
+response, visual calibration, and W-019's exercise-specific recovery cost, individual sleep debt and NEAT compensation
+calibration.
+
+1,983 self-tests pass; the full release record is in progress.

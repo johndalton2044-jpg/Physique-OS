@@ -143,6 +143,68 @@ function exerciseResponse(days){
     return {rows:rows,days:days,cls:'EMPIRICAL'};
   });
 }
+/* W-015: EACH LIFT'S FORECAST, CHECKED ON ITS OWN RECORD (exercise-specific response calibration). The response trend
+   above is one line per lift; whether that line forecasts the lift's next session is a question each lift answers for
+   itself, because lifts differ in how far they scatter around their trend. Each lift is replayed: at every session
+   from its fifth on, its trend is fitted on its sessions in the 84 days before (Theil–Sen, as above), the session is
+   forecast, and the miss is scored against the scatter around that fit. The scored misses go through the one
+   calibration rule (intervalCalibration, 58-model-competition): the factor that would have made the 80% range hold 80%
+   of the time, learned on older forecasts and checked on newer ones. A lift with fewer than ten scored forecasts takes
+   the factor from all the person's lifts together; with ten or more, its own factor weighs against that one as n
+   against ten, and its weight is reported. */
+var LIFT_FORECAST_CONTRACT={id:'lift_forecast',subject:'a lift’s next session',predicate:'is forecast from its own trend, with an 80% range scored against what its earlier sessions did',
+  parameters:{history:{value:182,unit:'days',meaning:'the sessions each lift is replayed over'},
+    fitWindow:{value:84,unit:'days',meaning:'each forecast is fitted on the lift’s sessions this far back, as the response trend is'},
+    minFit:{value:4,unit:'sessions',meaning:'the fewest earlier sessions a forecast is made from'},
+    scatterFloor:{value:0.01,unit:'fraction of the forecast',meaning:'the scatter is taken as at least this, so a run of identical sessions does not promise an exact next one'},
+    priorWeight:{value:10,unit:'scored forecasts',meaning:'a lift’s own factor weighs against the factor from all its lifts as n against this'}},
+  statement:function(v){return 'each lift’s next session is forecast from its trend over '+v.fitWindow+' days (from '+v.minFit+' sessions); its 80% range is scored against its own past sessions and corrected by the factor that would have held, its own once '+v.priorWeight+' are scored, weighed against all its lifts’ as n against '+v.priorWeight;},
+  rationale:'lifts differ in how far they scatter around their trend, so one range for all of them is too wide for some and too narrow for others; each is checked on its own record',
+  evidenceBasis:[],parameterSource:'chosen by this system; not derived from a study',parameterVersion:'1.0',
+  calibrationStatus:'the range is calibrated on the person’s own scored sessions; the parameters are not',validationStatus:HEURISTIC_NOT_VALIDATED,
+  applicability:{phases:['any'],population:'adults lifting with logged loads and reps'},
+  failureConditions:['a changed variation or equipment logged under the same name','a planned deload or a test day, scored as an ordinary session','loads logged without reps'],
+  outcomes:['strength progression']};
+/* the fit a forecast for `at` is made from: the lift's sessions in the window before it */
+function _liftFit(E,at){var P=LIFT_FORECAST_CONTRACT.parameters,from=addDays(at,-P.fitWindow.value),h=E.filter(function(e){return e.date>=from&&e.date<at;});
+  if(h.length<P.minFit.value)return null;
+  var pts=h.map(function(e){return {x:daysBetween(h[0].date,e.date),y:e.best};}),ts=theilSen(pts);if(ts.slope==null)return null;
+  var res=pts.map(function(p){return p.y-(ts.intercept+ts.slope*p.x);}),m=ts.intercept+ts.slope*daysBetween(h[0].date,at);
+  return {mean:m,sd:Math.max(sd(res)||0,P.scatterFloor.value*Math.abs(m)),n:h.length,slopePerWeek:ts.slope*7};}
+function liftForecasts(){
+  return memo('liftForecasts:'+asOf(),function(){
+    var P=LIFT_FORECAST_CONTRACT.parameters,now=asOf(),by={};
+    sessionsOf({from:addDays(now,-P.history.value)}).forEach(function(s){(s.sets||[]).forEach(function(x){var k=normExercise(x.exercise);if(!k)return;
+      var e=e1rm(num(x.load),num(x.reps));if(!e)return;var b=by[k]||(by[k]={});if(b[s.date]==null||e.value>b[s.date])b[s.date]=e.value;});});
+    var all=[],lifts=Object.keys(by).map(function(k){var E=Object.keys(by[k]).sort().map(function(d){return {date:d,best:by[k][d]};}),scored=[];
+      E.forEach(function(e,i){var f=_liftFit(E.slice(0,i),e.date);if(f)scored.push({at:e.date,ratio:Math.abs(e.best-f.mean)/f.sd,predicted:f.mean,actual:e.best});});
+      all=all.concat(scored);return {exercise:k,E:E,scored:scored};});
+    var pooled=intervalCalibration(all),pooledScale=pooled.n>=CALIBRATION_MIN_N?pooled.scale:1;
+    var rows=lifts.map(function(L){var E=L.E,last=E[E.length-1],gaps=[];for(var i=Math.max(1,E.length-5);i<E.length;i++)gaps.push(daysBetween(E[i-1].date,E[i].date));
+      var gap=Math.max(1,Math.round(median(gaps)||7)),at=addDays(last.date,gap);if(at<now)at=now;
+      var f=_liftFit(E,at),c=intervalCalibration(L.scored),own=c.n>=CALIBRATION_MIN_N,w=own?c.n/(c.n+P.priorWeight.value):0,k=w*(own?c.scale:1)+(1-w)*pooledScale;
+      var held=L.scored.filter(function(e){return e.ratio<=1.2816;}).length;
+      var basis=own?{kind:c.calibrated?'calibrated':'uncalibrated',interval:0.8,heldOnNewer:c.calibratedCoverage!=null?round(c.calibratedCoverage,2):null,n:c.n}:{kind:'rating',scored:c.n,need:CALIBRATION_MIN_N};
+      var r={exercise:L.exercise,sessions:E.length,scored:c.n,held:held,coverage:c.coverage!=null?round(c.coverage,2):null,ownScale:own?round(c.scale,3):null,pooledScale:round(pooledScale,3),
+        scale:round(k,3),personalWeight:round(w,2),basis:basis,cls:'EMPIRICAL',model:'lift_forecast',policy:LIFT_FORECAST_CONTRACT.id};
+      if(!f){r.status='insufficient';r.need=E.length<P.minFit.value?((P.minFit.value-E.length)+' more sessions of it'):('sessions of it in the last '+P.fitWindow.value+' days');
+        r.text='not enough recent sessions to forecast the next one';return r;}
+      r.status='ok';r.next={date:at,mean:round(f.mean,1),lo:round(f.mean-1.2816*f.sd*k,1),hi:round(f.mean+1.2816*f.sd*k,1),sd:round(f.sd,2),fittedOn:f.n};
+      r.text=(c.n?('its uncorrected 80% ranges held '+held+' of '+c.n+' past sessions; '):'')+(own?(confidenceBasisText(basis)+'; the ×'+fmtNum(k,2)+' correction is '+Math.round(w*100)+'% this lift’s own record, the rest from all your lifts'):
+        ('a rating, not a probability: '+c.n+' of '+CALIBRATION_MIN_N+' scored sessions to calibrate it on its own'+(pooled.n>=CALIBRATION_MIN_N&&Math.abs(pooledScale-1)>0.005?('; corrected ×'+fmtNum(pooledScale,2)+' from all your lifts ('+pooled.n+' scored)'):'')));
+      return r;});
+    rows.sort(function(a,b){return b.sessions-a.sessions;});
+    return {status:'ok',cls:'EMPIRICAL',rows:rows,scored:all.map(function(e){return {at:e.at,ratio:e.ratio};}),pooled:{n:pooled.n,scale:round(pooledScale,3),inUse:pooled.n>=CALIBRATION_MIN_N,calibrated:pooled.calibrated},
+      policy:LIFT_FORECAST_CONTRACT.id,method:LIFT_FORECAST_CONTRACT.statement(heuristicValues(LIFT_FORECAST_CONTRACT))};
+  });
+}
+function liftForecast(exercise){var k=normExercise(exercise);return liftForecasts().rows.filter(function(r){return r.exercise===k;})[0]||null;}
+(function(){if(typeof MODELS==='undefined'||_registryTaken(MODELS,'MODELS','lift_forecast'))return;
+  MODELS.push({id:'lift_forecast',name:'Each lift’s next session',cls:'EMPIRICAL',version:'1.0',inputs:['session.load|load × reps','session.reps|reps','session.date|session dates','e1rm'],minN:5,
+    assumes:['a lift’s recent trend continues to its next session','its scatter around the trend is the same from session to session','the sessions named alike are the same lift'],
+    failsWhen:['fewer than four sessions of the lift in 84 days','a changed variation or equipment under the same name','a planned deload or test day'],
+    output:'each lift’s next session as an estimated 1RM with an 80% range, scored against its own past sessions, with how often those ranges held and how much of the correction is the lift’s own',
+    consumers:['progressionPlan','selfCalibration'],freshnessDays:7,uncertainty:{kind:'80% range from the scatter around each fit, corrected by the lift’s own scored sessions'},fn:'liftForecasts'});})();
 /* ---- counterfactual: what a proposed change would be expected to do, using this person's own response ---- */
 function counterfactual(changes){
   changes=changes||{};

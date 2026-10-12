@@ -5339,6 +5339,88 @@ function runSelfTest(opts){
       var H=heuristicContractById('substitution_start');
       ok('the gap and the reserve are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.gapFactor.value===0.9&&heuristicContracts().ok);
     })();
+    _stSuite('training');
+    /* EACH LIFT'S FORECAST, CHECKED ON ITS OWN RECORD (catalogue doc 1, W-015: exercise-specific response calibration), on
+       singles written here, so each session's estimated 1RM is its load. A deadlift of 16 weekly sessions rising 2 a week
+       with a fixed scatter, and a row of 6 noisier ones. Expected, from this test's own Theil–Sen fit and the calibration
+       rule's arithmetic (not from the code under test): every session from the fifth on is forecast from the lift's
+       sessions in the 84 days before it, its miss over the scatter around that fit (at least 1% of the forecast); the
+       deadlift's 12 scored misses give its own factor, weighed against all 14 lifts' misses as 12 against 10; the row's
+       2 are too few, so it takes the pooled factor and reads as a rating. */
+    (function(){var a=asOf(),keepS=DB.sessions,mk=function(name,d,load){var day=addDays(a,-d);return {id:'st-lf-'+name+'-'+d,date:day,createdAt:day+'T08:00:00.000Z',sets:[{exercise:name,load:load,reps:1,rir:2}]};};
+      var NOISE=[0,3,-2,1,-3,2,0,-1,3,-2,1,0,-3,2,-1,1],RN=[0,8,-6,5,-7,9],dl=[],row=[];
+      for(var i=0;i<16;i++)dl.push(mk('Test deadlift',(15-i)*7,300+2*i+NOISE[i]));for(i=0;i<6;i++)row.push(mk('Test row',(5-i)*7,150+RN[i]));
+      var run=function(list,fn){var r=null;try{DB.sessions=list;_memoInvalidate();r=fn();}finally{DB.sessions=keepS;_memoInvalidate();}return r;};
+      var med=function(v){v=v.slice().sort(function(x,y){return x-y;});var m=v.length>>1;return v.length%2?v[m]:(v[m-1]+v[m])/2;};
+      /* the test's own fit: [days ago, load] pairs before a session, x in days from the first of them */
+      var fit=function(prior,atAgo){var x0=prior[0][0],P=prior.map(function(p){return [x0-p[0],p[1]];}),sl=[];
+        for(var i=0;i<P.length;i++)for(var j=i+1;j<P.length;j++)sl.push((P[j][1]-P[i][1])/(P[j][0]-P[i][0]));
+        var b=med(sl),c=med(P.map(function(p){return p[1]-b*p[0];})),res=P.map(function(p){return p[1]-c-b*p[0];}),mu=res.reduce(function(s,r){return s+r;},0)/res.length;
+        var s=Math.sqrt(res.reduce(function(t,r){return t+(r-mu)*(r-mu);},0)/(res.length-1)),m=c+b*(x0-atAgo);return {mean:m,sd:Math.max(s,0.01*m)};};
+      var series=function(list){return list.map(function(s){return [daysBetween(s.date,a),s.sets[0].load];});};
+      var misses=function(S){var out=[];S.forEach(function(e,i){var prior=S.slice(0,i).filter(function(p){return p[0]<=e[0]+84;});if(prior.length<4)return;var f=fit(prior,e[0]);out.push(Math.abs(e[1]-f.mean)/f.sd);});return out;};
+      var q80=function(r){r=r.slice().sort(function(x,y){return x-y;});return Math.max(0.25,r[Math.floor(0.8*r.length)]/1.2816);};
+      var D=series(dl),Rw=series(row),mD=misses(D),mR=misses(Rw),kD=q80(mD),kP=q80(mD.concat(mR)),wD=12/22,kDl=wD*kD+(1-wD)*kP;
+      var oldK=q80(mD.slice(0,6)),cc=mD.slice(6).filter(function(r){return r<=1.2816*oldK;}).length/6,kind=Math.abs(cc-0.8)<=Math.max(0.1,2*Math.sqrt(0.16/6))?'calibrated':'uncalibrated';
+      var live=fit(D.filter(function(p){return p[0]<=77;}),-7);
+      var A=run(dl.concat(row),function(){var F=liftForecasts();return {F:F,d:liftForecast('Test deadlift'),r:liftForecast('test row'),cal:selfCalibration().rows.filter(function(x){return x.id==='lift_forecast';})[0],
+        plan:progressionPlan(),sheet:SHEETS.progression().body};});
+      ok('every session from the fifth on is forecast from the sessions in the 84 days before it: 12 of the deadlift’s, 2 of the row’s',
+        !!A.d&&A.d.scored===mD.length&&mD.length===12&&!!A.r&&A.r.scored===2&&A.F.scored.length===14,JSON.stringify([A.d&&A.d.scored,A.r&&A.r.scored]));
+      ok('its uncorrected 80% ranges held as often as this test’s own misses say',!!A.d&&A.d.held===mD.filter(function(r){return r<=1.2816;}).length&&A.r.held===mR.filter(function(r){return r<=1.2816;}).length,
+        JSON.stringify([A.d&&A.d.held,mD.map(function(r){return round(r,2);})]));
+      ok('with 12 scored, the deadlift’s own factor weighs against all its lifts’ as 12 against 10, and says so',!!A.d&&Math.abs(A.d.scale-kDl)<0.001&&A.d.personalWeight===round(wD,2)&&A.d.basis.kind===kind&&/% this lift’s own record/.test(A.d.text),
+        JSON.stringify({got:A.d&&[A.d.scale,A.d.personalWeight,A.d.basis.kind],want:[kDl,wD,kind]}));
+      ok('with 2 scored, the row takes the factor from all the lifts and reads as a rating, not a probability',!!A.r&&Math.abs(A.r.scale-kP)<0.001&&A.r.personalWeight===0&&A.r.basis.kind==='rating'&&/a rating, not a probability: 2 of 10/.test(A.r.text),
+        JSON.stringify({got:A.r&&[A.r.scale,A.r.text],want:kP}));
+      ok('the next session, a week after the last, is forecast from the last 84 days with the corrected 80% range',!!A.d&&A.d.next.date===addDays(a,7)&&Math.abs(A.d.next.mean-live.mean)<0.051&&
+        Math.abs(A.d.next.lo-(live.mean-1.2816*live.sd*kDl))<0.051&&Math.abs(A.d.next.hi-(live.mean+1.2816*live.sd*kDl))<0.051,JSON.stringify({got:A.d&&A.d.next,want:[live.mean,live.sd,kDl]}));
+      ok('the progression sheet shows it under the lift, and the calibration report counts every lift’s forecasts',A.plan.rows.some(function(r){return r.exercise==='test deadlift'&&r.forecast&&r.forecast.scored===12;})&&
+        A.sheet.indexOf('data-lift-forecast="test deadlift"')>=0&&A.sheet.indexOf(fmtWeight(round(live.mean,1)))>=0&&A.sheet.indexOf('held '+A.d.held+' of 12 past sessions')>=0&&!!A.cal&&A.cal.n===14&&A.cal.scale===round(kP,2),
+        JSON.stringify({cal:A.cal&&[A.cal.n,A.cal.scale]}));
+      var B=run([0,7,14,21,28,35].map(function(d){return mk('Test press',d,100);}),function(){return liftForecast('Test press');});
+      ok('six identical sessions do not promise an exact next one: the scatter is taken as 1% of the forecast, 100 ± 1.28',!!B&&B.next.mean===100&&B.next.lo===98.7&&B.next.hi===101.3,JSON.stringify(B&&B.next));
+      var C=run([7,14,21].map(function(d){return mk('Test curl',d,40);}),function(){return liftForecast('Test curl');});
+      ok('three sessions are too few to forecast from, and it says what it needs',!!C&&C.status==='insufficient'&&!C.next&&/1 more sessions of it/.test(C.need),JSON.stringify(C));
+      var H=heuristicContractById('lift_forecast');
+      ok('the windows, floor and weight are a heuristic contract, not validated',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.minFit.value===4&&H.parameters.priorWeight.value===10&&heuristicContracts().ok);
+    })();
+    _stSuite('recovery');
+    /* HOW READINESS MOVES FROM DAY TO DAY (catalogue doc 1, W-019: fatigue-state transitions). Forty days written here, each
+       character one day ending today: N about normal, B below, G better, - not rated, s only one signal rated. The
+       readiness score of each day is set by this test (the readiness state itself is tested elsewhere), so every
+       expectation is counted from the string: the days and the pairs next to each other, each row's share with three
+       days of no-carry-over prior, the spells that ended, and the one-day-ahead Brier scores walking forward. */
+    (function(){var a=asOf(),keepO=DB.observations,keepR=readinessState;
+      var SEQ='NNNBBNNGNNBBBNNNGGNN-BNNNNBBNNsGNNBBBBNB',SC={N:0,B:-1,G:1};
+      var build=function(seq){var obs=[],states={};seq.split('').forEach(function(ch,i){var day=addDays(a,-(seq.length-1-i)),at=day+'T08:00:00.000Z';if(ch==='-')return;
+        obs.push(makeObservation({type:'fatigue',date:day,value:5,source:'manual',createdAt:at}));if(ch!=='s')obs.push(makeObservation({type:'soreness',date:day,value:5,source:'manual',createdAt:at}));
+        states[day]=ch==='s'?SC.B:SC[ch];});return {obs:obs,states:states};};   /* a one-signal day has a score too: only the two-signal rule leaves it out */
+      var run=function(seq,fn){var b=build(seq),r=null;try{DB.observations=b.obs;readinessState=function(){var s=b.states[asOf()];return s==null?{status:'insufficient'}:{status:'ok',score:s,band:'set by the test',parts:[]};};_memoInvalidate();r=fn();}
+        finally{DB.observations=keepO;readinessState=keepR;_memoInvalidate();}return r;};
+      /* the test's own counts */
+      var days=[];SEQ.split('').forEach(function(ch,i){if(SC[ch]!=null)days.push({i:i,s:ch});});
+      var table=function(D){var c={},f={},sh={},n=0;['N','B','G'].forEach(function(x){c[x]={N:0,B:0,G:0};f[x]=0;sh[x]=D.filter(function(d){return d.s===x;}).length/D.length;});
+        for(var k=1;k<D.length;k++)if(D[k].i-D[k-1].i===1){c[D[k-1].s][D[k].s]++;f[D[k-1].s]++;n++;}
+        return {c:c,f:f,sh:sh,n:n,pBB:function(x){return (c[x].B+3*sh.B)/(f[x]+3);}};};
+      var T0=table(days),bm=0,bb=0,ns=0;
+      for(var k=1;k<days.length;k++){if(days[k].i-days[k-1].i!==1)continue;var P=table(days.slice(0,k));if(P.n<10)continue;var y=days[k].s==='B'?1:0;bm+=Math.pow(P.pBB(days[k-1].s)-y,2);bb+=Math.pow(P.sh.B-y,2);ns++;}
+      var spells=[],runB=0,startSeen=false;for(k=0;k<days.length;k++){var nx=k>0&&days[k].i-days[k-1].i===1;if(days[k].s==='B'){if(runB&&nx)runB++;else{runB=1;startSeen=nx;}}else{if(runB&&nx&&startSeen)spells.push(runB);runB=0;}}
+      var A=run(SEQ,function(){return {M:readinessTransitions(),sheet:readinessTransitionsBlock(),ans:askQuestion('how is my readiness')};});
+      var M=A.M,pBB=T0.pBB('B');
+      ok('only days with two of the five ratings count, and no pair is made across a day not rated',M.status==='ok'&&M.days===days.length&&days.length===38&&M.transitions===T0.n&&T0.n===35,JSON.stringify([M.days,M.transitions,T0.n]));
+      ok('after a day below, each next state is counted, and the estimate weighs them against no carry-over as their number against 3',M.counts.below.below===T0.c.B.B&&M.from.below===T0.f.B&&Math.abs(M.stayBelow-pBB)<0.0006&&
+        Math.abs(M.personalWeight.below-T0.f.B/(T0.f.B+3))<1e-9&&M.carriesOver===(pBB>T0.sh.B),JSON.stringify({got:[M.counts.below,M.stayBelow],want:[T0.c.B,pBB]}));
+      ok('back to normal within two days is one less the chance of staying below twice',Math.abs(M.backWithin2-(1-pBB*pBB))<0.0006,String(M.backWithin2));
+      ok('a spell below counts when its length is known, begun and ended next to rated days at or above normal: 2, 3, 2 and 4 days; the one after a day not rated is left out, and the last is still going',
+        JSON.stringify(M.spells)===JSON.stringify(spells)&&spells.join()==='2,3,2,4'&&M.medianSpell===2.5&&M.spellOngoing===true,JSON.stringify(M.spells));
+      ok('walking forward, each tomorrow is forecast from the days before it only, and the verdict follows the two Brier scores',M.score.n===ns&&Math.abs(M.score.brier-bm/ns)<0.0006&&Math.abs(M.score.brierBase-bb/ns)<0.0006&&
+        M.verdict.verdict===(bm/ns<=0.95*bb/ns?'adds value':'no better'),JSON.stringify({got:M.score,want:[ns,bm/ns,bb/ns],v:M.verdict.verdict}));
+      ok('the recovery sheets’ block shows it, and the assistant’s readiness answer says how a day below has gone on',A.sheet.indexOf('data-readiness-transitions')>=0&&A.sheet.indexOf('below again '+T0.c.B.B+' of '+T0.f.B+' times')>=0&&
+        A.sheet.indexOf('data-transition-verdict')>=0&&/the next was below too \d+ of \d+ times/.test(String(A.ans&&A.ans.basis)),String(A.ans&&A.ans.basis));
+      var Bq=run('NNBBNNNBNN',function(){return readinessTransitions();});
+      ok('with fewer than 20 pairs it says how many more it needs',Bq.status==='insufficient'&&Bq.transitions===9&&/11 more pairs/.test(Bq.need[0]),JSON.stringify(Bq));
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

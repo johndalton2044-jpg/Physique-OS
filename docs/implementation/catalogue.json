@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "847a6961b4",
+ "build": "e0ce259ce6",
  "models": [
   {
    "id": "adherence",
@@ -93,6 +93,11 @@
    "fn": "learningCycleView"
   },
   {
+   "id": "lift_forecast",
+   "cls": "EMPIRICAL",
+   "fn": "liftForecasts"
+  },
+  {
    "id": "measurement_quality",
    "cls": "DERIVED",
    "fn": "measurementQuality"
@@ -176,6 +181,11 @@
    "id": "rate_band",
    "cls": "POLICY",
    "fn": "rateBand"
+  },
+  {
+   "id": "readiness_transitions",
+   "cls": "EMPIRICAL",
+   "fn": "readinessTransitions"
   },
   {
    "id": "recovery",
