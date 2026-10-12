@@ -288,15 +288,25 @@ function refreshEnvironment(opts){
     (opts.air===false?Promise.resolve({status:'ok',skipped:true}):extRequest('/v1/ext/weather/air-quality?'+q+'&past_days=1&forecast_days=3&past_hours=24&forecast_hours=48')).then(function(r){if(r.skipped)return r;
       if(r.status!=='ok')return r;var a=adaptOpenMeteo(r.payload,{dataset:'air-quality',retrievedAt:r.retrievedAt,label:L.label});if(a.status!=='ok')return a;
       a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:air-quality:'+L.lat+','+L.lon;return ingestEnvironmentBatch(a.batch);})];
-  return Promise.all(jobs).then(function(rs){DB.settings.weatherSync={lastAttempt:nowISO(),lastSuccess:rs[0].status==='ok'?nowISO():((DB.settings.weatherSync||{}).lastSuccess||null),
-      state:rs.every(function(r){return r.status==='ok';})?'synced':(rs.some(function(r){return r.status==='ok';})?'partial':'failed'),
-      error:(rs.filter(function(r){return r.status!=='ok';})[0]||{}).error||null};save('settings');return {status:rs[0].status,results:rs};});
+  return Promise.all(jobs).then(function(rs){var o=weatherRefreshOutcome(rs);
+    DB.settings.weatherSync={lastAttempt:nowISO(),lastSuccess:o.status==='ok'?nowISO():((DB.settings.weatherSync||{}).lastSuccess||null),state:o.state,error:o.firstError};
+    save('settings');return {status:o.status,results:o.results,error:o.error};});
 }
+/* What a refresh tells the person. The forecast is what "the weather" means, so its failure, with its reason, is the
+   refresh's failure: the reason was dropped here, so every failure (no server, a missing rewrite, a stopped server, a
+   refusing provider) read only "The weather could not be fetched". A failure that came back without an error of the
+   taxonomy (a batch refused at ingestion, an adapter's note) is given one, so no failure is left without its reason. */
+function weatherRefreshOutcome(rs){
+  var results=(rs||[]).map(function(r){return !r||r.status==='ok'||r.error?r:extError('malformed_payload',r.note||r.reason||'the response could not be used',{stage:'app',text:'The weather arrived but could not be used.'});});
+  var bad=results.filter(function(r){return r&&r.status!=='ok';}),f=results[0]||extError('configuration_error','nothing was requested');
+  return {status:f.status==='ok'?'ok':'error',results:results,error:f.status==='ok'?null:f.error,firstError:bad.length?bad[0].error:null,
+    state:!bad.length?'synced':(bad.length<results.length?'partial':'failed')};}
 function fetchHistoricalWeather(start,end){
   var L=weatherLocation();if(!L)return Promise.resolve(extError('configuration_error','set a place first'));
   return extRequest('/v1/ext/weather/archive?lat='+L.lat+'&lon='+L.lon+'&tz='+encodeURIComponent(L.timezone||_deviceTz())+'&start='+start+'&end='+end).then(function(r){
     if(r.status!=='ok')return r;var a=adaptOpenMeteo(r.payload,{dataset:'archive',retrievedAt:r.retrievedAt,label:L.label});if(a.status!=='ok')return a;
-    a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:archive:'+L.lat+','+L.lon+':'+start+'..'+end;return ingestEnvironmentBatch(a.batch);});
+    a.batch.location={lat:L.lat,lon:L.lon,label:L.label};a.batch.id='env:open-meteo:archive:'+L.lat+','+L.lon+':'+start+'..'+end;return ingestEnvironmentBatch(a.batch);})
+    .then(function(r){return weatherRefreshOutcome([r]).results[0];});
 }
 function searchPlaces(name){return extRequest('/v1/ext/geocode?name='+encodeURIComponent(name)).then(function(r){
   if(r.status!=='ok')return r;return {status:'ok',places:((r.payload&&r.payload.results)||[]).map(function(x){return {label:[x.name,x.admin1,x.country].filter(Boolean).join(', '),lat:x.latitude,lon:x.longitude,timezone:x.timezone};})};});}

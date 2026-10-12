@@ -103,6 +103,8 @@ await new Promise(r=>{api.once('exit',r);api.kill();});await wait(200);api=start
 const health=await get(API,'/v1/ext/sources');line(health.status===200,'the server restarts with failure fixtures');
 await S(()=>window.dispatchAct('weather.refresh'));await p.waitForTimeout(1500);
 const W=await S(()=>window.DB.settings.weatherSync);line(!!W&&W.state==='failed'&&W.error&&W.error.category==='authorization_denied','a refused request reaches the app as authorization_denied, and the weather already stored stays',JSON.stringify(W&&W.error));
+const WT=await S(()=>document.getElementById('toast').textContent);
+line(/refused this server/.test(WT)&&!/could not be fetched/.test(WT),'and the person is told the source refused the server’s credentials, not only that the weather could not be fetched',WT);
 line(await S(()=>(window.DB.environment||[]).some(b=>b.dataset==='forecast')),'existing weather survives a failed refresh');
 r=await get(API,'/v1/ext/weather/forecast?lat=40.7&lon=-74&provider=meteosource');line(r.json&&r.json.error&&r.json.error.category==='rate_limited','a rate-limited provider is reported as rate_limited',JSON.stringify(r.json));
 api.kill();

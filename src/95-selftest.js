@@ -5188,6 +5188,20 @@ function runSelfTest(opts){
       ok('the reference is a heuristic contract, not validated, citing two findings now in the claim registry under mobility',!!H&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&H.parameters.kneewall.value===10
         &&['thomas2018stretch','bennell1998ktw'].every(function(id){return C.claims.some(function(c){return c.id===id&&(c.domains||[]).indexOf('mobility')>=0;});})&&heuristicContracts().ok);
     })();
+    _stSuite('external');
+    /* WHAT A WEATHER REFRESH TELLS THE PERSON, on results written here: the forecast's failure, with its reason, is the
+       refresh's; a failure without a reason is given one; the weather screen says it at the top. */
+    (function(){var noServer=extError('configuration_error','no server',{stage:'configuration',text:EXT_NO_SERVER_TEXT}),ok1={status:'ok'};
+      var a=weatherRefreshOutcome([noServer,ok1]),b=weatherRefreshOutcome([{status:'refused',note:'a batch without a location is refused'}]),
+        c=weatherRefreshOutcome([ok1,extError('rate_limited','slow down')]),d=weatherRefreshOutcome([ok1,ok1]);
+      ok('a failed forecast carries its own reason to the person: no server is said as no server',a.status==='error'&&!!a.error&&a.error.text===EXT_NO_SERVER_TEXT&&a.state==='partial');
+      ok('a failure that came back without a reason is given one, never left as "could not be fetched"',b.status==='error'&&!!b.error&&b.error.category==='malformed_payload'&&b.error.detail==='a batch without a location is refused'&&b.state==='failed'&&!!b.error.text);
+      ok('the forecast arriving is the weather updated, even when air quality fails; the air quality failure is kept for the screen',c.status==='ok'&&c.error===null&&c.state==='partial'&&!!c.firstError&&c.firstError.category==='rate_limited'&&d.state==='synced'&&d.firstError===null);
+      var keepL=DB.settings.weatherLocation,keepW=DB.settings.weatherSync,keepE=DB.environment,body='';
+      try{DB.settings.weatherLocation={lat:52.63,lon:1.3,label:'Norwich'};DB.settings.weatherSync={state:'failed',error:noServer.error};DB.environment=[];_memoInvalidate();body=SHEETS.weather({q:''}).body;}
+      finally{DB.settings.weatherLocation=keepL;DB.settings.weatherSync=keepW;DB.environment=keepE;_memoInvalidate();}
+      ok('the weather screen says why the last refresh failed at the top, with the connection check',/data-weather-problem/.test(body)&&body.indexOf('data-weather-problem')<body.indexOf('Where this comes from')&&body.indexOf(esc(EXT_NO_SERVER_TEXT))>=0&&/diag\.server/.test(body));
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

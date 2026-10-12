@@ -71,6 +71,14 @@ async function local(){
   let o=await run(18802,searchAndCheck);
   line(!/Something went wrong/.test(o.r.shown)&&/need the Physique OS server/.test(o.r.shown),'with no server attached, the place search says the server is missing (not "Something went wrong")',o.r.shown.slice(0,160));
   line(o.r.d.code==='B'&&/no rewrite/.test(o.r.d.verdict),'the connection check names the missing rewrite',JSON.stringify(o.r.d).slice(0,200));
+  /* refreshing the weather with no server: the message names the missing server (it read only "The weather could not be
+     fetched"), and so does the top of the weather screen */
+  const refreshAndRead=async p=>{await p.evaluate(()=>{window.setWeatherLocation({lat:52.63,lon:1.3,label:'Norwich'});document.getElementById('toast').textContent='';window.dispatchAct('weather.refresh');});
+    await p.waitForFunction(()=>{const t=document.getElementById('toast').textContent;return t&&!/Fetching/.test(t);},null,{timeout:30000}).catch(()=>{});
+    const toast=await p.evaluate(()=>document.getElementById('toast').textContent);await p.evaluate(()=>window.dispatchAct('weather.open'));await p.waitForTimeout(250);
+    return {toast,banner:await p.evaluate(()=>{const b=document.querySelector('#editBackdrop [data-weather-problem]');return b?b.textContent:'';})};};
+  o=await run(18802,refreshAndRead);
+  line(/need the Physique OS server/.test(o.r.toast)&&!/could not be fetched/.test(o.r.toast)&&/need the Physique OS server/.test(o.r.banner),'with no server attached, refreshing the weather says the server is missing, in the message and at the top of the weather screen',JSON.stringify(o.r).slice(0,240));
   /* 2. a correct deployment */
   const h=await getJSON('http://127.0.0.1:18803/api/sync/v1/health');line(h.status===200&&h.json&&h.json.ok&&h.json.ext,'health through the /api/sync rewrite',JSON.stringify(h).slice(0,120));
   o=await run(18803,async p=>{const c=await searchAndCheck(p);await p.click('#editBackdrop [data-act="weather.pick"][data-arg="0"]');await p.waitForTimeout(1500);
@@ -89,6 +97,8 @@ async function local(){
   /* 3. a rewrite to a server that is not running */
   o=await run(18804,async p=>p.evaluate(()=>window.testExternalServer({probeProvider:true})));
   line(o.r.code==='C','a rewrite to a stopped server is named as the server not answering',JSON.stringify(o.r).slice(0,200));
+  o=await run(18804,refreshAndRead);
+  line(/not answering/.test(o.r.toast)&&!/could not be fetched/.test(o.r.toast)&&/not answering/.test(o.r.banner),'with the server stopped, refreshing the weather says the server is not answering',JSON.stringify(o.r).slice(0,240));
   await browser.close();[staticOnly,proxied,deadProxy].forEach(s=>s.close());fs.rmSync(tmp,{recursive:true,force:true});
 }
 if(args.includes('--local'))await local();

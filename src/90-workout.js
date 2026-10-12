@@ -211,7 +211,11 @@ SHEETS.weather=function(b){
       (b.searchDetail?'<div class="hint">'+esc(b.searchDetail)+'</div>':''):'')+
     (b.diag?renderServerDiagnosis(b.diag):'');
   if(!L)return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};
-  var N=environmentNow();
+  var N=environmentNow(),wf=DB.settings.weatherSync||{};
+  /* a failed refresh says why at the top, with the check that names the broken layer; it was a line under the tables */
+  if(wf.state==='failed'&&wf.error)out+='<div class="banner attention" data-weather-problem><span class="banner-text">'+esc(wf.error.text||wf.error.category)+
+      (N.status==='ok'?' The weather below was retrieved '+esc(String(N.retrievedAt).replace('T',' ').slice(0,16))+' UTC.':'')+'</span>'+uiBtn('Check the connection','diag.server',null,'btn-sm btn-secondary')+'</div>'+
+    '<div class="hint">'+esc(wf.error.category+(wf.error.stage?' at the '+wf.error.stage+' stage':'')+(wf.error.detail?': '+wf.error.detail:''))+'</div>';
   if(N.status==='ok'){out+='<div class="card-title" style="margin-top:12px">Now</div>'+['temperature','apparentTemperature','humidity','vpd','precipitation','cloudCover','windSpeed','windDirection','windGusts','uvIndex','isDay'].map(function(k){
       return uiRow(esc(ENV_VARIABLES[k].label),fmtEnv(k,N.values[k]),N.derived.indexOf(k)>=0?{sub:'derived'}:null);}).join('');
     var aqk=['usAqi','europeanAqi','pm2_5','pm10','ozone','no2','so2','co'].filter(function(k){return N.values[k]!=null;});
