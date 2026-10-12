@@ -4779,4 +4779,4 @@ Tests:
 What stays open: exercise-specific response calibration, skill-versus-strength limitation, protein quality from amino
 acids, the food matrix, glycaemic response, and visual calibration.
 
-1,967 self-tests pass; the full release record is in progress.
+All 37 gates pass (reproducible included); release 24/24; 1,967 self-tests.
