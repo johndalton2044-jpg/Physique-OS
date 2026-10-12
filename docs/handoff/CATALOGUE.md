@@ -120,14 +120,20 @@ its own list of high-value work:
   checked against its own macros, the first of your own entry, USDA laboratory analysis, the branded label and Open
   Food Facts that agrees with itself, the other kept visible. A barcode scan meeting your own entry uses it (external
   gate). Entity resolution was already in place. At 847a6961b4: protein across meals is judged at 0.4 g/kg per meal
-  once the day reaches 1.6 g/kg, a heuristic contract citing a registered finding, the daily total first. Not built:
-  bioavailability, protein quality from amino acids, the food matrix, glycaemic response.
+  once the day reaches 1.6 g/kg, a heuristic contract citing a registered finding, the daily total first. At 21dda51c45:
+  - protein quality from the amino acids of the foods eaten, as one mix, against the FAO 2013 pattern (workflow V-029);
+    the shipped corpus carries no amino acids until its next build;
+  - whole almonds, walnuts and cashews counted at the energy feeding studies measured (workflow V-030);
+  - each meal's and the day's glycaemic load from the international tables, the person's own response not measured
+    (workflow V-030).
+  Not built: bioavailability.
 - W-020 (body composition): **done**, e82ecf3367. Each circumference site's change is set against the tape's error (your
   own repeats or a 1 cm working assumption), and read with the weight and strength trends for what it is consistent
   with, saying what the tape cannot separate (workflow V-021). At 847a6961b4: photos are compared only in matching
   conditions. Each keeps when it was taken and, optionally, its fed state, and the latest pairs with the earliest in
   matching conditions. This fixed a check that graded every pair "too little was recorded" and a Body tab that never
-  showed a comparison (workflow V-022). Not built: visual calibration.
+  showed a comparison (workflow V-022). At 21dda51c45: a body fat estimated by eye is read through the person's own bias
+  against their measured readings (workflow V-031).
 
 Mobility, conditioning and power responses (TRANSITION item 4) were done before this round.
 

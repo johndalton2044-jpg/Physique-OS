@@ -1188,7 +1188,7 @@ var PANEL_LEVEL_RULES=[
   [/^Recovery and deload/,'insightful'],[/^Substitutions/,'insightful'],[/^How each lift is responding/,'insightful'],[/^What the evidence supports/,'insightful'],
   /* food */
   [/^Today \u00b7/,'casual'],[/^Recent, frequent and favorites/,'casual'],[/^Possibly the same food/,'casual'],[/^Recipes and my foods/,'casual'],
-  [/^Against reference/,'insightful'],[/^Adequacy/,'insightful'],[/^What the food record feeds/,'developer'],[/^Data sources/,'developer'],
+  [/^Against reference/,'insightful'],[/^Adequacy/,'insightful'],[/^Today\u2019s food, read further/,'insightful'],[/^What the food record feeds/,'developer'],[/^Data sources/,'developer'],
   /* body */
   [/^Circumferences/,'casual'],[/^Progress photos/,'casual'],[/^Measurement schedule/,'casual'],
   [/^Where training lands/,'insightful'],[/^Reading the scale/,'insightful'],[/^Composition/,'insightful'],[/^Not available yet/,'developer'],

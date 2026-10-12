@@ -4875,3 +4875,53 @@ What stays open: protein quality from amino acids, the food matrix, glycaemic re
 next round), and W-019's question for a real person.
 
 All 37 gates pass (reproducible included); release 24/24; 2,008 self-tests.
+
+## Protein quality from amino acids, the food matrix, glycaemic load, visual calibration (build 21dda51c45)
+
+The four remaining nutrition and body-composition items, each with a cited source registered as a finding.
+- **Protein quality from amino acids** (doc 1, W-018). The day's protein was scored only by food-group values.
+  - Where foods carry their amino acids, the day's protein is now scored as one mix against the FAO 2013 adult
+    pattern. The lowest ratio is the score and its amino acid the limiting one.
+  - A mix can score above its parts, which group values cannot show. A rice protein alone scores 0.625 (lysine) and a
+    pea protein 0.815 (methionine and cysteine); together they reach 1.07.
+  - It is an amino acid score, not corrected for digestion. Foods without a composition keep their group value and are
+    counted.
+  - Two ways in: one's own food can carry the amino acids its label prints (all eleven or none), and the corpus build
+    now keeps USDA's amino acids. The shipped corpus predates this, so no shipped food carries them until the next
+    corpus build.
+- **The food matrix** (doc 1, W-018).
+  - Defect fixed: every food whose name held a nut lost 20% of its energy, almond milk, flour, butter and peanut butter
+    included.
+  - Now only whole nuts that a feeding study measured count at the measured energy: almonds 129, walnuts 146 and
+    cashews 137 kcal per 28 g (Novotny et al. 2012; Baer et al. 2016; Baer and Novotny 2019). Butters, flours, milks
+    and oils, whose structure is broken, are not corrected, and nuts no study measured are not guessed at.
+  - It is shown on the Food tab, not taken off the intake, since the expenditure fitted from what is logged already
+    absorbs a steady difference.
+- **Glycaemic load** (doc 1, W-018: glycaemic response).
+  - Each food's carbohydrate less fibre is weighed by the glycaemic index of the group its name matches, from the
+    international tables (Atkinson et al. 2008). The meals' and the day's loads are shown, with the share of
+    carbohydrate matched.
+  - The day reads as low under 80 and high over 120, a convention held as a heuristic contract.
+  - It is a population figure: the person's own glucose response can differ widely (Zeevi et al. 2015) and is not
+    measured here, which the Food tab says.
+- **Visual calibration** (doc 1, W-020).
+  - Defect fixed: a body fat estimated by eye was a method the record knew but the log form never offered.
+  - Each visual estimate now pairs with the nearest measured reading within a week. The person's bias starts from none
+    (sd 4 points, the method's stated error), each gap weighed by both methods' errors, and with three pairs or more
+    their own visual error is read too.
+  - The latest estimate is read through both, on "Physique by region". Methods are still trended only against
+    themselves.
+
+Tests:
+- 22 self-tests, each made to fail once on purpose.
+- The claim registry checks each grade against the design its entry states. Five of the six new entries were first
+  written with designs that did not say what their grade needs, and the gate caught each one.
+- Black-box workflows:
+  - V-029: two protein isolates saved with their amino acids, logged, scored; a partial profile refused.
+  - V-030: whole almonds and cooked rice saved and logged, the energy held back and the glycaemic load.
+  - V-031: seven body-fat readings through the quick log, the bias and today's estimate.
+
+What stays open: bioavailability (W-018), the amino acids of the shipped corpus (the next corpus build), and every
+person's own glucose response.
+
+2,030 self-tests pass; the full release record is in progress.

@@ -1,6 +1,6 @@
 {
  "generatedFrom": "the running registries",
- "build": "fd6e597ef7",
+ "build": "21dda51c45",
  "models": [
   {
    "id": "adherence",
@@ -71,6 +71,11 @@
    "id": "friction",
    "cls": "EMPIRICAL",
    "fn": "frictionModel"
+  },
+  {
+   "id": "glycaemic_load",
+   "cls": "PRIOR",
+   "fn": "glycaemicLoad"
   },
   {
    "id": "goal_traj",
@@ -251,6 +256,11 @@
    "id": "unified_optimiser",
    "cls": "PREDICTIVE",
    "fn": "unifiedOptimiser"
+  },
+  {
+   "id": "visual_calibration",
+   "cls": "EMPIRICAL",
+   "fn": "visualBodyFatCalibration"
   },
   {
    "id": "water_noise",
@@ -3028,5 +3038,5 @@
   "mobility": 43,
   "routines": 6
  },
- "panels": 116
+ "panels": 117
 }

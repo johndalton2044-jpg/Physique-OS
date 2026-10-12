@@ -19,6 +19,8 @@ SHEETS.physique=function(){var P=physiqueModel(),pri=physiquePriorities(),out='<
   if(P.rate.status==='ok')out+='<div class="card-title" style="margin-top:10px">Rate of change</div>'+uiRow(esc(P.rate.phase),(P.rate.pctPerWeek>0?'+':'')+P.rate.pctPerWeek+'% a week',{sub:esc(P.rate.state+' \u00b7 '+P.rate.basis)});
   var B=P.bodyComposition;if(B.methods.length)out+='<div class="card-title" style="margin-top:10px">Body fat, by method</div>'+B.methods.map(function(m){return uiRow(esc(m.method),m.latest+'%',{sub:esc(m.n+' readings \u00b7 '+(m.trendPerMonth!=null?m.trendPerMonth+' points/month':'no trend yet')+(m.leanPerMonth!=null?' \u00b7 lean '+m.leanPerMonth+'/month':'')+' \u00b7 '+m.note)});}).join('')+
     (B.offsets.length?'<div class="hint">'+esc(B.offsets.map(function(o){return o.between.join(' vs ')+': '+o.offset+' points apart on '+o.pairs+' near dates';}).join('; '))+'</div>':'')+
+    /* W-020: a visual estimate read through the person's own bias against their measured readings */
+    (B.visual?'<div class="hint" data-visual-calibration>Visual estimates: '+esc(B.visual.status==='ok'?B.visual.text:('not calibrated yet: '+(B.visual.need||[]).join(', ')))+'.</div>':'')+
     (B.unspecified?'<div class="hint">Some readings do not say how they were measured. Choose the method when logging, so each is compared only with its own kind.</div>':'')+'<div class="prov">'+esc(B.rule)+'</div>';
   out+='<div class="prov">'+esc(P.range.source)+'. '+esc(P.limits)+'</div>';
   return {body:out,foot:'<button class="btn btn-secondary" data-act="edit.close">Close</button>'};};

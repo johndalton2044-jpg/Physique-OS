@@ -5547,6 +5547,90 @@ function runSelfTest(opts){
       ok('the energy the compensation carries into the energy balance is widened or narrowed by it',!!A.o&&A.o.calibrationScale===A.R.calibration.scale&&A.o.sdKcal===want,JSON.stringify({got:A.o,want:want}));
       ok('it is a row of the calibration report, and the physiology screen says how its ranges held',!!A.cal&&A.cal.n===10&&A.cal.inUse===true&&!!A.ph&&/its 80% ranges held \d+ of 10 weeks/.test(A.ph.sub),JSON.stringify({cal:A.cal,sub:A.ph&&A.ph.sub}));
     })();
+    _stSuite('nutrition');
+    /* PROTEIN QUALITY FROM AMINO ACIDS (catalogue doc 1, W-018), on foods written here with their amino acids (g per 100 g).
+       Expected from this test's arithmetic and the FAO 2013 adult pattern written out here: a rice protein alone is short
+       of lysine (2.4 g in 80 g of protein: 30 mg per g against 48, 0.625); a pea protein alone of methionine and cysteine
+       (1.5 g: 18.75 mg against 23, 0.815); 30 g of each together reach 1.068 (lysine still the closest), above either
+       alone. A food without amino acids keeps its group value and lowers the share scored. */
+    (function(){var a=asOf(),keep=DB.foodLogs,PAT={his:16,ile:30,leu:61,lys:48,saa:23,aaa:41,thr:25,trp:6.6,val:40};
+      var RICE={protein:80,kcal:380,his:1.8,ile:3.4,leu:6.6,lys:2.4,met:2.4,cys:1.6,phe:4.2,tyr:4.0,thr:2.9,trp:1.0,val:4.8},PEA={protein:80,kcal:380,his:2.0,ile:3.6,leu:6.8,lys:5.8,met:0.8,cys:0.7,phe:4.4,tyr:3.0,thr:3.0,trp:0.8,val:4.0};
+      var log=function(id,name,per,g,meal){return {id:'st-aa-'+id,date:a,meal:meal||'lunch',food:{kind:'user',id:'u-'+id,name:name,basis:'g',per100:per,source:'USER'},quantity:g,basis:'g',grams:g,
+        nutrients:{kcal:round(per.kcal*g/100,2),protein:round(per.protein*g/100,2),carbs:round((per.carbs||0)*g/100,2),fat:0,fiber:round((per.fiber||0)*g/100,2)},createdAt:a+'T08:00:00.000Z',source:'manual'};};
+      var run=function(L,fn){var r=null;try{DB.foodLogs=L;_memoInvalidate();r=fn();}finally{DB.foodLogs=keep;_memoInvalidate();}return r;};
+      var score=function(foods){var P=0,mg={his:0,ile:0,leu:0,lys:0,saa:0,aaa:0,thr:0,trp:0,val:0};foods.forEach(function(f){var k=f[1]/100;P+=f[0].protein*k;
+          mg.his+=f[0].his*k*1000;mg.ile+=f[0].ile*k*1000;mg.leu+=f[0].leu*k*1000;mg.lys+=f[0].lys*k*1000;mg.saa+=(f[0].met+f[0].cys)*k*1000;mg.aaa+=(f[0].phe+f[0].tyr)*k*1000;mg.thr+=f[0].thr*k*1000;mg.trp+=f[0].trp*k*1000;mg.val+=f[0].val*k*1000;});
+        var best=null;Object.keys(PAT).forEach(function(x){var r=mg[x]/P/PAT[x];if(!best||r<best.r)best={aa:x,r:r};});return best;};
+      var eR=score([[RICE,30]]),eP=score([[PEA,30]]),eM=score([[RICE,30],[PEA,30]]);
+      var R1=run([log('r','Test rice protein',RICE,30)],function(){return dietDigestibility(a).amino;}),P1=run([log('p','Test pea protein',PEA,30)],function(){return dietDigestibility(a).amino;});
+      ok('a rice protein alone is short of lysine: '+eR.r.toFixed(3)+' of the adult pattern',R1.status==='ok'&&R1.limiting==='lys'&&eR.aa==='lys'&&Math.abs(R1.score-eR.r)<0.0006,JSON.stringify([R1.score,R1.limiting,eR]));
+      ok('a pea protein alone is short of methionine and cysteine: '+eP.r.toFixed(3),P1.status==='ok'&&P1.limiting==='saa'&&eP.aa==='saa'&&Math.abs(P1.score-eP.r)<0.0006&&/methionine and cysteine limiting/.test(P1.text),JSON.stringify([P1.score,P1.limiting]));
+      var M=run([log('r','Test rice protein',RICE,30),log('p','Test pea protein',PEA,30),log('c','Test chicken',{protein:30,kcal:165},100,'dinner')],function(){return {D:dietDigestibility(a),card:foodDayCard(a)};});
+      ok('together they score '+eM.r.toFixed(3)+', above either alone, and meet the pattern',M.D.amino.status==='ok'&&Math.abs(M.D.amino.score-eM.r)<0.0006&&eM.r>eR.r&&eM.r>eP.r&&eM.r>=1&&/meets the adult pattern/.test(M.D.amino.text),JSON.stringify([M.D.amino.score,eM]));
+      ok('a food without its amino acids keeps its group value and lowers the share scored: 48 of 78 g',M.D.amino.knownProteinG===48&&M.D.amino.proteinG===78&&M.D.amino.coverage===round(48/78,2)&&/62% of the day/.test(M.D.amino.text),JSON.stringify(M.D.amino));
+      ok('the Food tab shows the score, with its limits',M.card.indexOf('data-amino-score')>=0&&M.card.indexOf('score '+fmtNum(eM.r,2))>=0&&/not corrected for digestion/.test(M.card));
+      var C=claimById('fao2013protein');
+      ok('the pattern is the cited FAO 2013 pattern, both in the claim and in the scoring',!!C&&C.claim&&Object.keys(PAT).every(function(x){return C.claim.proposition.object.pattern[x]===PAT[x]&&AMINO_PATTERN[x]===PAT[x];}));
+    })();
+    /* THE FOOD MATRIX (catalogue doc 1, W-018). Whole almonds, walnuts and cashews, an almond butter and peanuts, 28 to 32 g
+       each, written here with their label energy. Expected from the feeding studies' figures written out here (129, 146 and
+       137 kcal per 28 g): each whole nut counts at its measured energy; the butter (its structure broken) and peanuts (not
+       measured) are not corrected, where the old rule took 20% off every nut and nut product. */
+    (function(){var a=asOf(),keep=DB.foodLogs;
+      var log=function(id,name,kcal100,g){return {id:'st-fm-'+id,date:a,meal:'snacks',food:{kind:'fdc',id:'f-'+id,name:name,basis:'g',per100:{kcal:kcal100,protein:20,fat:50,carbs:20},source:'FDC_FOUNDATION'},quantity:g,basis:'g',grams:g,
+        nutrients:{kcal:round(kcal100*g/100,2),protein:round(20*g/100,2),fat:round(50*g/100,2),carbs:round(20*g/100,2),fiber:0},createdAt:a+'T08:00:00.000Z',source:'manual'};};
+      var L=[log('a','Nuts, almonds, whole, raw',584,28),log('w','Nuts, walnuts, English, halves, raw',679,28),log('c','Nuts, cashew nuts, raw',533,28),log('b','Almond butter',603,32),log('p','Peanuts, raw',551,28)];
+      var want=[[129,584*0.28],[146,679*0.28],[137,533*0.28]],tot=want.reduce(function(t,x){return t+(x[0]-x[1]);},0);
+      var R=null;try{DB.foodLogs=L;_memoInvalidate();R={D:dietDigestibility(a),card:foodDayCard(a)};}finally{DB.foodLogs=keep;_memoInvalidate();}
+      ok('each whole nut counts at its measured energy: almonds 129, walnuts 146, cashews 137 kcal for 28 g',R.D.matrix.length===3&&R.D.matrix.every(function(m,i){return m.measured===Math.round(want[i][0])&&m.logged===Math.round(want[i][1]);}),JSON.stringify(R.D.matrix));
+      ok('the almond butter and the peanuts are not corrected, and the day’s total held back is '+Math.round(-tot)+' kcal',!R.D.matrix.some(function(m){return /butter|peanut/i.test(m.food);})&&R.D.matrixAdjustmentKcal===Math.round(tot),String(R.D.matrixAdjustmentKcal));
+      ok('the Food tab shows it, not taken off the intake',R.card.indexOf('data-matrix-energy')>=0&&R.card.indexOf('about '+Math.round(-tot)+' kcal')>=0&&/not taken off your intake/.test(R.card));
+      var H=heuristicContractById('food_matrix_energy');
+      ok('the figures are a contract citing the three feeding studies, each a registered finding',!!H&&['novotny2012almond','baer2016walnut','baer2019cashew'].every(function(id){return H.evidenceBasis.indexOf(id)>=0&&!!claimById(id).claim;})&&H.parameters.almonds.value===129&&heuristicContracts().ok);
+    })();
+    /* GLYCAEMIC LOAD (catalogue doc 1, W-018: glycaemic response), on a day written here. Expected from the international
+       tables' values written out here (boiled white rice 73, banana 51, lentils 32): each food's carbohydrate less fibre
+       times its index over 100, by meal; a food the tables do not cover, and almond milk, are left out and lower the share
+       matched; under 80 a day reads as low, over 120 as high. */
+    (function(){var a=asOf(),keep=DB.foodLogs;
+      var log=function(id,name,carbs,fiber,meal){return {id:'st-gl-'+id,date:a,meal:meal,food:{kind:'fdc',id:'g-'+id,name:name,basis:'g',per100:{kcal:100,carbs:carbs,fiber:fiber},source:'FDC_FOUNDATION'},quantity:100,basis:'g',grams:100,
+        nutrients:{kcal:100,protein:0,fat:0,carbs:carbs,fiber:fiber},createdAt:a+'T08:00:00.000Z',source:'manual'};};
+      var L=[log('r','Rice, white, long-grain, cooked',42,0.6,'lunch'),log('b','Bananas, raw',27.4,3.1,'breakfast'),log('l','Lentils, mature seeds, cooked',20.1,7.9,'dinner'),log('u','Test unlisted food',10,0,'snacks'),log('m','Almond milk, unsweetened',0.6,0,'snacks')];
+      var gl={lunch:0.73*41.4,breakfast:0.51*24.3,dinner:0.32*12.2},tot=gl.lunch+gl.breakfast+gl.dinner,avail=41.4+24.3+12.2+10+0.6,matched=41.4+24.3+12.2;
+      var R=null;try{DB.foodLogs=L;_memoInvalidate();R={G:glycaemicLoad(a),card:foodDayCard(a)};}finally{DB.foodLogs=keep;_memoInvalidate();}
+      ok('each meal’s load is its carbohydrate less fibre times its index: breakfast '+gl.breakfast.toFixed(1)+', lunch '+gl.lunch.toFixed(1)+', dinner '+gl.dinner.toFixed(1),R.G.status==='ok'&&
+        JSON.stringify(R.G.meals)===JSON.stringify([{meal:'breakfast',load:Math.round(gl.breakfast)},{meal:'lunch',load:Math.round(gl.lunch)},{meal:'dinner',load:Math.round(gl.dinner)}])&&R.G.load===Math.round(tot),JSON.stringify(R.G.meals));
+      ok('a food the tables do not cover, and almond milk, are left out and lower the share matched',R.G.foods.length===3&&R.G.coverage===round(matched/avail,2)&&!R.G.foods.some(function(f){return /unlisted|almond/i.test(f.food);}),JSON.stringify([R.G.coverage,R.G.foods.map(function(f){return f.as;})]));
+      ok('a day of '+Math.round(tot)+' reads as low; the Food tab says so, and that the person’s own response is not measured',R.G.band==='low'&&R.card.indexOf('data-glycaemic-load')>=0&&/Zeevi et al\. 2015/.test(R.card),R.G.band);
+      var Hh=null;try{DB.foodLogs=L.concat([log('r2','Rice, white, long-grain, cooked',42,0.6,'dinner'),log('r3','Rice, white, long-grain, cooked',42,0.6,'dinner'),log('r4','Rice, white, long-grain, cooked',42,0.6,'snacks')]);_memoInvalidate();Hh=glycaemicLoad(a);}finally{DB.foodLogs=keep;_memoInvalidate();}
+      ok('three more portions of rice take it over 120: high',Hh.load===Math.round(tot+3*0.73*41.4)&&Hh.band==='high',JSON.stringify([Hh.load,Hh.band]));
+      var H=heuristicContractById('glycaemic_load_bands');
+      ok('the bands are a convention, a heuristic contract citing the tables and the evidence that responses differ between people',!!H&&H.parameters.low.value===80&&H.parameters.high.value===120&&H.evidenceBasis.indexOf('atkinson2008gi')>=0&&H.evidenceBasis.indexOf('zeevi2015glycaemic')>=0&&heuristicContracts().ok);
+    })();
+    _stSuite('body-composition');
+    /* VISUAL CALIBRATION (catalogue doc 1, W-020), on body-fat readings written here: visual estimates two days after a DEXA
+       of 20, one day after a BIA of 22, a day after calipers of 21, and today. Expected from this test's own arithmetic: each
+       visual estimate pairs with the nearest measured reading within a week; the bias starts from none (sd 4) and each gap
+       weighs by both methods' errors (visual 4; DEXA 1.5, BIA 3.5, calipers 3); with four pairs the person's own visual
+       error is the gaps' scatter about the bias less the measured methods' error; today's estimate is read through both. */
+    (function(){var a=asOf(),keep=DB.observations;
+      var ob=function(d,v,m){var day=addDays(a,-d);return makeObservation({type:'bodyfat',date:day,value:v,method:m,source:'manual',createdAt:day+'T08:00:00.000Z'});};
+      var O=[ob(40,20,'dexa'),ob(38,17,'visual'),ob(20,22,'bia'),ob(19,18,'visual'),ob(5,21,'calipers'),ob(4,17.5,'visual'),ob(0,16,'visual')];
+      var P=[[17-20,1.5],[18-22,3.5],[17.5-21,3],[16-21,3]].map(function(x){return {g:x[0],v:16+x[1]*x[1],se:x[1]};});
+      var prec=1/16+P.reduce(function(t,p){return t+1/p.v;},0),bias=P.reduce(function(t,p){return t+p.g/p.v;},0)/prec,bv=1/prec;
+      var s2=P.reduce(function(t,p){return t+Math.pow(p.g-bias,2);},0)/3,m2=P.reduce(function(t,p){return t+p.se*p.se;},0)/4,own=Math.sqrt(Math.max(0,s2-m2)),read=16-bias,half=1.96*Math.sqrt(bv+own*own);
+      var R=null;try{DB.observations=O;_memoInvalidate();R={V:visualBodyFatCalibration(),B:bodyCompositionByMethod(),sheet:SHEETS.physique().body};}finally{DB.observations=keep;_memoInvalidate();}
+      ok('four visual estimates pair with the nearest measured reading within a week, and the bias is '+bias.toFixed(2)+' points',R.V.status==='ok'&&R.V.n===4&&Math.abs(R.V.bias-bias)<0.006&&Math.abs(R.V.biasSd-Math.sqrt(bv))<0.006,JSON.stringify({got:[R.V.n,R.V.bias,R.V.biasSd],want:[bias,Math.sqrt(bv)]}));
+      ok('how much is the person’s own, and their own visual error ('+own.toFixed(2)+'), are as this test has them',R.V.personalWeight===round(1-bv/16,2)&&Math.abs(R.V.visualError-own)<0.006,JSON.stringify([R.V.personalWeight,R.V.visualError,own]));
+      ok('today’s visual 16% reads as about '+read.toFixed(1)+'% ('+(read-half).toFixed(1)+' to '+(read+half).toFixed(1)+')',R.V.latest.value===16&&R.V.latest.reads===round(read,1)&&R.V.latest.lo===round(read-half,1)&&R.V.latest.hi===round(read+half,1),JSON.stringify(R.V.latest));
+      ok('the body-fat card says so beside the methods, and the methods are still trended apart',!!R.B.visual&&R.B.visual.bias===R.V.bias&&R.sheet.indexOf('data-visual-calibration')>=0&&/you estimate [\d.]+ points low/.test(R.sheet)&&R.B.methods.length===4);
+      var N=null;try{DB.observations=[ob(30,20,'dexa'),ob(10,17,'visual')];_memoInvalidate();N={V:visualBodyFatCalibration(),B:bodyCompositionByMethod()};}finally{DB.observations=keep;_memoInvalidate();}
+      ok('a visual estimate with no measured reading within a week is not calibrated, and says what it needs',N.V.status==='insufficient'&&/within 7 days of a visual estimate/.test(N.V.need[0])&&!!N.B.visual&&N.B.visual.status==='insufficient',JSON.stringify(N.V));
+      var Z=null;try{DB.observations=[ob(30,20,'dexa')];_memoInvalidate();Z=bodyCompositionByMethod();}finally{DB.observations=keep;_memoInvalidate();}
+      ok('with no visual estimate there is nothing to calibrate',Z.visual===null);
+      var H=heuristicContractById('visual_calibration');
+      ok('the window and the prior are a heuristic contract, not validated',!!H&&H.parameters.window.value===7&&H.parameters.priorSd.value===4&&H.validationStatus===HEURISTIC_NOT_VALIDATED&&heuristicContracts().ok);
+    })();
     _stSuite('storage');   /* the checks that follow belong to the storage suite they were filed under before these blocks */
     ok('Response is a first-class entity with its own event',ENTITY_CONTRACTS.Response.status==='implemented'&&!!EVENT_TYPES['response.recorded']&&ENTITY_CONTRACTS.Response.stores.indexOf('responses')>=0);
     _stSuite('external');

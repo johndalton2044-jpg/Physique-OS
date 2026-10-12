@@ -155,6 +155,9 @@ function heuristicContracts(){
   try{take(LIFT_FORECAST_CONTRACT,'52-response');}catch(e){}
   try{take(SKILL_LIMIT_CONTRACT,'64-exercise');}catch(e){}
   try{take(SLEEP_NEED_CONTRACT,'47-sleep-injury');}catch(e){}
+  try{take(FOOD_MATRIX_CONTRACT,'61-physiology');}catch(e){}
+  try{take(GLYCAEMIC_CONTRACT,'61-physiology');}catch(e){}
+  try{take(VISUAL_CALIBRATION_CONTRACT,'64-physique');}catch(e){}
   var seen={},refs={};(typeof REF_EVIDENCE!=='undefined'?REF_EVIDENCE:[]).forEach(function(r){refs[r.id]=1;});
   out.forEach(function(c){HEURISTIC_REQUIRED.forEach(function(f){if(c[f]==null)issues.push(c.id+': no '+f);});
     if(seen[c.id])issues.push(c.id+': held twice');seen[c.id]=1;

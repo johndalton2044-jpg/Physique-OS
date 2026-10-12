@@ -631,14 +631,14 @@ var STATE_REQUIREMENTS={models:['adherence','appetite','bodycomp_circ','data_tru
 var VIEW_REQUIREMENTS={
   today:{state:true,models:['recovery','response_matrix','sleep_need','supplement_adherence','uncertainty_chain'],observations:['note'],conditional:{recovery:'only on a day with planned training'}},
   log:{state:false,models:['weight_avg'],observations:['adherence','bodyfat','calories','carbs','cardio','context','cravings','fat','fatigue','fiber','hunger','neck','protein','rhr','sleep','sleepq','soreness','steps','stress','supplement','waist','water','weight']},
-  plan:{state:true,models:['cardio_fitness_latent','friction','personal_dose_response','personal_frequency_response','personal_response','personal_sleep_response','physique_regions','sleep_need','uncertainty_chain','unified_optimiser'],observations:['arm','chest','cmj','hrr','kneewall','mobility','note','rhr','sitreach','sprint','thigh']},
+  plan:{state:true,models:['cardio_fitness_latent','friction','personal_dose_response','personal_frequency_response','personal_response','personal_sleep_response','physique_regions','sleep_need','uncertainty_chain','unified_optimiser','visual_calibration'],observations:['arm','chest','cmj','hrr','kneewall','mobility','note','rhr','sitreach','sprint','thigh']},
   train:{state:true,models:[],observations:[]},
-  food:{state:true,models:['micronutrient_coverage','supplement_adherence'],observations:['sweatrate','urine']},
-  body:{state:true,models:['body_composition_state','physique_regions'],observations:['arm','chest','thigh']},
+  food:{state:true,models:['diet_digestibility','glycaemic_load','micronutrient_coverage','supplement_adherence'],observations:['sweatrate','urine']},
+  body:{state:true,models:['body_composition_state','physique_regions','visual_calibration'],observations:['arm','chest','thigh']},
   progress:{state:true,models:[],observations:[]},
   diagnose:{state:true,models:['change_point'],observations:[]},
   experiments:{state:false,models:['weight_avg'],observations:['weight']},
-  learn:{state:true,models:['cardio_fitness_latent','change_point','diet_digestibility','energy_availability','friction','hydration_balance','intervention_response','lift_forecast','met_energy','model_competition','personal_response','physique_regions','recovery_allocation','response_matrix','sleep_need','supplement_efficacy','uncertainty_chain','unified_optimiser'],observations:['arm','chest','cmj','hrr','kneewall','rhr','sitreach','sprint','sweatrate','thigh','urine'],
+  learn:{state:true,models:['cardio_fitness_latent','change_point','diet_digestibility','energy_availability','friction','hydration_balance','intervention_response','lift_forecast','met_energy','model_competition','personal_response','physique_regions','recovery_allocation','response_matrix','sleep_need','supplement_efficacy','uncertainty_chain','unified_optimiser','visual_calibration'],observations:['arm','chest','cmj','hrr','kneewall','rhr','sitreach','sprint','sweatrate','thigh','urine'],
     conditional:{met_energy:'only when a cardio session falls in the seven days energy availability reads'}},
   archive:{state:false,models:['weight_avg'],observations:['weight']},
   tools:{state:true,models:['sleep_need','uncertainty_chain'],observations:['note']}};

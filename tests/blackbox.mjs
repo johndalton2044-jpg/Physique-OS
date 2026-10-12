@@ -1,4 +1,4 @@
-/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-028). Independent of the implementation's assumptions:
+/* BLACK-BOX WORKFLOWS (audit EC-002; workflows V-001\u2013V-031). Independent of the implementation's assumptions:
      \u2022 acts only through the interface: real buttons found on screen (a missing control is a failure), typing into
        real fields, the real file input; the only thing intercepted is the browser's file download, the system boundary;
      \u2022 expects only independent values: constants defined here and arithmetic done here (kcal per 100 g, Epley's
@@ -532,6 +532,67 @@ await run('V-028 your own sleep need',async ui=>{const NX=[5.5,6,6.5,7,7.5,8,8.5
   const t=ui.text('#editBackdrop');
   line(t.indexOf(debt.toFixed(1)+' h short of your own sleep need of '+NEED.toFixed(1)+' h over 14 nights')>=0,'V-028 the last 14 nights fall '+debt.toFixed(1)+' h short of a need of '+NEED.toFixed(1)+' h',t.slice(Math.max(0,t.indexOf('sleep need')-80),t.indexOf('sleep need')+260));
   line(/your fatigue stops improving at about 7\.00 h \(7\.00 to 7\.00\), rising 2\.0 points an hour short of it/.test(t)&&/a need of 7\.0 h, 100% your own record/.test(t),'V-028 found where the fatigue stops improving, rising 2 points an hour short of it, wholly the person’s own',t.slice(Math.max(0,t.indexOf('stops improving')-40),t.indexOf('stops improving')+220));
+});
+
+/* the custom food form and the food sheet, as a person uses them: save a food, then log grams of it; each step waits
+   for the record it should make */
+async function saveOwnFood(ui,fields){const n=ui.w.DB.foods.length;ui.tab('food');ui.press('food.custom');await ui.until('#editBackdrop #f_name');
+  for(const [k,v] of Object.entries(fields))ui.type('f_'+k,v);ui.press('food.customSave');return n;}
+async function logOwnFood(ui,name,grams){const n=ui.w.DB.foodLogs.length;ui.tab('food');ui.press('food.add');await ui.until('#fs_q');ui.type('fs_q',name);
+  const pick=()=>[...ui.d.querySelectorAll('#editBackdrop [data-act="foodsheet.pick"]')].find(b=>b.textContent.indexOf(name)>=0);await ui.waitFor(pick,name+' in the food search');pick().click();
+  await ui.until('#editBackdrop #f_amount');ui.type('f_amount',grams);const u=ui.d.getElementById('f_unit');if(u){u.value='g';u.dispatchEvent(new ui.w.Event('change',{bubbles:true}));}
+  ui.press('foodsheet.save');await ui.waitFor(()=>ui.w.DB.foodLogs.length===n+1,grams+' g of '+name+' to be logged');}
+
+/* V-029 PROTEIN QUALITY FROM AMINO ACIDS (catalogue doc 1, W-018). A rice protein and a pea protein are saved as one's own
+   foods with the amino acids their labels print (mg per 100 g, defined here), and 30 g of each is logged. Expected from
+   this test's arithmetic and the FAO 2013 adult pattern written out here: together they score 1.068 (lysine the closest),
+   meeting the pattern though each alone falls short. A food given only some of its amino acids is refused. */
+await run('V-029 protein quality from amino acids',async ui=>{const PAT={his:16,ile:30,leu:61,lys:48,saa:23,aaa:41,thr:25,trp:6.6,val:40};
+  const RICE={protein:80,his:1800,ile:3400,leu:6600,lys:2400,met:2400,cys:1600,phe:4200,tyr:4000,thr:2900,trp:1000,val:4800},PEA={protein:80,his:2000,ile:3600,leu:6800,lys:5800,met:800,cys:700,phe:4400,tyr:3000,thr:3000,trp:800,val:4000};
+  const f=(name,F)=>Object.assign({name,kcal:380,protein:F.protein},Object.fromEntries(['his','ile','leu','lys','met','cys','phe','tyr','thr','trp','val'].map(k=>['aa_'+k,F[k]])));
+  const n0=await saveOwnFood(ui,{name:'Half profile',kcal:380,protein:80,aa_lys:2400});
+  await ui.waitFor(()=>/Enter all eleven amino acids, or none/.test(ui.d.body.textContent)||ui.w.DB.foods.length>n0,'the form to answer a partial profile');
+  line(ui.w.DB.foods.length===n0&&/Enter all eleven amino acids, or none/.test(ui.d.body.textContent),'V-029 a food given only some of its amino acids is refused, and says why');
+  if(ui.d.querySelector('#editBackdrop.show'))ui.press('edit.close',null,'#editBackdrop');await ui.waitFor(()=>!ui.d.querySelector('#editBackdrop.show'),'the form to close');
+  for(const [nm,F] of [['Rice protein isolate',RICE],['Pea protein isolate',PEA]]){const n=await saveOwnFood(ui,f(nm,F));await ui.waitFor(()=>ui.w.DB.foods.length===n+1,nm+' to be saved');}
+  await logOwnFood(ui,'Rice protein isolate',30);await logOwnFood(ui,'Pea protein isolate',30);
+  const mix=Object.fromEntries(Object.keys(PAT).map(k=>[k,0]));let P=0;for(const F of [RICE,PEA]){P+=F.protein*0.3;for(const k of ['his','ile','leu','lys','thr','trp','val'])mix[k]+=F[k]*0.3;mix.saa+=(F.met+F.cys)*0.3;mix.aaa+=(F.phe+F.tyr)*0.3;}
+  const ratios=Object.keys(PAT).map(k=>[k,mix[k]/P/PAT[k]]).sort((a,b)=>a[1]-b[1]),score=ratios[0][1];
+  ui.tab('food');await ui.until('#view-food [data-amino-score]');const t=ui.text('#view-food [data-amino-score]');
+  line(ratios[0][0]==='lys'&&t.indexOf('score '+score.toFixed(2))>=0&&/meets the adult pattern; lysine the closest/.test(t)&&/from 100% of the day/.test(t),'V-029 together they score '+score.toFixed(3)+', lysine the closest, from all of the day’s protein',t);
+});
+
+/* V-030 THE FOOD MATRIX AND GLYCAEMIC LOAD (catalogue doc 1, W-018). Whole almonds (600 kcal per 100 g on their label) and
+   cooked white rice (28 g of carbohydrate and 0.4 g of fibre per 100 g) are saved as one's own foods; 28 g and 150 g are
+   logged. Expected from this test's constants and the cited figures written out here: the almonds count 129 kcal, not
+   the 168 logged, so about 39 kcal held back; the rice's load is 73 / 100 x 41.4 g = 30, a low day, with the almonds'
+   carbohydrate unmatched (no index for them) and the share matched worked out here. */
+await run('V-030 food matrix and glycaemic load',async ui=>{const ALM={kcal:600,protein:21,carbs:22,fat:50,fiber:12.5},RICE={kcal:130,protein:2.7,carbs:28,fat:0.3,fiber:0.4};
+  for(const [nm,F] of [['Whole almonds',ALM],['White rice, cooked',RICE]]){const n=await saveOwnFood(ui,Object.assign({name:nm},F));await ui.waitFor(()=>ui.w.DB.foods.length===n+1,nm+' to be saved');}
+  await logOwnFood(ui,'Whole almonds',28);await logOwnFood(ui,'White rice, cooked',150);
+  const logged=ALM.kcal*0.28,held=Math.round(logged-129),riceAvail=(RICE.carbs-RICE.fiber)*1.5,almAvail=(ALM.carbs-ALM.fiber)*0.28,load=Math.round(0.73*riceAvail),share=Math.round(100*riceAvail/(riceAvail+almAvail));
+  ui.tab('food');await ui.until('#view-food [data-matrix-energy]');const m=ui.text('#view-food [data-matrix-energy]'),g=ui.text('#view-food [data-glycaemic-load]');
+  line(m.indexOf('about '+held+' kcal')>=0&&m.indexOf('Whole almonds: 28 g counts about 129 kcal, not the '+Math.round(logged)+' logged')>=0&&/not taken off your intake/.test(m),'V-030 28 g of whole almonds count 129 kcal, not '+Math.round(logged)+': about '+held+' held back',m);
+  line(g.indexOf(String(load))>=0&&/· low/.test(g)&&g.indexOf(share+'% of the carbohydrate matched')>=0,'V-030 the rice’s glycaemic load is '+load+', a low day, from '+share+'% of the carbohydrate',g);
+});
+
+/* V-031 VISUAL CALIBRATION (catalogue doc 1, W-020). Body-fat readings are logged through the quick log, the clock moved
+   back: a DEXA of 20 and, two days later, an estimate by eye of 17; a BIA of 22 and a day later 18; calipers of 21 and a
+   day later 17.5; and today an estimate of 16. Expected from this test's arithmetic: each estimate pairs with the
+   nearest measured reading within a week (today's with the calipers, five days back); the bias starts from none (sd 4)
+   and each gap weighs by both methods' errors (visual 4, DEXA 1.5, BIA 3.5, calipers 3); today's 16% is read through it. */
+await run('V-031 visual calibration',async ui=>{const R=[[40,20,'dexa'],[38,17,'visual'],[20,22,'bia'],[19,18,'visual'],[5,21,'calipers'],[4,17.5,'visual'],[0,16,'visual']];
+  for(const [daysAgo,v,m] of R){ui.setClock(daysAgo);const n=ui.w.DB.observations.filter(o=>o.type==='bodyfat').length;ui.press('log.open');await ui.until('#logBackdrop [data-act="sheet.logType"][data-arg="bodyfat"]');
+    ui.d.querySelector('#logBackdrop [data-act="sheet.logType"][data-arg="bodyfat"]').click();await ui.until('#logBackdrop #f_method');ui.type('f_value',v);const s=ui.d.getElementById('f_method');s.value=m;s.dispatchEvent(new ui.w.Event('change',{bubbles:true}));
+    ui.press('log.save',null,'#logBackdrop');await ui.waitFor(()=>ui.w.DB.observations.filter(o=>o.type==='bodyfat').length===n+1,'the '+m+' reading '+daysAgo+' days ago');}
+  ui.setClock(0);const P=[[17-20,1.5],[18-22,3.5],[17.5-21,3],[16-21,3]].map(([g,se])=>({g,v:16+se*se,se}));
+  const prec=1/16+P.reduce((t,p)=>t+1/p.v,0),bias=P.reduce((t,p)=>t+p.g/p.v,0)/prec,bv=1/prec,s2=P.reduce((t,p)=>t+(p.g-bias)**2,0)/3,m2=P.reduce((t,p)=>t+p.se**2,0)/4,own=Math.sqrt(Math.max(0,s2-m2));
+  const read=16-bias,half=1.96*Math.sqrt(bv+own*own),f1=x=>x.toFixed(1);
+  ui.press('cmdk.open');await ui.until('#cmdkBackdrop.show #cmdkInput');ui.type('cmdkInput','Physique by region');
+  const pick=()=>[...ui.d.querySelectorAll('#cmdkBackdrop [data-act="cmdk.pick"]')].find(x=>/^Physique by region/.test(x.textContent.trim()));await ui.waitFor(pick,'the physique screen in search');pick().click();
+  await ui.until('#editBackdrop [data-visual-calibration]');const t=ui.text('#editBackdrop [data-visual-calibration]');
+  line(t.indexOf('(4 pairs), you estimate '+f1(Math.abs(bias))+' points low')>=0&&t.indexOf(Math.round(100*(1-bv/16))+'% your own record')>=0,'V-031 four estimates by eye, each paired with the nearest measured reading: '+f1(Math.abs(bias))+' points low',t);
+  line(t.indexOf('Your latest visual 16.0% reads as about '+f1(read)+'% ('+f1(read-half)+' to '+f1(read+half)+')')>=0,'V-031 today’s 16% reads as about '+f1(read)+'%, with its interval',t);
 });
 
 console.log('\n  covered by other gates, not repeated here: V-006 multi-device sync (cloud:e2e), V-007 offline and reconnect (connect, persistence), V-008 provider failure (external)');

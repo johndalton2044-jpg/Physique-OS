@@ -287,3 +287,11 @@ Never start an item before what it depends on is in place.
 - Skill or strength, what each lift costs, the person's own sleep need and the NEAT response's calibration are built
   (see the roadmap entry for this build). The nutrition and body items follow.
 - Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.
+
+## 14. State at 21dda51c45
+
+- 37 gates, all pass; release 24/24; 2,030 in-app self-tests, 400 interface tests, 26 black-box workflows.
+- Every refinement the catalogue lists for W-015, W-018, W-019 and W-020 is built except bioavailability (W-018). W-019
+  stays "partly": whether a recovery score adds value for a real person is for their own record to show.
+- The next food-corpus build should carry USDA's amino acids (the builder keeps them now).
+- Waiting on the person, unchanged: item 11, the branch-protection rule, and a `vercel inspect` of a live deployment.

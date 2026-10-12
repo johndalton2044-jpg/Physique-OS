@@ -831,6 +831,105 @@
    }
   },
   {
+   "id": "protein-amino-score",
+   "label": "Protein quality from the amino acids of the foods eaten",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-029"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "the day’s protein whose amino acids are known is scored as one mix against the FAO 2013 adult pattern, naming the limiting amino acid; a mix can score above its parts. One’s own food can carry a label’s eleven amino acids, and the corpus build keeps USDA’s; the shipped corpus predates it, so no shipped food carries them yet. Not corrected for digestion",
+   "source": "FAO 2013, Dietary protein quality evaluation in human nutrition (FAO Food and Nutrition Paper 92)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "food-matrix",
+   "label": "Whole nuts counted at their measured energy (the food matrix)",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-030"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "whole almonds, walnuts and cashews count at the energy feeding studies measured (129, 146 and 137 kcal per 28 g); butters, flours, milks and oils, and nuts no study measured, are not corrected. Shown on the Food tab, not taken off the intake. Replaces a rule that took 20% off every food named after a nut",
+   "source": "Novotny et al. 2012 (almonds); Baer et al. 2016 (walnuts); Baer and Novotny 2019 (cashews)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "glycaemic-load",
+   "label": "Glycaemic load of each meal and the day",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-030"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each food’s carbohydrate less fibre weighed by the glycaemic index of the group its name matches, from the international tables, with the share of carbohydrate matched; a day under 80 reads as low and over 120 as high, a convention. A population figure: the person’s own glucose response can differ widely and is not measured",
+   "source": "Atkinson, Foster-Powell and Brand-Miller 2008 (international tables); Zeevi et al. 2015 (responses differ between people)",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "population evidence",
+    "data": "real data path",
+    "personalization": "population",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
+   "id": "visual-calibration",
+   "label": "Body fat estimated by eye, read through the person’s own bias",
+   "maturity": "validated",
+   "evidence": [
+    {
+     "blackbox": "V-031"
+    },
+    {
+     "gate": "engine"
+    }
+   ],
+   "note": "each visual estimate pairs with the nearest measured reading within a week; the bias starts from none (sd 4 points) and each gap weighs by both methods’ errors; with three pairs or more the person’s own visual error is read; the latest estimate is read through both on “Physique by region”. The log form now offers an estimate by eye. A heuristic contract, not validated",
+   "axes": {
+    "engineering": "validated",
+    "scientific": "heuristic",
+    "data": "real data path",
+    "personalization": "early personal",
+    "ux": "workflow-tested",
+    "operational": "local",
+    "evidence": "independent",
+    "calibration": "not applicable"
+   }
+  },
+  {
    "id": "mobility-recommendation",
    "label": "Mobility recommendation: limitation, measurement, intervention, expected change, retest, response and uncertainty",
    "maturity": "validated",

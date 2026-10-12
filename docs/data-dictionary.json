@@ -1,6 +1,6 @@
 {
  "generated": "tests/dictionary.mjs --write",
- "ontologyVersion": "8fd5836b2531",
+ "ontologyVersion": "8e492b5c9b9c",
  "observationTypes": [
   {
    "id": "adherence",
@@ -2202,7 +2202,7 @@
   {
    "id": "diet_digestibility",
    "cls": "PRIOR",
-   "output": "digestible protein (g) and energy adjustment",
+   "output": "digestible protein (g), the amino acid score of the day’s protein, and the energy whole nuts do not release",
    "uncertainty": "group values",
    "inputs": [
     "calories"
@@ -2275,6 +2275,16 @@
     "fatigue",
     "motivation",
     "weight"
+   ]
+  },
+  {
+   "id": "glycaemic_load",
+   "cls": "PRIOR",
+   "output": "the glycaemic load of each meal and the day, with the share of carbohydrate matched",
+   "uncertainty": "population values per food group; personal response not measured",
+   "inputs": [
+    "carbs",
+    "fiber"
    ]
   },
   {
@@ -2688,6 +2698,15 @@
    ]
   },
   {
+   "id": "visual_calibration",
+   "cls": "EMPIRICAL",
+   "output": "the person’s bias in reading their body fat by eye, how much is their own record, their visual error, and the latest visual estimate read through them",
+   "uncertainty": "posterior on the bias, against a prior of none",
+   "inputs": [
+    "bodyfat"
+   ]
+  },
+  {
    "id": "water_noise",
    "cls": "HEURISTIC",
    "output": "low / medium / high",
@@ -2931,6 +2950,7 @@
    "exercise_response",
    "fat_vs_other",
    "friction",
+   "glycaemic_load",
    "goal_traj",
    "hydration_balance",
    "intervention_response",
@@ -2967,6 +2987,7 @@
    "tissue_energy_density",
    "uncertainty_chain",
    "unified_optimiser",
+   "visual_calibration",
    "water_noise",
    "weight_avg",
    "weight_forecast",

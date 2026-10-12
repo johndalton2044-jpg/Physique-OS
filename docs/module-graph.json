@@ -1589,6 +1589,7 @@
     "daysBetween",
     "num",
     "round",
+    "fmtNum",
     "mean",
     "sd"
    ],
@@ -1787,11 +1788,14 @@
   "calls": {
    "10-core.js": [
     "_registryTaken",
+    "_q",
     "todayISO",
     "addDays",
     "daysBetween",
     "clamp",
     "round",
+    "fmtNum",
+    "fmtSigned",
     "mean",
     "_medianOf"
    ],
@@ -2586,6 +2590,10 @@
    "58-schedule.js": [
     "scheduleModel",
     "scheduleAhead"
+   ],
+   "61-physiology.js": [
+    "dietDigestibility",
+    "glycaemicLoad"
    ],
    "62-food.js": [
     "normalizeFood",
@@ -5124,6 +5132,7 @@
     "reversalAll",
     "reversalAny",
     "renderReversal",
+    "claimById",
     "findingClaim",
     "claimRegistry"
    ],
@@ -5263,6 +5272,8 @@
     "hydrationModel",
     "energyAvailability",
     "_foodGroup",
+    "dietDigestibility",
+    "glycaemicLoad",
     "personalSleepResponse"
    ],
    "62-food.js": [
@@ -5341,6 +5352,7 @@
     "physiqueRate",
     "bodyCompositionState",
     "bodyCompositionByMethod",
+    "visualBodyFatCalibration",
     "_tapeReading",
     "tapeChanges"
    ],
@@ -5513,7 +5525,8 @@
     "inventoryConfidence"
    ],
    "82-views-a.js": [
-    "_promotionPhrase"
+    "_promotionPhrase",
+    "foodDayCard"
    ],
    "83-propagation.js": [
     "mechanicalDemand",
